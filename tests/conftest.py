@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import threading
 from copy import deepcopy
 from pathlib import Path
 
@@ -265,25 +266,18 @@ def history():
     return brownie.network.history
 
 
+_network_lock = threading.Lock()
+
 @pytest.fixture
 def network():
-    if brownie.network.is_connected():
-        try:
+    with _network_lock:
+        if brownie.network.is_connected():
             brownie.network.disconnect(False)
-        except ConnectionError:
-            # This can sometimes occur during setup but we don't really care why or how. 
-            # Probably a race condition, maybe fixable with fixture isolation.
-            pass
-            
-    yield brownie.network
-    
-    if brownie.network.is_connected():
-        try:
+                
+        yield brownie.network
+        
+        if brownie.network.is_connected():
             brownie.network.disconnect(False)
-        except ConnectionError:
-            # This can sometimes occur during teardown but we don't really care why or how
-            # Probably a race condition, maybe fixable with fixture isolation.
-            pass
 
 
 @pytest.fixture(scope="session")
