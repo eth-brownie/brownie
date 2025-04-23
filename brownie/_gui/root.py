@@ -2,8 +2,9 @@
 
 import json
 import tkinter as tk
-from eth_utils.toolz import keymap
 from tkinter import ttk
+
+from eth_utils.toolz import keymap
 
 from brownie.project import get_loaded_projects
 
@@ -76,7 +77,7 @@ class Root(tk.Tk):
             value_path = value["path"]
             if value_path not in pathMap:
                 value_path = pathMap[value_path]
-                
+
         self.toolbar.report.show()
         self.toolbar.report.set_values(contract_name)
 

@@ -95,9 +95,7 @@ class Flattener:
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
         )
 
-        sources = (
-            f"// File: {file}\n\n{wipe(src)}" for src, file in zip(sources, flattened_deps)
-        )
+        sources = (f"// File: {file}\n\n{wipe(src)}" for src, file in zip(sources, flattened_deps))
 
         flat = (
             "\n".join(pragma for pragma in pragmas if "pragma solidity" not in pragma)

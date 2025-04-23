@@ -1,4 +1,4 @@
-name: Pip Compile
+name: Repo Chores
 
 on:
   pull_request:
@@ -24,9 +24,15 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Install Black
+      run: pip install black
+
+    - name: Run black .
+      run: black .
+
     - name: Install Pip Tools
       run: pip install pip-tools
-
+      
     - name: Run Pip Compile
       run: pip-compile -U
 
@@ -45,5 +51,5 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "chore: \`pip-compile\`"
+        git commit -m "chore: \`black .\` and \`pip-compile\`"
         git push

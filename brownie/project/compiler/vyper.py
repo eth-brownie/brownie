@@ -3,7 +3,6 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from itertools import chain
 from typing import Dict, List, Optional, Tuple, Union
 
 import vvm
@@ -281,8 +280,8 @@ def _get_unique_build_json(
 def _get_dependencies(ast_json: List[dict]) -> List[str]:
     return sorted(
         {
-            i["name"].split(".")[-1] 
-            for i in ast_json 
+            i["name"].split(".")[-1]
+            for i in ast_json
             if i["ast_type"] == "Import"
             or (i["ast_type"] == "ImportFrom" and i["module"] != "vyper.interfaces")
         }

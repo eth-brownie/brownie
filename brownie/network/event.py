@@ -422,8 +422,9 @@ class EventWatcher(metaclass=_Singleton):
         for worker_instance in workers_list:
             worker_instance.join(timeout=30)
             if worker_instance.is_alive():
+                worker_name = worker_instance.getName()
                 warnings.warn(
-                    message=f"Callback execution ({worker_instance.getName()}) could not be joined.",
+                    message=f"Callback execution ({worker_name}) could not be joined.",
                     category=RuntimeWarning,
                 )
 
