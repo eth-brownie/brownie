@@ -3,16 +3,14 @@
 import json
 
 
-def test_persist_load_unload(testproject, network):
-    network.connect("mainnet")
+def test_persist_load_unload(testproject, connect_to_mainnet):
     testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.close()
     testproject.load()
     assert len(testproject.BrownieTester) == 1
 
 
-def test_delete(testproject, network):
-    network.connect("mainnet")
+def test_delete(testproject, network, connect_to_mainnet):
     testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.BrownieTester.at("0xB8c77482e45F1F44dE1745F52C74426C631bDD52")
     network.disconnect(False)
@@ -24,8 +22,7 @@ def test_delete(testproject, network):
     assert testproject.BrownieTester[0].address == "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
 
 
-def test_changed_name(testproject, network):
-    network.connect("mainnet")
+def test_changed_name(testproject, network, connect_to_mainnet):
     c = testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.BrownieTester.at("0xB8c77482e45F1F44dE1745F52C74426C631bDD52")
     build_json = c._build
