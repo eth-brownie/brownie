@@ -2,8 +2,9 @@
 
 import json
 import tkinter as tk
-from eth_utils.toolz import keymap
 from tkinter import ttk
+
+from eth_utils.toolz import keymap
 
 from brownie.project import get_loaded_projects
 
