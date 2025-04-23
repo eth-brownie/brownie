@@ -278,6 +278,12 @@ def network():
             pass
 
 
+@pytest.fixture
+def connect_to_mainnet(network):
+    network.connect("mainnet")
+    yield network
+
+
 @pytest.fixture(scope="session")
 def rpc():
     return brownie.network.rpc
