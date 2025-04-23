@@ -24,13 +24,14 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install Pip Tools
-      run: pip install pip-tools
+    - name: Install Black
+      run: pip install black
 
     - name: Run black .
-      run: |
-        tox install
-        black .
+      run: black .
+
+    - name: Install Pip Tools
+      run: pip install pip-tools
       
     - name: Run Pip Compile
       run: pip-compile -U
