@@ -884,7 +884,7 @@ def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict)
     )
     status_code = response.status_code
     if status_code != 200:
-        message = response.json()['message']
+        message = response.json()["message"]
         msg = f"Status {status_code} when getting package versions from Github: '{message}'"
         if status_code in {403, 404}:
             msg += (
