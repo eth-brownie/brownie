@@ -28,7 +28,9 @@ jobs:
       run: pip install pip-tools
 
     - name: Run black .
-      run: black .
+      run: |
+        tox install
+        black .
       
     - name: Run Pip Compile
       run: pip-compile -U
