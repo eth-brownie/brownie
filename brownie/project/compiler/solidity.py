@@ -287,8 +287,6 @@ def _format_link_references(evm: Dict) -> str:
 
 
 def _remove_metadata(bytecode: str) -> str:
-    if not bytecode:
-        raise ValueError("bytecode is empty")
     return bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else ""
 
 
