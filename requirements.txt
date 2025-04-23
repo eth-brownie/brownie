@@ -25,7 +25,7 @@ black==25.1.0
     # via -r requirements.in
 cbor2==5.6.5
     # via vyper
-cchecksum==0.2.2
+cchecksum==0.2.5
     # via -r requirements.in
 certifi==2025.1.31
     # via requests
@@ -132,7 +132,7 @@ multidict==6.4.3
     # via
     #   aiohttp
     #   yarl
-mypy-extensions==1.0.0
+mypy-extensions==1.1.0
     # via black
 packaging==23.2
     # via

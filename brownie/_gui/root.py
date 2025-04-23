@@ -76,7 +76,7 @@ class Root(tk.Tk):
             value_path = value["path"]
             if value_path not in pathMap:
                 value_path = pathMap[value_path]
-                
+
         self.toolbar.report.show()
         self.toolbar.report.set_values(contract_name)
 

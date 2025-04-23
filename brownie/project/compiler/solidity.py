@@ -287,7 +287,7 @@ def _format_link_references(evm: Dict) -> str:
 
 
 def _remove_metadata(bytecode: str) -> str:
-    return bytecode[:-(int(bytecode[-4:], 16) + 2) * 2] if bytecode else ""
+    return bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else ""
 
 
 def _generate_coverage_data(

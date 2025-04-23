@@ -844,4 +844,5 @@ def docopt(
         raise DocoptExit(f"Warning: found unmatched (duplicate?) arguments {left}")
     raise DocoptExit(collected=collected, left=left)
 
+
 _PARENTS = [_Required, _NotRequired, _OptionsShortcut, _Either, _OneOrMore]
