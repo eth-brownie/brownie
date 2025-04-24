@@ -268,6 +268,7 @@ def history():
 
 _network_lock = threading.Lock()
 
+
 @pytest.fixture
 def network():  # sourcery skip: use-contextlib-suppress
     with _network_lock:
@@ -275,11 +276,11 @@ def network():  # sourcery skip: use-contextlib-suppress
             try:
                 brownie.network.disconnect(False)
             except ConnectionError:
-                # This can sometimes occur during setup but we don't really care why or how. 
+                # This can sometimes occur during setup but we don't really care why or how.
                 pass
 
         yield brownie.network
-        
+
         if brownie.network.is_connected():
             try:
                 brownie.network.disconnect(False)
