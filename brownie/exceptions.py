@@ -285,12 +285,14 @@ def decode_typed_error(data: str) -> str:
         # special case, solidity compiler panics
         error_code = int(HexBytes(data[10:]).hex(), 16)
         return SOLIDITY_ERROR_CODES.get(error_code, f"Unknown compiler Panic: {error_code}")
-    if selector in _errors:
-        types_list = get_type_strings(_errors[selector]["inputs"])
-        result = eth_abi.decode(types_list, HexBytes(data)[4:])
-        if selector == ERROR_SIG:
-            return result[0]
-        else:
-            return f"{_errors[selector]['name']}: {', '.join([str(i) for i in result])}"
-    else:
+
+    if selector not in _errors:
         return f"Unknown typed error: {data}"
+
+    types_list = get_type_strings(_errors[selector]["inputs"])
+    result = eth_abi.decode(types_list, HexBytes(data)[4:])
+    return (
+        result[0]
+        if selector == ERROR_SIG
+        else f"{_errors[selector]['name']}: {', '.join(map(str, result))}"
+    )
