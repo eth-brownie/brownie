@@ -268,14 +268,15 @@ def history():
 
 _network_lock = threading.Lock()
 
+
 @pytest.fixture
 def network():
     with _network_lock:
         if brownie.network.is_connected():
             brownie.network.disconnect(False)
-                
+
         yield brownie.network
-        
+
         if brownie.network.is_connected():
             brownie.network.disconnect(False)
 
