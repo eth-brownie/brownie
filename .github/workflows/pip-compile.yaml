@@ -34,7 +34,10 @@ jobs:
       run: pip install pip-tools
       
     - name: Run Pip Compile
-      run: pip-compile -U requirements.in requirements-dev.in
+      run: pip-compile -U
+
+    - name: Run Pip Compile for Dev Deps
+      run: pip-compile -U requirements-dev.in
 
     - name: Check for changes
       id: changes
