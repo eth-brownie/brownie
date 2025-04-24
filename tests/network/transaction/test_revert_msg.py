@@ -204,5 +204,8 @@ def baz():
     tx = compile_source(code, vyper_version="0.2.4").Vyper.deploy({"from": accounts[0]})
     # For some reason, if we choose one of the below revert messages and perform an equality check, the test can fail.
     # We do not know why there are 2 different revert messages that we can get back, but this is not a problem for us.
-    okay_revert_msgs = {"code size to deposit exceeds maximum code size", "exceeds EIP-170 size limit"}
+    okay_revert_msgs = {
+        "code size to deposit exceeds maximum code size",
+        "exceeds EIP-170 size limit",
+    }
     assert tx.revert_msg in okay_revert_msgs

@@ -25,7 +25,7 @@ black==25.1.0
     # via -r requirements.in
 cbor2==5.6.5
     # via vyper
-cchecksum==0.2.5
+cchecksum==0.2.6
     # via -r requirements.in
 certifi==2025.1.31
     # via requests
@@ -120,7 +120,7 @@ iniconfig==2.1.0
     # via pytest
 jsonschema==4.23.0
     # via web3
-jsonschema-specifications==2024.10.1
+jsonschema-specifications==2025.4.1
     # via jsonschema
 lark==1.2.2
     # via vyper
