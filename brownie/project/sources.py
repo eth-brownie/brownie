@@ -6,8 +6,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from semantic_version import NpmSpec
-from vvm.utils.convert import to_vyper_version
+from semantic_version import NpmSpec, Version
 
 from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.utils import color
@@ -238,12 +237,11 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     try:
         return NpmSpec(pragma_string)
     except ValueError:
-        # temporary for debugging, change back to `pass` before merging
-        raise
+        pass
     try:
-        # special case for Vyper 0.1.0-beta.X
-        version = to_vyper_version(pragma_string)
-        return NpmSpec(str(version))
+        # special case for Vyper 0.1.0-beta.X  0.1.0BetaX  0.1.0bX
+        version = Version.coerce(pragma_string)
+        return NpmSpec(version)
     except Exception:
         # temporary for debugging, change back to `pass` before merging
         raise
