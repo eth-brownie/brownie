@@ -270,20 +270,32 @@ _network_lock = threading.Lock()
 
 
 @pytest.fixture
-def network():
+def network():  # sourcery skip: use-contextlib-suppress
     with _network_lock:
         if brownie.network.is_connected():
-            brownie.network.disconnect(False)
+            try:
+                brownie.network.disconnect(False)
+            except ConnectionError:
+                # This can sometimes occur during setup but we don't really care why or how.
+                pass
 
         yield brownie.network
 
         if brownie.network.is_connected():
-            brownie.network.disconnect(False)
+            try:
+                brownie.network.disconnect(False)
+            except ConnectionError:
+                # This can sometimes occur during teardown but we don't really care why or how
+                pass
 
 
 @pytest.fixture
 def connect_to_mainnet(network):
-    network.connect("mainnet")
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        network.disconnect()
+        network.connect("mainnet")
     yield network
 
 
