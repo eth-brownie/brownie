@@ -51,6 +51,7 @@ def test_gas_limit_manual(devnetwork, accounts):
     assert tx.gas_limit == 100000
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_gas_limit_auto(devnetwork, accounts):
     devnetwork.gas_limit("auto")
     tx = accounts[0].transfer(accounts[1], 0)
