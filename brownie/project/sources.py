@@ -235,6 +235,11 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     pragma_string = pragma_match.groups()[0]
     pragma_string = " ".join(pragma_string.split())
     try:
+        return NpmSpec(pragma_string)
+    except ValueError:
+        pass
+    try:
+        # special case for Vyper 0.1.0-beta.X  0.1.0BetaX  0.1.0bX
         version = Version.coerce(pragma_string)
         return NpmSpec(version)
     except Exception:
