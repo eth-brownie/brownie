@@ -291,7 +291,11 @@ def network():  # sourcery skip: use-contextlib-suppress
 
 @pytest.fixture
 def connect_to_mainnet(network):
-    network.connect("mainnet")
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        network.disconnect()
+        network.connect("mainnet")
     yield network
 
 
