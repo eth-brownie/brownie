@@ -1,3 +1,4 @@
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -20,7 +21,12 @@ class Flattener:
     """Brownie's Robust Solidity Flattener."""
 
     def __init__(
-        self, primary_source_fp: str, contract_name: str, remappings: dict, compiler_settings: dict
+        self,
+        primary_source_fp: str,
+        contract_name: str,
+        remappings: dict,
+        compiler_settings: dict,
+        project_root_path: str,
     ) -> None:
         self.sources: Dict[str, str] = {}
         self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
@@ -28,7 +34,7 @@ class Flattener:
         self.contract_name = contract_name
         self.contract_file = self.path_to_name(primary_source_fp)
         self.remappings = remappings
-
+        self.project_root_path = project_root_path
         self.traverse(primary_source_fp)
 
         license_search = LICENSE_PATTERN.search(self.path_to_name(primary_source_fp))
@@ -129,7 +135,8 @@ class Flattener:
         """
         for k, v in self.remappings.items():
             if import_path.startswith(k):
-                return import_path.replace(k, v, 1)
+                # Make path absolute with project root as base dir
+                return f"{self.project_root_path}{os.path.sep}{import_path.replace(k, v, 1)}"
         return import_path
 
     @staticmethod
