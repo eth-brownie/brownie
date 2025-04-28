@@ -114,6 +114,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removes `eth-abi` depreciation warnings ([#1639](https://github.com/eth-brownie/brownie/pull/1639))
 - Bump web3.py dep to support async provider in threaded applications ([#1664](https://github.com/eth-brownie/brownie/pull/1664))
 
+### Fixed
+- Add missing functions to code coverage report ([#1657](https://github.com/eth-brownie/brownie/pull/1657))
+
 ## [1.19.2](https://github.com/eth-brownie/brownie/tree/v1.19.2) - 2022-10-16
 ### Added
 - Support for remappings in `from_explorer` ([#1596](https://github.com/eth-brownie/brownie/pull/1596))
