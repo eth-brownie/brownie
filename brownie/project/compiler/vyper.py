@@ -84,7 +84,7 @@ def get_abi(contract_source: str, name: str) -> Dict:
     return {name: compiled["contracts"][name][name]["abi"]}
 
 
-def _get_vyper_version_list() -> Tuple[List, List]:
+def _get_vyper_version_list() -> Tuple[List[Version], List[Version]]:
     global AVAILABLE_VYPER_VERSIONS
     installed_versions = _convert_to_semver(vvm.get_installed_vyper_versions())
     lib_version = Version(vyper.__version__)
@@ -136,6 +136,11 @@ def find_vyper_versions(
         pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
         version = pragma_specs[path].select(installed_versions)
 
+        version_str = str(version).lower()
+        if "-b" in version_str and "-beta" not in version_str:
+            begin, end = version_str.split("-")
+            version = Version(f"{begin}-{'.'.join(end)}")
+
         if not version and not install_needed and not install_latest:
             raise IncompatibleVyperVersion(
                 f"No installed vyper version matching '{pragma_specs[path]}' in '{path}'"
@@ -146,7 +151,8 @@ def find_vyper_versions(
 
         if not version and not latest:
             raise IncompatibleVyperVersion(
-                f"No installable vyper version matching '{pragma_specs[path]}' in '{path}'"
+                f"No installable vyper version matching '{pragma_specs[path]}' in '{path}'",
+                available_versions,
             )
 
         if not version or (install_latest and latest > version):
