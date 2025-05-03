@@ -1937,9 +1937,16 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
 
     if language == "Solidity":
         # do not include metadata in comparison
-        idx = -(int(actual_bytecode[-4:], 16) + 2) * 2
+        if actual_no_metadata := actual_bytecode[-4:]:
+            idx = -(int(actual_no_metadata, 16) + 2) * 2
+        else:
+            idx = -4
         actual_bytecode = actual_bytecode[:idx]
-        idx = -(int(expected_bytecode[-4:], 16) + 2) * 2
+
+        if expected_no_metadata := expected_bytecode[-4:]:
+            idx = -(int(expected_no_metadata, 16) + 2) * 2
+        else:
+            idx = -4
         expected_bytecode = expected_bytecode[:idx]
 
     if language == "Vyper":

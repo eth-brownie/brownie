@@ -19,7 +19,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.3.1
+bitarray==3.3.2
     # via eth-account
 black==25.1.0
     # via -r requirements.in
@@ -27,9 +27,9 @@ cbor2==5.6.5
     # via vyper
 cchecksum==0.2.6
     # via -r requirements.in
-certifi==2025.1.31
+certifi==2025.4.26
     # via requests
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
     # via requests
 ckzg==1.0.2
     # via
@@ -114,7 +114,7 @@ idna==3.10
     # via
     #   requests
     #   yarl
-importlib-metadata==8.6.1
+importlib-metadata==8.7.0
     # via vyper
 iniconfig==2.1.0
     # via pytest
