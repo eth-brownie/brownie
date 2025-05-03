@@ -65,7 +65,7 @@ pragma solidity {version};
     with lock:
         # check state
         assert not _loaded_projects
-        
+
         # setup directory
         dir: Path = tmp_path_factory.mktemp("verify-project")
         # initialize brownie project
@@ -108,7 +108,7 @@ pragma solidity {version};
                 build_info["evm"]["deployedBytecode"]["object"][:-96]
                 == contract._build["deployedBytecode"][:-96]
             )
-        
+
         project.close()
         # was it properly removed from _loaded_projects?
         assert not _loaded_projects
