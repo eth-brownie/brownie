@@ -6,6 +6,7 @@ import solcx
 
 from brownie.project import load, new
 from brownie.project.compiler.solidity import find_best_solc_version
+from brownie.project.main import _loaded_projects
 
 sources = [
     (
@@ -62,6 +63,9 @@ pragma solidity {version};
     """
 
     with lock:
+        # check state
+        assert not _loaded_projects
+        
         # setup directory
         dir: Path = tmp_path_factory.mktemp("verify-project")
         # initialize brownie project
@@ -76,6 +80,10 @@ pragma solidity {version};
         find_best_solc_version(modded_sources, install_needed=True)
 
         project = load(dir, "TestImportProject")
+
+        # was it properly added to _loaded_projects?
+        assert len(_loaded_projects) == 1
+        assert _loaded_projects[0] is project
 
         for contract_name in ("Foo", "Bar", "Baz"):
             contract = getattr(project, contract_name)
@@ -100,4 +108,7 @@ pragma solidity {version};
                 build_info["evm"]["deployedBytecode"]["object"][:-96]
                 == contract._build["deployedBytecode"][:-96]
             )
+        
         project.close()
+        # was it properly removed from _loaded_projects?
+        assert not _loaded_projects
