@@ -51,6 +51,7 @@ _dropped_tx_pattern = re.compile(
     r"Tx dropped without known replacement: (0x[0-9a-f]{64})"
 )
 _lost_tx_pattern = re.compile(r"Transaction with hash: '(0x[0-9a-f]{64})' not found")
+_already_known_pattern = re.compile(r"already known")
 
 
 class Accounts(metaclass=_Singleton):
@@ -764,6 +765,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 if receipt:
                     print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
                     return receipt
+                
+            if _already_known_pattern.search(ex_string):
+                time.sleep(3.0)
 
             if test_function():
                 print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
