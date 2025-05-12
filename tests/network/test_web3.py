@@ -115,12 +115,14 @@ def test_supports_traces_not_connected(web3, network):
     assert not web3.supports_traces
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_supports_traces_infura(web3, network):
     # goerli should return false (infura, geth)
     network.connect("goerli")
     assert not web3.supports_traces
 
 
+@pytest.mark.skip("kovan is dead, maybe fix this with another network")
 def test_supports_traces_kovan(web3, network):
     # kovan should return false (infura, parity)
     network.connect("kovan")
