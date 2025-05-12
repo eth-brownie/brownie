@@ -55,7 +55,7 @@ eth-account==0.11.3
     #   -r requirements.in
     #   eip712
     #   web3
-eth-event==1.2.6
+eth-event @ git+https://github.com/BobTheBuidler/eth-event@patch-1
     # via -r requirements.in
 eth-hash[pycryptodome]==0.7.1
     # via
