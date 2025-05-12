@@ -19,7 +19,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.3.1
+bitarray==3.4.0
     # via eth-account
 black==25.1.0
     # via -r requirements.in
@@ -27,15 +27,15 @@ cbor2==5.6.5
     # via vyper
 cchecksum==0.2.6
     # via -r requirements.in
-certifi==2025.1.31
+certifi==2025.4.26
     # via requests
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
     # via requests
 ckzg==1.0.2
     # via
     #   eth-account
     #   web3
-click==8.1.8
+click==8.2.0
     # via black
 cytoolz==1.0.1
     # via eth-utils
@@ -55,7 +55,7 @@ eth-account==0.11.3
     #   -r requirements.in
     #   eip712
     #   web3
-eth-event @ git+https://github.com/BobTheBuidler/eth-event@patch-1
+eth-event==1.2.6
     # via -r requirements.in
 eth-hash[pycryptodome]==0.7.1
     # via
@@ -114,7 +114,7 @@ idna==3.10
     # via
     #   requests
     #   yarl
-importlib-metadata==8.6.1
+importlib-metadata==8.7.0
     # via vyper
 iniconfig==2.1.0
     # via pytest
@@ -144,7 +144,7 @@ parsimonious==0.10.0
     # via eth-abi
 pathspec==0.12.1
     # via black
-platformdirs==4.3.7
+platformdirs==4.3.8
     # via black
 pluggy==1.5.0
     # via pytest
