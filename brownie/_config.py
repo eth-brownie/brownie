@@ -166,7 +166,7 @@ class ConfigDict(Dict[str, Any]):
         return config_copy
 
 
-def _get_project_config_path(project_path: Path) -> Path:
+def _get_project_config_path(project_path: Path) -> Optional[Path]:
     if project_path.is_dir():
         path = project_path.joinpath("brownie-config")
     else:
