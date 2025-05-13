@@ -128,3 +128,4 @@ def test_supports_traces_kovan(web3, network):
     network.connect("kovan")
 
     assert not web3.supports_traces
+
