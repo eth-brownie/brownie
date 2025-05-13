@@ -275,11 +275,12 @@ def _get_highlights(build, coverage_eval):
 
 def _statement_highlights(coverage_eval, coverage_map):
     results = {i: [] for i in coverage_map}
-    for path, fn in ((k, x) for k, v in coverage_map.items() for x in v):
-        results[path].extend(
-            [*offset, _statement_color(i, coverage_eval, path), ""]
-            for i, offset in coverage_map[path][fn].items()
-        )
+    for path, fns in coverage_map.items():
+        for fn in fns:
+            results[path].extend(
+                [*offset, _statement_color(i, coverage_eval, path), ""]
+                for i, offset in coverage_map[path][fn].items()
+            )
     return results
 
 
