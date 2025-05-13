@@ -58,7 +58,7 @@ docutils==0.21.2
     #   readme-renderer
     #   sphinx
     #   sphinx-rtd-theme
-eth-retry==0.2.2
+eth-retry==0.3.0
     # via -r requirements-dev.in
 filelock==3.18.0
     # via
