@@ -7,8 +7,9 @@ import shutil
 import sys
 import warnings
 from collections import defaultdict
+from itertools import groupby
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, NewType, Optional
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -35,8 +36,12 @@ python_version = (
 REQUEST_HEADERS = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
 
+NetworkType = Literal["live", "development", None]
+NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
+
+
 class ConfigContainer:
-    def __init__(self):
+    def __init__(self) -> None:
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
         if Path.home().joinpath("brownie-config.yaml").exists():
             home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
@@ -68,12 +73,12 @@ class ConfigContainer:
         self.settings._lock()
         _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
 
-    def set_active_network(self, id_: str = None) -> Dict:
+    def set_active_network(self, id_: str = None) -> NetworkConfig:
         """Modifies the 'active_network' configuration settings"""
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = copy.deepcopy(self.networks[id_])
+        network = NetworkConfig(copy.deepcopy(self.networks[id_]))
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
@@ -97,33 +102,30 @@ class ConfigContainer:
         self._active_network = network
         return network
 
-    def clear_active(self):
+    def clear_active(self) -> None:
         self._active_network = None
 
     @property
-    def active_network(self):
+    def active_network(self) -> NetworkConfig:
         if self._active_network is None:
             raise ConnectionError("No active network")
         return self._active_network
 
     @property
-    def network_type(self):
+    def network_type(self) -> NetworkType:
         if self._active_network is None:
             return None
-        if "cmd" in self._active_network:
-            return "development"
-        else:
-            return "live"
+        return "development" if "cmd" in self._active_network else "live"
 
     @property
     def mode(self):
         return self.argv["cli"]
 
 
-class ConfigDict(dict):
+class ConfigDict(Dict[str, Any]):
     """Dict subclass that prevents adding new keys when locked"""
 
-    def __init__(self, values: Dict = {}) -> None:
+    def __init__(self, values: Dict[str, Any] = {}) -> None:
         self._locked = False
         super().__init__()
         self.update(values)
@@ -135,23 +137,27 @@ class ConfigDict(dict):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg):  # type: ignore
+    def update(self, arg: Dict[str, Any]) -> None:
         for k, v in arg.items():
             self.__setitem__(k, v)
 
     def _lock(self) -> None:
         """Locks the dict so that new keys cannot be added"""
-        for v in [i for i in self.values() if type(i) is ConfigDict]:
-            v._lock()
+        for obj_type, objs in groupby(self.values(), type):
+            if obj_type is ConfigDict:
+                for v in objs:
+                    v._lock()
         self._locked = True
 
     def _unlock(self) -> None:
         """Unlocks the dict so that new keys can be added"""
-        for v in [i for i in self.values() if type(i) is ConfigDict]:
-            v._unlock()
+        for obj_type, objs in groupby(self.values(), type):
+            if obj_type is ConfigDict:
+                for v in objs:
+                    v._unlock()
         self._locked = False
 
-    def _copy(self) -> Dict:
+    def _copy(self) -> Dict[str, Any]:
         config_copy = {}
         for key, value in self.items():
             if isinstance(value, ConfigDict):
@@ -160,15 +166,13 @@ class ConfigDict(dict):
         return config_copy
 
 
-def _get_project_config_path(project_path: Path):
+def _get_project_config_path(project_path: Path) -> Path:
     if project_path.is_dir():
         path = project_path.joinpath("brownie-config")
     else:
         path = project_path
     suffix = next((i for i in (".yml", ".yaml", ".json") if path.with_suffix(i).exists()), None)
-    if suffix is not None:
-        return path.with_suffix(suffix)
-    return None
+    return None if suffix is None else path.with_suffix(suffix)
 
 
 def _load_config(project_path: Path) -> Dict:
@@ -314,7 +318,7 @@ def _recursive_update(original: Dict, new: Dict) -> None:
 
 
 def _update_argv_from_docopt(args: Dict) -> None:
-    CONFIG.argv.update(dict((k.lstrip("-"), v) for k, v in args.items()))
+    CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
 
 
 def _get_data_folder() -> Path:

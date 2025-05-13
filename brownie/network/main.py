@@ -65,18 +65,15 @@ def disconnect(kill_rpc: bool = True) -> None:
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     CONFIG.clear_active()
-    if kill_rpc and rpc.is_active():
-        if rpc.is_child():
-            rpc.kill()
+    if kill_rpc and rpc.is_active() and rpc.is_child():
+        rpc.kill()
     web3.disconnect()
     _notify_registry(0)
 
 
 def show_active() -> Optional[str]:
     """Returns the name of the currently active network"""
-    if not web3.provider:
-        return None
-    return CONFIG.active_network["id"]
+    return CONFIG.active_network["id"] if web3.provider else None
 
 
 def is_connected() -> bool:
