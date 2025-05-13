@@ -1307,10 +1307,8 @@ class ContractEvents(_ContractEvents):
             return self._retrieve_contract_events(event_type, from_block, to_block)
 
         return AttributeDict(
-            {
-                event.event_name: self._retrieve_contract_events(event, from_block, to_block)
-                for event in ContractEvents.__iter__(self)
-            }
+            (event.event_name, self._retrieve_contract_events(event, from_block, to_block))
+            for event in ContractEvents.__iter__(self)
         )
 
     def listen(self, event_name: str, timeout: float = 0) -> Coroutine:
