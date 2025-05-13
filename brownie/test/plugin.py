@@ -102,13 +102,10 @@ def pytest_configure(config):
     if not config.getoption("showinternal"):
         # do not include brownie internals in tracebacks
         base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
-        for module in [
-            v
-            for v in sys.modules.values()
-            if getattr(v, "__file__", None) and v.__file__.startswith(base_path)
-        ]:
-            module.__tracebackhide__ = True
-            module.__hypothesistracebackhide__ = True
+        for module in sys.modules.values():
+            if getattr(module, "__file__", None) and module.__file__.startswith(base_path):
+                module.__tracebackhide__ = True
+                module.__hypothesistracebackhide__ = True
 
     # enable verbose output if stdout capture is disabled
     if config.getoption("capture") == "no":
