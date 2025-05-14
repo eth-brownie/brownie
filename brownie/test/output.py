@@ -119,9 +119,9 @@ def _build_coverage_output(coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
 
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
-    all_totals = [
+    all_totals = (
         (i, _get_totals(i._build, coverage_eval, exclude_contracts)) for i in get_loaded_projects()
-    ]
+    )
     all_totals = [i for i in all_totals if i[1]]
     lines = []
 
@@ -144,9 +144,10 @@ def _build_coverage_output(coverage_eval):
             )
 
             cov = totals[contract_name]
+            branches = cov["branches"]
             results = []
             for fn_name, statement_cov in cov["statements"].items():
-                branch_cov = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
+                branch_cov = branches.get(fn_name, (0, 0, 0))
                 pct = _pct(statement_cov, branch_cov)
                 results.append((fn_name, pct))
 
@@ -231,30 +232,36 @@ def _split(coverage_eval, coverage_map, key):
 def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     count, total = 0, 0
-    for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
-        if fn.split(".")[0] in exclude_contracts or fn not in coverage_eval[path]:
-            continue
-        count += len(coverage_eval[path][fn][0])
-        total += len(coverage_map[path][fn])
-        result[fn] = (len(coverage_eval[path][fn][0]), len(coverage_map[path][fn]))
+    for path, fns in coverage_eval.items():
+        coverage_eval_for_path = coverage_eval[path]
+        coverage_map_for_path = coverage_map[path]
+        for fn in fns:
+            if fn.split(".")[0] in exclude_contracts or fn not in coverage_eval_for_path:
+                continue
+            fn_count = len(coverage_eval_for_path[fn][0])
+            fn_total = len(coverage_map_for_path[fn])
+            count += func_count
+            total += fn_total
+            result[fn] = fn_count, fn_total
     return result, (count, total)
 
 
 def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     final = [0, 0, 0]
-    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
-        if fn.split(".")[0] in exclude_contracts:
-            continue
-        if path not in coverage_eval or fn not in coverage_eval[path]:
-            true, false = 0, 0
-        else:
-            true = len(coverage_eval[path][fn][2])
-            false = len(coverage_eval[path][fn][1])
-        total = len(coverage_map[path][fn])
-        result[fn] = (true, false, total)
-        for i in range(3):
-            final[i] += result[fn][i]
+    for path, fns in coverage_map.items():
+        for fn in fns:
+            if fn.split(".")[0] in exclude_contracts:
+                continue
+            if path not in coverage_eval or fn not in coverage_eval[path]:
+                true, false = 0, 0
+            else:
+                true = len(coverage_eval[path][fn][2])
+                false = len(coverage_eval[path][fn][1])
+            total = len(coverage_map[path][fn])
+            result[fn] = (true, false, total)
+            for i in range(3):
+                final[i] += result[fn][i]
     return result, final
 
 
@@ -292,21 +299,23 @@ def _statement_color(i, coverage_eval, path):
 
 def _branch_highlights(coverage_eval, coverage_map):
     results = {i: [] for i in coverage_map}
-    for path, fn in ((k, x) for k, v in coverage_map.items() for x in v):
-        results[path].extend(
-            [*offset[:2], _branch_color(int(i), coverage_eval, path, offset[2]), ""]
-            for i, offset in coverage_map[path][fn].items()
-        )
+    for path, fns in coverage_map.items():
+        for fn in fns:
+            results[path].extend(
+                [*offset[:2], _branch_color(int(i), coverage_eval, path, offset[2]), ""]
+                for i, offset in coverage_map[path][fn].items()
+            )
     return results
 
 
 def _branch_color(i, coverage_eval, path, jump):
     if path not in coverage_eval:
         return "red"
-    if i in coverage_eval[path][2]:
-        if i in coverage_eval[path][1]:
+    coverage_eval_for_path = coverage_eval[path]
+    if i in coverage_eval_for_path[2]:
+        if i in coverage_eval_for_path[1]:
             return "green"
         return "yellow" if jump else "orange"
-    if i in coverage_eval[path][1]:
+    if i in coverage_eval_for_path[1]:
         return "orange" if jump else "yellow"
     return "red"
