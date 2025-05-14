@@ -256,8 +256,9 @@ def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
             if path not in coverage_eval or fn not in coverage_eval[path]:
                 true, false = 0, 0
             else:
-                true = len(coverage_eval[path][fn][2])
-                false = len(coverage_eval[path][fn][1])
+                coverage_eval_for_fn = coverage_eval[path][fn]
+                true = len(coverage_eval_for_fn[2])
+                false = len(coverage_eval_for_fn[1])
             total = len(coverage_map[path][fn])
             result[fn] = (true, false, total)
             for i in range(3):
