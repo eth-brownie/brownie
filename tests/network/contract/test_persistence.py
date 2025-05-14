@@ -47,7 +47,8 @@ def _disconnect(network) -> None:
         network.disconnect(False)
     except ConnectionError:
         # `ConnectionError: Not connected to any network`
-        # this happens in the test runners sometimes, we're not too concerned with why or how to fix
+        # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+        # It's probably just a silly race condition due to parallel testing.
         pass
 
 
