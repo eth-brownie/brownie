@@ -38,12 +38,10 @@ def _load_report_exclude_data(settings):
         if not isinstance(exclude, list):
             exclude = [exclude]
         for glob_str in exclude:
-            if Path(glob_str).is_absolute():
-                base_path = Path(glob_str).root
-            else:
-                base_path = Path(".")
+            glob_path = Path(glob_str)
+            base_path = glob_path.root if glob_path.is_absolute() else Path(".")
             try:
-                exclude_paths.extend([i.as_posix() for i in base_path.glob(glob_str)])
+                exclude_paths.extend(map(Path.as_posix, base_path.glob(glob_str)))
             except Exception:
                 warnings.warn(
                     "Invalid glob pattern in config exclude settings: '{glob_str}'",
@@ -94,7 +92,7 @@ def _build_gas_profile_output():
             padding[k] = max(padding.get(k, 0), len(str(v)))
 
         # group functions with payload by contract name
-        if contract in grouped_by_contract.keys():
+        if contract in grouped_by_contract:
             grouped_by_contract[contract][function] = values
         else:
             grouped_by_contract[contract] = {function: values}
@@ -121,9 +119,9 @@ def _build_coverage_output(coverage_eval):
     # Formats a coverage evaluation report that may be printed to the console
 
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
-    all_totals = [
+    all_totals = (
         (i, _get_totals(i._build, coverage_eval, exclude_contracts)) for i in get_loaded_projects()
-    ]
+    )
     all_totals = [i for i in all_totals if i[1]]
     lines = []
 
@@ -146,15 +144,17 @@ def _build_coverage_output(coverage_eval):
             )
 
             cov = totals[contract_name]
+            branches = cov["branches"]
             results = []
             for fn_name, statement_cov in cov["statements"].items():
-                branch_cov = cov["branches"][fn_name] if fn_name in cov["branches"] else (0, 0, 0)
+                branch_cov = branches.get(fn_name, (0, 0, 0))
                 pct = _pct(statement_cov, branch_cov)
                 results.append((fn_name, pct))
 
-            for fn_name, pct in sorted(results, key=lambda k: (-k[1], k[0])):
-                lines.append(f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}")
-
+            lines.extend(
+                f"    {fn_name} - {_cov_color(pct)}{pct:.1%}{color}"
+                for fn_name, pct in sorted(results, key=lambda k: (-k[1], k[0]))
+            )
     return lines
 
 
@@ -175,17 +175,14 @@ def _get_totals(build, coverage_eval, exclude_contracts=None):
     if exclude_contracts is None:
         exclude_contracts = []
     coverage_eval = _split_by_fn(build, coverage_eval)
-    results = dict(
-        (
-            i,
-            {
-                "statements": {},
-                "totals": {"statements": 0, "branches": [0, 0]},
-                "branches": {"true": {}, "false": {}},
-            },
-        )
+    results = {
+        i: {
+            "statements": {},
+            "totals": {"statements": 0, "branches": [0, 0]},
+            "branches": {"true": {}, "false": {}},
+        }
         for i in coverage_eval
-    )
+    }
     for contract_name in coverage_eval:
         if contract_name in exclude_contracts:
             del results[contract_name]
@@ -209,58 +206,63 @@ def _get_totals(build, coverage_eval, exclude_contracts=None):
 
 def _split_by_fn(build, coverage_eval):
     # Splits a coverage eval dict so that coverage indexes are stored by function.
-    results = dict(
-        (i, {"statements": {}, "branches": {"true": {}, "false": {}}}) for i in coverage_eval
-    )
+    results = {i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval}
     for name in coverage_eval:
         try:
             map_ = build.get(name)["coverageMap"]
-            results[name] = dict((k, _split(v, map_, k)) for k, v in coverage_eval[name].items())
+            results[name] = {k: _split(v, map_, k) for k, v in coverage_eval[name].items()}
         except KeyError:
             del results[name]
     return results
 
 
 def _split(coverage_eval, coverage_map, key):
-    results = {}
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
-    for fn in branches.keys() & statements.keys():
-        results[fn] = [
+    return {
+        fn: [
             [i for i in statements[fn] if int(i) in coverage_eval[0]],
             [i for i in branches[fn] if int(i) in coverage_eval[1]],
             [i for i in branches[fn] if int(i) in coverage_eval[2]],
         ]
-    return results
+        for fn in branches.keys() & statements.keys()
+    }
 
 
 def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     count, total = 0, 0
-    for path, fn in [(k, x) for k, v in coverage_eval.items() for x in v]:
-        if fn.split(".")[0] in exclude_contracts or fn not in coverage_eval[path]:
-            continue
-        count += len(coverage_eval[path][fn][0])
-        total += len(coverage_map[path][fn])
-        result[fn] = (len(coverage_eval[path][fn][0]), len(coverage_map[path][fn]))
+    for path, fns in coverage_eval.items():
+        coverage_eval_for_path = coverage_eval[path]
+        coverage_map_for_path = coverage_map[path]
+        for fn in fns:
+            if fn.split(".")[0] in exclude_contracts or fn not in coverage_eval_for_path:
+                continue
+            fn_count = len(coverage_eval_for_path[fn][0])
+            fn_total = len(coverage_map_for_path[fn])
+            count += fn_count
+            total += fn_total
+            result[fn] = fn_count, fn_total
     return result, (count, total)
 
 
 def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
     result = {}
     final = [0, 0, 0]
-    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
-        if fn.split(".")[0] in exclude_contracts:
-            continue
-        if path not in coverage_eval or fn not in coverage_eval[path]:
-            true, false = 0, 0
-        else:
-            true = len(coverage_eval[path][fn][2])
-            false = len(coverage_eval[path][fn][1])
-        total = len(coverage_map[path][fn])
-        result[fn] = (true, false, total)
-        for i in range(3):
-            final[i] += result[fn][i]
+    for path, fns in coverage_map.items():
+        for fn in fns:
+            if fn.split(".")[0] in exclude_contracts:
+                continue
+            if path not in coverage_eval or fn not in coverage_eval[path]:
+                true, false = 0, 0
+            else:
+                coverage_eval_for_fn = coverage_eval[path][fn]
+                true = len(coverage_eval_for_fn[2])
+                false = len(coverage_eval_for_fn[1])
+            total = len(coverage_map[path][fn])
+            result[fn] = (true, false, total)
+            for i in range(3):
+                final[i] += result[fn][i]
     return result, final
 
 
@@ -280,14 +282,13 @@ def _get_highlights(build, coverage_eval):
 
 
 def _statement_highlights(coverage_eval, coverage_map):
-    results = dict((i, []) for i in coverage_map)
-    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
-        results[path].extend(
-            [
-                list(offset) + [_statement_color(i, coverage_eval, path), ""]
+    results = {i: [] for i in coverage_map}
+    for path, fns in coverage_map.items():
+        for fn in fns:
+            results[path].extend(
+                [*offset, _statement_color(i, coverage_eval, path), ""]
                 for i, offset in coverage_map[path][fn].items()
-            ]
-        )
+            )
     return results
 
 
@@ -298,24 +299,24 @@ def _statement_color(i, coverage_eval, path):
 
 
 def _branch_highlights(coverage_eval, coverage_map):
-    results = dict((i, []) for i in coverage_map)
-    for path, fn in [(k, x) for k, v in coverage_map.items() for x in v]:
-        results[path].extend(
-            [
-                list(offset[:2]) + [_branch_color(int(i), coverage_eval, path, offset[2]), ""]
+    results = {i: [] for i in coverage_map}
+    for path, fns in coverage_map.items():
+        for fn in fns:
+            results[path].extend(
+                [*offset[:2], _branch_color(int(i), coverage_eval, path, offset[2]), ""]
                 for i, offset in coverage_map[path][fn].items()
-            ]
-        )
+            )
     return results
 
 
 def _branch_color(i, coverage_eval, path, jump):
     if path not in coverage_eval:
         return "red"
-    if i in coverage_eval[path][2]:
-        if i in coverage_eval[path][1]:
+    coverage_eval_for_path = coverage_eval[path]
+    if i in coverage_eval_for_path[2]:
+        if i in coverage_eval_for_path[1]:
             return "green"
         return "yellow" if jump else "orange"
-    if i in coverage_eval[path][1]:
+    if i in coverage_eval_for_path[1]:
         return "orange" if jump else "yellow"
     return "red"
