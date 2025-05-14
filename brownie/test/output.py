@@ -240,7 +240,7 @@ def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
                 continue
             fn_count = len(coverage_eval_for_path[fn][0])
             fn_total = len(coverage_map_for_path[fn])
-            count += func_count
+            count += fn_count
             total += fn_total
             result[fn] = fn_count, fn_total
     return result, (count, total)
