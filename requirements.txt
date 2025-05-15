@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.4.0
+bitarray==3.4.1
     # via eth-account
 black==25.1.0
     # via -r requirements.in
@@ -75,6 +75,7 @@ eth-rlp==2.2.0
     # via eth-account
 eth-typing==5.2.1
     # via
+    #   -r requirements.in
     #   cchecksum
     #   eip712
     #   eth-abi
