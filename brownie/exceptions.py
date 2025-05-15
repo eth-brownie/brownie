@@ -217,7 +217,11 @@ class PragmaError(Exception):
 
 
 class PragmaNotFound(PragmaError):
-    pass
+    def __init__(self, path: str) -> None:
+        if path:
+            super().__init__(f"No version pragma in '{path}'")
+        else:
+            super().__init__("String does not contain a version pragma")
 
 
 class InvalidManifest(Exception):
