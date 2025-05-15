@@ -1905,15 +1905,13 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
     if language == "Solidity":
         # do not include metadata in comparison
         if actual_no_metadata := actual_bytecode[-4:]:
-            converted = int(actual_no_metadata, 16)
-            idx = -(converted + 2) * 2
+            idx = -(int(actual_no_metadata, 16) + 2) * 2
         else:
             idx = -4
         actual_bytecode = actual_bytecode[:idx]
         
         if expected_no_metadata := expected_bytecode[-4:]:
-            converted = int(expected_no_metadata, 16)
-            idx = -(converted + 2) * 2
+            idx = -(int(expected_no_metadata, 16) + 2) * 2
         else:
             idx = -4
         expected_bytecode = expected_bytecode[:idx]
