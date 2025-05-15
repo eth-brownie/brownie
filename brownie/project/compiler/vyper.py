@@ -136,7 +136,6 @@ def find_vyper_versions(
         pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
         version = pragma_specs[path].select(installed_versions)
 
-    
         version_str = str(version).lower()
         if "-b" in version_str and "-beta" not in version_str:
             begin, end = version_str.split("-")
@@ -149,7 +148,6 @@ def find_vyper_versions(
 
         # if no installed version of vyper matches the pragma, find the latest available version
         latest = pragma_specs[path].select(available_versions)
-            
 
         if not version and not latest:
             raise IncompatibleVyperVersion(
