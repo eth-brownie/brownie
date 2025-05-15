@@ -75,22 +75,6 @@ from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 _unverified_addresses: Set = set()
 
-_explorer_tokens = {
-    "optimistic": "OPTIMISMSCAN_TOKEN",
-    "etherscan": "ETHERSCAN_TOKEN",
-    "bscscan": "BSCSCAN_TOKEN",
-    "zkevm": "ZKEVMSCAN_TOKEN",
-    "polygonscan": "POLYGONSCAN_TOKEN",
-    "ftmscan": "FTMSCAN_TOKEN",
-    "arbiscan": "ARBISCAN_TOKEN",
-    "snowtrace": "SNOWTRACE_TOKEN",
-    "aurorascan": "AURORASCAN_TOKEN",
-    "moonscan": "MOONSCAN_TOKEN",
-    "gnosisscan": "GNOSISSCAN_TOKEN",
-    "base": "BASESCAN_TOKEN",
-    "blast": "BLASTSCAN_TOKEN",
-}
-
 
 class _ContractBase:
     _dir_color = "bright magenta"
@@ -336,25 +320,11 @@ class ContractContainer(_ContractBase):
     def publish_source(self, contract: Any, silent: bool = False) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
-        # Check required conditions for verifying
-        url = CONFIG.active_network.get("explorer")
-        if url is None:
-            raise ValueError("Explorer API not set for this network")
-        env_token = next((v for k, v in _explorer_tokens.items() if k in url), None)
-        if env_token is None:
+        api_key = os.getenv("ETHERSCAN_TOKEN")
+        if api_key is None:
             raise ValueError(
-                f"Publishing source is only supported on {', '.join(_explorer_tokens)},"
-                "change the Explorer API"
-            )
-
-        if os.getenv(env_token):
-            api_key = os.getenv(env_token)
-        else:
-            host = urlparse(url).netloc
-            host = host[host.index(".") + 1 :]
-            raise ValueError(
-                f"An API token is required to verify contract source code. Visit https://{host}/ "
-                f"to obtain a token, and then store it as the environment variable ${env_token}"
+                f"An API token is required to verify contract source code. Visit https://etherscan.io/register "
+                f"to obtain a token, and then store it as the environment variable $ETHERSCAN_TOKEN"
             )
 
         address = _resolve_address(contract.address)
@@ -393,7 +363,9 @@ class ContractContainer(_ContractBase):
             license_code = 12
 
         # get constructor arguments
+        url = "https://api.etherscan.io/v2/api"
         params_tx: Dict = {
+            "chainid": web3.chain_id,
             "apikey": api_key,
             "module": "account",
             "action": "txlist",
@@ -444,7 +416,9 @@ class ContractContainer(_ContractBase):
             "constructorArguements": constructor_arguments,
             "licenseType": license_code,
         }
-        response = requests.post(url, data=payload_verification, headers=REQUEST_HEADERS)
+        response = requests.post(
+            f"{url}?chainid={web3.chain_id}", data=payload_verification, headers=REQUEST_HEADERS
+        )
         if response.status_code != 200:
             raise ConnectionError(
                 f"Status {response.status_code} when querying {url}: {response.text}"
@@ -459,6 +433,7 @@ class ContractContainer(_ContractBase):
             print("Verification submitted successfully. Waiting for result...")
         time.sleep(10)
         params_status: Dict = {
+            "chainid": web3.chain_id,
             "apikey": api_key,
             "module": "contract",
             "action": "checkverifystatus",
@@ -1964,10 +1939,6 @@ def _print_natspec(natspec: Dict) -> None:
 
 
 def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
-    url = CONFIG.active_network.get("explorer")
-    if url is None:
-        raise ValueError("Explorer API not set for this network")
-
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
@@ -1989,29 +1960,32 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     ):
         address = _resolve_address(code[120:160])
 
-    params: Dict = {"module": "contract", "action": action, "address": address}
-    explorer, env_key = next(
-        ((k, v) for k, v in _explorer_tokens.items() if k in url), (None, None)
-    )
+    params: Dict = {
+        "module": "contract",
+        "action": action,
+        "address": address,
+        "chainid": web3.chain_id,
+    }
+    env_key = os.getenv("ETHERSCAN_TOKEN")
     if env_key is not None:
-        if os.getenv(env_key):
-            params["apiKey"] = os.getenv(env_key)
-        elif not silent:
-            warnings.warn(
-                f"No {explorer} API token set. You may experience issues with rate limiting. "
-                f"Visit https://{explorer}.io/register to obtain a token, and then store it "
-                f"as the environment variable ${env_key}",
-                BrownieEnvironmentWarning,
-            )
-    if not silent:
-        print(
-            f"Fetching source of {color('bright blue')}{address}{color} "
-            f"from {color('bright blue')}{urlparse(url).netloc}{color}..."
+        params["apiKey"] = env_key
+    elif not silent:
+        warnings.warn(
+            f"No ETHERSCAN_API token set. You may experience issues with rate limiting. "
+            f"Visit https://etherscan.io/register to obtain a token, and then store it "
+            f"as the environment variable $ETHERSCAN_TOKEN",
+            BrownieEnvironmentWarning,
         )
+    if not silent:
+        print(f"Fetching source of {color('bright blue')}{address}{color} from Etherscan...")
 
-    response = requests.get(url, params=params, headers=REQUEST_HEADERS)
+    response = requests.get(
+        "https://api.etherscan.io/v2/api", params=params, headers=REQUEST_HEADERS
+    )
     if response.status_code != 200:
-        raise ConnectionError(f"Status {response.status_code} when querying {url}: {response.text}")
+        raise ConnectionError(
+            f"Status {response.status_code} when querying Etherscan: {response.text}"
+        )
     data = response.json()
     if int(data["status"]) != 1:
         raise ValueError(f"Failed to retrieve data from API: {data}")

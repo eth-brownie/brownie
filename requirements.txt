@@ -147,7 +147,7 @@ pathspec==0.12.1
     # via black
 platformdirs==4.3.8
     # via black
-pluggy==1.5.0
+pluggy==1.6.0
     # via pytest
 prompt-toolkit==3.0.51
     # via -r requirements.in
@@ -155,7 +155,7 @@ propcache==0.3.1
     # via
     #   aiohttp
     #   yarl
-protobuf==6.30.2
+protobuf==6.31.0
     # via web3
 psutil==5.9.8
     # via -r requirements.in
@@ -213,7 +213,7 @@ rlp==4.1.0
     #   -r requirements.in
     #   eth-account
     #   eth-rlp
-rpds-py==0.24.0
+rpds-py==0.25.0
     # via
     #   jsonschema
     #   referencing
