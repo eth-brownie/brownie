@@ -7,7 +7,7 @@ import solcx
 from semantic_version import Version
 
 from brownie._config import EVM_EQUIVALENTS
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaNotFound
 from brownie.project import build, compiler
 
 
@@ -160,7 +160,7 @@ def test_find_solc_versions(find_version, msolc):
     assert "0.5.7" in find_version(">=0.4.2 <0.5.8")
     assert "0.5.7" in find_version(">0.4.8 <0.5.8 || 0.5.11")
     assert "0.4.22" in find_version("0.5.9 || 0.4.22")
-    with pytest.raises(PragmaError):
+    with pytest.raises(PragmaNotFound):
         compiler.find_solc_versions({"Foo.sol": "contract Foo {}"})
     with pytest.raises(IncompatibleSolcVersion):
         find_version("^1.0.0", install_needed=False)
