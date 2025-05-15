@@ -1914,7 +1914,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
             converted = int(expected_no_metadata, 16)
         else:
             converted = 0
-        idx = -(int(converted, 16) + 2) * 2
+        idx = -(converted + 2) * 2
         expected_bytecode = expected_bytecode[:idx]
 
     if language == "Vyper":
