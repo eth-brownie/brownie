@@ -365,7 +365,7 @@ class ContractContainer(_ContractBase):
         # get constructor arguments
         url = "https://api.etherscan.io/v2/api"
         params_tx: Dict = {
-            "chaindid": web3.chain_id,
+            "chainid": web3.chain_id,
             "apikey": api_key,
             "module": "account",
             "action": "txlist",
@@ -403,7 +403,6 @@ class ContractContainer(_ContractBase):
 
         # Submit verification
         payload_verification: Dict = {
-            "chaindid": web3.chain_id,
             "apikey": api_key,
             "module": "contract",
             "action": "verifysourcecode",
@@ -417,7 +416,9 @@ class ContractContainer(_ContractBase):
             "constructorArguements": constructor_arguments,
             "licenseType": license_code,
         }
-        response = requests.post(url, data=payload_verification, headers=REQUEST_HEADERS)
+        response = requests.post(
+            f"{url}?chainid={web3.chain_id}", data=payload_verification, headers=REQUEST_HEADERS
+        )
         if response.status_code != 200:
             raise ConnectionError(
                 f"Status {response.status_code} when querying {url}: {response.text}"
@@ -432,7 +433,7 @@ class ContractContainer(_ContractBase):
             print("Verification submitted successfully. Waiting for result...")
         time.sleep(10)
         params_status: Dict = {
-            "chaindid": web3.chain_id,
+            "chainid": web3.chain_id,
             "apikey": api_key,
             "module": "contract",
             "action": "checkverifystatus",
