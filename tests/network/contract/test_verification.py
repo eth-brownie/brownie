@@ -61,7 +61,7 @@ pragma solidity {version};
 
     """
 
-    with_lock:
+    with lock:
         # setup directory
         dir: Path = tmp_path_factory.mktemp("verify-project")
         # initialize brownie project
