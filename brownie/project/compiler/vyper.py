@@ -146,7 +146,8 @@ def find_vyper_versions(
 
         if not version and not latest:
             raise IncompatibleVyperVersion(
-                f"No installable vyper version matching '{pragma_specs[path]}' in '{path}'", available_versions
+                f"No installable vyper version matching '{pragma_specs[path]}' in '{path}'",
+                available_versions,
             )
 
         if not version or (install_latest and latest > version):
