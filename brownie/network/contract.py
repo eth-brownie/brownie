@@ -1904,15 +1904,17 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
 
     if language == "Solidity":
         # do not include metadata in comparison
-        actual_no_metadata = actual_bytecode[-4:]
-        if not actual_no_metadata:
-            raise ValueError("Insufficient bytecode length: {actual_bytecode}") from None
-        idx = -(int(actual_no_metadata, 16) + 2) * 2
+        if actual_no_metadata := actual_bytecode[-4:]:
+            converted = int(actual_no_metadata, 16)
+        else:
+            converted = 0
+        idx = -(converted + 2) * 2
         actual_bytecode = actual_bytecode[:idx]
-        expected_no_metadata = expected_bytecode[-4:]
-        if not expected_no_metadata:
-            raise ValueError("Insufficient bytecode length: {expected_bytecode}") from None
-        idx = -(int(expected_no_metadata, 16) + 2) * 2
+        if expected_no_metadata := expected_bytecode[-4:]:
+            converted = int(expected_no_metadata, 16)
+        else:
+            converted = 0
+        idx = -(int(converted, 16) + 2) * 2
         expected_bytecode = expected_bytecode[:idx]
 
     if language == "Vyper":
