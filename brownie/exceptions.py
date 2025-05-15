@@ -217,7 +217,7 @@ class PragmaError(Exception):
 
 
 class PragmaNotFound(PragmaError):
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: Optional[str]) -> None:
         if path:
             super().__init__(f"No version pragma in '{path}'")
         else:
