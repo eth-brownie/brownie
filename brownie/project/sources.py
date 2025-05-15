@@ -241,7 +241,7 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     try:
         # special case for Vyper 0.1.0-beta.X  0.1.0BetaX  0.1.0bX
         version = Version.coerce(pragma_string)
-        return NpmSpec(version)
+        return NpmSpec(str(version))
     except Exception:
         # temporary for debugging, change back to `pass` before merging
         raise
