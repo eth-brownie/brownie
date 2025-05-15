@@ -238,13 +238,15 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     try:
         return NpmSpec(pragma_string)
     except ValueError:
-        pass
+        # temporary for debugging, change back to `pass` before merging
+        raise
     try:
         # special case for Vyper 0.1.0-beta.X
         version = to_vyper_version(pragma_string)
         return NpmSpec(str(version))
     except Exception:
-        pass
+        # temporary for debugging, change back to `pass` before merging
+        raise
 
     path = "" if path is None else f"{path}: "
     raise PragmaError(f"{path}Cannot parse Vyper version from pragma: {pragma_string}")
