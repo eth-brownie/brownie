@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 from semantic_version import NpmSpec
 from vvm.utils.convert import to_vyper_version
 
-from brownie.exceptions import NamespaceCollision, PragmaError
+from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.utils import color
 
 
@@ -211,13 +211,10 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     """
 
     pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
-    if pragma_match is not None:
-        pragma_string = pragma_match.groups()[0]
-        pragma_string = " ".join(pragma_string.split())
-        return NpmSpec(pragma_string)
-    if path:
-        raise PragmaError(f"No version pragma in '{path}'")
-    raise PragmaError("String does not contain a version pragma")
+    if pragma_match is None:
+        raise PragmaNotFound(path)
+    pragma_string = pragma_match.groups()[0]
+    return NpmSpec(" ".join(pragma_string.split()))
 
 
 def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
@@ -234,9 +231,7 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
         re.finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
     )
     if pragma_match is None:
-        if path:
-            raise PragmaError(f"No version pragma in '{path}'")
-        raise PragmaError("String does not contain a version pragma")
+        raise PragmaNotFound(path)
 
     pragma_string = pragma_match.groups()[0]
     pragma_string = " ".join(pragma_string.split())
