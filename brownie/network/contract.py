@@ -2045,3 +2045,4 @@ def _comment_slicer(match: Match) -> str:
     else:
         # multi line comment without line break
         return " "
+
