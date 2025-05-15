@@ -1912,7 +1912,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
         expected_no_metadata = expected_bytecode[-4:]
         if not expected_no_metadata:
             raise ValueError("Insufficient bytecode length: {expected_bytecode}") from None
-        idx = -(expected_no_metadata, 16) + 2) * 2
+        idx = -(int(expected_no_metadata, 16) + 2) * 2
         expected_bytecode = expected_bytecode[:idx]
 
     if language == "Vyper":
