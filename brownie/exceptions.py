@@ -216,6 +216,10 @@ class PragmaError(Exception):
     pass
 
 
+class PragmaNotFound(PragmaError):
+    pass
+
+
 class InvalidManifest(Exception):
     pass
 
