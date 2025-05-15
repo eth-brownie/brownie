@@ -2,7 +2,7 @@ from typing import Callable, Dict, List, Optional
 
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware
 
 from brownie.network.middlewares import BrownieMiddlewareABC
 
@@ -23,5 +23,5 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
             return -1
 
     def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
-        middleware_fn = geth_poa_middleware(make_request, self.w3)
+        middleware_fn = ExtraDataToPOAMiddleware(make_request, self.w3)
         return middleware_fn(method, params)
