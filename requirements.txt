@@ -73,7 +73,7 @@ eth-keys==0.7.0
     #   eth-keyfile
 eth-rlp==2.2.0
     # via eth-account
-eth-typing==5.2.1
+eth-typing==4.4.0
     # via
     #   -r requirements.in
     #   cchecksum
@@ -82,7 +82,7 @@ eth-typing==5.2.1
     #   eth-keys
     #   eth-utils
     #   web3
-eth-utils==5.3.0
+eth-utils==4.1.1
     # via
     #   -r requirements.in
     #   cchecksum
@@ -173,9 +173,7 @@ pycryptodome==3.22.0
     #   eth-keyfile
     #   vyper
 pydantic==2.11.4
-    # via
-    #   eth-account
-    #   eth-utils
+    # via eth-account
 pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.1
