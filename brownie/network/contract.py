@@ -1909,7 +1909,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
         else:
             idx = -4
         actual_bytecode = actual_bytecode[:idx]
-        
+
         if expected_no_metadata := expected_bytecode[-4:]:
             idx = -(int(expected_no_metadata, 16) + 2) * 2
         else:
