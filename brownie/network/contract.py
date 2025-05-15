@@ -23,7 +23,6 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
 
 import eth_abi
 import requests
@@ -323,8 +322,9 @@ class ContractContainer(_ContractBase):
         api_key = os.getenv("ETHERSCAN_TOKEN")
         if api_key is None:
             raise ValueError(
-                f"An API token is required to verify contract source code. Visit https://etherscan.io/register "
-                f"to obtain a token, and then store it as the environment variable $ETHERSCAN_TOKEN"
+                "An API token is required to verify contract source code. "
+                "Visit https://etherscan.io/register to obtain a token, and "
+                "then store it as the environment variable $ETHERSCAN_TOKEN"
             )
 
         address = _resolve_address(contract.address)
@@ -1971,9 +1971,9 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
         params["apiKey"] = env_key
     elif not silent:
         warnings.warn(
-            f"No ETHERSCAN_API token set. You may experience issues with rate limiting. "
-            f"Visit https://etherscan.io/register to obtain a token, and then store it "
-            f"as the environment variable $ETHERSCAN_TOKEN",
+            "No ETHERSCAN_API token set. You may experience issues with rate limiting. "
+            "Visit https://etherscan.io/register to obtain a token, and then store it "
+            "as the environment variable $ETHERSCAN_TOKEN",
             BrownieEnvironmentWarning,
         )
     if not silent:
