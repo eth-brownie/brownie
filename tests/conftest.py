@@ -433,6 +433,6 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
         try:
             return project.load(path, name, **kwargs)
         except PermissionError:
-            # This happens sometimes in the runner, I think its just a race condition 
+            # This happens sometimes in the runner, I think its just a race condition
             # due to multithreaded testing and doesn't need to be debugged.
             pass
