@@ -53,6 +53,8 @@ def to_bool(value: Any) -> bool:
     if not isinstance(value, (int, float, bool, bytes, str)):
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to bool")
     if isinstance(value, bytes):
+        if not value:
+            return False
         value = int(value.hex(), 16)
     if isinstance(value, str) and value.startswith("0x"):
         value = int(value, 16)
