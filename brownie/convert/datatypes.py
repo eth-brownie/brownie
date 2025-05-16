@@ -15,7 +15,6 @@ from hexbytes import HexBytes
 
 from brownie.utils import hexstring
 
-
 UNITS = {
     "wei": 0,
     "kwei": 3,
