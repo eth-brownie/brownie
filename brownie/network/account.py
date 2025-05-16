@@ -83,6 +83,9 @@ class Accounts(metaclass=_Singleton):
             for address in unlocked_accounts:
                 if isinstance(address, int):
                     address = HexBytes(address.to_bytes(20, "big")).hex()
+                    if not address[:2] == "0x":
+                        # if using hexbytes>=1.0 we need to add the 0x
+                        address = f"0x{address}"
                 account = Account(address)
                 if account not in self._accounts:
                     self._accounts.append(account)
@@ -765,6 +768,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     exc, revert_data = None, None
                     if txid is None:
                         txid = HexBytes(response).hex()
+                        if not txid[:2] == "0x":
+                            # if using hexbytes>=1.0 we need to add the 0x
+                            address = f"0x{txid}"
                         if not silent:
                             print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                 except ValueError as e:
@@ -891,6 +897,9 @@ class LocalAccount(_PrivateKeyAccount):
         self._acct = account
         if not isinstance(priv_key, str):
             priv_key = HexBytes(priv_key).hex()
+            if not priv_key[:2] == "0x":
+                # if using hexbytes>=1.0 we need to add the 0x
+                priv_key = f"0x{address}"
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
