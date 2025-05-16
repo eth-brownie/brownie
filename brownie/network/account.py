@@ -7,6 +7,7 @@ import time
 from collections import deque
 from collections.abc import Iterator
 from getpass import getpass
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
