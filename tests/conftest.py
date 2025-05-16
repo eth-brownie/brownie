@@ -128,7 +128,7 @@ def _project_factory(tmp_path_factory):
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
 
-    p = brownie.project.load(path, "TestProject")
+    p = _load_project(brownie.project, path, "TestProject")
     p.close()
     return path
 
@@ -161,7 +161,7 @@ def project(tmp_path):
 @pytest.fixture
 def newproject(project, tmp_path):
     path = project.new(tmp_path)
-    p = project.load(path, "NewProject")
+    p = _load_project(project, path, "NewProject")
     p.close()
     yield p
 
@@ -177,7 +177,7 @@ def testproject(_project_factory, project, tmp_path):
     path = tmp_path.joinpath("testproject")
     _copy_all(_project_factory, path)
     os.chdir(path)
-    return project.load(path, "TestProject")
+    return _load_project(project, path, "TestProject")
 
 
 # same as function above but doesn't compile
@@ -186,7 +186,7 @@ def testproject_nocompile(_project_factory, project, tmp_path):
     path = tmp_path.joinpath("testproject")
     _copy_all(_project_factory, path)
     os.chdir(path)
-    return project.load(path, "TestProject", compile=False)
+    return _load_project(project, path, "TestProject", compile=False)
 
 
 @pytest.fixture
@@ -197,7 +197,7 @@ def tp_path(testproject):
 @pytest.fixture
 def otherproject(_project_factory, project, tmp_path):  # testproject):
     _copy_all(_project_factory, tmp_path.joinpath("otherproject"))
-    return project.load(tmp_path.joinpath("otherproject"), "OtherProject")
+    return _load_project(project, tmp_path.joinpath("otherproject"), "OtherProject")
 
 
 # yields a deployed EVMTester contract
@@ -216,7 +216,7 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
     }
     with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)
-    p = project.load(tmp_path, "EVMProject")
+    p = _load_project(project, tmp_path, "EVMProject")
     return p.EVMTester.deploy({"from": accounts[0]})
 
 
@@ -426,3 +426,13 @@ def console():
     sys.argv = ["brownie", "console"]
     yield Console
     sys.argv = argv
+
+
+def _load_project(project, path: Path, name: str, **kwargs: Any):
+    for _ in range(5):
+        try:
+            return project.load(path, name, **kwargs)
+        except PermissionError:
+            # This happens sometimes in the runner, I think its just a race condition 
+            # due to multithreaded testing and doesn't need to be debugged.
+            pass
