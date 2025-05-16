@@ -1,5 +1,5 @@
-from typing import Final
 from importlib.metadata import version
+from typing import Final
 
 from eth_typing import HexStr
 from hexbytes import HexBytes
