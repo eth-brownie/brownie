@@ -135,7 +135,7 @@ class _ContractBase:
             fn_selector = calldata[:4].hex()  # type: ignore
         else:
             fn_selector = f"0x{calldata[:4].hex()}"  # type: ignore
-        
+
         abi = next(
             (
                 i
@@ -654,7 +654,7 @@ class InterfaceConstructor:
             fn_selector = calldata[:4].hex()  # type: ignore
         else:
             fn_selector = f"0x{calldata[:4].hex()}"  # type: ignore
-        
+
         abi = next(
             (
                 i
@@ -694,7 +694,8 @@ class _DeployedContractBase(_ContractBase):
         address = _resolve_address(address)
         self.bytecode = (
             # removeprefix is used for compatability with both hexbytes<1 and >=1
-            self._build.get("deployedBytecode", None) or web3.eth.get_code(address).hex().removeprefix("0x")
+            self._build.get("deployedBytecode", None)
+            or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
@@ -1504,7 +1505,7 @@ class OverloadedMethod:
             selector = HexBytes(hexstr)[:4].hex()
         else:
             selector = f"0x{HexBytes(hexstr)[:4].hex()}"
-        
+
         fn = next((i for i in self.methods.values() if i == selector), None)
         if fn is None:
             raise ValueError(

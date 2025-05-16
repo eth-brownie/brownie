@@ -17,6 +17,7 @@ This exists to address a breaking change in hexbytes v1 and allow brownie to be 
 """
 
 if HEXBYTES_LT_1_0_0:
+
     def hexstring(value: bytes) -> HexStr:
         """Convert a bytes value to a hexstring on hexbytes<1."""
         return HexBytes(value).hex()
