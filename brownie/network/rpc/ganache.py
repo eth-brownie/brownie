@@ -17,7 +17,6 @@ from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 from brownie.utils import hexstring
 
-
 CLI_FLAGS = {
     "7": {
         "port": "--server.port",
