@@ -940,7 +940,7 @@ class LocalAccount(_PrivateKeyAccount):
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
         (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
         return SignedMessage(
-            messageHash=msg_hash_bytes,
+            message_hash=msg_hash_bytes,
             r=r,
             s=s,
             v=v,
@@ -964,7 +964,7 @@ class LocalAccount(_PrivateKeyAccount):
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
         (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
         return SignedMessage(
-            messageHash=msg_hash_bytes,
+            message_hash=msg_hash_bytes,
             r=r,
             s=s,
             v=v,
