@@ -50,9 +50,9 @@ def test_mainnet(config, network, web3):
         # It's probably just a silly race condition due to parallel testing.
         network.disconnect()
         network.connect("mainnet")
-        
+
     assert web3._mainnet == web3
-    
+
     try:
         network.disconnect()
     except ConnectionError as e:
@@ -60,7 +60,7 @@ def test_mainnet(config, network, web3):
         # It's probably just a silly race condition due to parallel testing.
         if str(e) != "Not connected to any network":
             raise
-            
+
     del config.networks["mainnet"]
     with pytest.raises(MainnetUndefined):
         web3._mainnet
