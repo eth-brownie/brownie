@@ -46,6 +46,8 @@ def test_mainnet(config, network, web3):
     try:
         network.connect("mainnet")
     except ConnectionError as e:
+        # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+        # It's probably just a silly race condition due to parallel testing.
         network.disconnect()
         network.connect("mainnet")
         
@@ -54,6 +56,8 @@ def test_mainnet(config, network, web3):
     try:
         network.disconnect()
     except ConnectionError as e:
+        # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+        # It's probably just a silly race condition due to parallel testing.
         if str(e) != "Not connected to any network":
             raise
             
