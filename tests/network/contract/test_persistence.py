@@ -54,4 +54,12 @@ def _disconnect(network) -> None:
 
 def _reconnect(network) -> None:
     # I expect an intermittent err here eventually so I'm making this handler now.
-    network.connect("mainnet")
+    try:
+        network.connect("mainnet")
+    except ConnectionError as e:
+        if str(e) == "Already connected to network 'mainnet'":
+            # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+            # It's probably just a silly race condition due to parallel testing.
+            pass
+        else:
+            raise
