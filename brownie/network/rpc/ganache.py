@@ -16,6 +16,8 @@ from brownie._config import EVM_EQUIVALENTS
 from brownie.convert import Wei
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
+from brownie.utils import hexstring
+
 
 CLI_FLAGS = {
     "7": {
@@ -88,7 +90,7 @@ def launch(cmd: str, **kwargs: Dict) -> None:
                 value = [value]  # type: ignore
             for address in value:
                 if isinstance(address, int):
-                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                    address = hexstring(address.to_bytes(20, "big"))
                 cmd_list.extend([cli_flags[key], address])
         else:
             try:

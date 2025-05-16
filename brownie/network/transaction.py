@@ -25,7 +25,8 @@ from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie.utils import color
+from brownie.utils import color, hexstring
+from brownie.utils.hex import HEXBYTES_LT_1_0_0
 from brownie.utils.output import build_tree
 
 from . import state
@@ -155,7 +156,7 @@ class TransactionReceipt:
         self._silent = silent
 
         if isinstance(txid, bytes):
-            txid = HexBytes(txid).hex()
+            txid = hexstring(txid)
 
         # this event is set once the transaction is confirmed or dropped
         # it is used to waiting during blocking transaction actions
@@ -557,7 +558,10 @@ class TransactionReceipt:
         self.max_fee = tx.get("maxFeePerGas")
         self.priority_fee = tx.get("maxPriorityFeePerGas")
         self.gas_limit = tx["gas"]
-        self.input = tx["input"].hex()
+        if HEXBYTES_LT_1_0_0:
+            self.input = tx["input"].hex()
+        else:
+            self.input = f"0x{tx["input"].hex()}"
         self.nonce = tx["nonce"]
         self.type = int(HexBytes(tx.get("type", 0)).hex(), 16)
 
@@ -568,7 +572,11 @@ class TransactionReceipt:
             contract = state._find_contract(tx.get("to"))
             if contract is not None:
                 self.contract_name = contract._name
-                self.fn_name = contract.get_method(tx["input"].hex())
+                if HEXBYTES_LT_1_0_0:
+                    calldata = tx["input"].hex()
+                else:
+                    calldata = f"0x{tx["input"].hex()}"
+                self.fn_name = contract.get_method(calldata)
         except ContractNotFound:
             # required in case the contract has self destructed
             # other aspects of functionality will be broken, but this way we
@@ -677,7 +685,8 @@ class TransactionReceipt:
             for step in trace:
                 if fix_stack:
                     # for stack values, we need 32 bytes (64 chars) without the 0x prefix
-                    step["stack"] = [HexBytes(s).hex()[2:].zfill(64) for s in step["stack"]]
+                    # NOTE removeprefix is used for compatability with both hexbytes<1 and >=1
+                    step["stack"] = [HexBytes(s).hex().removeprefix("0x").zfill(64) for s in step["stack"]]
                 if fix_gas:
                     # handle traces where numeric values are returned as hex (Nethermind)
                     step["gas"] = int(step["gas"], 16)
@@ -724,7 +733,11 @@ class TransactionReceipt:
             if step["op"] == "REVERT" and int(step["stack"][-2], 16):
                 # get returned error string from stack
                 data = _get_memory(step, -1)
-                self._revert_msg = decode_typed_error(data.hex())
+
+                if HEXBYTES_LT_1_0_0:
+                    self._revert_msg = decode_typed_error(data.hex())
+                else:
+                    self._revert_msg = decode_typed_error(f"0x{data.hex()}")
 
             elif self.contract_address:
                 self._revert_msg = "invalid opcode" if step["op"] == "INVALID" else ""
@@ -869,7 +882,7 @@ class TransactionReceipt:
                     offset = int(step["stack"][stack_idx], 16)
                     length = int(step["stack"][stack_idx - 1], 16)
                     calldata = HexBytes("".join(step["memory"]))[offset : offset + length]
-                    sig = calldata[:4].hex()
+                    sig = calldata[:4].hex() if HEXBYTES_LT_1_0_0 else f"0x{calldata[:4].hex()}"
                     address = step["stack"][-2][-40:]
 
                 if is_depth_increase:
@@ -889,9 +902,17 @@ class TransactionReceipt:
                         inputs = {i[0]["name"]: i[1] for i in zip_}  # type: ignore
                         self._subcalls[-1]["inputs"] = inputs
                     except Exception:
-                        self._subcalls[-1]["calldata"] = calldata.hex()
+                        self._subcalls[-1]["calldata"] = (
+                            calldata.hex()
+                            if HEXBYTES_LT_1_0_0
+                            else f"0x{calldata.hex()}"
+                        )
                 elif calldata or is_subcall:
-                    self._subcalls[-1]["calldata"] = calldata.hex()  # type: ignore
+                    self._subcalls[-1]["calldata"] = (  # type: ignore
+                        calldata.hex()
+                        if HEXBYTES_LT_1_0_0
+                        else f"0x{calldata.hex()}"
+                    )
 
                 if precompile_contract.search(str(self._subcalls[-1]["from"])) is not None:
                     caller = self._subcalls.pop(-2)["from"]
@@ -925,7 +946,10 @@ class TransactionReceipt:
                 if opcode == "RETURN":
                     returndata = _get_memory(trace[i], -1)
                     if returndata.hex() not in ("", "0x"):
-                        subcall["returndata"] = returndata.hex()
+                        if HEXBYTES_LT_1_0_0:
+                            subcall["returndata"] = returndata.hex()
+                        else:
+                            subcall["returndata"] = f"0x{returndata.hex()}"
 
             try:
                 pc = last["pc_map"][trace[i]["pc"]]
@@ -948,7 +972,11 @@ class TransactionReceipt:
                                 return_values = (return_values,)
                             subcall["return_value"] = return_values
                         except Exception:
-                            subcall["returndata"] = returndata.hex()
+                            subcall["returndata"] = (
+                                returndata.hex()
+                                if HEXBYTES_LT_1_0_0
+                                else f"0x{returndata.hex()}"
+                            )
                     else:
                         subcall["return_value"] = None
                 elif opcode == "SELFDESTRUCT":
@@ -960,7 +988,11 @@ class TransactionReceipt:
                             try:
                                 subcall["revert_msg"] = decode(["string"], data[4:])[0]
                             except Exception:
-                                subcall["revert_msg"] = data.hex()
+                                subcall["revert_msg"] = (
+                                    data.hex()
+                                    if HEXBYTES_LT_1_0_0
+                                    else f"0x{data.hex()}"
+                                )
                     if "revert_msg" not in subcall and "dev" in pc:
                         subcall["revert_msg"] = pc["dev"]
 
