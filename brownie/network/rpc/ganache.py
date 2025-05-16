@@ -9,7 +9,6 @@ from typing import Dict, List, Optional
 
 import psutil
 from eth_utils.toolz import concat
-from hexbytes import HexBytes
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from brownie._config import EVM_EQUIVALENTS
