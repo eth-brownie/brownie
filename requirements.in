@@ -24,6 +24,5 @@ rlp
 semantic-version<3
 tqdm<5
 vvm==0.1.0  # 0.2.0 switches from semantic-version to packaging.version and things break
-vyper>=0.3.8,<0.4
 web3>=6,<7
 wrapt>=1.12.1,<2
