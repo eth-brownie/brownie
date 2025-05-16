@@ -27,7 +27,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_utils import combomethod, remove_0x_prefix
+from eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
 from vvm import get_installable_vyper_versions
@@ -1905,7 +1905,7 @@ def _inputs(abi: Dict) -> str:
 def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
     # removeprefix is used for compatability with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
-    expected_bytecode = remove_0x_prefix(expected_bytecode)  # type: ignore
+    expected_bytecode = expected_bytecode.removeprefix("0x")
 
     if expected_bytecode.startswith("730000000000000000000000000000000000000000"):
         # special case for Solidity libraries

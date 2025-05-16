@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 import solcast
-from eth_utils import remove_0x_prefix
 from semantic_version import Version
 
 from brownie._config import _get_data_folder
@@ -350,7 +349,7 @@ def generate_build_json(
                 "sourcePath": path_str,
             }
         )
-        size = len(remove_0x_prefix(output_evm["deployedBytecode"]["object"])) / 2  # type: ignore
+        size = len(output_evm["deployedBytecode"]["object"].removeprefix("0x")) / 2  # type: ignore
         if size > 24577:
             notify(
                 "WARNING",
