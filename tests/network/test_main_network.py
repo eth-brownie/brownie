@@ -45,6 +45,7 @@ def test_gas_limit_raises_not_connected(network):
         network.gas_limit(100000)
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_gas_limit_manual(devnetwork, accounts):
     devnetwork.gas_limit(100000)
     tx = accounts[0].transfer(accounts[1], 0)
