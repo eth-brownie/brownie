@@ -40,6 +40,12 @@ from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
+ETH_ACCOUNT_LT_0_13_0 = tuple(map(int, version("eth_account").split("."))) < (
+    0,
+    13,
+    0,
+)
+
 history = TxHistory()
 rpc = Rpc()
 
@@ -939,13 +945,22 @@ class LocalAccount(_PrivateKeyAccount):
         msg_hash_bytes = defunct_hash_message(text=message)
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
         (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
-        return SignedMessage(
-            message_hash=msg_hash_bytes,
-            r=r,
-            s=s,
-            v=v,
-            signature=HexBytes(eth_signature_bytes),
-        )
+        if ETH_ACCOUNT_LT_0_13_0:
+            return SignedMessage(
+                messageHash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
+        else:
+            return SignedMessage(
+                message_hash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
 
     def sign_message(self, message: EIP712Message) -> SignedMessage:
         """Signs an `EIP712Message` using this account's private key.
@@ -963,13 +978,22 @@ class LocalAccount(_PrivateKeyAccount):
         assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
         (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
-        return SignedMessage(
-            message_hash=msg_hash_bytes,
-            r=r,
-            s=s,
-            v=v,
-            signature=HexBytes(eth_signature_bytes),
-        )
+        if ETH_ACCOUNT_LT_0_13_0:
+            return SignedMessage(
+                messageHash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
+        else:
+            return SignedMessage(
+                message_hash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
