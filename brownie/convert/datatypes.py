@@ -98,6 +98,8 @@ def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if isinstance(value, bytes):
         value = HexBytes(value).hex()
+        if value:
+            return int(value, 16)
     if value is None or value == "0x":
         return 0
     if isinstance(value, float) and "e+" in str(value):
