@@ -575,7 +575,7 @@ class TransactionReceipt:
                 if HEXBYTES_LT_1_0_0:
                     calldata = tx["input"].hex()
                 else:
-                    calldata = f"0x{tx["input"].hex()}"
+                    calldata = f"0x{tx['input'].hex()}"
                 self.fn_name = contract.get_method(calldata)
         except ContractNotFound:
             # required in case the contract has self destructed
