@@ -146,15 +146,19 @@ def _copy_all(src_folder, dest_folder):
 # project fixtures
 
 
+_project_lock = threading.Lock()
+
+
 # creates a temporary folder and sets it as the working directory
 @pytest.fixture
 def project(tmp_path):
-    original_path = os.getcwd()
-    os.chdir(tmp_path)
-    yield brownie.project
-    os.chdir(original_path)
-    for p in brownie.project.get_loaded_projects():
-        p.close(False)
+    with _project_lock:
+        original_path = os.getcwd()
+        os.chdir(tmp_path)
+        yield brownie.project
+        os.chdir(original_path)
+        for p in brownie.project.get_loaded_projects():
+            p.close(False)
 
 
 # yields a newly initialized Project that is not loaded
