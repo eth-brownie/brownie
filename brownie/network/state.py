@@ -10,7 +10,6 @@ from sqlite3 import OperationalError
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from eth_utils.toolz import keymap
-from hexbytes import HexBytes
 from web3.types import BlockData
 
 from brownie._config import CONFIG, _get_data_folder
