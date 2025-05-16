@@ -561,7 +561,7 @@ class TransactionReceipt:
         if HEXBYTES_LT_1_0_0:
             self.input = tx["input"].hex()
         else:
-            self.input = f"0x{tx["input"].hex()}"
+            self.input = f"0x{tx['input'].hex()}"
         self.nonce = tx["nonce"]
         self.type = int(HexBytes(tx.get("type", 0)).hex(), 16)
 
