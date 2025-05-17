@@ -80,7 +80,7 @@ def test_disconnect(web3):
 
 
 def test_genesis_hash(web3, devnetwork):
-    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex()[2:]
+    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex().removeprefix("0x")
 
 
 @pytest.mark.skip("goerli is dead, maybe fix this with another network")
