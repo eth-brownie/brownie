@@ -152,7 +152,10 @@ def test_sign_message(accounts):
         message_hash = signed.messageHash.hex()
     else:
         message_hash = signed.message_hash.hex()
-    assert message_hash.removeprefix("0x") == "131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
+    assert (
+        message_hash.removeprefix("0x")
+        == "131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
+    )
 
 
 def test_sign_defunct_message(accounts):
@@ -163,7 +166,10 @@ def test_sign_defunct_message(accounts):
         message_hash = signed.messageHash.hex()
     else:
         message_hash = signed.message_hash.hex()
-    assert message_hash.removeprefix("0x") == "b9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
+    assert (
+        message_hash.removeprefix("0x")
+        == "b9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
+    )
 
 
 def test_force_unlock(accounts):
