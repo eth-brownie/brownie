@@ -4,7 +4,7 @@ from eip712.messages import EIP712Message, EIP712Type
 from eth_account.datastructures import SignedMessage
 
 from brownie.exceptions import UnknownAccount
-from brownie.network.account import LocalAccount
+from brownie.network.account import ETH_ACCOUNT_LT_0_13_0, LocalAccount
 
 priv_key = "0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09"
 addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
@@ -148,8 +148,12 @@ def test_sign_message(accounts):
     msg = TestMessage(value=1, sub=TestSubType(inner=2))
     signed = local.sign_message(msg)
     assert isinstance(signed, SignedMessage)
+    if ETH_ACCOUNT_LT_0_13_0:
+        message_hash = signed.messageHash.hex()
+    else:
+        message_hash = signed.message_hash.hex()
     assert (
-        signed.messageHash.hex()
+        message_hash
         == "0x131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
     )
 
@@ -158,8 +162,12 @@ def test_sign_defunct_message(accounts):
     local = accounts.add(priv_key)
     msg = f"I authorize Foundation to migrate my account to {local.address.lower()}"
     signed = local.sign_defunct_message(msg)
+    if ETH_ACCOUNT_LT_0_13_0:
+        message_hash = signed.messageHash.hex()
+    else:
+        message_hash = signed.message_hash.hex()
     assert (
-        signed.messageHash.hex()
+        message_hash
         == "0xb9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
     )
 
