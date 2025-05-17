@@ -1002,8 +1002,12 @@ class LocalAccount(_PrivateKeyAccount):
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
-        signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
-        return web3.eth.send_raw_transaction(signed_tx)
+        signed = self._acct.sign_transaction(tx)
+        return web3.eth.send_raw_transaction(
+            signed.rawTransaction  # type: ignore
+            if ETH_ACCOUNT_LT_0_13_0
+            else signed.raw_transaction  # type: ignore
+        )
 
 
 class ClefAccount(_PrivateKeyAccount):
