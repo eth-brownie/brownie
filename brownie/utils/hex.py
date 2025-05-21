@@ -17,10 +17,10 @@ This exists to address a breaking change in hexbytes v1 and allow brownie to be 
 """
 
 
-
 def hexbytes_to_hexstring(value: HexBytes) -> HexStr:
     """Convert a HexBytes object to a hex string."""
-    # NOTE: this is just a stub for mypy, the func is conditionally defined below
+    # NOTE: this is just a stub for mypy, the func is conditionally
+    # defined below based on your hexbytes version
 
 
 if HEXBYTES_LT_1_0_0:
@@ -31,11 +31,13 @@ if HEXBYTES_LT_1_0_0:
 
 
     hexbytes_to_hexstring = HexBytes.hex
+    """Convert a HexBytes value to a hexstring on hexbytes<1."""
 
 else:
 
     def bytes_to_hexstring(value: bytes) -> HexStr:
-        """Convert a bytes value to a hexstring on hexbytes<1."""
+        """Convert a bytes value to a hexstring on hexbytes>=1."""
         return f"0x{value.hex()}
 
     hexbytes_to_hexstring = bytes_to_hexstring
+    """Convert a HexBytes value to a hexstring on hexbytes>=1."""
