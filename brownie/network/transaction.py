@@ -25,8 +25,7 @@ from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie.utils import color, bytes_to_hexstring
-from brownie.utils.hex import hexbytes_to_hexstring
+from brownie.utils import color, bytes_to_hexstring, hexbytes_to_hexstring
 from brownie.utils.output import build_tree
 
 from . import state
