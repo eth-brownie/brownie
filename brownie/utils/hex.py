@@ -1,7 +1,8 @@
 """This file contains utility funtions for converting bytes values to hexstrings. 
 
-We opted to microoptimize these by defining functions specific to your hexbytes version
-instead of adding runtime checks within the function bodies.
+Since this code is frequently accessed, instead of adding runtime checks within
+the function bodies, we opted to microoptimize by defining functions specific to
+your hexbytes version .
 """
 from typing import Final
 from importlib.metadata import version
