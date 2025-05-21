@@ -43,7 +43,7 @@ else:
 
     def bytes_to_hexstring(value: bytes) -> HexStr:
         """Convert a bytes value to a hexstring on hexbytes>=1."""
-        return f"0x{value.hex()}
+        return f"0x{value.hex()}"
 
     hexbytes_to_hexstring = bytes_to_hexstring
     """Convert a HexBytes value to a hexstring on hexbytes>=1."""
