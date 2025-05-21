@@ -57,8 +57,7 @@ from brownie.exceptions import (
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
-from brownie.utils import color
-from brownie.utils.hex import hexbytes_to_hexstring
+from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher
