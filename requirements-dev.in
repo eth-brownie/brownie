@@ -10,6 +10,7 @@ pip-tools
 pygments-lexer-solidity
 pytest-cov
 pytest-mock
+setuptools
 sphinx
 sphinx_rtd_theme
 tox
