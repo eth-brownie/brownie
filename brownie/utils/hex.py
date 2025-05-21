@@ -17,19 +17,25 @@ This exists to address a breaking change in hexbytes v1 and allow brownie to be 
 """
 
 
-def bytes_to_hexstring(value: bytes) -> HexStr:
-    """Convert a bytes value to a hexstring on hexbytes<1."""
-    return f"0x{value.hex()}"
-
 
 def hexbytes_to_hexstring(value: HexBytes) -> HexStr:
     """Convert a HexBytes object to a hex string."""
+    # NOTE: this is just a stub for mypy, the func is conditionally defined below
 
 
 if HEXBYTES_LT_1_0_0:
 
+    def bytes_to_hexstring(value: bytes) -> HexStr:
+        """Convert a bytes value to a hexstring on hexbytes<1."""
+        return HexBytes(value).hex()
+
+
     hexbytes_to_hexstring = HexBytes.hex
 
 else:
+
+    def bytes_to_hexstring(value: bytes) -> HexStr:
+        """Convert a bytes value to a hexstring on hexbytes<1."""
+        return f"0x{value.hex()}
 
     hexbytes_to_hexstring = bytes_to_hexstring
