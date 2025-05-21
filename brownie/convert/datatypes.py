@@ -15,7 +15,6 @@ from hexbytes import HexBytes
 
 from brownie.utils import bytes_to_hexstring
 
-
 UNITS = {
     "wei": 0,
     "kwei": 3,
@@ -103,7 +102,7 @@ def _to_wei(value: WeiInputTypes) -> int:
         value = HexBytes(value).hex()
         if value:
             return int(value, 16)
-    if value is None or value == "0x":
+    if not value or value == "0x":
         return 0
     if isinstance(value, float) and "e+" in str(value):
         num_str, dec = str(value).split("e+")

@@ -4,12 +4,11 @@ Since this code is frequently accessed, instead of adding runtime checks within
 the function bodies, we opted to microoptimize by defining functions specific to
 your hexbytes version .
 """
-from typing import Final
 from importlib.metadata import version
+from typing import Final
 
 from eth_typing import HexStr
 from hexbytes import HexBytes
-
 
 HEXBYTES_LT_1_0_0: Final = tuple(int(i) for i in version("hexbytes").split(".")) < (
     1,
@@ -19,7 +18,8 @@ HEXBYTES_LT_1_0_0: Final = tuple(int(i) for i in version("hexbytes").split("."))
 """
 A boolean constant that indicates if the version of your `hexbytes` package is less than 1.0.0.
 
-This exists to address a breaking change in hexbytes v1 and allow brownie to be used with either version.
+This exists to address a breaking change in hexbytes v1 and allow brownie to be used with
+either version.
 """
 
 

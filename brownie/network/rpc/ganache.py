@@ -9,7 +9,6 @@ from typing import Dict, List, Optional
 
 import psutil
 from eth_utils.toolz import concat
-from hexbytes import HexBytes
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from brownie._config import EVM_EQUIVALENTS
@@ -17,7 +16,6 @@ from brownie.convert import Wei
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
 from brownie.utils import bytes_to_hexstring
-
 
 CLI_FLAGS = {
     "7": {
