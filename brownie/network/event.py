@@ -18,7 +18,7 @@ from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
-from brownie.utils.hex import HEXBYTES_LT_1_0_0
+from brownie.utils.hex import hexbytes_to_hexstring
 
 from .web3 import ContractEvent, web3
 
@@ -497,7 +497,7 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
 def _decode_ds_note(log, contract):  # type: ignore
     # ds-note encodes function selector as the first topic
     selector, tail = log.topics[0][:4], log.topics[0][4:]
-    selector_hexstr = selector.hex() if HEXBYTES_LT_1_0_0 else f"0x{selector.hex()}"
+    selector_hexstr = hexbytes_to_hexstring(selector)
     if selector_hexstr not in contract.selectors or sum(tail):
         return
     name = contract.selectors[selector_hexstr]
@@ -508,7 +508,7 @@ def _decode_ds_note(log, contract):  # type: ignore
         func, args = contract.decode_input(data[data.index(selector) :])
     except ValueError:
         return
-    selector_hexstr = selector.hex() if HEXBYTES_LT_1_0_0 else f"0x{selector.hex()}"
+    selector_hexstr = hexbytes_to_hexstring(selector)
     return {
         "name": name,
         "address": log.address,
