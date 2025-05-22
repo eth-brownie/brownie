@@ -146,15 +146,19 @@ def _copy_all(src_folder, dest_folder):
 # project fixtures
 
 
+_project_lock = threading.Lock()
+
+
 # creates a temporary folder and sets it as the working directory
 @pytest.fixture
 def project(tmp_path):
-    original_path = os.getcwd()
-    os.chdir(tmp_path)
-    yield brownie.project
-    os.chdir(original_path)
-    for p in brownie.project.get_loaded_projects():
-        p.close(False)
+    with _project_lock:
+        original_path = os.getcwd()
+        os.chdir(tmp_path)
+        yield brownie.project
+        os.chdir(original_path)
+        for p in brownie.project.get_loaded_projects():
+            p.close(False)
 
 
 # yields a newly initialized Project that is not loaded
@@ -227,7 +231,7 @@ def plugintesterbase(project, testdir, monkeypatch, network_name):
     monkeypatch.setattr("brownie.network.connect", lambda k: None)
     testdir.plugins.extend(["pytest-brownie", "pytest-cov"])
     yield testdir
-    brownie.network.disconnect()
+    _disconnect_network()
 
 
 # setup for pytest-brownie plugin testing
@@ -246,8 +250,16 @@ def plugintester(_project_factory, plugintesterbase, request):
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc, chain, network_name):
-    brownie.network.connect(network_name)
-    yield brownie.network
+    try:
+        network.connect(network_name)
+    except ConnectionError as e:
+        if not e.args[0].startswith("Already connected to network "):
+            raise
+        if network_name not in e.args[0]:
+            _disconnect_network()
+            network.connect(network_name)
+
+    yield network
     if rpc.is_active():
         chain.reset()
 
@@ -257,8 +269,8 @@ def devnetwork(network, rpc, chain, network_name):
 
 @pytest.fixture
 def accounts(devnetwork):
-    yield brownie.network.accounts
-    brownie.network.accounts.default = None
+    yield devnetwork.accounts
+    devnetwork.accounts.default = None
 
 
 @pytest.fixture(scope="session")
@@ -273,20 +285,12 @@ _network_lock = threading.Lock()
 def network():  # sourcery skip: use-contextlib-suppress
     with _network_lock:
         if brownie.network.is_connected():
-            try:
-                brownie.network.disconnect(False)
-            except ConnectionError:
-                # This can sometimes occur during setup but we don't really care why or how.
-                pass
+            _disconnect_network()
 
         yield brownie.network
 
         if brownie.network.is_connected():
-            try:
-                brownie.network.disconnect(False)
-            except ConnectionError:
-                # This can sometimes occur during teardown but we don't really care why or how
-                pass
+            _disconnect_network()
 
 
 @pytest.fixture
@@ -294,7 +298,7 @@ def connect_to_mainnet(network):
     try:
         network.connect("mainnet")
     except ConnectionError:
-        network.disconnect()
+        _disconnect_network()
         network.connect("mainnet")
     yield network
 
@@ -436,3 +440,12 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
             # This happens sometimes in the runner, I think its just a race condition
             # due to multithreaded testing and doesn't need to be debugged.
             pass
+
+
+def _disconnect_network():
+    try:
+        brownie.network.disconnect(False)
+    except ConnectionError:
+        # this happens in the test runners sometimes, most likely
+        # from a race condition we see no reason to debug
+        pass

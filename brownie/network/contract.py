@@ -57,7 +57,7 @@ from brownie.exceptions import (
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
-from brownie.utils import color
+from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher
@@ -130,7 +130,8 @@ class _ContractBase:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
-        fn_selector = calldata[:4].hex()  # type: ignore
+        fn_selector = hexbytes_to_hexstring(calldata[:4])
+
         abi = next(
             (
                 i
@@ -202,7 +203,8 @@ class ContractContainer(_ContractBase):
             i
             for i in self._contracts
             if (i.tx and i.tx.block_number is not None and i.tx.block_number > height)
-            or len(web3.eth.get_code(i.address).hex()) <= 4
+            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            or len(web3.eth.get_code(i.address).hex().removeprefix("0x")) <= 2
         ]
         for contract in reverted:
             self.remove(contract)
@@ -644,7 +646,8 @@ class InterfaceConstructor:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
-        fn_selector = calldata[:4].hex()  # type: ignore
+        fn_selector = hexbytes_to_hexstring(calldata[:4])
+
         abi = next(
             (
                 i
@@ -683,7 +686,9 @@ class _DeployedContractBase(_ContractBase):
     ) -> None:
         address = _resolve_address(address)
         self.bytecode = (
-            self._build.get("deployedBytecode", None) or web3.eth.get_code(address).hex()[2:]
+            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            self._build.get("deployedBytecode", None)
+            or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
@@ -927,7 +932,8 @@ class Contract(_DeployedContractBase):
             "address": address,
             "contractName": name,
             "type": "contract",
-            "deployedBytecode": web3.eth.get_code(address).hex()[2:],
+            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            "deployedBytecode": web3.eth.get_code(address).hex().removeprefix("0x"),
         }
 
         self = cls.__new__(cls)
@@ -1488,7 +1494,8 @@ class OverloadedMethod:
         -------
         Decoded values
         """
-        selector = HexBytes(hexstr)[:4].hex()
+        selector = hexbytes_to_hexstring(HexBytes(hexstr)[:4])
+
         fn = next((i for i in self.methods.values() if i == selector), None)
         if fn is None:
             raise ValueError(
@@ -1886,7 +1893,8 @@ def _inputs(abi: Dict) -> str:
 
 
 def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
-    actual_bytecode = web3.eth.get_code(address).hex()[2:]
+    # removeprefix is used for compatability with both hexbytes<1 and >=1
+    actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
 
     if expected_bytecode.startswith("730000000000000000000000000000000000000000"):
@@ -1942,7 +1950,8 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
-    code = web3.eth.get_code(address).hex()[2:]
+    # removeprefix is used for compatability with both hexbytes<1 and >=1
+    code = web3.eth.get_code(address).hex().removeprefix("0x")
     # EIP-1167: Minimal Proxy Contract
     if code[:20] == "363d3d373d3d3d363d73" and code[60:] == "5af43d82803e903d91602b57fd5bf3":
         address = _resolve_address(code[20:60])

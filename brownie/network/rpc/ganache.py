@@ -9,13 +9,13 @@ from typing import Dict, List, Optional
 
 import psutil
 from eth_utils.toolz import concat
-from hexbytes import HexBytes
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.convert import Wei
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
+from brownie.utils import bytes_to_hexstring
 
 CLI_FLAGS = {
     "7": {
@@ -88,7 +88,7 @@ def launch(cmd: str, **kwargs: Dict) -> None:
                 value = [value]  # type: ignore
             for address in value:
                 if isinstance(address, int):
-                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                    address = bytes_to_hexstring(address.to_bytes(20, "big"))
                 cmd_list.extend([cli_flags[key], address])
         else:
             try:

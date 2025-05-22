@@ -53,7 +53,9 @@ def to_bool(value: Any) -> bool:
     if not isinstance(value, (int, float, bool, bytes, str)):
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to bool")
     if isinstance(value, bytes):
-        value = HexBytes(value).hex()
+        if not value:
+            return False
+        value = int(value.hex(), 16)
     if isinstance(value, str) and value.startswith("0x"):
         value = int(value, 16)
     if value not in (0, 1, True, False):
@@ -63,12 +65,12 @@ def to_bool(value: Any) -> bool:
 
 def to_string(value: Any) -> str:
     """Convert a value to a string"""
-    if isinstance(value, bytes):
-        value = HexBytes(value).hex()
-    value = str(value)
-    if value.startswith("0x") and eth_utils.is_hex(value):
-        try:
+    try:
+        if isinstance(value, bytes):
+            return eth_utils.to_text(hexstr=HexBytes(value).hex())
+        value = str(value)
+        if value.startswith("0x") and eth_utils.is_hex(value):
             return eth_utils.to_text(hexstr=value)
-        except UnicodeDecodeError as e:
-            raise ValueError(e)
-    return value
+        return value
+    except UnicodeDecodeError as e:
+        raise ValueError(e)

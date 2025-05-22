@@ -13,6 +13,8 @@ import cchecksum
 import eth_utils
 from hexbytes import HexBytes
 
+from brownie.utils import bytes_to_hexstring
+
 UNITS = {
     "wei": 0,
     "kwei": 3,
@@ -98,7 +100,9 @@ def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if isinstance(value, bytes):
         value = HexBytes(value).hex()
-    if value is None or value == "0x":
+        if value:
+            return int(value, 16)
+    if not value or value == "0x":
         return 0
     if isinstance(value, float) and "e+" in str(value):
         num_str, dec = str(value).split("e+")
@@ -203,7 +207,7 @@ class EthAddress(str):
     def __new__(cls, value: Union[bytes, str]) -> str:
         converted_value = value
         if isinstance(value, bytes):
-            converted_value = HexBytes(value).hex()
+            converted_value = bytes_to_hexstring(value)
         converted_value = eth_utils.add_0x_prefix(str(converted_value))  # type: ignore
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
@@ -277,7 +281,7 @@ def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
 def _to_hex(value: Any) -> str:
     """Convert a value to a hexstring"""
     if isinstance(value, bytes):
-        return HexBytes(value).hex()
+        return bytes_to_hexstring(value)
     if isinstance(value, int):
         return hex(value)
     if isinstance(value, str):
