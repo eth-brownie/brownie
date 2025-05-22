@@ -57,8 +57,7 @@ from brownie.exceptions import (
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, TransactionReceiptType
-from brownie.utils import color
-from brownie.utils.hex import HEXBYTES_LT_1_0_0
+from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher
@@ -131,10 +130,7 @@ class _ContractBase:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
-        if HEXBYTES_LT_1_0_0:
-            fn_selector = calldata[:4].hex()  # type: ignore
-        else:
-            fn_selector = f"0x{calldata[:4].hex()}"  # type: ignore
+        fn_selector = hexbytes_to_hexstring(calldata[:4])
 
         abi = next(
             (
@@ -650,10 +646,7 @@ class InterfaceConstructor:
         if not isinstance(calldata, HexBytes):
             calldata = HexBytes(calldata)
 
-        if HEXBYTES_LT_1_0_0:
-            fn_selector = calldata[:4].hex()  # type: ignore
-        else:
-            fn_selector = f"0x{calldata[:4].hex()}"  # type: ignore
+        fn_selector = hexbytes_to_hexstring(calldata[:4])
 
         abi = next(
             (
@@ -1501,10 +1494,7 @@ class OverloadedMethod:
         -------
         Decoded values
         """
-        if HEXBYTES_LT_1_0_0:
-            selector = HexBytes(hexstr)[:4].hex()
-        else:
-            selector = f"0x{HexBytes(hexstr)[:4].hex()}"
+        selector = hexbytes_to_hexstring(HexBytes(hexstr)[:4])
 
         fn = next((i for i in self.methods.values() if i == selector), None)
         if fn is None:

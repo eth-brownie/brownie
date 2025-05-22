@@ -18,7 +18,7 @@ from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.network import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
-from brownie.utils import hexstring
+from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
 from .transaction import TransactionReceipt
@@ -350,7 +350,7 @@ class Chain(metaclass=_Singleton):
         Return a TransactionReceipt object for the given transaction hash.
         """
         if not isinstance(txid, str):
-            txid = hexstring(txid)
+            txid = bytes_to_hexstring(txid)
         tx = next((i for i in TxHistory() if i.txid == txid), None)
         return tx or TransactionReceipt(txid, silent=True, required_confs=0)
 

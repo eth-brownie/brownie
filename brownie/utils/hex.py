@@ -1,3 +1,9 @@
+"""This file contains utility funtions for converting bytes values to hexstrings. 
+
+Since this code is frequently accessed, instead of adding runtime checks within
+the function bodies, we opted to microoptimize by defining functions specific to
+your hexbytes version .
+"""
 from importlib.metadata import version
 from typing import Final
 
@@ -16,14 +22,28 @@ This exists to address a breaking change in hexbytes v1 and allow brownie to be 
 either version.
 """
 
+
+def hexbytes_to_hexstring(value: HexBytes) -> HexStr:
+    """Convert a HexBytes object to a hex string."""
+    # NOTE: this is just a stub for mypy, the func is conditionally
+    # defined below based on your hexbytes version
+
+
 if HEXBYTES_LT_1_0_0:
 
-    def hexstring(value: bytes) -> HexStr:
+    def bytes_to_hexstring(value: bytes) -> HexStr:
         """Convert a bytes value to a hexstring on hexbytes<1."""
         return HexBytes(value).hex()
 
+
+    hexbytes_to_hexstring = HexBytes.hex
+    """Convert a HexBytes value to a hexstring on hexbytes<1."""
+
 else:
 
-    def hexstring(value: bytes) -> HexStr:
+    def bytes_to_hexstring(value: bytes) -> HexStr:
         """Convert a bytes value to a hexstring on hexbytes>=1."""
-        return f"0x{HexBytes(value).hex()}"
+        return f"0x{value.hex()}"
+
+    hexbytes_to_hexstring = bytes_to_hexstring
+    """Convert a HexBytes value to a hexstring on hexbytes>=1."""

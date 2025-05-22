@@ -33,7 +33,7 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import color, hexstring
+from brownie.utils import color, bytes_to_hexstring
 
 from .gas.bases import GasABC
 from .rpc import Rpc
@@ -89,7 +89,7 @@ class Accounts(metaclass=_Singleton):
                 unlocked_accounts = [unlocked_accounts]
             for address in unlocked_accounts:
                 if isinstance(address, int):
-                    address = hexstring(address.to_bytes(20, "big"))
+                    address = bytes_to_hexstring(address.to_bytes(20, "big"))
                 account = Account(address)
                 if account not in self._accounts:
                     self._accounts.append(account)
@@ -771,7 +771,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
                     if txid is None:
-                        txid = hexstring(response)
+                        txid = bytes_to_hexstring(response)
                         if not silent:
                             print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
                 except ValueError as e:
@@ -897,7 +897,7 @@ class LocalAccount(_PrivateKeyAccount):
     def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
         self._acct = account
         if not isinstance(priv_key, str):
-            priv_key = hexstring(priv_key)
+            priv_key = bytes_to_hexstring(priv_key)
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
