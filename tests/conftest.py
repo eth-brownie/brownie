@@ -441,7 +441,7 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
             # due to multithreaded testing and doesn't need to be debugged.
             pass
 
-          
+
 def _disconnect_network():
     try:
         brownie.network.disconnect(False)
@@ -449,4 +449,3 @@ def _disconnect_network():
         # this happens in the test runners sometimes, most likely
         # from a race condition we see no reason to debug
         pass
-      
