@@ -6,7 +6,7 @@ import warnings
 from collections import OrderedDict
 from pathlib import Path
 from threading import Lock, Thread
-from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView
+from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView, overload
 
 import eth_event
 from eth_event import EventError
@@ -67,11 +67,11 @@ class EventDict:
     @overload
     def __getitem__(self, key: int) -> "_EventItem":
         """returns the n'th event that was fired"""
-
+        
     @overload
-    def __getitem__(self, key: Union[str, int]) -> "_EventItem":
+    def __getitem__(self, key: str) -> "_EventItem":
         """returns a _EventItem dict of all events where name == key"""
-
+        
     def __getitem__(self, key: Union[str, int]) -> "_EventItem":
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
@@ -101,7 +101,7 @@ class EventDict:
     def count(self, name: str) -> int:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
         try:
-            return len(self._ordered[name])
+            return len(self._dict[name])
         except KeyError:
             return 0
 
