@@ -172,7 +172,7 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.4
+pydantic==2.11.5
     # via eth-account
 pydantic-core==2.33.2
     # via pydantic
