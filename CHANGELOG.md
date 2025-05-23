@@ -6,11 +6,14 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+
+## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
 - GethPOAMiddleware on Polygon networks with anvil fork ([#1791](https://github.com/eth-brownie/brownie/pull/1791))
 
 ### Changed
 - replace `eth_utils.to_checksum_address` with `cchecksum.to_checksum_address` for ~8x faster checksumming ([#1796](https://github.com/eth-brownie/brownie/pull/1796))
+- Use Etherscan v2 API (only uses `ETHERSCAN_TOKEN` env var for all networks) ([#1852](https://github.com/eth-brownie/brownie/pull/1852))
 
 ## [1.20.7](https://github.com/eth-brownie/brownie/tree/v1.20.7) - 2025-01-07
 ### Added

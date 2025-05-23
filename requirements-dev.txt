@@ -45,7 +45,7 @@ click==8.2.1
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.8.1
+coverage[toml]==7.8.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
