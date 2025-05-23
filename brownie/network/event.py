@@ -67,9 +67,11 @@ class EventDict:
     @overload
     def __getitem__(self, key: int) -> "_EventItem":
         """returns the n'th event that was fired"""
+
     @overload
     def __getitem__(self, key: Union[str, int]) -> "_EventItem":
         """returns a _EventItem dict of all events where name == key"""
+
     def __getitem__(self, key: Union[str, int]) -> "_EventItem":
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
