@@ -24,6 +24,7 @@ pyyaml>=6,<7
 requests>=2.25.0,<3
 rlp
 semantic-version<3
+setuptools
 tqdm<5
 vvm==0.2.1
 vyper>=0.4.0,<0.5
