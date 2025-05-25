@@ -115,7 +115,7 @@ class Multicall:
         """Flush the pending queue of calls, retrieving all the results."""
         return self._flush()
 
-    def _call_contract(self, call: ContractCall, *args: Tuple, **kwargs: Dict[str, Any]) -> Proxy:
+    def _call_contract(self, call: ContractCall, *args: Any, **kwargs: Any) -> Proxy:
         """Add a call to the buffer of calls to be made"""
         calldata = (call._address, call.encode_input(*args, **kwargs))  # type: ignore
         readable = f"{call._name}({', '.join(str(i) for i in args)})"
@@ -127,7 +127,7 @@ class Multicall:
         return LazyResult(lambda: self._flush(result))
 
     @staticmethod
-    def _proxy_call(*args: Tuple, **kwargs: Dict[str, Any]) -> Any:
+    def _proxy_call(*args: Any, **kwargs: Any) -> Any:
         """Proxy code which substitutes `ContractCall.__call__"""
         if self := getattr(ContractCall, "__multicall", {}).get(get_ident()):
             return self._call_contract(*args, **kwargs)
