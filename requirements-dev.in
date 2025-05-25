@@ -4,6 +4,7 @@ black
 bumpversion
 coverage
 eth-retry
+eth-typing>=4.2.1,<5
 flake8
 isort
 pip-tools
