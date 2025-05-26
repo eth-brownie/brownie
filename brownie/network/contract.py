@@ -28,7 +28,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_typing import ChecksumAddress
+from eth_typing import ChecksumAddress, HexStr
 from eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
@@ -687,7 +687,7 @@ class _DeployedContractBase(_ContractBase):
         self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode: Final = (
+        self.bytecode: Final = HexStr(
             # removeprefix is used for compatability with both hexbytes<1 and >=1
             self._build.get("deployedBytecode", None)
             or web3.eth.get_code(address).hex().removeprefix("0x")
@@ -700,8 +700,9 @@ class _DeployedContractBase(_ContractBase):
         self.events: Final = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
-        fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
-        for abi in [i for i in self.abi if i["type"] == "function"]:
+        fn_abis = [i for i in self.abi if i["type"] == "function"]
+        fn_names = [i["name"] for i in fn_abis]
+        for abi in fn_abis:
             name = f"{self._name}.{abi['name']}"
             sig = build_function_signature(abi)
             natspec: Dict = {}
