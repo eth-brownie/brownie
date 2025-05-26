@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import decimal
-from typing import Any
+from typing import Any, Final
 
 import eth_utils
 import hexbytes
