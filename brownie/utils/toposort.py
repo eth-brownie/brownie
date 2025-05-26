@@ -92,6 +92,10 @@ def toposort_flatten(data: Dict, sort=True) -> List:
     make the results deterministic)."""
 
     result = []
-    for d in toposort(data):
-        result.extend((sorted if sort else list)(d))
+    if sort:
+        for d in toposort(data):
+            result.extend(sorted(d))
+    else:
+        for d in toposort(data):
+            result.extend(d)
     return result
