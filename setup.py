@@ -32,6 +32,7 @@ else:
             "brownie/convert/main.py",
             "brownie/convert/normalize.py",
             "brownie/convert/utils.py",
+            "brownie/project/compiler",
             # "--strict",
             "--pretty",
         ]
