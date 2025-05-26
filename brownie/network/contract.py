@@ -1371,7 +1371,7 @@ class OverloadedMethod:
         self._name: Final = name
         self._owner: Final = owner
         self.methods: Final[Dict[Any, Any]] = {}
-        self.natspec: Dict[str, Any] = {}
+        self.natspec: Final[Dict[str, Any]] = {}
 
     def _add_fn(self, abi: Dict, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
