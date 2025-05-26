@@ -34,7 +34,7 @@ else:
             "brownie/convert/utils.py",
             "brownie/project/compiler",
             "brownie/utils/output.py",
-            "brownie/utils/sql.py,
+            "brownie/utils/sql.py",
             "brownie/utils/toposort.py",
             # "--strict",
             "--pretty",
