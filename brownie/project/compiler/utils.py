@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from brownie._config import _get_data_folder
 
 
-def expand_source_map(source_map_str: str) -> List[Optional[str]]:
+def expand_source_map(source_map_str: str) -> List[str]:
     # Expands the compressed sourceMap supplied by solc into a list of lists
 
     if isinstance(source_map_str, dict):
