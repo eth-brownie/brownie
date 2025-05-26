@@ -1,4 +1,8 @@
-	# Brownie configuration for Black.
+[build-system]
+requires = ["setuptools", "wheel", "mypy[mypyc]>=1.14.1,<1.15.1"]
+
+
+# Brownie configuration for Black.
 
 # NOTE: you have to use single-quoted strings in TOML for regular expressions.
 # It's the equivalent of r-strings in Python.  Multiline strings are treated as
