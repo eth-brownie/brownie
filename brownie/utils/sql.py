@@ -14,7 +14,9 @@ loads: Final = json.loads
 class Cursor:
     def __init__(self, filename):
         self._lock: Final = threading.Lock()
-        self._db: Final = sqlite3.connect(str(filename), isolation_level=None, check_same_thread=False)
+        self._db: Final = sqlite3.connect(
+            str(filename), isolation_level=None, check_same_thread=False
+        )
         self._cur: Final = self._db.cursor()
         self._execute: Final = self._cur.execute
         self._fetchone: Final = self._cur.fetchone
