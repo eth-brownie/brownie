@@ -1,13 +1,17 @@
 #!/usr/bin/python3
 
-from decimal import Decimal
+import decimal
 from typing import Any
 
 import eth_utils
-from hexbytes import HexBytes
+import hexbytes
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
 from .utils import get_int_bounds
+
+
+Decimal: Final = decimal.Decimal
+HexBytes: Final = hexbytes.HexBytes
 
 
 def to_uint(value: Any, type_str: str = "uint256") -> Wei:
