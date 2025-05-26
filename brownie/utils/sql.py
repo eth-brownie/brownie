@@ -3,7 +3,8 @@
 import json
 import sqlite3
 import threading
-from typing import Any, Final, Tuple, final
+from pathlib import Path
+from typing import Any, Final, Optional, Tuple, final
 
 
 dumps: Final = json.dumps
@@ -23,17 +24,17 @@ class Cursor:
         self._fetchall: Final = self._cur.fetchall
 
     def insert(self, table: str, *values: Any) -> None:
-        values = [dumps(i) if isinstance(i, (dict, list)) else i for i in values]
+        encoded = [dumps(i) if isinstance(i, (dict, list)) else i for i in values]
         with self._lock:
             self._execute(
-                f"INSERT OR REPLACE INTO {table} VALUES ({','.join('?'*len(values))})", values
+                f"INSERT OR REPLACE INTO {table} VALUES ({','.join('?'*len(encoded))})", encoded
             )
 
     def execute(self, cmd: str, *args: Any) -> None:
         with self._lock:
             self._execute(cmd, *args)
 
-    def fetchone(self, cmd: str, *args: Any) -> Tuple:
+    def fetchone(self, cmd: str, *args: Any) -> Optional[Tuple]:
         with self._lock:
             self._execute(cmd, *args)
             if result := self._fetchone():
