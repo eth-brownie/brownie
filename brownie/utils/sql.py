@@ -19,7 +19,7 @@ class Cursor:
         self._execute: Final = self._cur.execute
         self._fetchone: Final = self._cur.fetchone
         self._fetchall: Final = self._cur.fetchall
-        
+
     def connect(self, filename: Path) -> None:
         self._db = sqlite3.connect(str(filename), isolation_level=None, check_same_thread=False)
         self._cur = self._db.cursor()
