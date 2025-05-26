@@ -6,7 +6,7 @@ from typing import Dict, List
 from brownie._config import _get_data_folder
 
 
-def expand_source_map(source_map_str: str) -> List:
+def expand_source_map(source_map_str: str) -> List[Optional[str]]:
     # Expands the compressed sourceMap supplied by solc into a list of lists
 
     if isinstance(source_map_str, dict):
@@ -15,7 +15,7 @@ def expand_source_map(source_map_str: str) -> List:
     if not isinstance(source_map_str, str):
         raise TypeError(source_map_str)
 
-    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
+    source_map = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:
             source_map[i] = source_map[i - 1]
@@ -26,8 +26,8 @@ def expand_source_map(source_map_str: str) -> List:
     return source_map
 
 
-def _expand_row(row: str) -> List:
-    result: List = [None] * 4
+def _expand_row(row: str) -> List[Optional[str]]:
+    result: List[Optional[str]] = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
@@ -51,7 +51,7 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
     dict
         Combined natspec.
     """
-    natspec: Dict = {**{"methods": {}}, **userdoc, **devdoc}
+    natspec = {"methods": {}, **userdoc, **devdoc}
     usermethods = userdoc.get("methods", {})
     devmethods = devdoc.get("methods", {})
 
