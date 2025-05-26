@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from eth_hash.auto import keccak
 
