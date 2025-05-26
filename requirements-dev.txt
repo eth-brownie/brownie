@@ -177,7 +177,7 @@ pytest==6.2.5
     #   pytest-mock
 pytest-cov==6.1.1
     # via -r requirements-dev.in
-pytest-mock==3.14.0
+pytest-mock==3.14.1
     # via -r requirements-dev.in
 readme-renderer==44.0
     # via twine
@@ -244,7 +244,7 @@ wheel==0.45.1
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   -r requirements-dev.in
     #   pip-tools
-zipp==3.21.0
+zipp==3.22.0
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   importlib-metadata
