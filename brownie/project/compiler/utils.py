@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import pathlib
-from typing import Dict, List, Optional, Union
+from typing import Dict, Final, List, Optional, Union
 
 from brownie._config import _get_data_folder
 
