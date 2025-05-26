@@ -15,13 +15,14 @@ loads: Final = json.loads
 class Cursor:
     def __init__(self, filename: Path) -> None:
         self._lock: Final = threading.Lock()
-        self._db: Final = sqlite3.connect(
-            str(filename), isolation_level=None, check_same_thread=False
-        )
-        self._cur: Final = self._db.cursor()
+        self.connect(filename)
         self._execute: Final = self._cur.execute
         self._fetchone: Final = self._cur.fetchone
         self._fetchall: Final = self._cur.fetchall
+        
+    def connect(self, filename: Path) -> None:
+        self._db = sqlite3.connect(str(filename), isolation_level=None, check_same_thread=False)
+        self._cur = self._db.cursor()
 
     def insert(self, table: str, *values: Any) -> None:
         encoded = [dumps(i) if isinstance(i, (dict, list)) else i for i in values]
