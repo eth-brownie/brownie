@@ -1366,14 +1366,14 @@ class ContractEvents(_ContractEvents):
 
 
 class OverloadedMethod:
-    def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
-        self._address = address
-        self._name = name
-        self._owner = owner
-        self.methods: Dict = {}
-        self.natspec: Dict = {}
+    def __init__(self, address: ChecksumAddress, name: str, owner: Optional[AccountsType]):
+        self._address: Final = address
+        self._name: Final = name
+        self._owner: Final = owner
+        self.methods: Final[Dict[Any, Any]] = {}
+        self.natspec: Dict[str, Any] = {}
 
-    def _add_fn(self, abi: Dict, natspec: Dict) -> None:
+    def _add_fn(self, abi: Dict, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1543,19 +1543,19 @@ class _ContractMethod:
 
     def __init__(
         self,
-        address: str,
-        abi: Dict,
+        address: ChecksumAddress,
+        abi: Dict[str, Any],
         name: str,
         owner: Optional[AccountsType],
-        natspec: Optional[Dict] = None,
+        natspec: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._address = address
-        self._name = name
-        self.abi = abi
-        self._owner = owner
-        self.signature = build_function_selector(abi)
-        self._input_sig = build_function_signature(abi)
-        self.natspec = natspec or {}
+        self._address: Final = address
+        self._name: Final = name
+        self.abi: Final = abi
+        self._owner: Final = owner
+        self.signature: Final = build_function_selector(abi)
+        self._input_sig: Final = build_function_signature(abi)
+        self.natspec: Final[Dict[str, Any]] = natspec or {}
 
     def __repr__(self) -> str:
         pay = "payable " if self.payable else ""
@@ -1875,7 +1875,11 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 
 
 def _get_method_object(
-    address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
+    address: str,
+    abi: Dict[str, Any],
+    name: str,
+    owner: Optional[AccountsType],
+    natspec: Dict[str, Any],
 ) -> Union["ContractCall", "ContractTx"]:
     if "constant" in abi:
         constant = abi["constant"]
