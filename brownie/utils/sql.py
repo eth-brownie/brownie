@@ -3,38 +3,44 @@
 import json
 import sqlite3
 import threading
+from typing import Final, final
 
 
+dumps: Final = json.dumps
+loads: Final = json.loads
+
+
+@final
 class Cursor:
     def __init__(self, filename):
-        self._lock = threading.Lock()
-        self.connect(filename)
-
-    def connect(self, filename):
-        self._db = sqlite3.connect(str(filename), isolation_level=None, check_same_thread=False)
-        self._cur = self._db.cursor()
+        self._lock: Final = threading.Lock()
+        self._db: Final = sqlite3.connect(str(filename), isolation_level=None, check_same_thread=False)
+        self._cur: Final = self._db.cursor()
+        self._execute: Final = self._cur.execute
+        self._fetchone: Final = self._cur.fetchone
+        self._fetchall: Final = self._cur.fetchall
 
     def insert(self, table, *values):
-        values = [json.dumps(i) if isinstance(i, (dict, list)) else i for i in values]
+        values = [dumps(i) if isinstance(i, (dict, list)) else i for i in values]
         with self._lock:
-            self._cur.execute(
+            self._execute(
                 f"INSERT OR REPLACE INTO {table} VALUES ({','.join('?'*len(values))})", values
             )
 
     def execute(self, cmd, *args):
         with self._lock:
-            self._cur.execute(cmd, *args)
+            self._execute(cmd, *args)
 
     def fetchone(self, cmd, *args):
         with self._lock:
-            self._cur.execute(cmd, *args)
-            if result := self._cur.fetchone():
-                return tuple(json.loads(i) if str(i).startswith(("[", "{")) else i for i in result)
+            self._execute(cmd, *args)
+            if result := self._fetchone():
+                return tuple(loads(i) if str(i).startswith(("[", "{")) else i for i in result)
 
     def fetchall(self, cmd, *args):
         with self._lock:
-            self._cur.execute(cmd, *args)
-            return self._cur.fetchall()
+            self._execute(cmd, *args)
+            return self._fetchall()
 
     def close(self):
         self._cur.close()
