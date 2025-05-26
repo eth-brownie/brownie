@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Final, List, Optional, Tuple
 
-from eth_hash.auto import keccak
+import eth_hash.auto
+
+
+keccak: Final = eth_hash.auto.keccak
 
 
 def get_int_bounds(type_str: str) -> Tuple[int, int]:
