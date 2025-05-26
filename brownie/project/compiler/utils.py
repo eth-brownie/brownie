@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from brownie._config import _get_data_folder
 
