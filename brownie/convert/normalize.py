@@ -69,14 +69,16 @@ def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> L
     return result
 
 
-def _format_array(abi_type: ABIType, values: Union[List, Tuple]) -> List:
+def _format_array(abi_type: ABIType, values: Union[List, Tuple]) -> List[Any]:
     _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
     elif isinstance(item_type, TupleType):
-        return [_format_tuple(item_type.components, i) for i in values]
-    return [_format_single(item_type.to_type_str(), i) for i in values]
+        item_type_components = item_type.components
+        return [_format_tuple(item_type_components, i) for i in values]
+    item_type_str = item_type.to_type_str()
+    return [_format_single(item_type_str, i) for i in values]
 
 
 def _format_single(type_str: str, value: Any) -> Any:
@@ -105,7 +107,7 @@ def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
         raise ValueError(f"Sequence has incorrect length, expected {length} but got {len(values)}")
 
 
-def _get_abi_types(abi_params: List) -> Sequence[ABIType]:
+def _get_abi_types(abi_params: List[Dict[str, Any]]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
