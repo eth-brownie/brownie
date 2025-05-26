@@ -24,7 +24,7 @@ bump2version==1.0.1
     # via bumpversion
 bumpversion==0.6.0
     # via -r requirements-dev.in
-cachetools==5.5.2
+cachetools==6.0.0
     # via tox
 certifi==2025.4.26
     # via
@@ -49,7 +49,7 @@ coverage[toml]==7.8.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==45.0.2
+cryptography==45.0.3
     # via secretstorage
 distlib==0.3.9
     # via virtualenv
@@ -58,7 +58,7 @@ docutils==0.21.2
     #   readme-renderer
     #   sphinx
     #   sphinx-rtd-theme
-eth-retry==0.3.4
+eth-retry==0.3.5
     # via -r requirements-dev.in
 filelock==3.18.0
     # via
