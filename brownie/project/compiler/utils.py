@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
-from pathlib import Path
-from typing import Dict, List, Optional
+import pathlib
+from typing import Dict, List, Optional, Union
 
 from brownie._config import _get_data_folder
 
 
-def expand_source_map(source_map_str: str) -> List:
+Path: Final = pathlib.Path
+
+
+def expand_source_map(source_map_str: str) -> List[List]:
     # Expands the compressed sourceMap supplied by solc into a list of lists
 
     if isinstance(source_map_str, dict):
@@ -15,19 +18,19 @@ def expand_source_map(source_map_str: str) -> List:
     if not isinstance(source_map_str, str):
         raise TypeError(source_map_str)
 
-    source_map = [_expand_row(i) if i else None for i in source_map_str.split(";")]
+    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:
             source_map[i] = source_map[i - 1]
             continue
         for x in range(4):
-            if source_map[i][x] is None:
-                source_map[i][x] = source_map[i - 1][x]
+            if value[x] is None:
+                value[x] = source_map[i - 1][x]
     return source_map
 
 
-def _expand_row(row: str) -> List[Optional[str]]:
-    result: List[Optional[str]] = [None] * 4
+def _expand_row(row: str) -> List[Optional[Union[str, int]]]:
+    result: List[Optional[Union[str, int]]] = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
