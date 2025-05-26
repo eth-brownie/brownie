@@ -34,7 +34,7 @@ class Cursor:
         with self._lock:
             self._execute(cmd, *args)
 
-    def fetchone(self, cmd: str, *args: Any) -> Optional[Tuple]:
+    def fetchone(self, cmd: str, *args: Any) -> Optional[Tuple]:  # type: ignore [return]
         with self._lock:
             self._execute(cmd, *args)
             if result := self._fetchone():
