@@ -118,7 +118,7 @@ importlib-metadata==8.7.0
     # via vyper
 iniconfig==2.1.0
     # via pytest
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via web3
 jsonschema-specifications==2025.4.1
     # via jsonschema
