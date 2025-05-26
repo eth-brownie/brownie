@@ -14,7 +14,7 @@ loads: Final = json.loads
 @final
 class Cursor:
     __slots__ = "_lock", "_db", "_cur", "_execute", "_fetchone", "_fetchall"
-    
+
     def __init__(self, filename: Path) -> None:
         self._lock: Final = threading.Lock()
         self.connect(filename)
