@@ -15,7 +15,10 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
     return -(2 ** (size - 1)), 2 ** (size - 1) - 1
 
 
-def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> List:
+def get_type_strings(
+    abi_params: List[Dict[str, Any]], 
+    substitutions: Optional[Dict[str, str]] = None,
+) -> List[str]:
     """Converts a list of parameters from an ABI into a list of type strings."""
     types_list = []
     if substitutions is None:
@@ -36,11 +39,11 @@ def get_type_strings(abi_params: List, substitutions: Optional[Dict] = None) -> 
     return types_list
 
 
-def build_function_signature(abi: Dict) -> str:
+def build_function_signature(abi: Dict[str, Any]) -> str:
     types_list = get_type_strings(abi["inputs"])
     return f"{abi['name']}({','.join(types_list)})"
 
 
-def build_function_selector(abi: Dict) -> str:
+def build_function_selector(abi: Dict[str, Any]) -> str:
     sig = build_function_signature(abi)
     return f"0x{keccak(sig.encode()).hex()[:8]}"
