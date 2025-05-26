@@ -86,7 +86,7 @@ def toposort(data: Dict) -> Iterator[Set]:
         raise CircularDependencyError(data)
 
 
-def toposort_flatten(data: Dict, sort=True) -> List:
+def toposort_flatten(data: Dict, sort: bool = True) -> List:
     """Returns a single list of dependencies. For any set returned by
     toposort(), those items are sorted and appended to the result (just to
     make the results deterministic)."""
