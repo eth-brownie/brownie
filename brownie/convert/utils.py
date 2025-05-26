@@ -27,7 +27,7 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
         else:
             lower = -(2 ** (size - 1))
             upper = 2 ** (size - 1) - 1
-            
+
         # cache result and return
         _cached_int_bounds[type_str] = lower, upper
         return lower, upper
