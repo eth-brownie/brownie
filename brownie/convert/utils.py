@@ -16,7 +16,7 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
 
 
 def get_type_strings(
-    abi_params: List[Dict[str, Any]], 
+    abi_params: List[Dict[str, Any]],
     substitutions: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Converts a list of parameters from an ABI into a list of type strings."""

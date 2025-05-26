@@ -32,7 +32,7 @@ else:
             "brownie/convert/main.py",
             "brownie/convert/normalize.py",
             "brownie/convert/utils.py",
-            #"--strict",
+            # "--strict",
             "--pretty",
         ]
     )
