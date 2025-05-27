@@ -682,7 +682,10 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: ChecksumAddress, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self,
+        address: ChecksumAddress,
+        owner: Optional[AccountsType] = None,
+        tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
         self.bytecode: Final = HexStr(
