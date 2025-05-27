@@ -3,7 +3,7 @@
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Dict, Final, Optional, Sequence
+from typing import Any, Dict, Final, Optional, Sequence, final
 
 import pygments
 from pygments.formatters import get_formatter_by_name
@@ -57,7 +57,7 @@ base_path: Final = str(Path(".").absolute())
 
 @final
 class Color:
-    def __call__(self, color_str: str = None) -> str:
+    def __call__(self, color_str: Optional[str] = None) -> str:
         if not CONFIG.settings["console"]["show_colors"]:
             return ""
         if not color_str:
@@ -123,7 +123,7 @@ class Color:
     def format_tb(
         self,
         exc: Exception,
-        filename: str = None,
+        filename: Optional[str] = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> str:
