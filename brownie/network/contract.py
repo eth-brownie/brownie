@@ -80,22 +80,20 @@ _unverified_addresses: Set = set()
 class _ContractBase:
     _dir_color = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
-        self._project = project
-        self._build = build.copy()
-        self._sources = sources
-        self.topics = _get_topics(self.abi)
-        self.selectors = {
+    def __init__(self, project: Any, build: Dict[str, Any], sources: Dict) -> None:
+        self._project: Final = project
+        self._build: Final = build.copy()
+        self._sources: Final = sources
+        self.topics: Final = _get_topics(self.abi)
+        self.selectors: Final[Dict[str, str]] = {
             build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures = {
-            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
-        }
+        self.signatures: Final[Dict[str, str]] = {v: k for k, v in self.selectors.items()}
         parse_errors_from_abi(self.abi)
 
     @property
-    def abi(self) -> List:
+    def abi(self) -> List[Dict[str, Any]]:
         return self._build["abi"]
 
     @property
@@ -106,8 +104,8 @@ class _ContractBase:
         """
         Display NatSpec documentation for this contract.
         """
-        if self._build.get("natspec"):
-            _print_natspec(self._build["natspec"])
+        if natspec := self._build.get("natspec"):
+            _print_natspec(natspec)
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
@@ -166,17 +164,17 @@ class ContractContainer(_ContractBase):
 
     def __init__(self, project: Any, build: Dict) -> None:
         self.tx = None
-        self.bytecode = build["bytecode"]
-        self._contracts: List["ProjectContract"] = []
+        self.bytecode: Final = HexStr(build["bytecode"])
+        self._contracts: Final[List["ProjectContract"]] = []
         super().__init__(project, build, project._sources)
-        self.deploy = ContractConstructor(self, self._name)
+        self.deploy: Final = ContractConstructor(self, self._name)
         _revert_register(self)
 
         # messes with tests if it is created on init
         # instead we create when it's requested, but still define it here
         self._flattener: Flattener = None  # type: ignore
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["ProjectContract"]:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> "ProjectContract":
