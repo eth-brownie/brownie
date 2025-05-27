@@ -3,7 +3,7 @@
 import sys
 import traceback
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Any, Dict, Final, Optional, Sequence
 
 import pygments
 from pygments.formatters import get_formatter_by_name
