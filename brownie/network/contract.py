@@ -891,8 +891,8 @@ class Contract(_DeployedContractBase):
     def _deprecated_init(
         self,
         name: str,
-        address: Optional[str] = None,
-        abi: Optional[List] = None,
+        address: Optional[ChecksumAddress] = None,
+        abi: Optional[List[Dict[str, Any]]] = None,
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> None:
@@ -1227,8 +1227,8 @@ class ProjectContract(_DeployedContractBase):
     def __init__(
         self,
         project: Any,
-        build: Dict,
-        address: str,
+        build: Dict[str, Any],
+        address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
@@ -1876,7 +1876,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 
 
 def _get_method_object(
-    address: str,
+    address: ChecksumAddress,
     abi: Dict[str, Any],
     name: str,
     owner: Optional[AccountsType],
@@ -1900,7 +1900,7 @@ def _inputs(abi: Dict) -> str:
     )
 
 
-def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
+def _verify_deployed_code(address: HexAddress, expected_bytecode: str, language: str) -> bool:
     # removeprefix is used for compatability with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
@@ -1954,7 +1954,7 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
-def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
+def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) -> Dict[str, Any]:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
