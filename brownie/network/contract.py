@@ -682,7 +682,7 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self, address: ChecksumAddress, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
     ) -> None:
         address = _resolve_address(address)
         self.bytecode: Final = HexStr(
@@ -694,7 +694,7 @@ class _DeployedContractBase(_ContractBase):
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner: Final = owner
         self.tx: Final = tx
-        self.address: Final[ChecksumAddress] = address  # type: ignore [assignment]
+        self.address: Final = address
         self.events: Final = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
