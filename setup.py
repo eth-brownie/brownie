@@ -28,7 +28,7 @@ except ImportError:
 else:
     ext_modules = mypycify(
         [
-            "brownie/_cli/console.py",
+            "brownie/_cli",
             "brownie/convert/__init__.py",
             "brownie/convert/main.py",
             "brownie/convert/normalize.py",
