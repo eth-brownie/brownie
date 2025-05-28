@@ -9,7 +9,7 @@ import sys
 import tokenize
 from collections.abc import Iterable
 from io import StringIO
-from typing import Any, Final, final
+from typing import Any, Dict, Final, final
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
@@ -170,7 +170,7 @@ class Console(code.InteractiveConsole):
 
         # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
-        kwargs = {}
+        kwargs: Dict[str, Any] = {}
         if console_settings["show_colors"]:
             kwargs.update(
                 lexer=PygmentsLexer(PythonLexer),
