@@ -259,11 +259,11 @@ class Console(code.InteractiveConsole):
             self.console_printer.finish()
 
     def showsyntaxerror(self, filename: Optional[str]) -> None:
-        tb = utils.color.format_tb(sys.exc_info()[1])
+        tb = utils.color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
         self.write(tb + "\n")
 
     def showtraceback(self) -> None:
-        tb = utils.color.format_tb(sys.exc_info()[1], start=1)
+        tb = utils.color.format_tb(sys.exc_info()[1], start=1)  # type: ignore [arg-type]
         self.write(tb + "\n")
 
     def resetbuffer(self) -> None:
