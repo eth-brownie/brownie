@@ -41,6 +41,7 @@ else:
             "brownie/utils/toposort.py",
             # "--strict",
             "--pretty",
+            "--check-untyped-defs",
         ]
     )
 
