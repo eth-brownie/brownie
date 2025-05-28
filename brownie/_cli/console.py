@@ -9,7 +9,7 @@ import sys
 import tokenize
 from collections.abc import Iterable
 from io import StringIO
-from typing import Any, Dict, Final, final
+from typing import Any, Dict, Final, Optional, final
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
@@ -258,7 +258,7 @@ class Console(code.InteractiveConsole):
         finally:
             self.console_printer.finish()
 
-    def showsyntaxerror(self, filename: Any) -> None:
+    def showsyntaxerror(self, filename: Optional[str]) -> None:
         tb = utils.color.format_tb(sys.exc_info()[1])
         self.write(tb + "\n")
 
@@ -348,11 +348,11 @@ class SanitizedFileHistory(FileHistory):
     session is active.
     """
 
-    def __init__(self, filename, local_dict):
+    def __init__(self, filename: str, local_dict: Dict[str, Any]) -> None:
         self.locals = local_dict
         super().__init__(filename)
 
-    def store_string(self, line):
+    def store_string(self, line: str):
         try:
             cls_, method = line[: line.index("(")].split(".")
             method = getattr(self.locals[cls_], method)
@@ -365,7 +365,7 @@ class SanitizedFileHistory(FileHistory):
 
 @final
 class ConsoleCompleter(Completer):
-    def __init__(self, console, local_dict):
+    def __init__(self, console, local_dict: Dict[str, Any]) -> None:
         self.console = console
         self.locals = local_dict
         super().__init__()
