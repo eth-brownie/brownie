@@ -120,7 +120,7 @@ def _export(id_, path):
 
 def _password(id_):
     a = accounts.load(id_)
-    a.save(id_, overwrite=True)
+    a.save(id_, overwrite=True)  # type: ignore [union-attr]
     notify("SUCCESS", f"Password has been changed for account '{color('bright blue')}{id_}{color}'")
 
 
