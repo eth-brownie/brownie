@@ -3,7 +3,7 @@
 from typing import Final
 
 from . import hex
-from .color import Color, notify
+from ._color import Color, notify
 
 color: Final = Color()
 bytes_to_hexstring: Final = hex.bytes_to_hexstring

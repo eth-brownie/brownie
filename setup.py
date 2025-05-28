@@ -28,18 +28,20 @@ except ImportError:
 else:
     ext_modules = mypycify(
         [
+            "brownie/_cli/console.py",
             "brownie/convert/__init__.py",
             "brownie/convert/main.py",
             "brownie/convert/normalize.py",
             "brownie/convert/utils.py",
             "brownie/project/compiler",
             "brownie/utils/__init__.py",
-            "brownie/utils/color.py",
+            "brownie/utils/_color.py",
             "brownie/utils/output.py",
             "brownie/utils/sql.py",
             "brownie/utils/toposort.py",
             # "--strict",
             "--pretty",
+            "--check-untyped-defs",
         ]
     )
 
