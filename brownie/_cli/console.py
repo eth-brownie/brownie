@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="assignment"
 
 import builtins
 import code
