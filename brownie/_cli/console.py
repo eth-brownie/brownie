@@ -232,13 +232,13 @@ class Console(code.InteractiveConsole):
         text = repr(obj)
         try:
             if obj and isinstance(obj, dict):
-                text = color.pretty_dict(obj)
+                text = utils.color.pretty_dict(obj)
             elif obj and isinstance(obj, (tuple, list, set)):
-                text = color.pretty_sequence(obj)
+                text = utils.color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
         if CONFIG.settings["console"]["show_colors"]:
-            text = color.highlight(text)
+            text = utils.color.highlight(text)
         self.write(text)
 
     def interact(self, *args, **kwargs):
@@ -258,11 +258,11 @@ class Console(code.InteractiveConsole):
             self.console_printer.finish()
 
     def showsyntaxerror(self, filename):
-        tb = color.format_tb(sys.exc_info()[1])
+        tb = utils.color.format_tb(sys.exc_info()[1])
         self.write(tb + "\n")
 
     def showtraceback(self):
-        tb = color.format_tb(sys.exc_info()[1], start=1)
+        tb = utils.color.format_tb(sys.exc_info()[1], start=1)
         self.write(tb + "\n")
 
     def resetbuffer(self):
