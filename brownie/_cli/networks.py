@@ -350,9 +350,9 @@ def _list_providers(verbose=False):
         _print_simple_providers_description(providers)
 
 
-def _parse_args(args: Tuple[str, ...]) -> Dict[str, str]:
+def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
     try:
-        parsed = dict(i.split("=", maxsplit=1) for i in args)
+        parsed: Dict[str, Any] = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
         raise ValueError("Arguments must be given as key=value") from None
 
