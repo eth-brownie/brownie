@@ -58,7 +58,7 @@ base_path: Final = str(Path(".").absolute())
 @final
 class Color:
     __cache__: Final[Dict[Optional[str], str]] = {}
-    
+
     def __call__(self, color_str: Optional[str] = None) -> str:
         if not CONFIG.settings["console"]["show_colors"]:
             return ""
