@@ -8,6 +8,7 @@ import sys
 import tokenize
 from collections.abc import Iterable
 from io import StringIO
+from typing import Any, Final, final
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
