@@ -352,17 +352,17 @@ def _list_providers(verbose=False):
 
 def _parse_args(args: Tuple[str, ...]) -> Dict[str, str]:
     try:
-        args = dict(i.split("=", maxsplit=1) for i in args)
+        parsed = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
         raise ValueError("Arguments must be given as key=value") from None
 
-    for key, value in args:
+    for key, value in parsed.items():
         if value.isdigit():
-            args[key] = int(value)
+            parsed[key] = int(value)
         elif value.lower() in ("true", "false", "none"):
-            args[key] = eval(value.capitalize())
+            parsed[key] = eval(value.capitalize())
 
-    return args
+    return parsed
 
 
 def _print_verbose_providers_description(providers) -> None:
