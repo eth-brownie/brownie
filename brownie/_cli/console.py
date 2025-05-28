@@ -227,7 +227,7 @@ class Console(code.InteractiveConsole):
         else:
             results = [(i, getattr(obj, i)) for i in dir(obj) if not i.startswith("_")]
         results = sorted(results, key=lambda k: k[0])
-        self.write(f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n")
+        self.write(f"[{f'{utils.color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{utils.color}]\n")
 
     def _console_write(self, obj):
         text = repr(obj)
