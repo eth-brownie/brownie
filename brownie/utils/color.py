@@ -57,18 +57,26 @@ base_path: Final = str(Path(".").absolute())
 
 @final
 class Color:
+    __cache__: Final[Dict[Optional[str], str]] = {}
+    
     def __call__(self, color_str: Optional[str] = None) -> str:
         if not CONFIG.settings["console"]["show_colors"]:
             return ""
-        if not color_str:
-            return f"{BASE}m"
         try:
-            if " " not in color_str:
-                return f"{BASE}{COLORS[color_str]}m"
-            modifier, color_str = color_str.split()
-            return f"{BASE}{MODIFIERS[modifier]}{COLORS[color_str]}m"
-        except (KeyError, ValueError):
-            return f"{BASE}m"
+            return Color.__cache__[color_str]
+        except KeyError:
+            if not color_str:
+                return f"{BASE}m"
+            try:
+                if " " in color_str:
+                    modifier, color_str = color_str.split()
+                    color = f"{BASE}{MODIFIERS[modifier]}{COLORS[color_str]}m"
+                else:
+                    color = f"{BASE}{COLORS[color_str]}m"
+            except (KeyError, ValueError):
+                color = f"{BASE}m"
+            Color.__cache__[color_str] = color
+            return color
 
     def __str__(self):
         return f"{BASE}m"
