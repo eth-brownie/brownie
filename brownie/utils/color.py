@@ -130,7 +130,7 @@ class Color:
 
     def format_tb(
         self,
-        exc: Exception,
+        exc: BaseException,
         filename: Optional[str] = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
