@@ -27,7 +27,7 @@ from pygments.styles import get_style_by_name
 import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
-from brownie import utils
+from brownie.utils import color
 from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie console [options]
@@ -227,19 +227,19 @@ class Console(code.InteractiveConsole):
         else:
             results = [(i, getattr(obj, i)) for i in dir(obj) if not i.startswith("_")]
         results = sorted(results, key=lambda k: k[0])
-        self.write(f"[{f'{utils.color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{utils.color}]\n")
+        self.write(f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n")
 
     def _console_write(self, obj: Any) -> None:
         text = repr(obj)
         try:
             if obj and isinstance(obj, dict):
-                text = utils.color.pretty_dict(obj)
+                text = color.pretty_dict(obj)
             elif obj and isinstance(obj, (tuple, list, set)):
-                text = utils.color.pretty_sequence(obj)
+                text = color.pretty_sequence(obj)
         except (SyntaxError, NameError):
             pass
         if CONFIG.settings["console"]["show_colors"]:
-            text = utils.color.highlight(text)
+            text = color.highlight(text)
         self.write(text)
 
     def interact(self, *args: Any, **kwargs: Any) -> None:
@@ -259,11 +259,11 @@ class Console(code.InteractiveConsole):
             self.console_printer.finish()
 
     def showsyntaxerror(self, filename: Optional[str] = None) -> None:
-        tb = utils.color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
+        tb = color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
         self.write(tb + "\n")
 
     def showtraceback(self) -> None:
-        tb = utils.color.format_tb(sys.exc_info()[1], start=1)  # type: ignore [arg-type]
+        tb = color.format_tb(sys.exc_info()[1], start=1)  # type: ignore [arg-type]
         self.write(tb + "\n")
 
     def resetbuffer(self) -> None:
@@ -321,12 +321,12 @@ class Console(code.InteractiveConsole):
 
 def _dir_color(obj: Any) -> str:
     if type(obj).__name__ == "module":
-        return utils.color("brownie blue")
+        return color("brownie blue")
     elif hasattr(obj, "_dir_color"):
-        return utils.color(obj._dir_color)
+        return color(obj._dir_color)
     elif not callable(obj):
-        return utils.color("bright blue")
-    return utils.color("bright cyan")
+        return color("bright blue")
+    return color("bright cyan")
 
 
 @final
