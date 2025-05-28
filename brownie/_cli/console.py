@@ -62,6 +62,7 @@ def main():
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
 
 
+@final
 class _Quitter:
     """
     Variation of `_sitebuiltins.Quitter` that does not close `stdin` on exit.
@@ -71,8 +72,8 @@ class _Quitter:
     second time. https://bugs.python.org/issue34115#msg322073
     """
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name: Final = name
 
     def __repr__(self):
         return f"Use {self.name}() or Ctrl-D (i.e. EOF) to exit"
@@ -81,6 +82,7 @@ class _Quitter:
         raise SystemExit(code)
 
 
+@final
 class ConsolePrinter:
     """
     Custom printer during console input.
@@ -92,9 +94,9 @@ class ConsolePrinter:
     _builtins_print = builtins.print
 
     def __init__(self, console):
-        self.console = console
+        self.console: Final = console
 
-    def start(self):
+    def start(self) -> None:
         builtins.print = self
 
     def __call__(self, *values, sep=" ", end="\n", file=sys.stdout, flush=False):
@@ -113,10 +115,11 @@ class ConsolePrinter:
         text = f"{sep.join(str(i) for i in values)}{end}{line}"
         self.console.write(text)
 
-    def finish(self):
+    def finish(self) -> None:
         builtins.print = self._builtins_print
 
 
+@final
 class Console(code.InteractiveConsole):
 
     # This value is used as the `input` arg when initializing `prompt_toolkit.PromptSession`.
@@ -145,7 +148,7 @@ class Console(code.InteractiveConsole):
             _dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"), _console=self
         )
 
-        self.exit_on_continue = exit_on_continue
+        self.exit_on_continue: Final = exit_on_continue
         if exit_on_continue:
             # add continue to the locals so we can quickly reach it via completion hints
             locals_dict["continue"] = True
@@ -297,7 +300,7 @@ class Console(code.InteractiveConsole):
 
     def paste_event(self, event):
         # pasting multiline data temporarily switches to multiline mode
-        data = event.data
+        data: str = event.data
         data = data.replace("\r\n", "\n")
         data = data.replace("\r", "\n")
 
@@ -314,7 +317,7 @@ class Console(code.InteractiveConsole):
         return not self.buffer or self.prompt_session.app.current_buffer.text.strip()
 
 
-def _dir_color(obj):
+def _dir_color(obj: Any) -> str:
     if type(obj).__name__ == "module":
         return color("brownie blue")
     elif hasattr(obj, "_dir_color"):
@@ -324,6 +327,7 @@ def _dir_color(obj):
     return color("bright cyan")
 
 
+@final
 class SanitizedFileHistory(FileHistory):
     """
     FileHistory subclass to strip sensetive information prior to writing to disk.
@@ -357,6 +361,7 @@ class SanitizedFileHistory(FileHistory):
         return super().store_string(line)
 
 
+@final
 class ConsoleCompleter(Completer):
     def __init__(self, console, local_dict):
         self.console = console
@@ -384,6 +389,7 @@ class ConsoleCompleter(Completer):
             return
 
 
+@final
 class ConsoleAutoSuggest(AutoSuggest):
     """
     AutoSuggest subclass to display contract input hints.
