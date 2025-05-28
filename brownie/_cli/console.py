@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# mypy: disable-error-code="assignment"
+# mypy: disable-error-code="assignment, union-attr"
 
 import builtins
 import code
@@ -185,7 +185,7 @@ class Console(code.InteractiveConsole):
             kwargs["editing_mode"] = EditingMode(console_settings["editing_mode"].upper())
 
         self.compile_mode = "single"
-        self.prompt_session = PromptSession(
+        self.prompt_session = PromptSession(  # type: ignore [var-annotated]
             history=SanitizedFileHistory(history_file, locals_dict),
             input=self.prompt_input,
             key_bindings=KeyBindings(),
