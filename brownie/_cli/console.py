@@ -218,7 +218,7 @@ class Console(code.InteractiveConsole):
         self.console_printer = ConsolePrinter(self)
         super().__init__(locals_dict)
 
-    def _dir(self, obj=None):
+    def _dir(self, obj: Any = None) -> None:
         # console dir method, for simplified and colorful output
         if obj is None:
             results = [(k, v) for k, v in self.locals.items() if not k.startswith("_")]
@@ -229,7 +229,7 @@ class Console(code.InteractiveConsole):
         results = sorted(results, key=lambda k: k[0])
         self.write(f"[{f'{utils.color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{utils.color}]\n")
 
-    def _console_write(self, obj):
+    def _console_write(self, obj: Any) -> None:
         text = repr(obj)
         try:
             if obj and isinstance(obj, dict):
@@ -242,7 +242,7 @@ class Console(code.InteractiveConsole):
             text = utils.color.highlight(text)
         self.write(text)
 
-    def interact(self, *args, **kwargs):
+    def interact(self, *args: Any, **kwargs: Any) -> None:
         # temporarily modify mode so that container repr's display correctly for console
         cli_mode = CONFIG.argv["cli"]
         CONFIG.argv["cli"] = "console"
@@ -258,15 +258,15 @@ class Console(code.InteractiveConsole):
         finally:
             self.console_printer.finish()
 
-    def showsyntaxerror(self, filename):
+    def showsyntaxerror(self, filename: Any) -> None:
         tb = utils.color.format_tb(sys.exc_info()[1])
         self.write(tb + "\n")
 
-    def showtraceback(self):
+    def showtraceback(self) -> None:
         tb = utils.color.format_tb(sys.exc_info()[1], start=1)
         self.write(tb + "\n")
 
-    def resetbuffer(self):
+    def resetbuffer(self) -> None:
         # reset the input buffer and parser cache
         _parser_cache.clear()
         return super().resetbuffer()
@@ -294,7 +294,7 @@ class Console(code.InteractiveConsole):
             code = self.compile(f"__ret_value__ = {source}", filename, "exec")
         except Exception:
             pass
-        self.runcode(code)
+        self.runcode(code)  # type: ignore [arg-type]
         if "__ret_value__" in self.locals and self.locals["__ret_value__"] is not None:
             return_value = self.locals.pop("__ret_value__")
             self._console_write(return_value)
@@ -401,7 +401,7 @@ class ConsoleAutoSuggest(AutoSuggest):
     respectively.
     """
 
-    def __init__(self, console, local_dict):
+    def __init__(self, console, local_dict: Dict[str, Any]) -> None:
         self.console = console
         self.locals = local_dict
         super().__init__()
@@ -454,7 +454,7 @@ def _obj_from_token(obj, token):
         return obj[key]
     if isinstance(obj, Iterable):
         try:
-            return obj[int(key)]
+            return obj[int(key)]  # type: ignore [index]
         except ValueError:
             pass
     return getattr(obj, key)
