@@ -26,7 +26,7 @@ from pygments.styles import get_style_by_name
 import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
-from brownie.utils import color
+from brownie import utils
 from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie console [options]
@@ -320,12 +320,12 @@ class Console(code.InteractiveConsole):
 
 def _dir_color(obj: Any) -> str:
     if type(obj).__name__ == "module":
-        return color("brownie blue")
+        return utils.color("brownie blue")
     elif hasattr(obj, "_dir_color"):
-        return color(obj._dir_color)
+        return utils.color(obj._dir_color)
     elif not callable(obj):
-        return color("bright blue")
-    return color("bright cyan")
+        return utils.color("bright blue")
+    return utils.color("bright cyan")
 
 
 @final
