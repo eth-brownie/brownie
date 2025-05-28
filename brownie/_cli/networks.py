@@ -3,7 +3,7 @@
 import shutil
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple
 
 import yaml
 
@@ -350,7 +350,7 @@ def _list_providers(verbose=False):
         _print_simple_providers_description(providers)
 
 
-def _parse_args(args) -> Dict[str, str]:
+def _parse_args(args: Tuple[str, ...]) -> Dict[str, str]:
     try:
         args = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
