@@ -43,7 +43,7 @@ cytoolz==1.0.1
     # via eth-utils
 dataclassy==0.11.1
     # via eip712
-eip712==0.2.11
+eip712==0.2.12
     # via -r requirements.in
 eth-abi==5.2.0
     # via
