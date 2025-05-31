@@ -304,13 +304,14 @@ class ReturnValue(tuple):
         for i, value in enumerate(values):
             if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
                 if abi is not None and "components" in (value_abi := abi[i]):
-                    if value_abi["type"] == "tuple":
+                    value_type: str = value_abi["type"]
+                    if value_type == "tuple":
                         # tuple
                         values[i] = ReturnValue(values, value_abi["components"])
                     else:
                         # array of tuples
                         inner_abi = value_abi.copy()
-                        inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
+                        inner_abi["type"] = value_type.rsplit("[", maxsplit=1)[0]
                         final_abi = [deepcopy(inner_abi) for i in range(len(value))]
                         if name := inner_abi.get("name"):
                             for i, d in enumerate(final_abi):
