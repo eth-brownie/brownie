@@ -80,7 +80,7 @@ _unverified_addresses: Set = set()
 class _ContractBase:
     _dir_color = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
+    def __init__(self, project: Any, build: Dict[str, Any], sources: Dict[str, Any]) -> None:
         self._project = project
         self._build = build.copy()
         self._sources = sources
@@ -544,7 +544,7 @@ class ContractConstructor:
         )
 
     @staticmethod
-    def _autosuggest(obj: "ContractConstructor") -> List:
+    def _autosuggest(obj: "ContractConstructor") -> List[str]:
         return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
     def encode_input(self, *args: tuple) -> str:
@@ -1568,7 +1568,7 @@ class _ContractMethod:
             return self.abi["stateMutability"] == "payable"
 
     @staticmethod
-    def _autosuggest(obj: "_ContractMethod") -> List:
+    def _autosuggest(obj: "_ContractMethod") -> List[str]:
         # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
         return _contract_method_autosuggest(
             obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
@@ -1886,7 +1886,7 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner, natspec)
 
 
-def _inputs(abi: Dict) -> str:
+def _inputs(abi: Dict[str, Any]) -> str:
     types_list = get_type_strings(abi["inputs"], {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in abi["inputs"]], types_list)
     return ", ".join(
@@ -1927,7 +1927,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
     return actual_bytecode == expected_bytecode
 
 
-def _print_natspec(natspec: Dict) -> None:
+def _print_natspec(natspec: Dict[str, Any]) -> None:
     wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
     for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
         wrapper.subsequent_indent = " " * (len(key) + 4)
@@ -1971,7 +1971,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     ):
         address = _resolve_address(code[120:160])
 
-    params: Dict = {
+    params: Dict[str, Any] = {
         "module": "contract",
         "action": action,
         "address": address,
@@ -2007,14 +2007,14 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
 # console auto-completion logic
 
 
-def _call_autosuggest(method: Any) -> List:
+def _call_autosuggest(method: Any) -> List[str]:
     # since methods are not unique for each object, we use `__reduce__`
     # to locate the specific object so we can access the correct ABI
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], False, False)
 
 
-def _transact_autosuggest(method: Any) -> List:
+def _transact_autosuggest(method: Any) -> List[str]:
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
 
@@ -2029,7 +2029,7 @@ _ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
 _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 
 
-def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
+def _contract_method_autosuggest(args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool) -> List[str]:
     types_list = get_type_strings(args, {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in args], types_list)
 
