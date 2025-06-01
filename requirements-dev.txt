@@ -73,9 +73,7 @@ idna==3.10
 imagesize==1.4.1
     # via sphinx
 importlib-metadata==8.7.0
-    # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
-    #   keyring
+    # via keyring
 iniconfig==2.1.0
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
@@ -177,7 +175,7 @@ pytest==6.2.5
     #   pytest-mock
 pytest-cov==6.1.1
     # via -r requirements-dev.in
-pytest-mock==3.14.0
+pytest-mock==3.14.1
     # via -r requirements-dev.in
 readme-renderer==44.0
     # via twine
@@ -244,10 +242,8 @@ wheel==0.45.1
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   -r requirements-dev.in
     #   pip-tools
-zipp==3.21.0
-    # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
-    #   importlib-metadata
+zipp==3.22.0
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
