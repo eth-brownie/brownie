@@ -8,6 +8,7 @@ import sys
 import threading
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import pytest
 import solcx
