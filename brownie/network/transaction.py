@@ -172,9 +172,9 @@ class TransactionReceipt:
         self._revert_msg: Optional[str] = None
         self._dev_revert_msg: Optional[str] = None
         self._modified_state: Optional[bool] = None
-        self._new_contracts: Optional[List] = None
-        self._internal_transfers: Optional[List[Dict]] = None
-        self._subcalls: Optional[List[Dict]] = None
+        self._new_contracts: Optional[List[EthAddress]] = None
+        self._internal_transfers: Optional[List[Dict[str, Any]]] = None
+        self._subcalls: Optional[List[Dict[str, Any]]] = None
 
         # attributes that can be set immediately
         self.sender = sender
@@ -232,7 +232,7 @@ class TransactionReceipt:
         return hash(self.txid)
 
     @trace_property
-    def events(self) -> Optional[EventDict]:
+    def events(self) -> EventDict:
         if self._events is None:
             if self.status:
                 # relay contract map so we can decode ds-note logs
@@ -248,7 +248,7 @@ class TransactionReceipt:
         return self._events
 
     @trace_property
-    def internal_transfers(self) -> Optional[List]:
+    def internal_transfers(self) -> List[Dict[str, Any]]:
         if not self.status:
             return []
         if self._internal_transfers is None:
@@ -264,7 +264,7 @@ class TransactionReceipt:
         return self._modified_state
 
     @trace_property
-    def new_contracts(self) -> Optional[List]:
+    def new_contracts(self) -> List[EthAddress]:
         if not self.status:
             return []
         if self._new_contracts is None:

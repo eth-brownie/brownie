@@ -11,6 +11,7 @@ except ImportError:
 
 import cchecksum
 import eth_utils
+from eth_typing import HexStr
 from hexbytes import HexBytes
 
 from brownie.utils import bytes_to_hexstring
@@ -246,10 +247,10 @@ class HexString(bytes):
     def __ne__(self, other: Any) -> bool:
         return not _hex_compare(self.hex(), other)
 
-    def __str__(self) -> str:
+    def __str__(self) -> HexStr:
         return f"0x{self.hex()}"
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> HexStr:
         return str(self)
 
 
@@ -278,7 +279,7 @@ def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
         raise OverflowError(f"'{value}' exceeds maximum length for {type_str}")
 
 
-def _to_hex(value: Any) -> str:
+def _to_hex(value: Any) -> HexStr:
     """Convert a value to a hexstring"""
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
@@ -295,31 +296,31 @@ def _to_hex(value: Any) -> str:
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List] = None
-    _dict: Dict = {}
+    _abi: Optional[List[Dict[str, Any]]] = None
+    _dict: Dict[str, Any] = {}
 
-    def __new__(cls, values: Sequence, abi: Optional[List] = None) -> "ReturnValue":
+    def __new__(cls, values: Sequence, abi: Optional[List[Dict[str, Any]] = None) -> "ReturnValue":
         values = list(values)
-        for i in range(len(values)):
-            if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):
-                if abi is not None and "components" in abi[i]:
-                    if abi[i]["type"] == "tuple":
+        for i, value in enumerate(values):
+            if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
+                if abi is not None and "components" in (value_abi := abi[i]):
+                    value_type: str = value_abi["type"]
+                    if value_type == "tuple":
                         # tuple
-                        values[i] = ReturnValue(values[i], abi[i]["components"])
+                        values[i] = ReturnValue(values, value_abi["components"])
                     else:
                         # array of tuples
-                        inner_abi = abi[i].copy()
-                        inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
-                        final_abi = [deepcopy(inner_abi) for i in range(len(values[i]))]
-                        if inner_abi.get("name"):
-                            name = inner_abi["name"]
-                            for x in range(len(final_abi)):
-                                final_abi[x]["name"] = f"{name}[{x}]"
+                        inner_abi = value_abi.copy()
+                        inner_abi["type"] = value_type.rsplit("[", maxsplit=1)[0]
+                        final_abi = [deepcopy(inner_abi) for i in range(len(value))]
+                        if name := inner_abi.get("name"):
+                            for i, d in enumerate(final_abi):
+                                d["name"] = f"{name}[{i}]"
 
-                        values[i] = ReturnValue(values[i], final_abi)
+                        values[i] = ReturnValue(value, final_abi)
                 else:
                     # array
-                    values[i] = ReturnValue(values[i])
+                    values[i] = ReturnValue(value)
 
         self = super().__new__(cls, values)  # type: ignore
         self._abi = abi or []
@@ -361,7 +362,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():
