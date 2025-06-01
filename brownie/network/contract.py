@@ -58,7 +58,7 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
-from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.typing import AccountsType, FunctionName, TransactionReceiptType
 from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
@@ -85,11 +85,11 @@ class _ContractBase:
         self._build: Final = build.copy()
         self._sources: Final = sources
         self.topics: Final = _get_topics(self.abi)
-        self.selectors: Final[Dict[str, str]] = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"]) for i in self.abi if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures: Final[Dict[str, str]] = {v: k for k, v in self.selectors.items()}
+        self.signatures: Final[Dict[FunctionName, HexStr]] = {v: k for k, v in self.selectors.items()}
         parse_errors_from_abi(self.abi)
 
     @property
@@ -615,10 +615,10 @@ class InterfaceConstructor:
     """
 
     def __init__(self, name: str, abi: List) -> None:
-        self._name = name
-        self.abi = abi
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self._name: Final = name
+        self.abi: Final = abi
+        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"]) for i in self.abi if i["type"] == "function"
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
