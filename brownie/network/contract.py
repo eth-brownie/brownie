@@ -19,6 +19,7 @@ from typing import (
     Iterator,
     List,
     Match,
+    NewType,
     Optional,
     Set,
     Tuple,
@@ -73,6 +74,8 @@ from .state import (
     _revert_register,
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
+
+FunctionName = NewType("FunctionName", str)
 
 _unverified_addresses: Set = set()
 
