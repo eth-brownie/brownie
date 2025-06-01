@@ -3,6 +3,7 @@
 from typing import Dict, List, Optional, Tuple
 
 from eth_hash.auto import keccak
+from eth_typing import HexStr
 
 
 def get_int_bounds(type_str: str) -> Tuple[int, int]:
@@ -41,6 +42,6 @@ def build_function_signature(abi: Dict) -> str:
     return f"{abi['name']}({','.join(types_list)})"
 
 
-def build_function_selector(abi: Dict) -> str:
+def build_function_selector(abi: Dict) -> HexStr:
     sig = build_function_signature(abi)
-    return f"0x{keccak(sig.encode()).hex()[:8]}"
+    return HexStr(f"0x{keccak(sig.encode()).hex()[:8]}")
