@@ -27,7 +27,7 @@ black==25.1.0
     # via -r requirements.in
 cbor2==5.6.5
     # via vyper
-cchecksum==0.3.0
+cchecksum==0.3.1
     # via
     #   -r requirements.in
     #   eth-event
