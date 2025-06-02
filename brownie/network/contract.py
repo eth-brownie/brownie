@@ -27,7 +27,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_utils import combomethod
+from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
 from vvm import get_installable_vyper_versions
