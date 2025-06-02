@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import Any
 
 import eth_utils
+from faster_eth_utils import is_hex, to_text
 from hexbytes import HexBytes
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
@@ -67,10 +68,13 @@ def to_string(value: Any) -> str:
     """Convert a value to a string"""
     try:
         if isinstance(value, bytes):
-            return eth_utils.to_text(hexstr=HexBytes(value).hex())
+            return to_text(hexstr=HexBytes(value).hex())
         value = str(value)
-        if value.startswith("0x") and eth_utils.is_hex(value):
-            return eth_utils.to_text(hexstr=value)
+        if value.startswith("0x") and is_hex(value):
+            return to_text(hexstr=value)
         return value
     except UnicodeDecodeError as e:
         raise ValueError(e)
+
+
+__all__ = ["to_uint", "to_int", "to_decimal", "to_address", "to_bytes", "to_bool", "to_string"]
