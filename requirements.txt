@@ -40,7 +40,9 @@ ckzg==2.1.1
 click==8.2.1
     # via black
 cytoolz==1.0.1
-    # via eth-utils
+    # via
+    #   eth-utils
+    #   faster-eth-utils
 dataclassy==0.11.1
     # via eip712
 eip712==0.2.13
@@ -64,6 +66,7 @@ eth-hash[pycryptodome]==0.7.1
     #   -r requirements.in
     #   eth-event
     #   eth-utils
+    #   faster-eth-utils
     #   web3
 eth-keyfile==0.8.1
     # via eth-account
@@ -81,10 +84,10 @@ eth-typing==4.4.0
     #   eth-abi
     #   eth-keys
     #   eth-utils
+    #   faster-eth-utils
     #   web3
 eth-utils==4.1.1
     # via
-    #   -r requirements.in
     #   eip712
     #   eth-abi
     #   eth-account
@@ -95,6 +98,8 @@ eth-utils==4.1.1
     #   web3
 execnet==2.1.1
     # via pytest-xdist
+faster-eth-utils==4.1.1
+    # via -r requirements.in
 frozenlist==1.6.2
     # via
     #   aiohttp
