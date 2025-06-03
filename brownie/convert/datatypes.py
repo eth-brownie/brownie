@@ -219,13 +219,13 @@ class EthAddress(str):
         return super().__hash__()
 
     def __eq__(self, other: Any) -> bool:
-        return _address_compare(str(self), other)
+        return _address_compare(self, other)
 
     def __ne__(self, other: Any) -> bool:
-        return not _address_compare(str(self), other)
+        return not _address_compare(self, other)
 
 
-def _address_compare(a: Any, b: Any) -> bool:
+def _address_compare(a: str, b: Any) -> bool:
     b = str(b)
     if not b.startswith("0x") or not is_hex(b) or len(b) != 42:
         raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
@@ -253,7 +253,7 @@ class HexString(bytes):
         return str(self)
 
 
-def _hex_compare(a: Any, b: Any) -> bool:
+def _hex_compare(a: str, b: Any) -> bool:
     b = str(b)
     if not b.startswith("0x") or not is_hex(b):
         raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
