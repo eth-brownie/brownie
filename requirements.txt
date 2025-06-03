@@ -98,7 +98,7 @@ eth-utils==4.1.1
     #   web3
 execnet==2.1.1
     # via pytest-xdist
-faster-eth-utils==4.1.1
+faster-eth-utils==4.1.2
     # via -r requirements.in
 frozenlist==1.6.2
     # via
