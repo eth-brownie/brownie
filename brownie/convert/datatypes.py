@@ -208,7 +208,7 @@ class EthAddress(str):
         converted_value = value
         if isinstance(value, bytes):
             converted_value = bytes_to_hexstring(value)
-        converted_value = add_0x_prefix(str(converted_value))  # type: ignore
+        converted_value = add_0x_prefix(str(converted_value))  # type: ignore [arg-type]
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
