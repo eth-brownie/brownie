@@ -419,4 +419,3 @@ def _convert_str(value: Any) -> Wei:
         return Wei(value)
     except (ValueError, TypeError):
         return value
-
