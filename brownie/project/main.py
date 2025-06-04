@@ -100,7 +100,7 @@ class _ProjectBase:
                 contract_sources,
                 solc_version=compiler_config["solc"].get("version", None),
                 vyper_version=compiler_config["vyper"].get("version", None),
-                optimize=compiler_config["solc"].get("optimize", None),
+                optimize=compiler_config["solc"].get("optimize", False),
                 runs=compiler_config["solc"].get("runs", None),
                 evm_version=evm_version,
                 silent=silent,
