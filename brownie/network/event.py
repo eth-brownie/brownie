@@ -86,8 +86,6 @@ class EventDict:
     def __getitem__(self, key: Union[str, int]) -> "_EventItem":
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
-        if not isinstance(key, (int, str)):
-            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):
             try:
                 return self._ordered[key]
@@ -95,9 +93,13 @@ class EventDict:
                 raise EventLookupError(
                     f"Index out of range - only {len(self._ordered)} events fired"
                 )
-        if key in self._dict:
-            return self._dict[key]
-        raise EventLookupError(f"Event '{key}' did not fire.")
+        elif isinstance(key, str):
+            try:
+                return self._dict[key]
+            except KeyError:
+                raise EventLookupError(f"Event '{key}' did not fire.")
+        else:
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
 
     def __iter__(self) -> Iterator:
         return iter(self._ordered)
