@@ -10,6 +10,7 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
+from eth_typing import HexStr
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from hexbytes import HexBytes
 
@@ -246,10 +247,10 @@ class HexString(bytes):
     def __ne__(self, other: Any) -> bool:
         return not _hex_compare(self.hex(), other)
 
-    def __str__(self) -> str:
+    def __str__(self) -> HexStr:
         return f"0x{self.hex()}"
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> HexStr:
         return str(self)
 
 
@@ -278,7 +279,7 @@ def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
         raise OverflowError(f"'{value}' exceeds maximum length for {type_str}")
 
 
-def _to_hex(value: Any) -> str:
+def _to_hex(value: Any) -> HexStr:
     """Convert a value to a hexstring"""
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
@@ -295,8 +296,8 @@ def _to_hex(value: Any) -> str:
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List] = None
-    _dict: Dict = {}
+    _abi: Optional[List[Dict[str, Any]]] = None
+    _dict: Dict[str, Any] = {}
 
     def __new__(cls, values: Sequence, abi: Optional[List] = None) -> "ReturnValue":
         values = list(values)
@@ -361,7 +362,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():
