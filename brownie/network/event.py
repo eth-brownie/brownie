@@ -111,10 +111,7 @@ class EventDict:
 
     def count(self, name: str) -> int:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
-        try:
-            return len(self._dict[name])
-        except KeyError:
-            return 0
+        return len(self._dict.get(name, ()))
 
     def items(self) -> List:
         """EventDict.items() -> a list object providing a view on EventDict's items"""
