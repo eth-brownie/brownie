@@ -92,12 +92,12 @@ class EventDict:
             except IndexError:
                 raise EventLookupError(
                     f"Index out of range - only {len(self._ordered)} events fired"
-                )
+                ) from None
         elif isinstance(key, str):
             try:
                 return self._dict[key]
             except KeyError:
-                raise EventLookupError(f"Event '{key}' did not fire.")
+                raise EventLookupError(f"Event '{key}' did not fire.") from None
         else:
             raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
 
@@ -150,12 +150,18 @@ class _EventItem:
         self._ordered = event_data
         self.pos = pos
 
+    @overload
+    def __getitem__(self, key: int) -> List:
+        """returns the n'th event that was fired with this name"""
+        
+    @overload
+    def __getitem__(self, key: str) -> List:
+        """returns the value of data field 'key' from the 1st event within the container"""
+        
     def __getitem__(self, key: Union[int, str]) -> List:
         """if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
         within the container"""
-        if not isinstance(key, (int, str)):
-            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):
             try:
                 return self._ordered[key]
@@ -163,14 +169,18 @@ class _EventItem:
                 raise EventLookupError(
                     f"Index out of range - only {len(self._ordered)} '{self.name}' events fired"
                 )
-        if key in self._ordered[0]:
-            return self._ordered[0][key]
-        if f"{key} (indexed)" in self._ordered[0]:
-            return self._ordered[0][f"{key} (indexed)"]
-        valid_keys = ", ".join(self.keys())
-        raise EventLookupError(
-            f"Unknown key '{key}' - the '{self.name}' event includes these keys: {valid_keys}"
-        )
+        elif isinstance(key, str):
+            first = self._ordered[0]
+            if key in first:
+                return first[key]
+            if f"{key} (indexed)" in first:
+                return first[f"{key} (indexed)"]
+            valid_keys = ", ".join(self.keys())
+            raise EventLookupError(
+                f"Unknown key '{key}' - the '{self.name}' event includes these keys: {valid_keys}"
+            )
+        else:
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
 
     def __contains__(self, name: str) -> bool:
         """returns True if this event contains a value with the given name."""
