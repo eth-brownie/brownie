@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="union-attr"
 
 import importlib
 import json
@@ -13,7 +14,7 @@ from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple, Union, final
 from urllib.parse import quote
 
 import requests
@@ -162,6 +163,7 @@ class _ProjectBase:
         return self._containers.keys()
 
 
+@final
 class Project(_ProjectBase):
     """
     Top level dict-like container that holds data and objects related to
@@ -175,15 +177,15 @@ class Project(_ProjectBase):
     """
 
     def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
-        self._path: Path = project_path
-        self._envvars = _load_project_envvars(project_path)
-        self._structure = expand_posix_vars(
+        self._path = project_path
+        self._envvars: Final = _load_project_envvars(project_path)
+        self._structure: Final = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
-        self._build_path: Path = project_path.joinpath(self._structure["build"])
+        self._build_path = project_path.joinpath(self._structure["build"])
 
-        self._name = name
-        self._active = False
+        self._name: Final = name
+        self._active: bool = False
         self.load(compile=compile)
 
     def load(self, raise_if_loaded: bool = True, compile: bool = True) -> None:
@@ -194,8 +196,8 @@ class Project(_ProjectBase):
                 raise ProjectAlreadyLoaded("Project is already active")
             return None
 
-        contract_sources = _load_sources(self._path, self._structure["contracts"], False)
-        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
+        contract_sources = _load_sources(self._path, self._structure["contracts"], False)  # type: ignore [arg-type]
+        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)  # type: ignore [arg-type]
         self._sources = Sources(contract_sources, interface_sources)
         self._build = Build(self._sources)
 
@@ -543,6 +545,7 @@ class Project(_ProjectBase):
         self._clear_dev_deployments(0)
 
 
+@final
 class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
@@ -550,7 +553,7 @@ class TempProject(_ProjectBase):
     def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
         self._path = None
         self._build_path = None
-        self._name = name
+        self._name: Final = name
         self._sources = Sources(contract_sources, {})
         self._build = Build(self._sources)
         self._compile(contract_sources, compiler_config, True)
@@ -611,7 +614,9 @@ def new(
 
 
 def from_brownie_mix(
-    project_name: str, project_path: Union[Path, str] = None, ignore_subfolder: bool = False
+    project_name: str,
+    project_path: Optional[Union[Path, str]] = None,
+    ignore_subfolder: bool = False,
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix

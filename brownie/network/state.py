@@ -605,9 +605,9 @@ def _get_deployment(
     if not row:
         return None, None
 
-    keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
+    keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
     build_json = dict(zip(keys, row))
-    path_map = build_json.pop("paths")
+    path_map: dict = build_json.pop("paths")
     sources = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]
         for i in path_map.values()
@@ -646,7 +646,7 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
         cur.insert("sources", hash_, source)
         all_sources[key] = [hash_, path]
 
-    values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
+    values = (contract._build.get(i) for i in DEPLOYMENT_KEYS)
     cur.insert(name, address, alias, all_sources, *values)
 
 

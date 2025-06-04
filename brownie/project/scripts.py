@@ -8,13 +8,13 @@ from hashlib import sha1
 from importlib.machinery import SourceFileLoader
 from pathlib import Path, WindowsPath
 from types import FunctionType, ModuleType
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Final, List, Optional, Tuple
 
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
 from brownie.utils import color
 
-_import_cache: Dict = {}
+_import_cache: Final[Dict[str, ModuleType]] = {}
 
 
 def run(
@@ -64,9 +64,9 @@ def run(
         if not isinstance(func, FunctionType):
             raise AttributeError(f"Module '{name}' has no method '{method_name}'")
         try:
-            module_path = Path(module.__file__).relative_to(Path(".").absolute())
+            module_path = Path(module.__file__).relative_to(Path(".").absolute())  # type: ignore [arg-type]
         except ValueError:
-            module_path = Path(module.__file__)
+            module_path = Path(module.__file__)  # type: ignore [arg-type]
         print(
             f"\nRunning '{color('bright blue')}{module_path}{color}::"
             f"{color('bright cyan')}{method_name}{color}'..."
@@ -101,7 +101,7 @@ def run(
         # so that we have access to all the required imports and other objects
         f_locals: Dict = module.__dict__.copy()
         del f_locals[method_name]
-        func_code = compile(func_ast, module.__file__, "exec")
+        func_code = compile(func_ast, module.__file__, "exec")  # type: ignore [arg-type]
         exec(func_code, f_locals)
 
         # finally, we execute our new function from inside the copied globals dict. the frame
@@ -129,9 +129,9 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     if not path.is_absolute():
         for project in get_loaded_projects():
             if path.parts[:1] == (project._structure["scripts"],):
-                script_path = project._path.joinpath(path)
+                script_path = project._path.joinpath(path)  # type: ignore [union-attr]
             else:
-                script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
+                script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)  # type: ignore [union-attr]
             if script_path.exists():
                 return script_path.resolve(), project
         raise FileNotFoundError(f"Cannot find {path_str}")
@@ -140,7 +140,7 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
         raise FileNotFoundError(f"Cannot find {path_str}")
 
     try:
-        project = next(i for i in get_loaded_projects() if path_str.startswith(i._path.as_posix()))
+        project = next(i for i in get_loaded_projects() if path_str.startswith(i._path.as_posix()))  # type: ignore [union-attr]
     except StopIteration:
         raise ProjectNotFound(f"{path_str} is not part of an active project")
 
