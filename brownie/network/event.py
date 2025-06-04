@@ -153,11 +153,11 @@ class _EventItem:
     @overload
     def __getitem__(self, key: int) -> List:
         """returns the n'th event that was fired with this name"""
-        
+
     @overload
     def __getitem__(self, key: str) -> List:
         """returns the value of data field 'key' from the 1st event within the container"""
-        
+
     def __getitem__(self, key: Union[int, str]) -> List:
         """if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
