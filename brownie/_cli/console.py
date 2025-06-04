@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="assignment, union-attr"
 
 import builtins
 import code
@@ -8,6 +9,7 @@ import sys
 import tokenize
 from collections.abc import Iterable
 from io import StringIO
+from typing import Any, Dict, Final, Optional, final
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
@@ -62,6 +64,7 @@ def main():
     shell.interact(banner="Brownie environment is ready.", exitmsg="")
 
 
+@final
 class _Quitter:
     """
     Variation of `_sitebuiltins.Quitter` that does not close `stdin` on exit.
@@ -71,8 +74,8 @@ class _Quitter:
     second time. https://bugs.python.org/issue34115#msg322073
     """
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, name: str) -> None:
+        self.name: Final = name
 
     def __repr__(self):
         return f"Use {self.name}() or Ctrl-D (i.e. EOF) to exit"
@@ -81,6 +84,7 @@ class _Quitter:
         raise SystemExit(code)
 
 
+@final
 class ConsolePrinter:
     """
     Custom printer during console input.
@@ -92,9 +96,9 @@ class ConsolePrinter:
     _builtins_print = builtins.print
 
     def __init__(self, console):
-        self.console = console
+        self.console: Final = console
 
-    def start(self):
+    def start(self) -> None:
         builtins.print = self
 
     def __call__(self, *values, sep=" ", end="\n", file=sys.stdout, flush=False):
@@ -113,10 +117,11 @@ class ConsolePrinter:
         text = f"{sep.join(str(i) for i in values)}{end}{line}"
         self.console.write(text)
 
-    def finish(self):
+    def finish(self) -> None:
         builtins.print = self._builtins_print
 
 
+@final
 class Console(code.InteractiveConsole):
 
     # This value is used as the `input` arg when initializing `prompt_toolkit.PromptSession`.
@@ -145,7 +150,7 @@ class Console(code.InteractiveConsole):
             _dir=dir, dir=self._dir, exit=_Quitter("exit"), quit=_Quitter("quit"), _console=self
         )
 
-        self.exit_on_continue = exit_on_continue
+        self.exit_on_continue: Final = exit_on_continue
         if exit_on_continue:
             # add continue to the locals so we can quickly reach it via completion hints
             locals_dict["continue"] = True
@@ -165,7 +170,7 @@ class Console(code.InteractiveConsole):
 
         # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
-        kwargs = {}
+        kwargs: Dict[str, Any] = {}
         if console_settings["show_colors"]:
             kwargs.update(
                 lexer=PygmentsLexer(PythonLexer),
@@ -180,7 +185,7 @@ class Console(code.InteractiveConsole):
             kwargs["editing_mode"] = EditingMode(console_settings["editing_mode"].upper())
 
         self.compile_mode = "single"
-        self.prompt_session = PromptSession(
+        self.prompt_session = PromptSession(  # type: ignore [var-annotated]
             history=SanitizedFileHistory(history_file, locals_dict),
             input=self.prompt_input,
             key_bindings=KeyBindings(),
@@ -213,7 +218,7 @@ class Console(code.InteractiveConsole):
         self.console_printer = ConsolePrinter(self)
         super().__init__(locals_dict)
 
-    def _dir(self, obj=None):
+    def _dir(self, obj: Any = None) -> None:
         # console dir method, for simplified and colorful output
         if obj is None:
             results = [(k, v) for k, v in self.locals.items() if not k.startswith("_")]
@@ -224,7 +229,7 @@ class Console(code.InteractiveConsole):
         results = sorted(results, key=lambda k: k[0])
         self.write(f"[{f'{color}, '.join(_dir_color(i[1]) + i[0] for i in results)}{color}]\n")
 
-    def _console_write(self, obj):
+    def _console_write(self, obj: Any) -> None:
         text = repr(obj)
         try:
             if obj and isinstance(obj, dict):
@@ -237,7 +242,7 @@ class Console(code.InteractiveConsole):
             text = color.highlight(text)
         self.write(text)
 
-    def interact(self, *args, **kwargs):
+    def interact(self, *args: Any, **kwargs: Any) -> None:
         # temporarily modify mode so that container repr's display correctly for console
         cli_mode = CONFIG.argv["cli"]
         CONFIG.argv["cli"] = "console"
@@ -253,15 +258,15 @@ class Console(code.InteractiveConsole):
         finally:
             self.console_printer.finish()
 
-    def showsyntaxerror(self, filename):
-        tb = color.format_tb(sys.exc_info()[1])
+    def showsyntaxerror(self, filename: Optional[str] = None) -> None:
+        tb = color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
         self.write(tb + "\n")
 
-    def showtraceback(self):
-        tb = color.format_tb(sys.exc_info()[1], start=1)
+    def showtraceback(self) -> None:
+        tb = color.format_tb(sys.exc_info()[1], start=1)  # type: ignore [arg-type]
         self.write(tb + "\n")
 
-    def resetbuffer(self):
+    def resetbuffer(self) -> None:
         # reset the input buffer and parser cache
         _parser_cache.clear()
         return super().resetbuffer()
@@ -289,15 +294,15 @@ class Console(code.InteractiveConsole):
             code = self.compile(f"__ret_value__ = {source}", filename, "exec")
         except Exception:
             pass
-        self.runcode(code)
+        self.runcode(code)  # type: ignore [arg-type]
         if "__ret_value__" in self.locals and self.locals["__ret_value__"] is not None:
-            return_value = self.locals.pop("__ret_value__")
+            return_value = self.locals.pop("__ret_value__")  # type: ignore [attr-defined]
             self._console_write(return_value)
         return False
 
     def paste_event(self, event):
         # pasting multiline data temporarily switches to multiline mode
-        data = event.data
+        data: str = event.data
         data = data.replace("\r\n", "\n")
         data = data.replace("\r", "\n")
 
@@ -314,7 +319,7 @@ class Console(code.InteractiveConsole):
         return not self.buffer or self.prompt_session.app.current_buffer.text.strip()
 
 
-def _dir_color(obj):
+def _dir_color(obj: Any) -> str:
     if type(obj).__name__ == "module":
         return color("brownie blue")
     elif hasattr(obj, "_dir_color"):
@@ -324,6 +329,7 @@ def _dir_color(obj):
     return color("bright cyan")
 
 
+@final
 class SanitizedFileHistory(FileHistory):
     """
     FileHistory subclass to strip sensetive information prior to writing to disk.
@@ -342,11 +348,11 @@ class SanitizedFileHistory(FileHistory):
     session is active.
     """
 
-    def __init__(self, filename, local_dict):
+    def __init__(self, filename: str, local_dict: Dict[str, Any]) -> None:
         self.locals = local_dict
         super().__init__(filename)
 
-    def store_string(self, line):
+    def store_string(self, line: str):
         try:
             cls_, method = line[: line.index("(")].split(".")
             method = getattr(self.locals[cls_], method)
@@ -357,8 +363,9 @@ class SanitizedFileHistory(FileHistory):
         return super().store_string(line)
 
 
+@final
 class ConsoleCompleter(Completer):
-    def __init__(self, console, local_dict):
+    def __init__(self, console, local_dict: Dict[str, Any]) -> None:
         self.console = console
         self.locals = local_dict
         super().__init__()
@@ -384,6 +391,7 @@ class ConsoleCompleter(Completer):
             return
 
 
+@final
 class ConsoleAutoSuggest(AutoSuggest):
     """
     AutoSuggest subclass to display contract input hints.
@@ -393,7 +401,7 @@ class ConsoleAutoSuggest(AutoSuggest):
     respectively.
     """
 
-    def __init__(self, console, local_dict):
+    def __init__(self, console, local_dict: Dict[str, Any]) -> None:
         self.console = console
         self.locals = local_dict
         super().__init__()
@@ -446,7 +454,7 @@ def _obj_from_token(obj, token):
         return obj[key]
     if isinstance(obj, Iterable):
         try:
-            return obj[int(key)]
+            return obj[int(key)]  # type: ignore [index]
         except ValueError:
             pass
     return getattr(obj, key)

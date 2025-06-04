@@ -3,6 +3,7 @@
 import shutil
 import sys
 from pathlib import Path
+from typing import Any, Dict, Tuple
 
 import yaml
 
@@ -114,26 +115,26 @@ def _add(env, id_, *args):
     if id_ in CONFIG.networks:
         raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' already exists")
 
-    args = _parse_args(args)
+    args_dict = _parse_args(args)
 
-    if "name" not in args:
-        args["name"] = id_
+    if "name" not in args_dict:
+        args_dict["name"] = id_
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
     if env.lower() == "development":
         try:
             new = {
-                "name": args.pop("name"),
+                "name": args_dict.pop("name"),
                 "id": id_,
-                "cmd": args.pop("cmd"),
-                "host": args.pop("host"),
+                "cmd": args_dict.pop("cmd"),
+                "host": args_dict.pop("host"),
             }
         except KeyError as exc:
             raise ValueError(f"Missing field: {exc.args[0]}")
-        if "timeout" in args:
-            new["timeout"] = args.pop("timeout")
-        new["cmd_settings"] = args
+        if "timeout" in args_dict:
+            new["timeout"] = args_dict.pop("timeout")
+        new["cmd_settings"] = args_dict
         _validate_network(new, DEV_REQUIRED)
         networks["development"].append(new)
     else:
@@ -143,7 +144,7 @@ def _add(env, id_, *args):
         if target is None:
             networks["live"].append({"name": env, "networks": []})
             target = networks["live"][-1]["networks"]
-        new = {"id": id_, **args}
+        new = {"id": id_, **args_dict}
         _validate_network(new, PROD_REQUIRED)
         target.append(new)
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
@@ -159,7 +160,7 @@ def _modify(id_, *args):
     if id_ not in CONFIG.networks:
         raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
 
-    args = _parse_args(args)
+    args_dict = _parse_args(args)
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -169,7 +170,7 @@ def _modify(id_, *args):
         target = next(i for i in networks["development"] if i["id"] == id_)
     else:
         target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-    for key, value in args.items():
+    for key, value in args_dict.items():
         t = target
         if key in DEV_CMD_SETTINGS and is_dev:
             t = target["cmd_settings"]
@@ -349,34 +350,34 @@ def _list_providers(verbose=False):
         _print_simple_providers_description(providers)
 
 
-def _parse_args(args):
+def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
     try:
-        args = dict(i.split("=", maxsplit=1) for i in args)
+        parsed: Dict[str, Any] = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
         raise ValueError("Arguments must be given as key=value") from None
 
-    for key in args:
-        if args[key].isdigit():
-            args[key] = int(args[key])
-        elif args[key].lower() in ("true", "false", "none"):
-            args[key] = eval(args[key].capitalize())
+    for key, value in parsed.items():
+        if value.isdigit():
+            parsed[key] = int(value)
+        elif value.lower() in ("true", "false", "none"):
+            parsed[key] = eval(value.capitalize())
 
-    return args
+    return parsed
 
 
-def _print_verbose_providers_description(providers):
+def _print_verbose_providers_description(providers) -> None:
     u = "\u251c"
     for provider in providers:
         print(f"{color('bright black')}  {u}\u2500{color}provider: {provider}:")
         print(f"{color('bright black')}  {u}\u2500{color}   host: {providers[provider]}:")
 
 
-def _print_simple_providers_description(providers):
+def _print_simple_providers_description(providers) -> None:
     u = "\u251c"
     print(f"{color('bright black')}  {u}\u2500{color}{providers.keys()}:")
 
 
-def _print_simple_network_description(network_dict, is_last):
+def _print_simple_network_description(network_dict, is_last) -> None:
     u = "\u2514" if is_last else "\u251c"
     print(
         f"{color('bright black')}  {u}\u2500{color}{network_dict['name']}:"
@@ -384,7 +385,7 @@ def _print_simple_network_description(network_dict, is_last):
     )
 
 
-def _print_verbose_network_description(network_dict, is_last, indent=0):
+def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
     u = "\u2514" if is_last else "\u251c"
     v = " " if is_last else "\u2502"
     if "name" in network_dict:
@@ -405,7 +406,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
         print(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
-def _validate_network(network, required):
+def _validate_network(network, required) -> None:
     if missing := [i for i in required if i not in network]:
         raise ValueError(f"Network is missing required field(s): {', '.join(missing)}")
 

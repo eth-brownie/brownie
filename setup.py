@@ -21,6 +21,32 @@ else:
 with open(requirements_filename, "r") as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
 
+try:
+    from mypyc.build import mypycify
+except ImportError:
+    ext_modules = []
+else:
+    ext_modules = mypycify(
+        [
+            "brownie/_cli",
+            "brownie/convert/__init__.py",
+            "brownie/convert/main.py",
+            "brownie/convert/normalize.py",
+            "brownie/convert/utils.py",
+            "brownie/network/__init__.py",
+            "brownie/project/compiler",
+            "brownie/utils/__init__.py",
+            "brownie/utils/_color.py",
+            "brownie/utils/output.py",
+            "brownie/utils/sql.py",
+            "brownie/utils/toposort.py",
+            # "--strict",
+            "--pretty",
+            "--check-untyped-defs",
+        ]
+    )
+
+
 setup(
     name="eth-brownie",
     packages=find_packages(),
@@ -42,6 +68,7 @@ setup(
         "brownie": ["py.typed"],
     },
     include_package_data=True,
+    ext_modules=ext_modules,
     python_requires=">=3.10,<4",
     classifiers=[
         "Development Status :: 5 - Production/Stable",

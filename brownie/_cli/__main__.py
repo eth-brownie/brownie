@@ -55,7 +55,7 @@ def main():
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
     CONFIG.argv["cli"] = cmd
-    sys.modules["brownie"].a = network.accounts
+    sys.modules["brownie"].a = network.accounts  # type: ignore [attr-defined]
     sys.modules["brownie"].__all__.append("a")
 
     try:

@@ -3,7 +3,7 @@
 import sys
 import traceback
 from pathlib import Path
-from typing import Dict, Optional, Sequence
+from typing import Any, Dict, Final, Optional, Sequence, final
 
 import pygments
 from pygments.formatters import get_formatter_by_name
@@ -29,17 +29,17 @@ except Exception:
     # if curses won't import we are probably using Windows
     pass
 
-formatter = get_formatter_by_name(fmt_name, style=CONFIG.settings["console"]["color_style"])
+formatter: Final = get_formatter_by_name(fmt_name, style=CONFIG.settings["console"]["color_style"])
 
 if fmt_name == "terminal256" and CONFIG.settings["console"]["color_style"] == "monokai":
     # dirty hack to make tree diagrams not have a fixed black blackground
     formatter.style_string["Token.Error"] = ("\x1b[0;2;37m", "\x1b[0;m")
 
-BASE = "\x1b[0;"
+BASE: Final = "\x1b[0;"
 
-MODIFIERS = {"bright": "1;", "dark": "2;"}
+MODIFIERS: Final = {"bright": "1;", "dark": "2;"}
 
-COLORS = {
+COLORS: Final = {
     "black": "30",
     "red": "31",
     "green": "32",
@@ -50,24 +50,33 @@ COLORS = {
     "white": "37",
 }
 
-NOTIFY_COLORS = {"WARNING": "bright red", "ERROR": "bright red", "SUCCESS": "bright green"}
+NOTIFY_COLORS: Final = {"WARNING": "bright red", "ERROR": "bright red", "SUCCESS": "bright green"}
 
-base_path = str(Path(".").absolute())
+base_path: Final = str(Path(".").absolute())
 
 
+@final
 class Color:
-    def __call__(self, color_str: str = None) -> str:
+    __cache__: Final[Dict[Optional[str], str]] = {}
+
+    def __call__(self, color_str: Optional[str] = None) -> str:
         if not CONFIG.settings["console"]["show_colors"]:
             return ""
-        if not color_str:
-            return f"{BASE}m"
         try:
-            if " " not in color_str:
-                return f"{BASE}{COLORS[color_str]}m"
-            modifier, color_str = color_str.split()
-            return f"{BASE}{MODIFIERS[modifier]}{COLORS[color_str]}m"
-        except (KeyError, ValueError):
-            return f"{BASE}m"
+            return Color.__cache__[color_str]
+        except KeyError:
+            if not color_str:
+                return f"{BASE}m"
+            try:
+                if " " in color_str:
+                    modifier, color_str = color_str.split()
+                    color = f"{BASE}{MODIFIERS[modifier]}{COLORS[color_str]}m"
+                else:
+                    color = f"{BASE}{COLORS[color_str]}m"
+            except (KeyError, ValueError):
+                color = f"{BASE}m"
+            Color.__cache__[color_str] = color
+            return color
 
     def __str__(self):
         return f"{BASE}m"
@@ -78,7 +87,7 @@ class Color:
         if not _indent:
             text = "{"
         _indent += 4
-        for c, k in enumerate(sorted(value.keys(), key=lambda k: str(k))):
+        for c, k in enumerate(sorted(value.keys(), key=str)):
             if c:
                 text += ","
             s = "'" if isinstance(k, str) else ""
@@ -115,14 +124,14 @@ class Color:
             text += brackets[1]
         return text
 
-    def _write(self, value):
+    def _write(self, value: Any) -> str:
         s = '"' if isinstance(value, str) else ""
         return f"{s}{value}{s}"
 
     def format_tb(
         self,
-        exc: Exception,
-        filename: str = None,
+        exc: BaseException,
+        filename: Optional[str] = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> str:
@@ -175,11 +184,11 @@ class Color:
 
     def format_syntaxerror(self, exc: SyntaxError) -> str:
         offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
-        exc.filename = exc.filename.replace(base_path, ".")
+        exc.filename = exc.filename.replace(base_path, ".")  # type: ignore [union-attr]
         return (
             f"  {self('dark white')}File \"{self('bright magenta')}{exc.filename}"
             f"{self('dark white')}\", line {self('bright blue')}{exc.lineno}"
-            f"{self('dark white')},\n{self}    {exc.text.strip()}\n"
+            f"{self('dark white')},\n{self}    {exc.text.strip()}\n"  # type: ignore [union-attr]
             f"{' '*offset}^\n{self('bright red')}SyntaxError{self}: {exc.msg}"
         )
 

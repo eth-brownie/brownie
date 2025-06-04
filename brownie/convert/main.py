@@ -1,14 +1,17 @@
 #!/usr/bin/python3
 
-from decimal import Decimal
-from typing import Any
+import decimal
+from typing import Any, Final
 
-import eth_utils
+import hexbytes
 from faster_eth_utils import is_hex, to_text
-from hexbytes import HexBytes
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
 from .utils import get_int_bounds
+
+
+Decimal: Final = decimal.Decimal
+HexBytes: Final = hexbytes.HexBytes
 
 
 def to_uint(value: Any, type_str: str = "uint256") -> Wei:
@@ -68,7 +71,7 @@ def to_string(value: Any) -> str:
     """Convert a value to a string"""
     try:
         if isinstance(value, bytes):
-            return to_text(hexstr=HexBytes(value).hex())
+            return to_text(hexstr=HexBytes(value).hex())  # type: ignore [arg-type]
         value = str(value)
         if value.startswith("0x") and is_hex(value):
             return to_text(hexstr=value)

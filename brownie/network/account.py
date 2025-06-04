@@ -190,7 +190,10 @@ class Accounts(metaclass=_Singleton):
         return new_accounts
 
     def load(
-        self, filename: str = None, password: str = None, allow_retry: bool = False
+        self,
+        filename: Optional[Union[str, Path]] = None,
+        password: Optional[str] = None,
+        allow_retry: bool = False,
     ) -> Union[List, "LocalAccount"]:
         """
         Load a local account from a keystore file.
