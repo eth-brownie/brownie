@@ -4,6 +4,7 @@ import decimal
 from typing import Any, Final
 
 import hexbytes
+from eth_typing import ChecksumAddress
 from faster_eth_utils import is_hex, to_text
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
@@ -42,7 +43,7 @@ def to_decimal(value: Any) -> Fixed:
     return d
 
 
-def to_address(value: str) -> str:
+def to_address(value: str) -> ChecksumAddress:
     """Convert a value to an address"""
     return str(EthAddress(value))
 

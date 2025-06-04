@@ -15,9 +15,11 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Final,
     Iterator,
     List,
     Match,
+    NewType,
     Optional,
     Set,
     Tuple,
@@ -27,6 +29,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
+from eth_typing import ChecksumAddress, HexStr
 from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
@@ -74,6 +77,8 @@ from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
 
+FunctionName = NewType("FunctionName", str)
+
 _unverified_addresses: Set = set()
 
 
@@ -81,21 +86,23 @@ class _ContractBase:
     _dir_color = "bright magenta"
 
     def __init__(self, project: Any, build: Dict[str, Any], sources: Dict[str, Any]) -> None:
-        self._project = project
-        self._build = build.copy()
-        self._sources = sources
-        self.topics = _get_topics(self.abi)
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self._project: Final = project
+        self._build: Final = build.copy()
+        self._sources: Final = sources
+        self.topics: Final = _get_topics(self.abi)
+        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in self.abi
+            if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures = {
-            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
+        self.signatures: Final[Dict[FunctionName, HexStr]] = {
+            v: k for k, v in self.selectors.items()
         }
         parse_errors_from_abi(self.abi)
 
     @property
-    def abi(self) -> List:
+    def abi(self) -> List[Dict[str, Any]]:
         return self._build["abi"]
 
     @property
@@ -106,8 +113,8 @@ class _ContractBase:
         """
         Display NatSpec documentation for this contract.
         """
-        if self._build.get("natspec"):
-            _print_natspec(self._build["natspec"])
+        if natspec := self._build.get("natspec"):
+            _print_natspec(natspec)
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
@@ -166,17 +173,17 @@ class ContractContainer(_ContractBase):
 
     def __init__(self, project: Any, build: Dict) -> None:
         self.tx = None
-        self.bytecode = build["bytecode"]
-        self._contracts: List["ProjectContract"] = []
+        self.bytecode: Final = HexStr(build["bytecode"])
+        self._contracts: Final[List["ProjectContract"]] = []
         super().__init__(project, build, project._sources)
-        self.deploy = ContractConstructor(self, self._name)
+        self.deploy: Final = ContractConstructor(self, self._name)
         _revert_register(self)
 
         # messes with tests if it is created on init
         # instead we create when it's requested, but still define it here
         self._flattener: Flattener = None  # type: ignore
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["ProjectContract"]:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> "ProjectContract":
@@ -617,10 +624,12 @@ class InterfaceConstructor:
     """
 
     def __init__(self, name: str, abi: List) -> None:
-        self._name = name
-        self.abi = abi
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self._name: Final = name
+        self.abi: Final = abi
+        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in self.abi
+            if i["type"] == "function"
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
@@ -684,24 +693,28 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self,
+        address: ChecksumAddress,
+        owner: Optional[AccountsType] = None,
+        tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode = (
+        self.bytecode: Final = HexStr(
             # removeprefix is used for compatability with both hexbytes<1 and >=1
             self._build.get("deployedBytecode", None)
             or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
-        self._owner = owner
-        self.tx = tx
-        self.address = address
-        self.events = ContractEvents(self)
+        self._owner: Final = owner
+        self.tx: Final = tx
+        self.address: Final = address
+        self.events: Final = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
-        fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
-        for abi in [i for i in self.abi if i["type"] == "function"]:
+        fn_abis = [i for i in self.abi if i["type"] == "function"]
+        fn_names = [i["name"] for i in fn_abis]
+        for abi in fn_abis:
             name = f"{self._name}.{abi['name']}"
             sig = build_function_signature(abi)
             natspec: Dict = {}
@@ -889,8 +902,8 @@ class Contract(_DeployedContractBase):
     def _deprecated_init(
         self,
         name: str,
-        address: Optional[str] = None,
-        abi: Optional[List] = None,
+        address: Optional[ChecksumAddress] = None,
+        abi: Optional[List[Dict[str, Any]]] = None,
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> None:
@@ -1225,8 +1238,8 @@ class ProjectContract(_DeployedContractBase):
     def __init__(
         self,
         project: Any,
-        build: Dict,
-        address: str,
+        build: Dict[str, Any],
+        address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
@@ -1365,14 +1378,14 @@ class ContractEvents(_ContractEvents):
 
 
 class OverloadedMethod:
-    def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
-        self._address = address
-        self._name = name
-        self._owner = owner
-        self.methods: Dict = {}
-        self.natspec: Dict = {}
+    def __init__(self, address: ChecksumAddress, name: str, owner: Optional[AccountsType]):
+        self._address: Final = address
+        self._name: Final = name
+        self._owner: Final = owner
+        self.methods: Final[Dict[Any, Any]] = {}
+        self.natspec: Final[Dict[str, Any]] = {}
 
-    def _add_fn(self, abi: Dict, natspec: Dict) -> None:
+    def _add_fn(self, abi: Dict, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1542,19 +1555,19 @@ class _ContractMethod:
 
     def __init__(
         self,
-        address: str,
-        abi: Dict,
+        address: ChecksumAddress,
+        abi: Dict[str, Any],
         name: str,
         owner: Optional[AccountsType],
-        natspec: Optional[Dict] = None,
+        natspec: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._address = address
-        self._name = name
-        self.abi = abi
-        self._owner = owner
-        self.signature = build_function_selector(abi)
-        self._input_sig = build_function_signature(abi)
-        self.natspec = natspec or {}
+        self._address: Final = address
+        self._name: Final = name
+        self.abi: Final = abi
+        self._owner: Final = owner
+        self.signature: Final = build_function_selector(abi)
+        self._input_sig: Final = build_function_signature(abi)
+        self.natspec: Final[Dict[str, Any]] = natspec or {}
 
     def __repr__(self) -> str:
         pay = "payable " if self.payable else ""
@@ -1874,7 +1887,11 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 
 
 def _get_method_object(
-    address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
+    address: ChecksumAddress,
+    abi: Dict[str, Any],
+    name: str,
+    owner: Optional[AccountsType],
+    natspec: Dict[str, Any],
 ) -> Union["ContractCall", "ContractTx"]:
     if "constant" in abi:
         constant = abi["constant"]
@@ -1894,7 +1911,7 @@ def _inputs(abi: Dict[str, Any]) -> str:
     )
 
 
-def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
+def _verify_deployed_code(address: HexAddress, expected_bytecode: str, language: str) -> bool:
     # removeprefix is used for compatability with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
@@ -1948,7 +1965,7 @@ def _print_natspec(natspec: Dict[str, Any]) -> None:
     print()
 
 
-def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
+def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) -> Dict[str, Any]:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 

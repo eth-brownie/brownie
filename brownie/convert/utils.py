@@ -3,6 +3,7 @@
 from typing import Any, Dict, Final, List, Optional, Tuple
 
 import eth_hash.auto
+from eth_typing import HexStr
 
 
 keccak: Final = eth_hash.auto.keccak
@@ -62,6 +63,6 @@ def build_function_signature(abi: Dict[str, Any]) -> str:
     return f"{abi['name']}({','.join(types_list)})"
 
 
-def build_function_selector(abi: Dict[str, Any]) -> str:
+def build_function_selector(abi: Dict[str, Any]) -> HexStr:
     sig = build_function_signature(abi)
-    return f"0x{keccak(sig.encode()).hex()[:8]}"
+    return HexStr(f"0x{keccak(sig.encode()).hex()[:8]}")
