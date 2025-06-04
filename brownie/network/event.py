@@ -63,10 +63,10 @@ class EventDict:
         for event in self._ordered:
             if event.name not in self._dict:
                 self._dict[event.name] = _EventItem(
-                    event.name, 
-                    None, 
-                    [i for i in self._ordered if i.name == event.name], 
-                    tuple(i.pos[0] for i in events)
+                    event.name,
+                    None,
+                    [i for i in self._ordered if i.name == event.name],
+                    tuple(i.pos[0] for i in events),
                 )
 
     def __repr__(self) -> str:
@@ -149,7 +149,11 @@ class _EventItem:
     """
 
     def __init__(
-        self, name: str, address: Optional[str], event_data: List[Union["_EventItem", OrderedDict]], pos: Tuple[int, ...]
+        self,
+        name: str,
+        address: Optional[str],
+        event_data: List[Union["_EventItem", OrderedDict]],
+        pos: Tuple[int, ...],
     ) -> None:
         self.name: Final = name
         self.address: Final = address

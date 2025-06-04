@@ -1,0 +1,381 @@
+live:
+  - name: Ethereum
+    networks:
+      - name: Mainnet (Infura)
+        chainid: 1
+        id: mainnet
+        host: https://mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Ropsten (Infura)
+        chainid: 3
+        id: ropsten
+        host: https://ropsten.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-ropsten.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Rinkeby (Infura)
+        chainid: 4
+        id: rinkeby
+        host: https://rinkeby.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-rinkeby.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Sepolia (Infura)
+        chainid: 11155111
+        id: sepolia
+        host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-sepolia.etherscan.io/
+        provider: infura
+      - name: Goerli (Infura)
+        chainid: 5
+        id: goerli
+        host: https://goerli.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-goerli.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+      - name: Kovan (Infura)
+        chainid: 42
+        id: kovan
+        host: https://kovan.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-kovan.etherscan.io/api
+        multicall2: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+        provider: infura
+  - name: Ethereum Classic
+    networks:
+      - name: Mainnet
+        chainid: 61
+        id: etc
+        host: https://www.ethercluster.com/etc
+        explorer: https://blockscout.com/etc/mainnet/api
+      - name: Kotti
+        chainid: 6
+        id: kotti
+        host: https://www.ethercluster.com/kotti
+        explorer: https://blockscout.com/etc/kotti/api
+  - name: Arbitrum
+    networks:
+      - name: Mainnet
+        chainid: 42161
+        id: arbitrum-main
+        host: https://arb1.arbitrum.io/rpc
+        explorer: https://api.arbiscan.io/api
+        multicall2: "0x5B5CFE992AdAC0C9D48E05854B2d91C73a003858"
+  - name: Avalanche
+    networks:
+      - chainid: 43114
+        explorer: https://api.snowtrace.io/api
+        host: https://api.avax.network/ext/bc/C/rpc
+        id: avax-main
+        name: Mainnet
+      - chainid: 43113
+        host: https://api.avax-test.network/ext/bc/C/rpc
+        id: avax-test
+        name: Testnet
+  - name: Aurora
+    networks:
+      - name: Mainnet
+        chainid: 1313161554
+        id: aurora-main
+        host: https://mainnet.aurora.dev
+        explorer: https://api.aurorascan.dev/api
+        multicall2: "0xace58a26b8Db90498eF0330fDC9C2655db0C45E2"
+      - name: Testnet
+        chainid: 1313161555
+        id: aurora-test
+        host: https://testnet.aurora.dev
+        explorer: https://testnet.aurorascan.dev/api
+  - name: Binance Smart Chain
+    networks:
+      - name: Testnet
+        chainid: 97
+        id: bsc-test
+        host: https://data-seed-prebsc-1-s1.binance.org:8545
+        explorer: https://api-testnet.bscscan.com/api
+      - name: Mainnet
+        chainid: 56
+        id: bsc-main
+        host: https://bsc-dataseed.binance.org
+        explorer: https://api.bscscan.com/api
+  - name: Boba
+    networks:
+      - name: Testnet
+        chainid: 28
+        id: boba-test
+        host: https://rinkeby.boba.network
+        explorer: https://blockexplorer.rinkeby.boba.network/api
+        multicall2: "0xeD188A73c442Df375b19b7b8f394a15a2b851BB5"
+      - name: Mainnet
+        chainid: 288
+        id: boba-main
+        host: https://mainnet.boba.network
+        explorer: https://blockexplorer.boba.network/api
+        multicall2: "0xbe2Be647F8aC42808E67431B4E1D6c19796bF586"
+  - name: Fantom Opera
+    networks:
+      - name: Testnet
+        chainid: 0xfa2
+        id: ftm-test
+        host: https://rpc.testnet.fantom.network
+        explorer: https://explorer.testnet.fantom.network
+      - name: Mainnet
+        chainid: 250
+        id: ftm-main
+        host: https://rpc.ftm.tools
+        explorer: https://api.ftmscan.com/api
+  - name: Harmony
+    networks:
+      - name: Mainnet (Shard 0)
+        chainid: 1666600000
+        host: https://api.harmony.one
+        id: harmony-main
+        multicall2: "0x3E01dD8a5E1fb3481F0F589056b428Fc308AF0Fb"
+  - name: Hedera
+    networks:
+      - name: Mainnet
+        chainid: 295
+        id: hedera-main
+        host: https://mainnet.hashio.io/api
+        explorer: https://hashscan.io/mainnet
+      - name: Testnet
+        chainid: 296
+        id: hedera-test
+        host: https://testnet.hashio.io/api
+        explorer: https://hashscan.io/testnet
+      - name: Previewnet
+        chainid: 297
+        id: hedera-preview
+        host: https://previewnet.hashio.io/api
+        explorer: https://hashscan.io/previewnet
+  - name: Moonbeam
+    networks:
+      - name: Mainnet
+        chainid: 1284
+        id: moonbeam-main
+        host: https://rpc.api.moonbeam.network
+        explorer: https://api-moonbeam.moonscan.io/api
+        multicall2: "0x1337BedC9D22ecbe766dF105c9623922A27963EC"
+      - name: Moonbase Alpha
+        chainid: 1287
+        id: moonbeam-test
+        host: https://rpc.api.moonbase.moonbeam.network
+        explorer: https://api-moonbase.moonscan.io/api
+        multicall2: "0x37084d0158C68128d6Bc3E5db537Be996f7B6979"
+  - name: Moonriver
+    networks:
+      - name: Mainnet
+        chainid: 1285
+        id: moonriver-main
+        host: https://rpc.api.moonriver.moonbeam.network
+        explorer: https://api-moonriver.moonscan.io/api
+        multicall2: "0xaef00a0cf402d9dedd54092d9ca179be6f9e5ce3"
+  - name: Optimistic Ethereum
+    networks:
+      - name: Mainnet
+        chainid: 10
+        id: optimism-main
+        host:  https://optimism-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-optimistic.etherscan.io/api
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
+      - name: Goerli
+        chainid: 420
+        id: optimism-test
+        host: https://goerli.optimism.io
+        explorer: https://api-goerli-optimism.etherscan.io/api
+        multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
+  - name: Polygon
+    networks:
+      - name: Mainnet (Infura)
+        chainid: 137
+        id: polygon-main
+        host: https://polygon-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api.polygonscan.com/api
+        multicall2: "0xc8E51042792d7405184DfCa245F2d27B94D013b6"
+      - name: Mumbai Testnet (Infura)
+        chainid: 80001
+        id: polygon-test
+        host: https://polygon-mumbai.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        explorer: https://api-testnet.polygonscan.com/api
+        multicall2: "0x6842E0412AC1c00464dc48961330156a07268d14"
+  - name: Gnosis Chain
+    networks:
+      - name: Mainnet
+        chainid: 100
+        id: gnosis-main
+        host: https://rpc.gnosischain.com
+        explorer: https://api.gnosisscan.io/api
+      - name: Chiado
+        chainid: 10200
+        id: gnosis-test
+        host: https://rpc.chiadochain.net
+        explorer: https://gnosis-chiado.blockscout.com/api
+  - name: Polygon zkEVM
+    networks:
+      - chainid: 1101
+        explorer: https://api-zkevm.polygonscan.com/api
+        host: https://zkevm-rpc.com
+        id: zkevm-main
+        name: Polygon zkEVM mainnet
+  - name: Base
+    networks:
+      - chainid: 8453
+        explorer: https://api.basescan.org/api
+        host: https://mainnet.base.org
+        id: base-main
+        name: Base mainnet
+
+
+
+development:
+  - name: Anvil
+    id: anvil
+    cmd: anvil
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+  - name: Anvil (Mainnet Fork)
+    id: anvil-fork
+    cmd: anvil
+    host: http://127.0.0.1
+    cmd_settings:
+      fork: mainnet
+      port: 8545
+  - name: Ganache-CLI
+    id: development
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+  - name: Geth Dev
+    id: geth-dev
+    cmd: ethnode
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+  - name: Hardhat
+    id: hardhat
+    cmd: npx hardhat node
+    host: http://localhost
+    cmd_settings:
+      port: 8545
+  - name: Hardhat (Mainnet Fork)
+    id: hardhat-fork
+    cmd: npx hardhat node
+    host: http://localhost
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      fork: mainnet
+  - name: Ganache-CLI (Mainnet Fork)
+    id: mainnet-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: mainnet
+  - name: Ganache-CLI (BSC-Mainnet Fork)
+    id: bsc-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: bsc-main
+  - name: Ganache-CLI (FTM-Mainnet Fork)
+    id: ftm-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: ftm-main
+  - name: Ganache-CLI (Polygon-Mainnet Fork)
+    id: polygon-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: polygon-main
+  - name: Ganache-CLI (Avax-Mainnet Fork)
+    id: avax-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: avax-main
+  - name: Ganache-CLI (Aurora-Mainnet Fork)
+    id: aurora-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: aurora-main
+  - name: Ganache-CLI (Gnosis-Mainnet Fork)
+    id: gnosis-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: gnosis-main
+  - name: Ganache-CLI (zkEVM-Mainnet Fork)
+    id: zkevm-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: zkevm-main
+  - name: Ganache-CLI Base-Mainnet Fork)
+    id: base-main-fork
+    cmd: ganache-cli
+    host: http://127.0.0.1
+    timeout: 120
+    cmd_settings:
+      port: 8545
+      gas_limit: 20000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+      fork: base-main
