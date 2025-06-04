@@ -27,7 +27,7 @@ def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
     return ReturnValue(result, abi["outputs"])
 
 
-def format_event(event: Dict) -> Any:
+def format_event(event: Dict[str, Any]) -> Dict[str, Any]:
     # Format event data based on ABI types
     if not event["decoded"]:
         topics = (
