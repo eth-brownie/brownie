@@ -1,0 +1,4 @@
+infura:
+    host: https://{}.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+alchemy:
+    host: https://eth-{}.alchemyapi.io/v2/$WEB3_ALCHEMY_PROJECT_ID
