@@ -18,8 +18,8 @@ from eip712.messages import EIP712Message
 from eth_account._utils.signing import sign_message_hash
 from eth_account.datastructures import SignedMessage
 from eth_account.messages import _hash_eip191_message, defunct_hash_message
-from eth_utils import keccak
-from eth_utils.applicators import apply_formatters_to_dict
+from faster_eth_utils import keccak
+from faster_eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
 from web3 import HTTPProvider, IPCProvider
 from web3.exceptions import InvalidTransaction, TransactionNotFound

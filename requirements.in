@@ -6,7 +6,7 @@ eth-account
 eth-event>=1.2.7,<2
 eth-hash[pycryptodome]
 eth-typing>=4.2.1,<5
-eth-utils
+faster-eth-utils>=4.1.2
 hexbytes
 hypothesis<6.28.0
 lazy-object-proxy>=1.6.0,<2

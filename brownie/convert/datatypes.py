@@ -10,7 +10,7 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
-import eth_utils
+from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from hexbytes import HexBytes
 
 from brownie.utils import bytes_to_hexstring
@@ -208,7 +208,7 @@ class EthAddress(str):
         converted_value = value
         if isinstance(value, bytes):
             converted_value = bytes_to_hexstring(value)
-        converted_value = eth_utils.add_0x_prefix(str(converted_value))  # type: ignore
+        converted_value = add_0x_prefix(str(converted_value))  # type: ignore [arg-type]
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
@@ -219,15 +219,15 @@ class EthAddress(str):
         return super().__hash__()
 
     def __eq__(self, other: Any) -> bool:
-        return _address_compare(str(self), other)
+        return _address_compare(self, other)
 
     def __ne__(self, other: Any) -> bool:
-        return not _address_compare(str(self), other)
+        return not _address_compare(self, other)
 
 
-def _address_compare(a: Any, b: Any) -> bool:
+def _address_compare(a: str, b: Any) -> bool:
     b = str(b)
-    if not b.startswith("0x") or not eth_utils.is_hex(b) or len(b) != 42:
+    if not b.startswith("0x") or not is_hex(b) or len(b) != 42:
         raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
     return a.lower() == b.lower()
 
@@ -253,9 +253,9 @@ class HexString(bytes):
         return str(self)
 
 
-def _hex_compare(a: Any, b: Any) -> bool:
+def _hex_compare(a: str, b: Any) -> bool:
     b = str(b)
-    if not b.startswith("0x") or not eth_utils.is_hex(b):
+    if not b.startswith("0x") or not is_hex(b):
         raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
     return a.lstrip("0x").lower() == b.lstrip("0x").lower()
 
@@ -266,7 +266,7 @@ def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to {type_str}")
     value = _to_hex(value)
     if type_str == "bytes":
-        return eth_utils.to_bytes(hexstr=value)
+        return to_bytes(hexstr=value)
     if type_str == "byte":
         type_str = "bytes1"
     size = int(type_str.strip("bytes"))
@@ -287,8 +287,8 @@ def _to_hex(value: Any) -> str:
     if isinstance(value, str):
         if value in ("", "0x"):
             return "0x00"
-        if eth_utils.is_hex(value):
-            return eth_utils.add_0x_prefix(value)  # type: ignore
+        if is_hex(value):
+            return add_0x_prefix(value)  # type: ignore
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
