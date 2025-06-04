@@ -309,7 +309,7 @@ class ReturnValue(tuple):
                     value_type: str = value_abi["type"]
                     if value_type == "tuple":
                         # tuple
-                        values[i] = ReturnValue(values, value_abi["components"])
+                        values[i] = ReturnValue(value, value_abi["components"])
                     else:
                         # array of tuples
                         inner_abi = value_abi.copy()
