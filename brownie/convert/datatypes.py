@@ -299,7 +299,7 @@ class ReturnValue(tuple):
     _abi: Optional[List[Dict[str, Any]]] = None
     _dict: Dict[str, Any] = {}
 
-    def __new__(cls, values: Sequence, abi: Optional[List[Dict[str, Any]]] = None) -> "ReturnValue":
+    def __new__(cls, values: Sequence[Any], abi: Optional[List[Dict[str, Any]]] = None) -> "ReturnValue":
         values = list(values)
         for i, value in enumerate(values):
             if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
