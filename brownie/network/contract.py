@@ -2029,7 +2029,9 @@ _ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
 _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 
 
-def _contract_method_autosuggest(args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool) -> List[str]:
+def _contract_method_autosuggest(
+    args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
+) -> List[str]:
     types_list = get_type_strings(args, {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in args], types_list)
 
