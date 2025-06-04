@@ -226,7 +226,7 @@ tox==4.15.1
     # via -r requirements-dev.in
 twine==6.0.1
     # via -r requirements-dev.in
-typing-extensions==4.13.2
+typing-extensions==4.14.0
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   eth-retry
