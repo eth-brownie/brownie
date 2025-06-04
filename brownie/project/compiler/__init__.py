@@ -44,7 +44,7 @@ def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
     vyper_version: Optional[str] = None,
-    optimize: bool = True,
+    optimize: Optional[bool] = True,
     runs: int = 200,
     evm_version: Optional[Union[str, Dict[str, str]]] = None,
     silent: bool = True,
