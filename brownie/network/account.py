@@ -495,7 +495,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def deploy(
         self,
         contract: Any,
-        *args: Tuple,
+        *args: Any,
         amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_buffer: Optional[float] = None,

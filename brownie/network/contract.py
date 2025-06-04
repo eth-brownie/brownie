@@ -507,7 +507,7 @@ class ContractConstructor:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(
-        self, *args: Tuple, publish_source: bool = False, silent: bool = False
+        self, *args: Any, publish_source: bool = False, silent: bool = False
     ) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
@@ -545,7 +545,7 @@ class ContractConstructor:
     def _autosuggest(obj: "ContractConstructor") -> List:
         return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
-    def encode_input(self, *args: tuple) -> str:
+    def encode_input(self, *args: Any) -> str:
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
         for marker in re.findall("_{1,}[^_]*_{1,}", bytecode):
@@ -561,7 +561,7 @@ class ContractConstructor:
         types_list = get_type_strings(self.abi["inputs"])
         return bytecode + eth_abi.encode(types_list, data).hex()
 
-    def estimate_gas(self, *args: Tuple) -> int:
+    def estimate_gas(self, *args: Any) -> int:
         """
         Estimate the gas cost for the deployment.
 
@@ -1405,7 +1405,7 @@ class OverloadedMethod:
         return len(self.methods)
 
     def __call__(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         fn = self._get_fn_from_args(args)
         kwargs = {"block_identifier": block_identifier, "override": override}
@@ -1413,7 +1413,7 @@ class OverloadedMethod:
         return fn(*args, **kwargs)  # type: ignore
 
     def call(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1442,7 +1442,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         return fn.call(*args, block_identifier=block_identifier, override=override)
 
-    def transact(self, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, *args: Any) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1464,7 +1464,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         return fn.transact(*args)
 
-    def encode_input(self, *args: Tuple) -> Any:
+    def encode_input(self, *args: Any) -> Any:
         """
         Generate encoded ABI data to call the method with the given arguments.
 
@@ -1580,7 +1580,7 @@ class _ContractMethod:
         _print_natspec(self.natspec)
 
     def call(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1621,7 +1621,7 @@ class _ContractMethod:
         except Exception:
             raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
+    def transact(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1676,7 +1676,7 @@ class _ContractMethod:
         result = eth_abi.decode(types_list, HexBytes(hexstr)[4:])
         return format_input(self.abi, result)
 
-    def encode_input(self, *args: Tuple) -> str:
+    def encode_input(self, *args: Any) -> str:
         """
         Generate encoded ABI data to call the method with the given arguments.
 
@@ -1714,7 +1714,7 @@ class _ContractMethod:
             result = result[0]
         return result
 
-    def estimate_gas(self, *args: Tuple) -> int:
+    def estimate_gas(self, *args: Any) -> int:
         """
         Estimate the gas cost for a transaction.
 
@@ -1756,7 +1756,7 @@ class ContractTx(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
+    def __call__(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1788,7 +1788,7 @@ class ContractCall(_ContractMethod):
     """
 
     def __call__(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
