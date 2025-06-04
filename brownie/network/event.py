@@ -7,8 +7,10 @@ from collections import OrderedDict
 from pathlib import Path
 from threading import Lock, Thread
 from typing import (
+    Any,
     Callable,
     Dict,
+    Final,
     Iterator,
     List,
     Optional,
@@ -47,7 +49,7 @@ class EventDict:
         if events is None:
             events = []
 
-        self._ordered = [
+        self._ordered: Final = [
             _EventItem(
                 i["name"],
                 i["address"],
@@ -57,12 +59,14 @@ class EventDict:
             for pos, i in enumerate(events)
         ]
 
-        self._dict: Dict = OrderedDict()
+        self._dict: Final[OrderedDict[str, _EventItem]] = OrderedDict()
         for event in self._ordered:
             if event.name not in self._dict:
-                events = [i for i in self._ordered if i.name == event.name]
                 self._dict[event.name] = _EventItem(
-                    event.name, None, events, tuple(i.pos[0] for i in events)
+                    event.name, 
+                    None, 
+                    [i for i in self._ordered if i.name == event.name], 
+                    tuple(i.pos[0] for i in events)
                 )
 
     def __repr__(self) -> str:
@@ -101,7 +105,7 @@ class EventDict:
         else:
             raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["_EventItem"]:
         return iter(self._ordered)
 
     def __len__(self) -> int:
@@ -115,15 +119,15 @@ class EventDict:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
         return len(self._dict.get(name, ()))
 
-    def items(self) -> List:
+    def items(self) -> List[Tuple[str, "_EventItem"]]:
         """EventDict.items() -> a list object providing a view on EventDict's items"""
         return list(self._dict.items())
 
-    def keys(self) -> List:
+    def keys(self) -> List[str]:
         """EventDict.keys() -> a list object providing a view on EventDict's keys"""
         return list(self._dict.keys())
 
-    def values(self) -> ValuesView:
+    def values(self) -> ValuesView["_EventItem"]:
         """EventDict.values() -> a list object providing a view on EventDict's values"""
         return self._dict.values()
 
@@ -144,21 +148,23 @@ class _EventItem:
         Tuple of indexes where this event fired.
     """
 
-    def __init__(self, name: str, address: Optional[str], event_data: List, pos: Tuple) -> None:
-        self.name = name
-        self.address = address
-        self._ordered = event_data
-        self.pos = pos
+    def __init__(
+        self, name: str, address: Optional[str], event_data: List[Union["_EventItem", OrderedDict]], pos: Tuple[int, ...]
+    ) -> None:
+        self.name: Final = name
+        self.address: Final = address
+        self._ordered: Final = event_data
+        self.pos: Final = pos
 
     @overload
-    def __getitem__(self, key: int) -> List:
+    def __getitem__(self, key: int) -> Union["_EventItem", OrderedDict]:
         """returns the n'th event that was fired with this name"""
 
     @overload
-    def __getitem__(self, key: str) -> List:
+    def __getitem__(self, key: str) -> Any:
         """returns the value of data field 'key' from the 1st event within the container"""
 
-    def __getitem__(self, key: Union[int, str]) -> List:
+    def __getitem__(self, key: Union[int, str]) -> Union["_EventItem", OrderedDict, Any]:
         """if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
         within the container"""
@@ -199,7 +205,7 @@ class _EventItem:
             return str(data[0])
         return str([i[0] for i in data])
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["_EventItem"]:
         return iter(self._ordered)
 
     def __eq__(self, other: object) -> bool:
