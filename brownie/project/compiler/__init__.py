@@ -45,7 +45,7 @@ def compile_and_format(
     solc_version: Optional[str] = None,
     vyper_version: Optional[str] = None,
     optimize: Optional[bool] = True,
-    runs: int = 200,
+    runs: Optional[int] = 200,
     evm_version: Optional[Union[str, Dict[str, str]]] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
