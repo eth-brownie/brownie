@@ -29,7 +29,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_typing import ChecksumAddress, HexStr
+from eth_typing import ChecksumAddress, HexAddress, HexStr
 from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
