@@ -72,6 +72,8 @@ from .state import (
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
+AnyContractCall = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+
 _unverified_addresses: Set = set()
 
 
@@ -760,7 +762,7 @@ class _DeployedContractBase(_ContractBase):
                 return False
         return super().__eq__(other)
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattribute__(self, name: str):
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
         try:
@@ -1391,9 +1393,9 @@ class OverloadedMethod:
             )
         return self.methods[keys[0]]
 
-    def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
+    def __getitem__(self, key: Union[Tuple[str, ...], str]) -> Union["ContractCall", "ContractTx"]:
         if isinstance(key, str):
-            key = tuple(i.strip() for i in key.split(","))
+            key = (i.strip() for i in key.split(","))
 
         key = tuple(i.replace("256", "") for i in key)
         return self.methods[key]
