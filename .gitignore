@@ -4,7 +4,7 @@ __pycache__
 .history
 .coverage
 .coverage.*
-build/
+build/**/*.py
 coverage.xml
 dist/
 docs/_build
@@ -20,3 +20,8 @@ env/
 # Personnal
 .env
 c_pytest.py
+
+# C Stuff
+*.o
+*.so
+build/ops.txt
