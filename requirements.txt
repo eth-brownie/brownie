@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.7
+aiohttp==3.12.9
     # via web3
 aiosignal==1.3.2
     # via aiohttp
@@ -43,7 +43,7 @@ cytoolz==1.0.1
     # via eth-utils
 dataclassy==0.11.1
     # via eip712
-eip712==0.2.12
+eip712==0.2.13
     # via -r requirements.in
 eth-abi==5.2.0
     # via
