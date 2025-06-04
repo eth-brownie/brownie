@@ -194,9 +194,10 @@ class _EventItem:
         return str(self)
 
     def __str__(self) -> str:
-        if len(self._ordered) == 1:
-            return str(self._ordered[0])
-        return str([i[0] for i in self._ordered])
+        data = self._ordered
+        if len(data) == 1:
+            return str(data[0])
+        return str([i[0] for i in data])
 
     def __iter__(self) -> Iterator:
         return iter(self._ordered)
