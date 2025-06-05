@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
+- typing for *args and **kwargs ([#1870](https://github.com/eth-brownie/brownie/pull/1870))
 - singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
+- various other minor typing issues
 
 ### Changed
 - compile half of the libarary to C with mypyc ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
