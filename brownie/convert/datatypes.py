@@ -14,6 +14,7 @@ import faster_eth_utils
 import hexbytes
 from eth_typing import HexStr
 from mypy_extensions import mypyc_attr
+from typing_extensions import Self
 
 from brownie.utils import bytes_to_hexstring
 
@@ -129,12 +130,12 @@ def _to_wei(value: WeiInputTypes) -> int:
         return _return_int(original, value)
     if value[:2] == "0x":
         return int(value, 16)
-    for unit, dec in UNITS.items():
+    for unit, decimals in UNITS.items():
         if f" {unit}" not in value:
             continue
         num_str = value.split(" ")[0]
         num = num_str.split(".") if "." in num_str else [num_str, ""]
-        return int(num[0] + num[1][: int(dec)] + "0" * (int(dec) - len(num[1])))
+        return int(num[0] + num[1][: decimals] + "0" * (decimals - len(num[1])))
     return _return_int(original, value)
 
 
@@ -145,7 +146,7 @@ def _return_int(original: Any, value: Any) -> int:
         raise TypeError(f"Cannot convert {type(original).__name__} '{original}' to wei.")
 
 
-class Fixed(Decimal):
+class Fixed(decimal.Decimal):
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
 
@@ -197,7 +198,7 @@ class Fixed(Decimal):
         return Fixed(super().__sub__(_to_fixed(other)))
 
 
-def _to_fixed(value: Any) -> Decimal:
+def _to_fixed(value: Any) -> decimal.Decimal:
     if isinstance(value, float):
         raise TypeError("Cannot convert float to decimal - use a string instead")
 
@@ -222,7 +223,7 @@ def _to_fixed(value: Any) -> Decimal:
 class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
-    def __new__(cls, value: Union[bytes, str]) -> str:
+    def __new__(cls, value: Union[bytes, str]) -> Self:
         converted_value = value
         if isinstance(value, bytes):
             converted_value = bytes_to_hexstring(value)
@@ -230,7 +231,7 @@ class EthAddress(str):
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
-            raise ValueError(f"'{value}' is not a valid ETH address") from None
+            raise ValueError(f"'{value}' is not a valid ETH address") from None  # type: ignore [str-bytes-safe]
         return super().__new__(cls, converted_value)  # type: ignore
 
     def __hash__(self) -> int:
@@ -393,7 +394,7 @@ class ReturnValue(tuple):
                 response[k] = v
         return response
 
-    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
+    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:  # type: ignore [override]
         """ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present."""
         if stop is None:
