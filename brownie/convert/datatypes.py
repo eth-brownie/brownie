@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import decimal
 from copy import deepcopy
 from decimal import Decimal, getcontext
 from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
@@ -33,6 +34,10 @@ UNITS: Final = {
 }
 
 WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
+
+Decimal: Final = decimal.Decimal
+getcontext: Final = decimal.getcontext
+
 
 
 @mypyc_attr(native_class=False)
