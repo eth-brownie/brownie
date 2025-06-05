@@ -267,10 +267,10 @@ class HexString(bytes):
         return not _hex_compare(self.hex(), other)
 
     def __str__(self) -> HexStr:
-        return f"0x{self.hex()}"
+        return f"0x{self.hex()}"  # type: ignore [return-value]
 
     def __repr__(self) -> HexStr:
-        return str(self)
+        return str(self)  # type: ignore [return-value]
 
 
 def _hex_compare(a: str, b: Any) -> bool:
@@ -303,10 +303,10 @@ def _to_hex(value: Any) -> HexStr:
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
     if isinstance(value, int):
-        return hex(value)
+        return hex(value)  # type: ignore [return-value]
     if isinstance(value, str):
         if value in ("", "0x"):
-            return "0x00"
+            return "0x00"  # type: ignore [return-value]
         if is_hex(value):
             return add_0x_prefix(value)  # type: ignore
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
