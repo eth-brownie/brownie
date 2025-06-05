@@ -44,12 +44,12 @@ def get_type_strings(
         substitutions = {}
 
     for i in abi_params:
-        if i["type"].startswith("tuple"):
+        type_str: str = i["type"]
+        if type_str.startswith("tuple"):
             params = get_type_strings(i["components"], substitutions)
-            array_size = i["type"][5:]
+            array_size = type_str[5:]
             types_list.append(f"({','.join(params)}){array_size}")
         else:
-            type_str = i["type"]
             for orig, sub in substitutions.items():
                 if type_str.startswith(orig):
                     type_str = type_str.replace(orig, sub)
