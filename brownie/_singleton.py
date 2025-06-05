@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# mypy: disable-error-code="untyped-def"
 from typing import Dict
 
 
