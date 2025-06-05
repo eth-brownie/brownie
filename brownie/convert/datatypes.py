@@ -39,7 +39,6 @@ Decimal: Final = decimal.Decimal
 getcontext: Final = decimal.getcontext
 
 
-
 @mypyc_attr(native_class=False)
 class Wei(int):
     """Integer subclass that converts a value to wei and allows comparison against
