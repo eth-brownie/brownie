@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
+import copy
 import decimal
-from copy import deepcopy
-from decimal import Decimal, getcontext
-from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Dict, Final, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
 
 try:
     from vyper.exceptions import DecimalOverrideException
@@ -11,9 +10,9 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
+import faster_eth_utils
+import hexbytes
 from eth_typing import HexStr
-from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
-from hexbytes import HexBytes
 from mypy_extensions import mypyc_attr
 
 from brownie.utils import bytes_to_hexstring
@@ -35,8 +34,20 @@ UNITS: Final = {
 
 WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
 
+
+deepcopy: Final = copy.deepcopy
+
 Decimal: Final = decimal.Decimal
 getcontext: Final = decimal.getcontext
+
+to_checksum_address: Final = cchecksum.to_checksum_address
+
+add_0x_prefix: Final = faster_eth_utils.add_0x_prefix
+is_hex: Final = faster_eth_utils.is_hex
+to_bytes: Final = faster_eth_utils.to_bytes
+
+HexBytes: Final = hexbytes.HexBytes
+
 
 
 @mypyc_attr(native_class=False)
