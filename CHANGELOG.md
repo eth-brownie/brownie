@@ -6,6 +6,9 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Fixed
+- API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix)
+
 ### Changed
 - optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
 
