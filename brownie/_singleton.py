@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="untyped-def"
 from typing import Any, Dict
 
 
@@ -6,7 +7,7 @@ class _Singleton(type):
 
     _instances: Dict = {}
 
-    def __call__(cls, *args: Any, **kwargs: Any) -> Any:
+    def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
