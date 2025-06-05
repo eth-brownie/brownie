@@ -49,7 +49,6 @@ to_bytes: Final = faster_eth_utils.to_bytes
 HexBytes: Final = hexbytes.HexBytes
 
 
-
 @mypyc_attr(native_class=False)
 class Wei(int):
     """Integer subclass that converts a value to wei and allows comparison against
