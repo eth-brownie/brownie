@@ -377,7 +377,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.13.3](https://github.com/eth-brownie/brownie/tree/v1.13.3) - 2021-03-08
 ### Added
-- Option to choose console editting mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
+- Option to choose console editing mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
 
 ### Fixed
 - Strip whitespace from `address_or_alias` ([#978](https://github.com/eth-brownie/brownie/pull/978))
@@ -458,7 +458,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `timedelta` as a kwarg in `chain.mine` ([#856](https://github.com/eth-brownie/brownie/pull/856))
 - `require_network` pytest marker ([#858](https://github.com/eth-brownie/brownie/pull/858))
 - `TransactionReceipt.dev_revert_msg` to access the dev revert string when there is a regular revert message ([#860](https://github.com/eth-brownie/brownie/pull/860))
-- Allow targetting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
+- Allow targeting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
 - Support regex in `brownie.reverts` ([#864](https://github.com/eth-brownie/brownie/pull/864))
 
 ### Changed
@@ -488,7 +488,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Include nonce in `stdout` output when broadcasting a transaction ([#833](https://github.com/eth-brownie/brownie/pull/833))
 
 ### Changed
-- `brownie bake` project names are no longer case sensetive ([#829](https://github.com/eth-brownie/brownie/pull/829))
+- `brownie bake` project names are no longer case sensitive ([#829](https://github.com/eth-brownie/brownie/pull/829))
 
 ### Fixed
 - Handle `str` when looking at traceback paths ([#823](https://github.com/eth-brownie/brownie/pull/823))
