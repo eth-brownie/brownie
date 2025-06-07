@@ -6,10 +6,9 @@ from hashlib import sha1
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from semantic_version import NpmSpec
-from vvm.utils.convert import to_vyper_version
+from semantic_version import NpmSpec, Version
 
-from brownie.exceptions import NamespaceCollision, PragmaError
+from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.utils import color
 
 
@@ -211,13 +210,10 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     """
 
     pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
-    if pragma_match is not None:
-        pragma_string = pragma_match.groups()[0]
-        pragma_string = " ".join(pragma_string.split())
-        return NpmSpec(pragma_string)
-    if path:
-        raise PragmaError(f"No version pragma in '{path}'")
-    raise PragmaError("String does not contain a version pragma")
+    if pragma_match is None:
+        raise PragmaNotFound(path)
+    pragma_string = pragma_match.groups()[0]
+    return NpmSpec(" ".join(pragma_string.split()))
 
 
 def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
@@ -234,9 +230,7 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
         re.finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
     )
     if pragma_match is None:
-        if path:
-            raise PragmaError(f"No version pragma in '{path}'")
-        raise PragmaError("String does not contain a version pragma")
+        raise PragmaNotFound(path)
 
     pragma_string = pragma_match.groups()[0]
     pragma_string = " ".join(pragma_string.split())
@@ -245,11 +239,12 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     except ValueError:
         pass
     try:
-        # special case for Vyper 0.1.0-beta.X
-        version = to_vyper_version(pragma_string)
+        # special case for Vyper 0.1.0-beta.X  0.1.0BetaX  0.1.0bX
+        version = Version.coerce(pragma_string)
         return NpmSpec(str(version))
     except Exception:
-        pass
+        # temporary for debugging, change back to `pass` before merging
+        raise
 
     path = "" if path is None else f"{path}: "
     raise PragmaError(f"{path}Cannot parse Vyper version from pragma: {pragma_string}")
