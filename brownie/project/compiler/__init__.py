@@ -308,15 +308,16 @@ def generate_build_json(
     sources: dict = input_json["sources"]
     contracts: Dict[str, Dict[str, dict]] = output_json["contracts"]
     for path_str, path_contracts in contracts.items():
-        for contract_name, contract in contracts.items():
-            contract_alias = contract_name
+        if path_str in sources:
+            source = sources[path_str]["content"]
+            get_alias = False
+        else:
+            with Path(path_str).open(encoding="utf-8") as fp:
+                source = fp.read()
+            get_alias = True
     
-            if path_str in sources:
-                source = sources[path_str]["content"]
-            else:
-                with Path(path_str).open(encoding="utf-8") as fp:
-                    source = fp.read()
-                contract_alias = _get_alias(contract_name, path_str)
+        for contract_name, contract in path_contracts.items():
+            contract_alias = _get_alias(contract_name, path_str) if get_alias else contract_name
     
             if not silent:
                 print(f" - {contract_alias}")
