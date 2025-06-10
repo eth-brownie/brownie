@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
+import copy
+import hashlib
 import json
-from copy import deepcopy
-from hashlib import sha1
-from pathlib import Path
+import pathlib
 from typing import Dict, List, Optional, Union
 
+import semantic_version
 import solcast
-from semantic_version import Version
 
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
@@ -42,6 +42,16 @@ STANDARD_JSON: Dict = {
 Language = str
 EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
+
+# C constants
+Path: Final = pathlib.Path
+
+deepcopy: Final = copy.deepcopy
+sha1: Final = hashlib.sha1
+
+Version: Final = semantic_version.Version
+
+_from_standard_output: Final = solcast.from_standard_output
 
 
 def compile_and_format(
@@ -466,28 +476,28 @@ def get_abi(
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
-        source_nodes = solcast.from_standard_output(output_json)
-        abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        source_nodes = _from_standard_output(output_json)
+        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
-        for path, name, data in [(k, x, y) for k, v in abi_json.items() for x, y in v.items()]:
-            contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
-            dependencies = []
-            for node in [
-                i for i in contract_node.dependencies if i.nodeType == "ContractDefinition"
-            ]:
-                dependency_name = node.name
-                path_str = node.parent().absolutePath
-                dependencies.append(_get_alias(dependency_name, path_str))
-
-            final_output[name] = {
-                "abi": data["abi"],
-                "ast": output_json["sources"][path]["ast"],
-                "contractName": name,
-                "dependencies": dependencies,
-                "type": "interface",
-                "source": contract_sources[path],
-                "offset": contract_node.offset,
-                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-            }
+        for path, path_data in abi_json.items():
+            for name, data in path_data.items():
+                contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
+                dependencies = []
+                for node in contract_node.dependencies:
+                    if i.nodeType == "ContractDefinition":
+                        dependency_name = node.name
+                        path_str = node.parent().absolutePath
+                        dependencies.append(_get_alias(dependency_name, path_str))
+    
+                final_output[name] = {
+                    "abi": data["abi"],
+                    "ast": output_json["sources"][path]["ast"],
+                    "contractName": name,
+                    "dependencies": dependencies,
+                    "type": "interface",
+                    "source": contract_sources[path],
+                    "offset": contract_node.offset,
+                    "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+                }
 
     return final_output
