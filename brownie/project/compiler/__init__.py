@@ -315,13 +315,13 @@ def generate_build_json(
             with Path(path_str).open(encoding="utf-8") as fp:
                 source = fp.read()
             get_alias = True
-    
+
         for contract_name, contract in path_contracts.items():
             contract_alias = _get_alias(contract_name, path_str) if get_alias else contract_name
-    
+
             if not silent:
                 print(f" - {contract_alias}")
-    
+
             abi: dict = contract["abi"]
             natspec = merge_natspec(
                 contract.get("devdoc", {}),
@@ -331,7 +331,7 @@ def generate_build_json(
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             if contract_alias in build_json and not deployed_bytecode["object"]:
                 continue
-    
+
             if language == "Solidity":
                 contract_node = next(
                     i[contract_name] for i in source_nodes if i.absolutePath == path_str
@@ -343,7 +343,7 @@ def generate_build_json(
                     branch_nodes,
                     next((True for i in abi if i["type"] == "fallback"), False),
                 )
-    
+
             else:
                 if contract_name == "<stdin>":
                     contract_name = contract_alias = "Vyper"
@@ -354,7 +354,7 @@ def generate_build_json(
                     sources[path_str]["ast"],
                     (0, len(source)),
                 )
-    
+
             build_json[contract_alias].update(
                 {
                     "abi": abi,
@@ -478,7 +478,9 @@ def get_abi(
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         output_sources: dict = output_json["sources"]
         source_nodes = _from_standard_output(output_json)
-        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        abi_json: Dict[str, dict] = {
+            k: v for k, v in output_json["contracts"].items() if k in path_list
+        }
 
         for path, path_data in abi_json.items():
             path_source: str = contract_sources[path]
@@ -491,7 +493,7 @@ def get_abi(
                         dependency_name = node.name
                         path_str = node.parent().absolutePath
                         dependencies.append(_get_alias(dependency_name, path_str))
-    
+
                 final_output[name] = {
                     "abi": data["abi"],
                     "ast": ast,
