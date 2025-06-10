@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import solcast
 from semantic_version import Version
@@ -317,9 +317,9 @@ def generate_build_json(
             contract.get("devdoc", {}),
             contract.get("userdoc", {}),
         )
-        output_evm: dict = ["evm"]
+        output_evm: dict = contract["evm"]
         deployed_bytecode: dict = output_evm["deployedBytecode"]
-        if contract_alias in build_json and not deployedBytecode["object"]:
+        if contract_alias in build_json and not deployed_bytecode["object"]:
             continue
 
         if language == "Solidity":
@@ -351,18 +351,18 @@ def generate_build_json(
                 "ast": sources[path_str]["ast"],
                 "compiler": compiler_data,
                 "contractName": contract_name,
-                "deployedBytecode": deployedBytecode["object"],
-                "deployedSourceMap": deployedBytecode["sourceMap"],
+                "deployedBytecode": deployed_bytecode["object"],
+                "deployedSourceMap": deployed_bytecode["sourceMap"],
                 "language": language,
                 "natspec": natspec,
-                "opcodes": deployedBytecode["opcodes"],
+                "opcodes": deployed_bytecode["opcodes"],
                 "sha1": sha1(source.encode()).hexdigest(),
                 "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
             }
         )
-        size = len(deployedBytecode["object"].removeprefix("0x")) / 2  # type: ignore
+        size = len(deployed_bytecode["object"].removeprefix("0x")) / 2  # type: ignore
         if size > 24577:
             notify(
                 "WARNING",
