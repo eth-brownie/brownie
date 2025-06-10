@@ -439,24 +439,25 @@ def get_abi(
         if Path(k).suffix == ".json"
     }
 
-    for path, source in [(k, v) for k, v in contract_sources.items() if Path(k).suffix == ".vy"]:
-        input_json = generate_input_json({path: source}, language="Vyper")
-        input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
-        try:
-            output_json = compile_from_input_json(input_json, silent, allow_paths)
-        except Exception:
-            # vyper interfaces do not convert to ABIs
-            # https://github.com/vyperlang/vyper/issues/1944
-            continue
-        name = Path(path).stem
-        final_output[name] = {
-            "abi": output_json["contracts"][path][name]["abi"],
-            "contractName": name,
-            "type": "interface",
-            "source": source,
-            "offset": [0, len(source)],
-            "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-        }
+    for path, source in contract_sources.items():
+        if Path(k).suffix == ".vy":
+            input_json = generate_input_json({path: source}, language="Vyper")
+            input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+            try:
+                output_json = compile_from_input_json(input_json, silent, allow_paths)
+            except Exception:
+                # vyper interfaces do not convert to ABIs
+                # https://github.com/vyperlang/vyper/issues/1944
+                continue
+            name = Path(path).stem
+            final_output[name] = {
+                "abi": output_json["contracts"][path][name]["abi"],
+                "contractName": name,
+                "type": "interface",
+                "source": source,
+                "offset": [0, len(source)],
+                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+            }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
 
@@ -476,10 +477,13 @@ def get_abi(
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
+        output_sources: dict = output_json["sources"]
         source_nodes = _from_standard_output(output_json)
-        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        abi_json: Dict[str, dict] = {k: v for k, v in ) if k in path_list}
 
         for path, path_data in abi_json.items():
+            path_source: str = contract_sources[path]
+            ast = output_sources[path]["ast"]
             for name, data in path_data.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
@@ -491,13 +495,13 @@ def get_abi(
     
                 final_output[name] = {
                     "abi": data["abi"],
-                    "ast": output_json["sources"][path]["ast"],
+                    "ast": ast,
                     "contractName": name,
                     "dependencies": dependencies,
                     "type": "interface",
-                    "source": contract_sources[path],
+                    "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+                    "sha1": sha1(path_source.encode()).hexdigest(),
                 }
 
     return final_output
