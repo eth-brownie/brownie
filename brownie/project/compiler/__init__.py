@@ -487,7 +487,7 @@ def get_abi(
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
                 for node in contract_node.dependencies:
-                    if i.nodeType == "ContractDefinition":
+                    if node.nodeType == "ContractDefinition":
                         dependency_name = node.name
                         path_str = node.parent().absolutePath
                         dependencies.append(_get_alias(dependency_name, path_str))
