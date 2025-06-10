@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+import platform
 import sys
 
 from setuptools import find_packages, setup
@@ -21,27 +22,31 @@ else:
 with open(requirements_filename, "r") as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
 
-try:
-    from mypyc.build import mypycify
-except ImportError:
+if os.environ.get("BROWNIE_NOCOMPILE") or platform.python_implementation() != "CPython":
+    # We only compile this library for CPython, other implementations will use it as normal interpreted python code
     ext_modules = []
 else:
-    ext_modules = mypycify(
-        [
-            "brownie/_cli",
-            "brownie/convert",
-            "brownie/network/__init__.py",
-            "brownie/project/compiler",
-            "brownie/utils/__init__.py",
-            "brownie/utils/_color.py",
-            "brownie/utils/output.py",
-            "brownie/utils/sql.py",
-            "brownie/utils/toposort.py",
-            # "--strict",
-            "--pretty",
-            "--check-untyped-defs",
-        ]
-    )
+    try:
+        from mypyc.build import mypycify
+    except ImportError:
+        ext_modules = []
+    else:
+        ext_modules = mypycify(
+            [
+                "brownie/_cli",
+                "brownie/convert",
+                "brownie/network/__init__.py",
+                "brownie/project/compiler",
+                "brownie/utils/__init__.py",
+                "brownie/utils/_color.py",
+                "brownie/utils/output.py",
+                "brownie/utils/sql.py",
+                "brownie/utils/toposort.py",
+                # "--strict",
+                "--pretty",
+                "--check-untyped-defs",
+            ]
+        )
 
 
 setup(
