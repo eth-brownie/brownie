@@ -77,7 +77,11 @@ class Flattener:
         for m in IMPORT_PATTERN.finditer(source):
             import_path = sanitize(m.group("path"))
             self.dependencies[name].add(self.path_to_name(import_path))
-            self.traverse(import_path)
+            try:
+                self.traverse(import_path)
+            except Exception as ex:
+                print(f"Caught {type(ex).__name__} loading {import_path} for {fp_obj}")
+                # raise
 
     @property
     def flattened_source(self) -> str:
