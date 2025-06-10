@@ -43,6 +43,7 @@ Language = str
 EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
+
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
