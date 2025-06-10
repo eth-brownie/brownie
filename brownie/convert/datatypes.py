@@ -336,7 +336,7 @@ class ReturnValue(tuple):
                         inner_abi = value_abi.copy()
                         inner_abi["type"] = value_type.rsplit("[", maxsplit=1)[0]
                         final_abi = [deepcopy(inner_abi) for i in range(len(value))]
-                        if name := inner_abi.get("name"):
+                        if name := inner_abi.get("name", ""):
                             for i, d in enumerate(final_abi):
                                 d["name"] = f"{name}[{i}]"
 
