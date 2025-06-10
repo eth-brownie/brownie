@@ -62,9 +62,8 @@ class Wei(int):
         * bytes: b'\xff\xff'
         * hex strings: "0x330124\" """
 
-    # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value: Any) -> Any:  # type: ignore
-        return super().__new__(cls, _to_wei(value))  # type: ignore
+    def __new__(cls, value: Any) -> Self:
+        return super().__new__(cls, _to_wei(value))
 
     def __hash__(self) -> int:
         return super().__hash__()
