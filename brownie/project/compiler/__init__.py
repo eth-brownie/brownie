@@ -39,6 +39,9 @@ STANDARD_JSON: Dict = {
     },
 }
 
+Language = str
+EvmVersion = Optional[str]
+EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
 def compile_and_format(
     contract_sources: Dict[str, str],
@@ -46,11 +49,11 @@ def compile_and_format(
     vyper_version: Optional[str] = None,
     optimize: Optional[bool] = True,
     runs: Optional[int] = 200,
-    evm_version: Optional[Union[str, Dict[str, str]]] = None,
+    evm_version: Optional[EvmVersionSpec] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[list] = None,
+    remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
@@ -148,7 +151,7 @@ def generate_input_json(
     evm_version: Optional[str] = None,
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[list] = None,
+    remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
@@ -182,12 +185,13 @@ def generate_input_json(
 
     input_json: Dict = deepcopy(STANDARD_JSON)
     input_json["language"] = language
+    settings = input_json["settings"]
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
-        input_json["settings"]["optimizer"] = optimizer
-        input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
+        settings["optimizer"] = optimizer
+        settings["remappings"] = _get_solc_remappings(remappings)
         if viaIR is not None:
-            input_json["settings"]["viaIR"] = viaIR
+            settings["viaIR"] = viaIR
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
@@ -199,9 +203,10 @@ def generate_input_json(
     return input_json
 
 
-def _get_solc_remappings(remappings: Optional[list]) -> list:
+def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[str]:
+    remap_dict: Dict[str, str]
     if remappings is None:
-        remap_dict: Dict = {}
+        remap_dict = {}
     elif isinstance(remappings, str):
         remap_dict = dict([remappings.split("=")])
     else:
@@ -209,7 +214,8 @@ def _get_solc_remappings(remappings: Optional[list]) -> list:
     remapped_dict = {}
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
-        key = next((k for k, v in remap_dict.items() if v.startswith(path.name)), None)
+        pathname = path.name
+        key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
@@ -247,14 +253,15 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    if input_json["language"] == "Vyper":
+    language: str = input_json["language"]
+    if language == "Vyper":
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
 
-    if input_json["language"] == "Solidity":
+    if language == "Solidity":
         allow_paths = _get_allow_paths(allow_paths, input_json["settings"]["remappings"])
         return solidity.compile_from_input_json(input_json, silent, allow_paths)
 
-    raise UnsupportedLanguage(f"{input_json['language']}")
+    raise UnsupportedLanguage(language)
 
 
 def generate_build_json(
@@ -270,28 +277,32 @@ def generate_build_json(
 
     Returns: build json dict"""
 
-    if input_json["language"] not in ("Solidity", "Vyper"):
-        raise UnsupportedLanguage(f"{input_json['language']}")
+    language: str = input_json["language"]
+    if language not in ("Solidity", "Vyper"):
+        raise UnsupportedLanguage(language)
 
     if not silent:
         print("Generating build data...")
 
     if compiler_data is None:
         compiler_data = {}
-    compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
+
+    settings = input_json["settings"]
+    compiler_data["evm_version"] = settings["evmVersion"]
     build_json: Dict = {}
 
-    if input_json["language"] == "Solidity":
-        compiler_data["optimizer"] = input_json["settings"]["optimizer"]
+    if language == "Solidity":
+        compiler_data["optimizer"] = settings["optimizer"]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
+    sources: dict = input_json["sources"]
     for path_str, contract_name in [
         (k, x) for k, v in output_json["contracts"].items() for x in v.keys()
     ]:
         contract_alias = contract_name
 
-        if path_str in input_json["sources"]:
-            source = input_json["sources"][path_str]["content"]
+        if path_str in sources:
+            source = sources[path_str]["content"]
         else:
             with Path(path_str).open(encoding="utf-8") as fp:
                 source = fp.read()
@@ -300,16 +311,19 @@ def generate_build_json(
         if not silent:
             print(f" - {contract_alias}")
 
-        abi = output_json["contracts"][path_str][contract_name]["abi"]
+        contracts: dict = output_json["contracts"]
+        contract: dict = contracts[path_str][contract_name]
+        abi: dict = contract["abi"]
         natspec = merge_natspec(
-            output_json["contracts"][path_str][contract_name].get("devdoc", {}),
-            output_json["contracts"][path_str][contract_name].get("userdoc", {}),
+            contract.get("devdoc", {}),
+            contract.get("userdoc", {}),
         )
-        output_evm = output_json["contracts"][path_str][contract_name]["evm"]
-        if contract_alias in build_json and not output_evm["deployedBytecode"]["object"]:
+        output_evm: dict = ["evm"]
+        deployed_bytecode: dict = output_evm["deployedBytecode"]
+        if contract_alias in build_json and not deployedBytecode["object"]:
             continue
 
-        if input_json["language"] == "Solidity":
+        if language == "Solidity":
             contract_node = next(
                 i[contract_name] for i in source_nodes if i.absolutePath == path_str
             )
@@ -328,28 +342,28 @@ def generate_build_json(
                 output_evm,
                 path_str,
                 contract_alias,
-                output_json["sources"][path_str]["ast"],
+                sources[path_str]["ast"],
                 (0, len(source)),
             )
 
         build_json[contract_alias].update(
             {
                 "abi": abi,
-                "ast": output_json["sources"][path_str]["ast"],
+                "ast": sources[path_str]["ast"],
                 "compiler": compiler_data,
                 "contractName": contract_name,
-                "deployedBytecode": output_evm["deployedBytecode"]["object"],
-                "deployedSourceMap": output_evm["deployedBytecode"]["sourceMap"],
-                "language": input_json["language"],
+                "deployedBytecode": deployedBytecode["object"],
+                "deployedSourceMap": deployedBytecode["sourceMap"],
+                "language": language,
                 "natspec": natspec,
-                "opcodes": output_evm["deployedBytecode"]["opcodes"],
+                "opcodes": deployedBytecode["opcodes"],
                 "sha1": sha1(source.encode()).hexdigest(),
                 "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
             }
         )
-        size = len(output_evm["deployedBytecode"]["object"].removeprefix("0x")) / 2  # type: ignore
+        size = len(deployedBytecode["object"].removeprefix("0x")) / 2  # type: ignore
         if size > 24577:
             notify(
                 "WARNING",
