@@ -4,7 +4,11 @@ __pycache__
 .history
 .coverage
 .coverage.*
+build/**/*.json
 build/**/*.py
+build/**/*.sol
+build/**/*.typed
+build/**/*.yaml
 coverage.xml
 dist/
 docs/_build
