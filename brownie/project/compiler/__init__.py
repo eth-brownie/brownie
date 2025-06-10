@@ -227,13 +227,12 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     return [f"{k}={v}" for k, v in dict(remap_dict, **remapped_dict).items()]
 
 
-def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:
+def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
     # generate the final allow_paths field based on path remappings
     path_list = [] if allow_paths is None else [allow_paths]
 
-    remapping_paths = [i[i.index("=") + 1 :] for i in remappings]
     data_path = _get_data_folder().joinpath("packages").as_posix()
-    remapping_paths = [i for i in remapping_paths if not i.startswith(data_path)]
+    remapping_paths = [i[i.index("=") + 1 :] for i in remappings if not i.startswith(data_path)]
 
     path_list = path_list + [data_path] + remapping_paths
     return ",".join(path_list)
