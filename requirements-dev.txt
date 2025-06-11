@@ -8,7 +8,7 @@ alabaster==1.0.0
     # via sphinx
 attrs==25.3.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pytest
 babel==2.17.0
     # via sphinx
@@ -16,7 +16,7 @@ backports-tarfile==1.2.0
     # via jaraco-context
 black==25.1.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   -r requirements-dev.in
 build==1.2.2.post1
     # via pip-tools
@@ -28,7 +28,7 @@ cachetools==6.0.0
     # via tox
 certifi==2025.4.26
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   requests
 cffi==1.17.1
     # via cryptography
@@ -36,11 +36,11 @@ chardet==5.2.0
     # via tox
 charset-normalizer==3.4.2
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   requests
 click==8.2.1
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   black
     #   pip-tools
 colorama==0.4.6
@@ -68,7 +68,7 @@ flake8==7.2.0
     # via -r requirements-dev.in
 idna==3.10
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   requests
 imagesize==1.4.1
     # via sphinx
@@ -76,7 +76,7 @@ importlib-metadata==8.7.0
     # via keyring
 iniconfig==2.1.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pytest
 isort==6.0.1
     # via -r requirements-dev.in
@@ -108,13 +108,13 @@ more-itertools==10.7.0
     #   jaraco-functools
 mypy-extensions==1.1.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   black
 nh3==0.2.21
     # via readme-renderer
 packaging==23.2
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   black
     #   build
     #   pyproject-api
@@ -124,7 +124,7 @@ packaging==23.2
     #   twine
 pathspec==0.12.1
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   black
 pip-tools==7.4.1
     # via -r requirements-dev.in
@@ -132,18 +132,18 @@ pkginfo==1.12.1.2
     # via twine
 platformdirs==4.3.8
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   black
     #   tox
     #   virtualenv
 pluggy==1.6.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pytest
     #   tox
 py==1.11.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pytest
 pycodestyle==2.13.0
     # via flake8
@@ -153,14 +153,14 @@ pyflakes==3.3.2
     # via flake8
 pygments==2.19.1
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pygments-lexer-solidity
     #   readme-renderer
     #   rich
     #   sphinx
 pygments-lexer-solidity==0.7.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   -r requirements-dev.in
 pyproject-api==1.6.1
     # via tox
@@ -170,7 +170,7 @@ pyproject-hooks==1.2.0
     #   pip-tools
 pytest==6.2.5
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pytest-cov
     #   pytest-mock
 pytest-cov==6.1.1
@@ -181,7 +181,7 @@ readme-renderer==44.0
     # via twine
 requests==2.32.4
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   requests-toolbelt
     #   sphinx
     #   twine
@@ -220,7 +220,7 @@ sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 toml==0.10.2
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   pytest
 tox==4.15.1
     # via -r requirements-dev.in
@@ -228,18 +228,18 @@ twine==6.0.1
     # via -r requirements-dev.in
 typing-extensions==4.14.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   eth-retry
 urllib3==2.4.0
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   requests
     #   twine
 virtualenv==20.31.2
     # via tox
 wheel==0.45.1
     # via
-    #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c requirements.txt
     #   -r requirements-dev.in
     #   pip-tools
 zipp==3.23.0
