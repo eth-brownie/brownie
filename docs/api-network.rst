@@ -2188,7 +2188,7 @@ Chain Methods
 
     Mine one or more empty blocks.
 
-    * ``blocks``: Number of blocks to mine
+    * ``blocks``: Number of blocks to mine. ``chain.mine()`` will mine a single block. Only parameter available when using Anvil RPC.
     * ``timestamp``: Timestamp of the final block being mined. If multiple blocks are mined, they will be mined at equal intervals starting from :func:`chain.time <Chain.time>` and ending at ``timestamp``.
     * ``timedelta``: Timedelta for the final block to be mined. If given, the final block will have a timestamp of ``chain.time() + timedelta``.
 
