@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
-from decimal import Decimal, getcontext
-from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
+import copy
+import decimal
+from typing import Any, Dict, Final, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
 
 try:
     from vyper.exceptions import DecimalOverrideException
@@ -10,12 +10,15 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
-from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
-from hexbytes import HexBytes
+import faster_eth_utils
+import hexbytes
+from eth_typing import HexStr
+from mypy_extensions import mypyc_attr
+from typing_extensions import Self
 
 from brownie.utils import bytes_to_hexstring
 
-UNITS = {
+UNITS: Final = {
     "wei": 0,
     "kwei": 3,
     "babbage": 3,
@@ -33,6 +36,21 @@ UNITS = {
 WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
 
 
+deepcopy: Final = copy.deepcopy
+
+Decimal: Final = decimal.Decimal
+getcontext: Final = decimal.getcontext
+
+to_checksum_address: Final = cchecksum.to_checksum_address
+
+add_0x_prefix: Final = faster_eth_utils.add_0x_prefix
+is_hex: Final = faster_eth_utils.is_hex
+to_bytes: Final = faster_eth_utils.to_bytes
+
+HexBytes: Final = hexbytes.HexBytes
+
+
+@mypyc_attr(native_class=False)
 class Wei(int):
     """Integer subclass that converts a value to wei and allows comparison against
     similarly formatted values.
@@ -44,9 +62,8 @@ class Wei(int):
         * bytes: b'\xff\xff'
         * hex strings: "0x330124\" """
 
-    # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value: Any) -> Any:  # type: ignore
-        return super().__new__(cls, _to_wei(value))  # type: ignore
+    def __new__(cls, value: Any) -> Self:
+        return super().__new__(cls, _to_wei(value))
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -99,9 +116,10 @@ class Wei(int):
 def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if isinstance(value, bytes):
-        value = HexBytes(value).hex()
-        if value:
-            return int(value, 16)
+        hexstr = HexBytes(value).hex()
+        if hexstr:
+            return int(hexstr, 16)
+        value = hexstr  # type: ignore [assignment]
     if not value or value == "0x":
         return 0
     if isinstance(value, float) and "e+" in str(value):
@@ -112,12 +130,12 @@ def _to_wei(value: WeiInputTypes) -> int:
         return _return_int(original, value)
     if value[:2] == "0x":
         return int(value, 16)
-    for unit, dec in UNITS.items():
+    for unit, decimals in UNITS.items():
         if f" {unit}" not in value:
             continue
         num_str = value.split(" ")[0]
         num = num_str.split(".") if "." in num_str else [num_str, ""]
-        return int(num[0] + num[1][: int(dec)] + "0" * (int(dec) - len(num[1])))
+        return int(num[0] + num[1][:decimals] + "0" * (decimals - len(num[1])))
     return _return_int(original, value)
 
 
@@ -128,7 +146,7 @@ def _return_int(original: Any, value: Any) -> int:
         raise TypeError(f"Cannot convert {type(original).__name__} '{original}' to wei.")
 
 
-class Fixed(Decimal):
+class Fixed(decimal.Decimal):
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
 
@@ -180,7 +198,7 @@ class Fixed(Decimal):
         return Fixed(super().__sub__(_to_fixed(other)))
 
 
-def _to_fixed(value: Any) -> Decimal:
+def _to_fixed(value: Any) -> decimal.Decimal:
     if isinstance(value, float):
         raise TypeError("Cannot convert float to decimal - use a string instead")
 
@@ -201,10 +219,11 @@ def _to_fixed(value: Any) -> Decimal:
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.") from e
 
 
+@mypyc_attr(native_class=False)
 class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
-    def __new__(cls, value: Union[bytes, str]) -> str:
+    def __new__(cls, value: Union[bytes, str]) -> Self:
         converted_value = value
         if isinstance(value, bytes):
             converted_value = bytes_to_hexstring(value)
@@ -212,7 +231,7 @@ class EthAddress(str):
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
-            raise ValueError(f"'{value}' is not a valid ETH address") from None
+            raise ValueError(f"'{value}' is not a valid ETH address") from None  # type: ignore [str-bytes-safe]
         return super().__new__(cls, converted_value)  # type: ignore
 
     def __hash__(self) -> int:
@@ -232,6 +251,7 @@ def _address_compare(a: str, b: Any) -> bool:
     return a.lower() == b.lower()
 
 
+@mypyc_attr(native_class=False)
 class HexString(bytes):
     """Bytes subclass for hexstring comparisons. Raises TypeError if compared to
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
@@ -246,11 +266,11 @@ class HexString(bytes):
     def __ne__(self, other: Any) -> bool:
         return not _hex_compare(self.hex(), other)
 
-    def __str__(self) -> str:
-        return f"0x{self.hex()}"
+    def __str__(self) -> HexStr:
+        return f"0x{self.hex()}"  # type: ignore [return-value]
 
-    def __repr__(self) -> str:
-        return str(self)
+    def __repr__(self) -> HexStr:
+        return str(self)  # type: ignore [return-value]
 
 
 def _hex_compare(a: str, b: Any) -> bool:
@@ -278,48 +298,51 @@ def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
         raise OverflowError(f"'{value}' exceeds maximum length for {type_str}")
 
 
-def _to_hex(value: Any) -> str:
+def _to_hex(value: Any) -> HexStr:
     """Convert a value to a hexstring"""
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
     if isinstance(value, int):
-        return hex(value)
+        return hex(value)  # type: ignore [return-value]
     if isinstance(value, str):
         if value in ("", "0x"):
-            return "0x00"
+            return "0x00"  # type: ignore [return-value]
         if is_hex(value):
             return add_0x_prefix(value)  # type: ignore
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
+@mypyc_attr(native_class=False)
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List] = None
-    _dict: Dict = {}
+    _abi: Optional[List[Dict[str, Any]]] = None
+    _dict: Dict[str, Any] = {}
 
-    def __new__(cls, values: Sequence, abi: Optional[List] = None) -> "ReturnValue":
+    def __new__(
+        cls, values: Sequence[Any], abi: Optional[List[Dict[str, Any]]] = None
+    ) -> "ReturnValue":
         values = list(values)
-        for i in range(len(values)):
-            if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):
-                if abi is not None and "components" in abi[i]:
-                    if abi[i]["type"] == "tuple":
+        for i, value in enumerate(values):
+            if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
+                if abi is not None and "components" in (value_abi := abi[i]):
+                    value_type: str = value_abi["type"]
+                    if value_type == "tuple":
                         # tuple
-                        values[i] = ReturnValue(values[i], abi[i]["components"])
+                        values[i] = ReturnValue(value, value_abi["components"])
                     else:
                         # array of tuples
-                        inner_abi = abi[i].copy()
-                        inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
-                        final_abi = [deepcopy(inner_abi) for i in range(len(values[i]))]
-                        if inner_abi.get("name"):
-                            name = inner_abi["name"]
-                            for x in range(len(final_abi)):
-                                final_abi[x]["name"] = f"{name}[{x}]"
+                        inner_abi = value_abi.copy()
+                        inner_abi["type"] = value_type.rsplit("[", maxsplit=1)[0]
+                        final_abi = [deepcopy(inner_abi) for i in range(len(value))]
+                        if name := inner_abi.get("name", ""):
+                            for i, d in enumerate(final_abi):
+                                d["name"] = f"{name}[{i}]"
 
-                        values[i] = ReturnValue(values[i], final_abi)
+                        values[i] = ReturnValue(value, final_abi)
                 else:
                     # array
-                    values[i] = ReturnValue(values[i])
+                    values[i] = ReturnValue(value)
 
         self = super().__new__(cls, values)  # type: ignore
         self._abi = abi or []
@@ -361,7 +384,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():
@@ -371,7 +394,7 @@ class ReturnValue(tuple):
                 response[k] = v
         return response
 
-    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
+    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:  # type: ignore [override]
         """ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present."""
         if stop is None:
