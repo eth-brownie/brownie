@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import decimal
-from typing import Any, Final
+from typing import Any, Final, Union
 
 import hexbytes
 from eth_typing import ChecksumAddress
@@ -43,7 +43,7 @@ def to_decimal(value: Any) -> Fixed:
     return d
 
 
-def to_address(value: str) -> ChecksumAddress:
+def to_address(value: Union[str, bytes]) -> ChecksumAddress:
     """Convert a value to an address"""
     return str(EthAddress(value))  # type: ignore [return-value]
 
