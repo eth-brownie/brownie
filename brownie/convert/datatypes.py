@@ -116,7 +116,7 @@ class Wei(int):
 def _to_wei(value: WeiInputTypes) -> int:
     original = value
     if isinstance(value, bytes):
-        hexstr = HexBytes(value).hex()
+        hexstr = HexBytes(value).hex().removeprefix("0x")
         if hexstr:
             return int(hexstr, 16)
         value = hexstr  # type: ignore [assignment]
