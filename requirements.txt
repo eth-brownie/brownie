@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.12
+aiohttp==3.12.13
     # via web3
 aiosignal==1.3.2
     # via aiohttp
@@ -31,7 +31,7 @@ cchecksum==0.3.1
     # via
     #   -r requirements.in
     #   eth-event
-certifi==2025.4.26
+certifi==2025.6.15
     # via requests
 charset-normalizer==3.4.2
     # via requests
@@ -132,7 +132,7 @@ lazy-object-proxy==1.11.0
     # via -r requirements.in
 lru-dict==1.3.0
     # via web3
-multidict==6.4.4
+multidict==6.5.0
     # via
     #   aiohttp
     #   yarl
@@ -176,7 +176,7 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.5
+pydantic==2.11.7
     # via eth-account
 pydantic-core==2.33.2
     # via pydantic
@@ -248,7 +248,7 @@ typing-extensions==4.14.0
     #   web3
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.4.0
+urllib3==2.5.0
     # via requests
 vvm==0.2.1
     # via -r requirements.in

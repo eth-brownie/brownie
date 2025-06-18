@@ -24,9 +24,9 @@ bump2version==1.0.1
     # via bumpversion
 bumpversion==0.6.0
     # via -r requirements-dev.in
-cachetools==6.0.0
+cachetools==6.1.0
     # via tox
-certifi==2025.4.26
+certifi==2025.6.15
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   requests
@@ -45,7 +45,7 @@ click==8.2.1
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.8.2
+coverage[toml]==7.9.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -140,6 +140,7 @@ pluggy==1.6.0
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   pytest
+    #   pytest-cov
     #   tox
 py==1.11.0
     # via
@@ -173,7 +174,7 @@ pytest==6.2.5
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   pytest-cov
     #   pytest-mock
-pytest-cov==6.1.1
+pytest-cov==6.2.1
     # via -r requirements-dev.in
 pytest-mock==3.14.1
     # via -r requirements-dev.in
@@ -230,7 +231,7 @@ typing-extensions==4.14.0
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   eth-retry
-urllib3==2.4.0
+urllib3==2.5.0
     # via
     #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   requests
