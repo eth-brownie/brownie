@@ -967,6 +967,20 @@ class _PrivateKeyAccount(PublicKeyAccount):
                             sys.stdout.flush()
                             _marker.rotate(1)
                         time.sleep(1)
+                        try:
+                            receipt = TransactionReceipt(
+                                txid,
+                                self,
+                                silent=silent,
+                                required_confs=required_confs,
+                                is_blocking=False,
+                                name=fn_name,
+                                revert_data=revert_data,
+                            )  # type: ignore
+                            done = True
+                            break
+                        except (TransactionNotFound, ValueError):
+                            pass
 
                 if done:
                     break
