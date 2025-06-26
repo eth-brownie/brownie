@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, Set
+from typing import DefaultDict, Dict, Final, Set, final
 
 from eth_utils.toolz import mapcat
 
@@ -16,23 +16,24 @@ PRAGMA_PATTERN = re.compile(r"^pragma.*;$", re.MULTILINE)
 LICENSE_PATTERN = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
 
 
+@final
 class Flattener:
     """Brownie's Robust Solidity Flattener."""
 
     def __init__(
         self, primary_source_fp: str, contract_name: str, remappings: dict, compiler_settings: dict
     ) -> None:
-        self.sources: Dict[str, str] = {}
-        self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
-        self.compiler_settings = compiler_settings
-        self.contract_name = contract_name
-        self.contract_file = self.path_to_name(primary_source_fp)
-        self.remappings = remappings
+        self.sources: Final[Dict[str, str]] = {}
+        self.dependencies: Final[DefaultDict[str, Set[str]]] = defaultdict(set)
+        self.compiler_settings: Final = compiler_settings
+        self.contract_name: Final = contract_name
+        self.contract_file: Final = self.path_to_name(primary_source_fp)
+        self.remappings: Final = remappings
 
         self.traverse(primary_source_fp)
 
         license_search = LICENSE_PATTERN.search(self.path_to_name(primary_source_fp))
-        self.license = license_search.group(1) if license_search else "NONE"
+        self.license: Final = license_search.group(1) if license_search else "NONE"
 
     @classmethod
     def path_to_name(cls, pth: str) -> str:
@@ -86,7 +87,7 @@ class Flattener:
         """The flattened source code for use verifying."""
         flattened_deps = toposort_flatten(self.dependencies)
         # all source files in the correct order for concatenation
-        sources = list(map(self.sources.__getitem__, flattened_deps))
+        sources = [self.sources[x] for x in flattened_deps]
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
         pragmas = set(map(str.strip, mapcat(PRAGMA_PATTERN.findall, sources)))
@@ -95,12 +96,12 @@ class Flattener:
             "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
         )
 
-        sources = (f"// File: {file}\n\n{wipe(src)}" for src, file in zip(sources, flattened_deps))
-
         flat = (
             "\n".join(pragma for pragma in pragmas if "pragma solidity" not in pragma)
             + "\n\n"
-            + "\n".join(sources)
+            + "\n".join(
+                f"// File: {file}\n\n{wipe(src)}" for src, file in zip(sources, flattened_deps)
+            )
         )
         # hopefully this doesn't mess up anything pretty, but just gotta remove all
         # that extraneous whitespace
@@ -147,11 +148,11 @@ class Flattener:
         if path.is_absolute():
             return path.as_posix()
 
-        source_file_dir = Path(source_file_dir).resolve()
-        newpath = (source_file_dir / path).resolve()
+        source_file_path = Path(source_file_dir).resolve()
+        newpath = (source_file_path / path).resolve()
         while not newpath.exists():
-            source_file_dir = source_file_dir.parent
-            newpath = (source_file_dir / path).resolve()
-            if source_file_dir == Path("/"):
+            source_file_path = source_file_path.parent
+            newpath = (source_file_path / path).resolve()
+            if source_file_path == Path("/"):
                 raise FileNotFoundError(f"Cannot determine location of {import_path}")
         return newpath.as_posix()
