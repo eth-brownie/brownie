@@ -90,7 +90,7 @@ class ConsolePrinter:
     Custom printer during console input.
 
     Ensures that stdout of the active prompt buffer is preserved when the console
-    is written to during user imnut.
+    is written to during user input.
     """
 
     _builtins_print = builtins.print
@@ -125,7 +125,7 @@ class ConsolePrinter:
 class Console(code.InteractiveConsole):
 
     # This value is used as the `input` arg when initializing `prompt_toolkit.PromptSession`.
-    # During testing there is a conflict with how pytest supresses stdin/out, so stdin is
+    # During testing there is a conflict with how pytest suppresses stdin/out, so stdin is
     # replaced with `prompt_toolkit.input.defaults.create_pipe_input`
     prompt_input = None
 
@@ -332,7 +332,7 @@ def _dir_color(obj: Any) -> str:
 @final
 class SanitizedFileHistory(FileHistory):
     """
-    FileHistory subclass to strip sensetive information prior to writing to disk.
+    FileHistory subclass to strip sensitive information prior to writing to disk.
 
     Any callable containing a `_private` attribute will have it's input arguments
     removed prior to inclusion in the history file. For example, when the user
