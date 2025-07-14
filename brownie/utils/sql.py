@@ -37,11 +37,12 @@ class Cursor:
         with self._lock:
             self._execute(cmd, *args)
 
-    def fetchone(self, cmd: str, *args: Any) -> Optional[Tuple]:  # type: ignore [return]
+    def fetchone(self, cmd: str, *args: Any) -> Optional[Tuple[Any, ...]]:
         with self._lock:
             self._execute(cmd, *args)
             if result := self._fetchone():
                 return tuple(loads(i) if str(i).startswith(("[", "{")) else i for i in result)
+            return None
 
     def fetchall(self, cmd: str, *args: Any) -> Any:
         with self._lock:
