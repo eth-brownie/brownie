@@ -8,7 +8,7 @@ alabaster==1.0.0
     # via sphinx
 attrs==25.3.0
     # via
-    # -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   pytest
 babel==2.17.0
     # via sphinx
@@ -16,7 +16,7 @@ backports-tarfile==1.2.0
     # via jaraco-context
 black==25.1.0
     # via
-    # -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   -r requirements-dev.in
 build==1.2.2.post1
     # via pip-tools
@@ -171,7 +171,7 @@ pyproject-hooks==1.2.0
     #   pip-tools
 pytest==6.2.5
     # via
-     #   -c /home/runner/work/brownie/brownie/requirements.txt
+    #   -c /home/runner/work/brownie/brownie/requirements.txt
     #   pytest-cov
     #   pytest-mock
 pytest-cov==6.2.1

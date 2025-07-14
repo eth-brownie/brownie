@@ -25373,7 +25373,7 @@ CPyL3: ;
                                     ' * Selecting an opcode will highlight the associated '
                                     'source code.\n'
                                     ' * Highlighting a section of the source will jump to '
-                                    'the most relevent opcode,\n'
+                                    'the most relevant opcode,\n'
                                     '   if possible.\n'
                                     ' * Opcodes with a darkened background have no '
                                     'associated source code.\n'
@@ -25387,7 +25387,7 @@ CPyL3: ;
                                     ' * Select a section of source code and press S to '
                                     'enter scope mode. The\n'
                                     '   instructions will be filtered to only display '
-                                    'opcodes related to the relevent\n'
+                                    'opcodes related to the relevant\n'
                                     '   code. Press A to disable and see all opcodes '
                                     'again.\n'
                                     ' * Press C to toggle unit test coverage visualization. '
@@ -110362,7 +110362,7 @@ const char * const CPyLit_Str[] = {
     "\004\017console_printer\b__dict__\aConsole\024SanitizedFileHistory",
     "\004\020ConsoleCompleter\022ConsoleAutoSuggest\026Loading Brownie GUI...\bmainloop",
     "\001\023GUI was terminated.",
-    "\001\210\020Usage: brownie gui\n\nOptions:\n  --help -h                  Display this message\n\nOpens the brownie GUI. Basic functionality is as follows:\n\n * Selecting an opcode will highlight the associated source code.\n * Highlighting a section of the source will jump to the most relevent opcode,\n   if possible.\n * Opcodes with a darkened background have no associated source code.\n * Type a pc number to jump to that opcode.\n * Right click an opcode to toggle highlighting on all opcodes of the same type.\n * Press J to toggle highlighting on JUMP, JUMPI and JUMPDEST opcodes.\n * Press R to toggle highlighting on all REVERT opcodes.\n * Select a section of source code and press S to enter scope mode. The\n   instructions will be filtered to only display opcodes related to the relevent\n   code. Press A to disable and see all opcodes again.\n * Press C to toggle unit test coverage visualization. This will only work if\n   you have already run brownie coverage on your project. The coverage results\n   are shown via different colors of text highlight.",
+    "\001\210\020Usage: brownie gui\n\nOptions:\n  --help -h                  Display this message\n\nOpens the brownie GUI. Basic functionality is as follows:\n\n * Selecting an opcode will highlight the associated source code.\n * Highlighting a section of the source will jump to the most relevant opcode,\n   if possible.\n * Opcodes with a darkened background have no associated source code.\n * Type a pc number to jump to that opcode.\n * Right click an opcode to toggle highlighting on all opcodes of the same type.\n * Press J to toggle highlighting on JUMP, JUMPI and JUMPDEST opcodes.\n * Press R to toggle highlighting on all REVERT opcodes.\n * Select a section of source code and press S to enter scope mode. The\n   instructions will be filtered to only display opcodes related to the relevant\n   code. Press A to disable and see all opcodes again.\n * Press C to toggle unit test coverage visualization. This will only work if\n   you have already run brownie coverage on your project. The coverage results\n   are shown via different colors of text highlight.",
     "\002\003new.A new Brownie project has been initialized at ",
     "\001\205~Usage: brownie init [<path>] [options]\n\nArguments:\n  <path>                Path to initialize (default is the current path)\n\nOptions:\n  --force -f            Allow initialization inside a directory that is not\n                        empty, or a subdirectory of an existing project\n  --help -h             Display this message\n\nbrownie init is used to create new brownie projects. It creates the default\nstructure for the brownie environment:\n\nbuild/                  Compiled contracts and test data\ncontracts/              Contract source code\ninterfaces/             Interface source code\nreports/                Report files for contract analysis\nscripts/                Scripts for deployment and interaction\ntests/                  Scripts for project testing\n",
     "\001,Invalid command. Try brownie networks --help",
