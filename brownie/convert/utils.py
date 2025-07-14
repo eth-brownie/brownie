@@ -3,6 +3,7 @@
 from typing import Any, Dict, Final, List, Optional, Tuple
 
 import eth_hash.auto
+from eth_typing import HexStr
 
 
 keccak: Final = eth_hash.auto.keccak
@@ -43,9 +44,10 @@ def get_type_strings(
         substitutions = {}
 
     for i in abi_params:
-        if i["type"].startswith("tuple"):
+        type_str: str = i["type"]
+        if type_str.startswith("tuple"):
             params = get_type_strings(i["components"], substitutions)
-            array_size = i["type"][5:]
+            array_size = type_str[5:]
             types_list.append(f"({','.join(params)}){array_size}")
         else:
             type_str = i["type"]
@@ -62,6 +64,6 @@ def build_function_signature(abi: Dict[str, Any]) -> str:
     return f"{abi['name']}({','.join(types_list)})"
 
 
-def build_function_selector(abi: Dict[str, Any]) -> str:
+def build_function_selector(abi: Dict[str, Any]) -> HexStr:
     sig = build_function_signature(abi)
-    return f"0x{keccak(sig.encode()).hex()[:8]}"
+    return HexStr(f"0x{keccak(sig.encode()).hex()[:8]}")
