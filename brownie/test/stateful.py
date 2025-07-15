@@ -4,7 +4,7 @@ import sys
 from collections import deque
 from inspect import getmembers
 from types import FunctionType
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
@@ -20,7 +20,8 @@ marker = deque("-/|\\-/|\\")
 
 class _BrownieStateMachine:
 
-    _failed = False
+    _failed: ClassVar[bool] = False
+    _capman: ClassVar[Any]
 
     def __init__(self) -> None:
         brownie.chain.revert()
