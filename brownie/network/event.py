@@ -7,10 +7,12 @@ from collections import OrderedDict
 from pathlib import Path
 from threading import Lock, Thread
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
     Final,
+    Iterable,
     Iterator,
     List,
     Optional,
@@ -40,6 +42,9 @@ from brownie.utils import hexbytes_to_hexstring
 
 from .web3 import ContractEvent, web3
 
+if TYPE_CHECKING:
+    from .contract import Contract
+
 
 Topics = Dict[HexStr, TopicMapData]
 DeploymentTopics = Dict[ChecksumAddress, Topics]
@@ -51,13 +56,12 @@ class EventDict:
     Dict/list hybrid container, base class for all events fired in a transaction.
     """
 
-    def __init__(self, events: Optional[List[FormattedEvent]] = None) -> None:
+    def __init__(self, events: Optional[Iterable[FormattedEvent]] = None) -> None:
         """Instantiates the class.
 
         Args:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
-        if events is None:
-            events = []
+        events = list(events) if events else []
 
         self._ordered: Final = [
             _EventItem(
@@ -241,7 +245,7 @@ class _EventItem:
 
     def values(self) -> ReturnValue:
         """_EventItem.values() -> a list object providing a view on _EventItem[0]'s values"""
-        return ReturnValue(self._ordered[0].values())
+        return ReturnValue(self._ordered[0].values())  # type: ignore [arg-type]
 
 
 @final
