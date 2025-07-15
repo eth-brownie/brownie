@@ -26,8 +26,13 @@ try:
 except ImportError:
     ext_modules = []
 else:
-    ext_modules = mypycify(
-        [
+    try:
+        from mypyc.build import mypycify
+    except ImportError:
+        ext_modules = []
+    else:
+        ext_modules = mypycify(
+            [
             "brownie/_cli",
             "brownie/convert/__init__.py",
             "brownie/convert/main.py",
