@@ -3,10 +3,11 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
+from eth_typing import HexStr
 from requests.exceptions import ConnectionError
 from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
@@ -26,7 +27,7 @@ solcx_logger.addHandler(sh)
 
 AVAILABLE_SOLC_VERSIONS = None
 
-EVM_VERSION_MAPPING = [
+EVM_VERSION_MAPPING: Final = [
     ("istanbul", Version("0.5.13")),
     ("petersburg", Version("0.5.5")),
     ("byzantium", Version("0.4.0")),
@@ -144,7 +145,7 @@ def find_solc_versions(
     new_versions = set()
 
     for path, source in contract_sources.items():
-       pragma_spec = sources.get_pragma_spec(source, path)
+        pragma_spec = sources.get_pragma_spec(source, path)
         pragma_specs[path] = pragma_spec
         version = pragma_spec.select(installed_versions)
 
@@ -639,8 +640,7 @@ def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
                         {"nodeType": "IfStatement"},
                         {"nodeType": "Conditional"},
                     )
-                )
-             ):
+                 ):
                     branches[contract_id] |= _get_recursive_branches(child_node)
     return branches
 
