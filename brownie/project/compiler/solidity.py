@@ -160,7 +160,7 @@ def find_solc_versions(
 
         if not version and not latest:
             raise IncompatibleSolcVersion(
-                f"No installable solc version matching '{pragma_specs[path]}' in '{path}'"
+                f"No installable solc version matching '{pragma_spec}' in '{path}'"
             )
 
         if not version or (install_latest and latest > version):
