@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlite3 import OperationalError
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
+from eth_typing import BlockNumber
 from eth_utils.toolz import keymap
 from web3.types import BlockData
 
@@ -276,7 +277,7 @@ class Chain(metaclass=_Singleton):
                 time.sleep(1)
 
     @property
-    def height(self) -> int:
+    def height(self) -> BlockNumber:
         return web3.eth.block_number
 
     @property
