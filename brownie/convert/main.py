@@ -12,6 +12,7 @@ from .utils import get_int_bounds
 
 
 HexBytes: Final = hexbytes.HexBytes
+
 is_hex: Final = faster_eth_utils.is_hex
 to_text: Final = faster_eth_utils.to_text
 
