@@ -76,11 +76,12 @@ class EventDict:
         self._dict: Final[OrderedDict[str, _EventItem]] = OrderedDict()
         for event in self._ordered:
             if event.name not in self._dict:
+                items = [i for i in self._ordered if i.name == event.name]
                 self._dict[event.name] = _EventItem(
                     event.name,
                     None,
-                    [i for i in self._ordered if i.name == event.name],
-                    tuple(i.pos[0] for i in events),
+                    items,
+                    tuple(i.pos[0] for i in items),
                 )
 
     def __repr__(self) -> str:
