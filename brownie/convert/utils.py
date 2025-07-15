@@ -50,7 +50,6 @@ def get_type_strings(
             array_size = type_str[5:]
             types_list.append(f"({','.join(params)}){array_size}")
         else:
-            type_str = i["type"]
             for orig, sub in substitutions.items():
                 if type_str.startswith(orig):
                     type_str = type_str.replace(orig, sub)
