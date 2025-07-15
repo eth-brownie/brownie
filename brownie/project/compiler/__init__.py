@@ -274,7 +274,7 @@ def generate_build_json(
 
     Returns: build json dict"""
 
-    language: str = input_json["language"]
+    language: Language = input_json["language"]
     if language not in ("Solidity", "Vyper"):
         raise UnsupportedLanguage(language)
 
