@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
+import copy
+import hashlib
 import json
-from copy import deepcopy
-from hashlib import sha1
-from pathlib import Path
-from typing import Dict, List, Optional, Union
+import pathlib
+from typing import Dict, Final, List, Optional, Union
+
+import semantic_version
 
 import solcast
-from semantic_version import Version
 
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
@@ -42,6 +43,16 @@ STANDARD_JSON: Dict = {
 Language = str
 EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
+
+# C constants
+Path: Final = pathlib.Path
+
+deepcopy: Final = copy.deepcopy
+sha1: Final = hashlib.sha1
+
+Version: Final = semantic_version.Version
+
+_from_standard_output: Final = solcast.from_standard_output
 
 def compile_and_format(
     contract_sources: Dict[str, str],
