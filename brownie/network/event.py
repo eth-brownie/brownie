@@ -18,6 +18,7 @@ from typing import (
     Tuple,
     Union,
     ValuesView,
+    final,
     overload,
 )
 
@@ -219,7 +220,7 @@ class _EventItem:
             return str(data[0])
         return str([i[0] for i in data])
 
-    def __iter__(self) -> Iterator["_EventItem"]:
+    def __iter__(self) -> Iterator[Union["_EventItem", OrderedDict]]:
         return iter(self._ordered)
 
     def __eq__(self, other: object) -> bool:
