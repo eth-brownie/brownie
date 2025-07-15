@@ -250,7 +250,7 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    language: str = input_json["language"]
+    language: Language = input_json["language"]
     if language == "Vyper":
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
 
