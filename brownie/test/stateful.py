@@ -4,7 +4,7 @@ import sys
 from collections import deque
 from inspect import getmembers
 from types import FunctionType
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Dict, Final, Optional
 
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
@@ -15,7 +15,7 @@ from brownie.utils import color
 
 sf.__tracebackhide__ = True
 
-marker = deque("-/|\\-/|\\")
+marker: Final = deque("-/|\\-/|\\")
 
 
 class _BrownieStateMachine:
