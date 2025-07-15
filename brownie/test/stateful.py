@@ -4,7 +4,7 @@ import sys
 from collections import deque
 from inspect import getmembers
 from types import FunctionType
-from typing import Any, ClassVar, Dict, Final, Optional
+from typing import Any, ClassVar, Dict, Final, Optional, final
 
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
@@ -18,17 +18,18 @@ sf.__tracebackhide__ = True
 marker: Final = deque("-/|\\-/|\\")
 
 
+@final
 class _BrownieStateMachine:
 
     _failed: ClassVar[bool] = False
-    _capman: ClassVar[Any]
+    _capman: ClassVar[Any] = None
 
     def __init__(self) -> None:
         brownie.chain.revert()
         sf.RuleBasedStateMachine.__init__(self)
 
         # pytest capturemanager plugin, added when accessed via the state_manager fixture
-        if capman := getattr(self, "_capman", None):
+        if capman := self._capman:
             with capman.global_and_fixture_disabled():
                 c = color("red" if self._failed else "yellow")
                 sys.stdout.write(f"{c}{marker[0]}\033[1D")
