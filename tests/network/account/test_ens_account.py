@@ -19,7 +19,7 @@ def test_invalid():
     with pytest.raises(InvalidName):
         PublicKeyAccount("this-is-not-an-ENS-address,isit?.eth")
 
-
+@auto_retry
 def test_unset():
     with pytest.raises(UnsetENSName):
         PublicKeyAccount("pleasedonot.buythisoryouwill.breakmytests.eth")

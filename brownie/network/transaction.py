@@ -50,10 +50,10 @@ _P = ParamSpec("_P")
 _marker = deque("-/|\\-/|\\")
 
 
-def trace_property(fn: Callable[["TransactionReceipt"], _T]) -> property[_T]:
+def trace_property(fn: Callable[["TransactionReceipt"], _T]) -> "property[_T]":
     # attributes that are only available after querying the tranasaction trace
 
-   @property
+    @property
     def wrapper(self: "TransactionReceipt") -> _T:
         if self.status < 0:
             return None
@@ -265,7 +265,7 @@ class TransactionReceipt:
         return self._events
 
     @trace_property
-   def internal_transfers(self) -> List[Dict[str, Any]]:
+    def internal_transfers(self) -> List[Dict[str, Any]]:
         if not self.status:
             return []
         if self._internal_transfers is None:
