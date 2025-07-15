@@ -284,7 +284,7 @@ def generate_build_json(
     if compiler_data is None:
         compiler_data = {}
 
-    settings = input_json["settings"]
+    settings: dict = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
     build_json: Dict = {}
 
