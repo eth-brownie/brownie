@@ -50,7 +50,7 @@ _P = ParamSpec("_P")
 _marker = deque("-/|\\-/|\\")
 
 
-def trace_property(fn: Callable[["TransactionReceipt"], _T]) -> property[_T]:
+def trace_property(fn: Callable[["TransactionReceipt"], _T]) -> "property[_T]":
     # attributes that are only available after querying the tranasaction trace
 
     @property
