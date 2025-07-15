@@ -546,8 +546,10 @@ struct export_table_d763f176230a354f158b {
     PyObject *(*CPyDef_test___main)(void);
     char (*CPyDef_test_____top_level__)(void);
     char (*CPyDef_convert_____top_level__)(void);
-    PyObject **CPyStatic_main___Decimal;
     PyObject **CPyStatic_main___HexBytes;
+    PyObject **CPyStatic_main___is_hex;
+    PyObject **CPyStatic_main___to_text;
+    PyObject **CPyStatic_main____TEN_DECIMALS;
     PyObject *(*CPyDef_main___to_uint)(PyObject *cpy_r_value, PyObject *cpy_r_type_str);
     PyObject *(*CPyDef_main___to_int)(PyObject *cpy_r_value, PyObject *cpy_r_type_str);
     PyObject *(*CPyDef_main___to_decimal)(PyObject *cpy_r_value);
@@ -586,6 +588,8 @@ struct export_table_d763f176230a354f158b {
     PyObject *(*CPyDef_compiler____sources_dict)(PyObject *cpy_r_original, PyObject *cpy_r_language);
     PyObject *(*CPyDef_compiler___get_abi)(PyObject *cpy_r_contract_sources, PyObject *cpy_r_solc_version, PyObject *cpy_r_allow_paths, PyObject *cpy_r_remappings, char cpy_r_silent);
     char (*CPyDef_compiler_____top_level__)(void);
+    PyObject **CPyStatic_solidity___EVM_VERSION_MAPPING;
+    PyObject **CPyStatic_solidity____BINOPS_PARAMS;
     PyObject *(*CPyDef_solidity___get_version)(void);
     PyObject *(*CPyDef_solidity___compile_from_input_json)(PyObject *cpy_r_input_json, char cpy_r_silent, PyObject *cpy_r_allow_paths);
     PyObject *(*CPyDef_solidity___set_solc_version)(PyObject *cpy_r_version);
@@ -597,7 +601,7 @@ struct export_table_d763f176230a354f158b {
     PyObject *(*CPyDef_solidity____get_unique_build_json)(PyObject *cpy_r_output_evm, PyObject *cpy_r_contract_node, PyObject *cpy_r_stmt_nodes, PyObject *cpy_r_branch_nodes, char cpy_r_has_fallback);
     PyObject *(*CPyDef_solidity____format_link_references)(PyObject *cpy_r_evm);
     PyObject *(*CPyDef_solidity____remove_metadata)(PyObject *cpy_r_bytecode);
-    PyObject *(*CPyDef_solidity____generate_coverage_data)(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_node, PyObject *cpy_r_stmt_nodes, PyObject *cpy_r_branch_nodes, char cpy_r_has_fallback, CPyTagged cpy_r_instruction_count);
+    tuple_T3OOO (*CPyDef_solidity____generate_coverage_data)(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_node, PyObject *cpy_r_stmt_nodes, PyObject *cpy_r_branch_nodes, char cpy_r_has_fallback, CPyTagged cpy_r_instruction_count);
     char (*CPyDef_solidity____find_revert_offset)(PyObject *cpy_r_pc_list, PyObject *cpy_r_source_map, PyObject *cpy_r_source_node, PyObject *cpy_r_fn_node, PyObject *cpy_r_fn_name);
     char (*CPyDef_solidity____set_invalid_error_string)(PyObject *cpy_r_source_node, PyObject *cpy_r_pc_map);
     tuple_T2OO (*CPyDef_solidity____get_active_fn)(PyObject *cpy_r_source_node, tuple_T2II cpy_r_offset);

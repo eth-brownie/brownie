@@ -38,6 +38,7 @@ BranchNodes = Dict[str, Set[NodeBase]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
+
 def get_version() -> Version:
     return solcx.get_solc_version(with_commit_hash=True)
 
@@ -303,7 +304,7 @@ def _format_link_references(evm: Dict) -> HexStr:
 
 
 def _remove_metadata(bytecode: HexStr) -> HexStr:
-    return bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else "" # type: ignore [return-value]
+    return bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else ""  # type: ignore [return-value]
 
 
 def _generate_coverage_data(
@@ -640,7 +641,7 @@ def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
                         {"nodeType": "IfStatement"},
                         {"nodeType": "Conditional"},
                     )
-                 ):
+                ):
                     branches[contract_id] |= _get_recursive_branches(child_node)
     return branches
 
@@ -652,7 +653,7 @@ def _get_recursive_branches(base_node: NodeBase) -> Set[NodeBase]:
     node = base_node if node_type == "FunctionCall" else base_node.condition
     # for IfStatement, jumping indicates evaluating false
     jump_is_truthful = node_type != "IfStatement"
-    
+
     filters = (
         {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool", "operator": "||"},
         {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool", "operator": "&&"},
@@ -699,7 +700,7 @@ def _check_left_operator(node: NodeBase, depth: int) -> bool:
     # Find the nearest parent boolean where this node sits on the left side of
     # the comparison, and return True if that node's operator is ||
     parents = node.parents(depth, _BINOPS_PARAMS)
-    
+
     op = next(
         i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)
     ).operator
