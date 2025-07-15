@@ -39,6 +39,9 @@ STANDARD_JSON: Dict = {
     },
 }
 
+Language = str
+EvmVersion = Optional[str]
+EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
 def compile_and_format(
     contract_sources: Dict[str, str],
@@ -46,7 +49,7 @@ def compile_and_format(
     vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: int = 200,
-    evm_version: Optional[Union[str, Dict[str, str]]] = None,
+    evm_version: Optional[EvmVersionSpec] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
@@ -247,14 +250,15 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    if input_json["language"] == "Vyper":
+    language: Language = input_json["language"]
+    if language == "Vyper":
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
 
-    if input_json["language"] == "Solidity":
+    if language == "Solidity":
         allow_paths = _get_allow_paths(allow_paths, input_json["settings"]["remappings"])
         return solidity.compile_from_input_json(input_json, silent, allow_paths)
 
-    raise UnsupportedLanguage(f"{input_json['language']}")
+    raise UnsupportedLanguage(language)
 
 
 def generate_build_json(
@@ -270,19 +274,22 @@ def generate_build_json(
 
     Returns: build json dict"""
 
-    if input_json["language"] not in ("Solidity", "Vyper"):
-        raise UnsupportedLanguage(f"{input_json['language']}")
+    language: Language = input_json["language"]
+    if language not in ("Solidity", "Vyper"):
+        raise UnsupportedLanguage(language)
 
     if not silent:
         print("Generating build data...")
 
     if compiler_data is None:
         compiler_data = {}
-    compiler_data["evm_version"] = input_json["settings"]["evmVersion"]
+
+    settings: dict = input_json["settings"]
+    compiler_data["evm_version"] = settings["evmVersion"]
     build_json: Dict = {}
 
-    if input_json["language"] == "Solidity":
-        compiler_data["optimizer"] = input_json["settings"]["optimizer"]
+    if language == "Solidity":
+        compiler_data["optimizer"] = settings["optimizer"]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     for path_str, contract_name in [
