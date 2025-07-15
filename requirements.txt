@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.5.0
+bitarray==3.5.1
     # via eth-account
 black==25.1.0
     # via -r requirements.in
