@@ -517,7 +517,7 @@ def _add_deployment_topics(address: ChecksumAddress, abi: List) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
-def _decode_logs(logs: List[Dict], contracts: Optional[Dict[ChecksumAddress, "Contract"]] = None) -> EventDict:
+def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddress, "Contract"]] = None) -> EventDict:
     if not logs:
         return EventDict()
 
