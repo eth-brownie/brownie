@@ -76,11 +76,11 @@ class EventDict:
         self._dict: Final[OrderedDict[str, _EventItem]] = OrderedDict()
         for event in self._ordered:
             if event.name not in self._dict:
-                items = [i for i in self._ordered if i.name == event.name]
+                items: List[_EventItem] = [i for i in self._ordered if i.name == event.name]  # type: ignore [assignment]
                 self._dict[event.name] = _EventItem(
                     event.name,
                     None,
-                    items,
+                    items,  # type: ignore [arg-type]
                     tuple(i.pos[0] for i in items),
                 )
 
@@ -575,7 +575,7 @@ def _decode_ds_note(log, contract: "Contract"):  # type: ignore
         "decoded": True,
         "data": [
             {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}
-            for arg, abi in zip(args, contract.get_method_object(selector_hexstr).abi["inputs"])
+            for arg, abi in zip(args, contract.get_method_object(selector_hexstr).abi["inputs"])  # type: ignore [union-attr]
         ],
     }
 
