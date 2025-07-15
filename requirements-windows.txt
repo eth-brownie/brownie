@@ -8,11 +8,11 @@ aiohappyeyeballs==2.6.1
     # via
     #   -r requirements.txt
     #   aiohttp
-aiohttp==3.12.12
+aiohttp==3.12.14
     # via
     #   -r requirements.txt
     #   web3
-aiosignal==1.3.2
+aiosignal==1.4.0
     # via
     #   -r requirements.txt
     #   aiohttp
@@ -32,7 +32,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.4.2
+bitarray==3.5.1
     # via
     #   -r requirements.txt
     #   eth-account
@@ -46,7 +46,7 @@ cchecksum==0.3.1
     # via
     #   -r requirements.txt
     #   eth-event
-certifi==2025.4.26
+certifi==2025.7.14
     # via
     #   -r requirements.txt
     #   requests
@@ -182,7 +182,7 @@ lru-dict==1.3.0
     # via
     #   -r requirements.txt
     #   web3
-multidict==6.4.4
+multidict==6.6.3
     # via
     #   -r requirements.txt
     #   aiohttp
@@ -242,7 +242,7 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.5
+pydantic==2.11.7
     # via
     #   -r requirements.txt
     #   eth-account
@@ -250,7 +250,7 @@ pydantic-core==2.33.2
     # via
     #   -r requirements.txt
     #   pydantic
-pygments==2.19.1
+pygments==2.19.2
     # via
     #   -r requirements.txt
     #   pygments-lexer-solidity
@@ -295,12 +295,12 @@ rlp==4.1.0
     #   -r requirements.txt
     #   eth-account
     #   eth-rlp
-rpds-py==0.25.1
+rpds-py==0.26.0
     # via
     #   -r requirements.txt
     #   jsonschema
     #   referencing
-safe-pysha3==1.0.4
+safe-pysha3==1.0.5
     # via
     #   -r requirements.txt
     #   cchecksum
@@ -326,9 +326,10 @@ toolz==1.0.0
     #   cytoolz
 tqdm==4.67.1
     # via -r requirements.txt
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   -r requirements.txt
+    #   aiosignal
     #   eth-typing
     #   pydantic
     #   pydantic-core
@@ -339,13 +340,13 @@ typing-inspection==0.4.1
     # via
     #   -r requirements.txt
     #   pydantic
-urllib3==2.4.0
+urllib3==2.5.0
     # via
     #   -r requirements.txt
     #   requests
 vvm==0.2.1
     # via -r requirements.txt
-vyper==0.4.2
+vyper==0.4.3
     # via -r requirements.txt
 wcwidth==0.2.13
     # via
