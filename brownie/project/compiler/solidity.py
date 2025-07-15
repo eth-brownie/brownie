@@ -3,10 +3,11 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
+from eth_typing import HexStr
 from requests.exceptions import ConnectionError
 from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
@@ -144,7 +145,7 @@ def find_solc_versions(
     new_versions = set()
 
     for path, source in contract_sources.items():
-       pragma_spec = sources.get_pragma_spec(source, path)
+        pragma_spec = sources.get_pragma_spec(source, path)
         pragma_specs[path] = pragma_spec
         version = pragma_spec.select(installed_versions)
 
@@ -629,8 +630,8 @@ def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
     # to possible branches in the code
     branches: BranchNodes = {}
     for node in source_nodes:
-        contract_id = str(node.contract_id)
-        branches[contract_id] = set()
+        contract_branches: Set[NodeBase] = set()
+        branches[str(node.contract_id)] = contract_branches
         for contract_node in node.children(depth=1, filters={"nodeType": "ContractDefinition"}):
             for i in contract_node:
                 for child_node in i.children(
@@ -639,9 +640,8 @@ def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
                         {"nodeType": "IfStatement"},
                         {"nodeType": "Conditional"},
                     )
-                )
-             ):
-                    branches[contract_id] |= _get_recursive_branches(child_node)
+                ):
+                    contract_branches |= _get_recursive_branches(child_node)
     return branches
 
 
