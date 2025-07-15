@@ -6,9 +6,9 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.12
+aiohttp==3.12.14
     # via web3
-aiosignal==1.3.2
+aiosignal==1.4.0
     # via aiohttp
 annotated-types==0.7.0
     # via pydantic
@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.4.2
+bitarray==3.5.0
     # via eth-account
 black==25.1.0
     # via -r requirements.in
@@ -31,7 +31,7 @@ cchecksum==0.3.1
     # via
     #   -r requirements.in
     #   eth-event
-certifi==2025.4.26
+certifi==2025.7.14
     # via requests
 charset-normalizer==3.4.2
     # via requests
@@ -132,7 +132,7 @@ lazy-object-proxy==1.11.0
     # via -r requirements.in
 lru-dict==1.3.0
     # via web3
-multidict==6.4.4
+multidict==6.6.3
     # via
     #   aiohttp
     #   yarl
@@ -176,11 +176,11 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.5
+pydantic==2.11.7
     # via eth-account
 pydantic-core==2.33.2
     # via pydantic
-pygments==2.19.1
+pygments==2.19.2
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity
@@ -218,11 +218,11 @@ rlp==4.1.0
     #   -r requirements.in
     #   eth-account
     #   eth-rlp
-rpds-py==0.25.1
+rpds-py==0.26.0
     # via
     #   jsonschema
     #   referencing
-safe-pysha3==1.0.4
+safe-pysha3==1.0.5
     # via cchecksum
 semantic-version==2.10.0
     # via
@@ -238,8 +238,9 @@ toolz==1.0.0
     # via cytoolz
 tqdm==4.67.1
     # via -r requirements.in
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
+    #   aiosignal
     #   eth-typing
     #   pydantic
     #   pydantic-core
@@ -248,11 +249,11 @@ typing-extensions==4.14.0
     #   web3
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.4.0
+urllib3==2.5.0
     # via requests
 vvm==0.2.1
     # via -r requirements.in
-vyper==0.4.2
+vyper==0.4.3
     # via -r requirements.in
 wcwidth==0.2.13
     # via prompt-toolkit
@@ -265,4 +266,4 @@ wheel==0.45.1
 wrapt==1.17.2
     # via -r requirements.in
 yarl==1.20.1
-    # via aiohttp
+# via aiohttp
