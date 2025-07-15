@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Optional, Set
 
 from ens import ENS
+from eth_typing import ChecksumAddress, HexStr
 from requests import HTTPError
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
@@ -30,7 +31,7 @@ class Web3(_Web3):
         super().__init__(HTTPProvider("null"))
         self.provider = None
         self._mainnet_w3: Optional[_Web3] = None
-        self._genesis_hash: Optional[str] = None
+        self._genesis_hash: Optional[HexStr] = None
         self._chain_uri: Optional[str] = None
         self._custom_middleware: Set = set()
         self._supports_traces = None
@@ -149,13 +150,13 @@ class Web3(_Web3):
         return self._mainnet_w3
 
     @property
-    def genesis_hash(self) -> str:
+    def genesis_hash(self) -> HexStr:
         """The genesis hash of the currently active network."""
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self._genesis_hash is None:
             # removeprefix is used for compatability with both hexbytes<1 and >=1
-            self._genesis_hash = self.eth.get_block(0)["hash"].hex().removeprefix("0x")
+            self._genesis_hash = HexStr(self.eth.get_block(0)["hash"].hex().removeprefix("0x"))
         return self._genesis_hash
 
     @property
@@ -194,7 +195,7 @@ def _get_path() -> Path:
     return _get_data_folder().joinpath("ens.json")
 
 
-def _resolve_address(domain: str) -> str:
+def _resolve_address(domain: str) -> ChecksumAddress:
     # convert ENS domain to address
     if not isinstance(domain, str) or "." not in domain:
         return to_address(domain)

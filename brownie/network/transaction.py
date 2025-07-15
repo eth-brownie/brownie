@@ -9,7 +9,19 @@ from collections import deque
 from enum import IntEnum
 from hashlib import sha1
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    Dict,
+    List,
+    Optional,
+    ParamSpec,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from warnings import warn
 
 import black
@@ -32,14 +44,17 @@ from . import state
 from .event import EventDict, _decode_logs, _decode_trace
 from .web3 import web3
 
+_T = TypeVar("_T")
+_P = ParamSpec("_P")
+
 _marker = deque("-/|\\-/|\\")
 
 
-def trace_property(fn: Callable) -> Any:
+def trace_property(fn: Callable[["TransactionReceipt"], _T]) -> property[_T]:
     # attributes that are only available after querying the tranasaction trace
 
-    @property  # type: ignore
-    def wrapper(self: "TransactionReceipt") -> Any:
+   @property
+    def wrapper(self: "TransactionReceipt") -> _T:
         if self.status < 0:
             return None
         if self._trace_exc is not None:
@@ -59,8 +74,10 @@ def trace_property(fn: Callable) -> Any:
     return wrapper
 
 
-def trace_inspection(fn: Callable) -> Any:
-    def wrapper(self: "TransactionReceipt", *args: Any, **kwargs: Any) -> Any:
+def trace_inspection(
+    fn: Callable[Concatenate["TransactionReceipt", _P], _T],
+) -> Callable[Concatenate["TransactionReceipt", _P], _T]:
+    def wrapper(self: "TransactionReceipt", *args: _P.args, **kwargs: _P.kwargs) -> _T:
         if self.contract_address:
             raise NotImplementedError(
                 "Trace inspection methods are not available for deployment transactions."
@@ -172,9 +189,9 @@ class TransactionReceipt:
         self._revert_msg: Optional[str] = None
         self._dev_revert_msg: Optional[str] = None
         self._modified_state: Optional[bool] = None
-        self._new_contracts: Optional[List] = None
-        self._internal_transfers: Optional[List[Dict]] = None
-        self._subcalls: Optional[List[Dict]] = None
+        self._new_contracts: Optional[List[EthAddress]] = None
+        self._internal_transfers: Optional[List[Dict[str, Any]]] = None
+        self._subcalls: Optional[List[Dict[str, Any]]] = None
 
         # attributes that can be set immediately
         self.sender = sender
@@ -232,7 +249,7 @@ class TransactionReceipt:
         return hash(self.txid)
 
     @trace_property
-    def events(self) -> Optional[EventDict]:
+    def events(self) -> EventDict:
         if self._events is None:
             if self.status:
                 # relay contract map so we can decode ds-note logs
@@ -248,7 +265,7 @@ class TransactionReceipt:
         return self._events
 
     @trace_property
-    def internal_transfers(self) -> Optional[List]:
+   def internal_transfers(self) -> List[Dict[str, Any]]:
         if not self.status:
             return []
         if self._internal_transfers is None:
@@ -264,7 +281,7 @@ class TransactionReceipt:
         return self._modified_state
 
     @trace_property
-    def new_contracts(self) -> Optional[List]:
+    def new_contracts(self) -> List[EthAddress]:
         if not self.status:
             return []
         if self._new_contracts is None:
