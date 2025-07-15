@@ -6,112 +6,112 @@
 #
 aiohappyeyeballs==2.6.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
-aiohttp==3.12.12
+aiohttp==3.12.14
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   web3
-aiosignal==1.3.2
+aiosignal==1.4.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
 annotated-types==0.7.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pydantic
 asttokens==3.0.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   vyper
 attrs==25.3.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
     #   hypothesis
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.4.2
+bitarray==3.5.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
 black==25.1.0
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 cbor2==5.6.5
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   vyper
 cchecksum==0.3.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-event
-certifi==2025.4.26
+certifi==2025.7.14
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   requests
 charset-normalizer==3.4.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   requests
 ckzg==2.1.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
 click==8.2.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   black
 colorama==0.4.6
     # via -r requirements-windows.in
 cytoolz==1.0.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-utils
     #   faster-eth-utils
 dataclassy==0.11.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eip712
 eip712==0.2.13
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 eth-abi==5.2.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eip712
     #   eth-account
     #   eth-event
     #   web3
 eth-account==0.13.7
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eip712
     #   web3
 eth-event==1.3.2
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 eth-hash[pycryptodome]==0.7.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-event
     #   eth-utils
     #   faster-eth-utils
     #   web3
 eth-keyfile==0.8.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
 eth-keys==0.7.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
     #   eth-keyfile
 eth-rlp==2.2.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
 eth-typing==4.4.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   cchecksum
     #   eip712
     #   eth-abi
@@ -121,7 +121,7 @@ eth-typing==4.4.0
     #   web3
 eth-utils==4.1.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eip712
     #   eth-abi
     #   eth-account
@@ -132,203 +132,204 @@ eth-utils==4.1.1
     #   web3
 execnet==2.1.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest-xdist
 faster-eth-utils==4.1.2
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 frozenlist==1.7.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
     #   aiosignal
 hexbytes==1.3.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eip712
     #   eth-account
     #   eth-event
     #   eth-rlp
     #   web3
 hypothesis==6.27.3
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 idna==3.10
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   requests
     #   yarl
 immutables==0.21
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   vyper
 iniconfig==2.1.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest
 jsonschema==4.24.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   web3
 jsonschema-specifications==2025.4.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   jsonschema
 lark==1.2.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   vyper
 lazy-object-proxy==1.11.0
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 lru-dict==1.3.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   web3
-multidict==6.4.4
+multidict==6.6.3
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
     #   yarl
 mypy-extensions==1.1.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   black
 packaging==23.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   black
     #   pytest
     #   vvm
     #   vyper
 parsimonious==0.10.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-abi
 pathspec==0.12.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   black
 platformdirs==4.3.8
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   black
 pluggy==1.6.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest
 prompt-toolkit==3.0.51
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 propcache==0.3.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
     #   yarl
 protobuf==6.31.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   web3
 psutil==5.9.8
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 py==1.11.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest
     #   pytest-forked
 py-solc-ast==1.2.10
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 py-solc-x==1.1.1
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 pycryptodome==3.23.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.5
+pydantic==2.11.7
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
 pydantic-core==2.33.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pydantic
-pygments==2.19.1
+pygments==2.19.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pygments-lexer-solidity
 pygments-lexer-solidity==0.7.0
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 pytest==6.2.5
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest-forked
     #   pytest-xdist
 pytest-forked==1.6.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest-xdist
 pytest-xdist==1.34.0
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 python-dotenv==0.16.0
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 pyunormalize==16.0.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   web3
 pyyaml==6.0.2
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 referencing==0.36.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   jsonschema
     #   jsonschema-specifications
 regex==2024.11.6
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   parsimonious
 requests==2.32.4
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   py-solc-x
     #   vvm
     #   web3
 rlp==4.1.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   eth-account
     #   eth-rlp
-rpds-py==0.25.1
+rpds-py==0.26.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   jsonschema
     #   referencing
-safe-pysha3==1.0.4
+safe-pysha3==1.0.5
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   cchecksum
 semantic-version==2.10.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   py-solc-x
 six==1.17.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest-xdist
 sortedcontainers==2.4.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   hypothesis
 toml==0.10.2
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pytest
 toolz==1.0.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   cytoolz
 tqdm==4.67.1
-    # via -r requirements.txt
-typing-extensions==4.14.0
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
+typing-extensions==4.14.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
+    #   aiosignal
     #   eth-typing
     #   pydantic
     #   pydantic-core
@@ -337,33 +338,33 @@ typing-extensions==4.14.0
     #   web3
 typing-inspection==0.4.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   pydantic
-urllib3==2.4.0
+urllib3==2.5.0
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   requests
 vvm==0.2.1
-    # via -r requirements.txt
-vyper==0.4.2
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
+vyper==0.4.3
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 wcwidth==0.2.13
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   prompt-toolkit
 web3==6.11.0
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 websockets==15.0.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   web3
 wheel==0.45.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   vyper
 wrapt==1.17.2
-    # via -r requirements.txt
+    # via -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
 yarl==1.20.1
     # via
-    #   -r requirements.txt
+    #   -r /home/dependabot/dependabot-updater/tmp/20250715-1353-en01tk/dependabot_20250715-1353-v661qa/requirements.txt
     #   aiohttp
