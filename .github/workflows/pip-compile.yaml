@@ -41,7 +41,7 @@ jobs:
     
     - name: Install Mypyc and Compile
       run: |
-        pip install "mypy[mypyc]==1.16.0" types-PyYAML
+        pip install "mypy[mypyc]==1.17.0" types-PyYAML
         pip install .
 
     - name: Check for changes
