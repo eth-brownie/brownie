@@ -151,7 +151,7 @@ def generate_input_json(
     evm_version: Optional[str] = None,
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[list] = None,
+    remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
@@ -202,7 +202,7 @@ def generate_input_json(
     return input_json
 
 
-def _get_solc_remappings(remappings: Optional[list]) -> list:
+def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[str]:
     if remappings is None:
         remap_dict: Dict = {}
     elif isinstance(remappings, str):
