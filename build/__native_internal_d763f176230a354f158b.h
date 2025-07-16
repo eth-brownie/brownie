@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1246];
+extern PyObject *CPyStatics[1245];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -296,7 +296,6 @@ extern PyObject *CPyPy_console_____mypyc_lambda__2_get_completions_ConsoleComple
 extern PyObject *CPyDef_console_____mypyc_lambda__2_get_completions_ConsoleCompleter_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_k);
 extern PyObject *CPyPy_console_____mypyc_lambda__2_get_completions_ConsoleCompleter_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_console___get_completions_ConsoleCompleter_gen_____mypyc_generator_helper__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback, PyObject *cpy_r_arg);
-extern PyObject *CPyPy_console___get_completions_ConsoleCompleter_gen_____mypyc_generator_helper__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_console___get_completions_ConsoleCompleter_gen_____next__(PyObject *cpy_r___mypyc_self__);
 extern PyObject *CPyPy_console___get_completions_ConsoleCompleter_gen_____next__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_console___get_completions_ConsoleCompleter_gen___send(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_arg);
@@ -600,14 +599,11 @@ extern PyObject *CPyPy_sql___Cursor___close(PyObject *self, PyObject *const *arg
 extern char CPyDef_sql_____top_level__(void);
 extern PyObject *CPyStatic_toposort____reduce;
 extern PyTypeObject *CPyType_toposort___CircularDependencyError;
-extern PyTypeObject *CPyType_toposort___toposort_env;
-extern PyObject *CPyDef_toposort___toposort_env(void);
 extern PyTypeObject *CPyType_toposort___toposort_gen;
 extern PyObject *CPyDef_toposort___toposort_gen(void);
 extern char CPyDef_toposort___CircularDependencyError_____init__(PyObject *cpy_r_self, PyObject *cpy_r_data);
 extern PyObject *CPyPy_toposort___CircularDependencyError_____init__(PyObject *self, PyObject *args, PyObject *kw);
 extern PyObject *CPyDef_toposort___toposort_gen_____mypyc_generator_helper__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback, PyObject *cpy_r_arg);
-extern PyObject *CPyPy_toposort___toposort_gen_____mypyc_generator_helper__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_toposort___toposort_gen_____next__(PyObject *cpy_r___mypyc_self__);
 extern PyObject *CPyPy_toposort___toposort_gen_____next__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_toposort___toposort_gen___send(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_arg);

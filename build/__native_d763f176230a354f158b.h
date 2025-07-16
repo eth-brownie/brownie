@@ -58,6 +58,16 @@ typedef struct tuple_T2OO {
 } tuple_T2OO;
 #endif
 
+#ifndef MYPYC_DECLARED_tuple_T4CIOO
+#define MYPYC_DECLARED_tuple_T4CIOO
+typedef struct tuple_T4CIOO {
+    char f0;
+    CPyTagged f1;
+    PyObject *f2;
+    PyObject *f3;
+} tuple_T4CIOO;
+#endif
+
 #ifndef MYPYC_DECLARED_tuple_T2II
 #define MYPYC_DECLARED_tuple_T2II
 typedef struct tuple_T2II {
@@ -90,16 +100,6 @@ typedef struct tuple_T4OOOO {
     PyObject *f2;
     PyObject *f3;
 } tuple_T4OOOO;
-#endif
-
-#ifndef MYPYC_DECLARED_tuple_T4CIOO
-#define MYPYC_DECLARED_tuple_T4CIOO
-typedef struct tuple_T4CIOO {
-    char f0;
-    CPyTagged f1;
-    PyObject *f2;
-    PyObject *f3;
-} tuple_T4CIOO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T14OOOOOOOOOOOOOO
@@ -315,7 +315,7 @@ typedef struct {
     PyObject *_value;
     PyObject *_traceback;
     PyObject *_arg;
-    CPyTagged ___mypyc_next_label__;
+    int32_t ___mypyc_next_label__;
     PyObject *_text;
     PyObject *_base;
     PyObject *_current;
@@ -372,13 +372,8 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    PyObject *___mypyc_self__;
     PyObject *_data;
-    PyObject *_type;
-    PyObject *_value;
-    PyObject *_traceback;
-    PyObject *_arg;
-    CPyTagged ___mypyc_next_label__;
+    int32_t ___mypyc_next_label__;
     PyObject *___mypyc_temp__0;
     CPyTagged ___mypyc_temp__1;
     CPyTagged ___mypyc_temp__2;
@@ -402,12 +397,6 @@ typedef struct {
     CPyTagged ___mypyc_temp__14;
     CPyTagged ___mypyc_temp__15;
     PyObject *___mypyc_temp__16;
-} brownie___utils___toposort___toposort_envObject;
-
-typedef struct {
-    PyObject_HEAD
-    CPyVTableItem *vtable;
-    PyObject *___mypyc_env__;
 } brownie___utils___toposort___toposort_genObject;
 
 
@@ -679,8 +668,6 @@ struct export_table_d763f176230a354f158b {
     char (*CPyDef_sql_____top_level__)(void);
     PyObject **CPyStatic_toposort____reduce;
     PyTypeObject **CPyType_toposort___CircularDependencyError;
-    PyTypeObject **CPyType_toposort___toposort_env;
-    PyObject *(*CPyDef_toposort___toposort_env)(void);
     PyTypeObject **CPyType_toposort___toposort_gen;
     PyObject *(*CPyDef_toposort___toposort_gen)(void);
     char (*CPyDef_toposort___CircularDependencyError_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_data);
