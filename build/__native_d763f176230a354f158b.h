@@ -579,6 +579,11 @@ struct export_table_d763f176230a354f158b {
     PyObject **CPyStatic_network___history;
     PyObject **CPyStatic_network___chain;
     char (*CPyDef_network_____top_level__)(void);
+    PyObject **CPyStatic_compiler___Path;
+    PyObject **CPyStatic_compiler___deepcopy;
+    PyObject **CPyStatic_compiler___sha1;
+    PyObject **CPyStatic_compiler___Version;
+    PyObject **CPyStatic_compiler____from_standard_output;
     PyObject *(*CPyDef_compiler___compile_and_format)(PyObject *cpy_r_contract_sources, PyObject *cpy_r_solc_version, PyObject *cpy_r_vyper_version, PyObject *cpy_r_optimize, PyObject *cpy_r_runs, PyObject *cpy_r_evm_version, char cpy_r_silent, PyObject *cpy_r_allow_paths, PyObject *cpy_r_interface_sources, PyObject *cpy_r_remappings, PyObject *cpy_r_optimizer, PyObject *cpy_r_viaIR);
     PyObject *(*CPyDef_compiler___generate_input_json)(PyObject *cpy_r_contract_sources, char cpy_r_optimize, CPyTagged cpy_r_runs, PyObject *cpy_r_evm_version, PyObject *cpy_r_language, PyObject *cpy_r_interface_sources, PyObject *cpy_r_remappings, PyObject *cpy_r_optimizer, PyObject *cpy_r_viaIR);
     PyObject *(*CPyDef_compiler____get_solc_remappings)(PyObject *cpy_r_remappings);

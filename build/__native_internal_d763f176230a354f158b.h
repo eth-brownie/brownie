@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1244];
+extern PyObject *CPyStatics[1246];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -117,8 +117,8 @@ extern CPyModule *CPyModule_brownie___project___compiler;
 extern PyObject *CPyStatic_compiler___globals;
 extern CPyModule *CPyModule_copy;
 extern CPyModule *CPyModule_hashlib;
-extern CPyModule *CPyModule_solcast;
 extern CPyModule *CPyModule_semantic_version;
+extern CPyModule *CPyModule_solcast;
 extern CPyModule *CPyModule_brownie___project;
 extern CPyModule *CPyModule_brownie___project___compiler___solidity_internal;
 extern CPyModule *CPyModule_brownie___project___compiler___solidity;
@@ -433,6 +433,11 @@ extern PyObject *CPyStatic_network___rpc;
 extern PyObject *CPyStatic_network___history;
 extern PyObject *CPyStatic_network___chain;
 extern char CPyDef_network_____top_level__(void);
+extern PyObject *CPyStatic_compiler___Path;
+extern PyObject *CPyStatic_compiler___deepcopy;
+extern PyObject *CPyStatic_compiler___sha1;
+extern PyObject *CPyStatic_compiler___Version;
+extern PyObject *CPyStatic_compiler____from_standard_output;
 extern PyObject *CPyDef_compiler___compile_and_format(PyObject *cpy_r_contract_sources, PyObject *cpy_r_solc_version, PyObject *cpy_r_vyper_version, PyObject *cpy_r_optimize, PyObject *cpy_r_runs, PyObject *cpy_r_evm_version, char cpy_r_silent, PyObject *cpy_r_allow_paths, PyObject *cpy_r_interface_sources, PyObject *cpy_r_remappings, PyObject *cpy_r_optimizer, PyObject *cpy_r_viaIR);
 extern PyObject *CPyPy_compiler___compile_and_format(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_compiler___generate_input_json(PyObject *cpy_r_contract_sources, char cpy_r_optimize, CPyTagged cpy_r_runs, PyObject *cpy_r_evm_version, PyObject *cpy_r_language, PyObject *cpy_r_interface_sources, PyObject *cpy_r_remappings, PyObject *cpy_r_optimizer, PyObject *cpy_r_viaIR);
