@@ -26,7 +26,7 @@ from typing import (
 
 import eth_event
 from eth_event import EventError
-from eth_event.main import TopicMapData
+from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData
 from eth_typing import ChecksumAddress, HexStr
 from mypy_extensions import mypyc_attr
 from web3._utils import filters
@@ -526,7 +526,7 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
         return EventDict()
 
     idx = 0
-    events: List = []
+    events: List[DecodedEvent | NonDecodedEvent] = []
     while True:
         address = logs[idx]["address"]
         try:
@@ -553,7 +553,7 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
     return EventDict(format_event(event) for event in events)
 
 
-def _decode_ds_note(log, contract: "Contract") -> Dict[str, Any]:
+def _decode_ds_note(log: _EventItem, contract: "Contract") -> DecodedEvent:
     # ds-note encodes function selector as the first topic
     selector, tail = log.topics[0][:4], log.topics[0][4:]
     selector_hexstr = hexbytes_to_hexstring(selector)
