@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import solcast
 from semantic_version import Version
