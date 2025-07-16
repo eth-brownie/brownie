@@ -33,23 +33,23 @@ else:
     else:
         ext_modules = mypycify(
             [
-            "brownie/_cli",
-            "brownie/convert/__init__.py",
-            "brownie/convert/main.py",
-            "brownie/convert/normalize.py",
-            "brownie/convert/utils.py",
-            "brownie/network/__init__.py",
-            "brownie/project/compiler",
-            "brownie/utils/__init__.py",
-            "brownie/utils/_color.py",
-            "brownie/utils/output.py",
-            "brownie/utils/sql.py",
-            "brownie/utils/toposort.py",
-            # "--strict",
-            "--pretty",
-            "--check-untyped-defs",
-        ]
-    )
+                "brownie/_cli",
+                "brownie/convert/__init__.py",
+                "brownie/convert/main.py",
+                "brownie/convert/normalize.py",
+                "brownie/convert/utils.py",
+                "brownie/network/__init__.py",
+                "brownie/project/compiler",
+                "brownie/utils/__init__.py",
+                "brownie/utils/_color.py",
+                "brownie/utils/output.py",
+                "brownie/utils/sql.py",
+                "brownie/utils/toposort.py",
+                # "--strict",
+                "--pretty",
+                "--check-untyped-defs",
+            ]
+        )
 
 
 setup(
