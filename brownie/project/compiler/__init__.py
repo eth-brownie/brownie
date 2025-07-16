@@ -7,7 +7,6 @@ import pathlib
 from typing import Dict, Final, List, Optional, Union
 
 import semantic_version
-
 import solcast
 
 from brownie._config import _get_data_folder
@@ -53,6 +52,7 @@ sha1: Final = hashlib.sha1
 Version: Final = semantic_version.Version
 
 _from_standard_output: Final = solcast.from_standard_output
+
 
 def compile_and_format(
     contract_sources: Dict[str, str],

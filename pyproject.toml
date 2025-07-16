@@ -2,7 +2,7 @@
 requires = [
     "setuptools", 
     "wheel", 
-    "mypy[mypyc]>=1.14.1,<1.15.1",
+    "mypy[mypyc]>=1.14.1,<1.17.1",
     "types-pyyaml",
     "types-requests",
 ]
