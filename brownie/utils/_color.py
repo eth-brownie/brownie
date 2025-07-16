@@ -186,7 +186,7 @@ class Color:
         offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
         exc.filename = exc.filename.replace(base_path, ".")  # type: ignore [union-attr]
         return (
-            f"  {self('dark white')}File \"{self('bright magenta')}{exc.filename}"
+            f"  {self('dark white')}File \"{self('bright magenta')}{exc.filename}"  # type: ignore [union-attr]
             f"{self('dark white')}\", line {self('bright blue')}{exc.lineno}"
             f"{self('dark white')},\n{self}    {exc.text.strip()}\n"  # type: ignore [union-attr]
             f"{' '*offset}^\n{self('bright red')}SyntaxError{self}: {exc.msg}"

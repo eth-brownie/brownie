@@ -469,7 +469,7 @@ def _parse_document(local_dict, text):
         active_objects, current_text, comma_data = _parser_cache[text]
         return active_objects.copy(), current_text, comma_data.copy()
 
-    last_token = None
+    last_token: Optional[tokenize.TokenInfo] = None
     active_objects = [local_dict]
     pending_active = []
 

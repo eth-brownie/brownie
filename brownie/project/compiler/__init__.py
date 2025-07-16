@@ -4,7 +4,7 @@ import json
 from copy import deepcopy
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import solcast
 from semantic_version import Version
@@ -47,13 +47,13 @@ def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
     vyper_version: Optional[str] = None,
-    optimize: bool = True,
-    runs: int = 200,
+    optimize: Optional[bool] = True,
+    runs: Optional[int] = 200,
     evm_version: Optional[EvmVersionSpec] = None,
     silent: bool = True,
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[list] = None,
+    remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
@@ -151,7 +151,7 @@ def generate_input_json(
     evm_version: Optional[str] = None,
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[list] = None,
+    remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
@@ -202,7 +202,7 @@ def generate_input_json(
     return input_json
 
 
-def _get_solc_remappings(remappings: Optional[list]) -> list:
+def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[str]:
     if remappings is None:
         remap_dict: Dict = {}
     elif isinstance(remappings, str):
