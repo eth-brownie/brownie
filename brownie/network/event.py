@@ -330,7 +330,7 @@ class _EventWatchData:
             )
             threads[-1].start()
         # Remove non-repeating callbacks from list
-        self._callbacks_list = [x for x in (x.get("repeat") for x in self._callbacks_list) if x]
+        self._callbacks_list = [cb for cb in self._callbacks_list if cb.get("repeat")]
         return threads
 
     @property
