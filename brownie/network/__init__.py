@@ -13,7 +13,7 @@ from .main import (  # NOQA 401
     priority_fee,
     show_active,
 )
-from .rpc import Rpc
+from .rpc import rpc
 from .state import Chain, TxHistory
 from .web3 import web3
 
@@ -21,6 +21,5 @@ __all__ = ["accounts", "chain", "history", "rpc", "web3"]
 __console_dir__ = ["connect", "disconnect", "show_active", "is_connected", "gas_limit", "gas_price"]
 
 accounts: Final[Accounts] = Accounts()
-rpc: Final[Rpc] = Rpc()
 history: Final[TxHistory] = TxHistory()
 chain: Final[Chain] = Chain()
