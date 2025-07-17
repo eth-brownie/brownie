@@ -56,7 +56,7 @@ class Alert:
             raise TypeError("You can only set an alert on a callable object")
         if isinstance(repeat, int) and repeat < 0:
             raise ValueError("repeat must be True, False or a positive integer")
-        self._kill: Final = False
+        self._kill: bool = False
         start_value = fn(*args, **kwargs)
         self._thread: Final = _Thread(
             target=self._loop,
@@ -92,7 +92,7 @@ class Alert:
                 if msg:
                     fmt_msg = msg.format(start_value, value)
                     print(f"{bright_red}ALERT{color}: {fmt_msg}")
-                if callback:
+                if callback is not None:
                     callback(start_value, value)
                 start_value = value
                 if not repeat:
