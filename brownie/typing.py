@@ -1,4 +1,4 @@
-from typing import List, Literal, TypedDict, TypeVar, final
+from typing import TYPE_CHECKING, List, Literal, TypedDict, TypeVar, final
 
 from eth_event.main import EventData
 from eth_typing import ChecksumAddress
