@@ -216,6 +216,8 @@ class Project(_ProjectBase):
         contract_list = sources.get_contract_list()
         potential_dependencies = []
         build_path = self._build_path
+
+        build_json: dict
         for path in build_path.glob("contracts/*.json"):
             try:
                 with path.open() as fp:
@@ -250,6 +252,8 @@ class Project(_ProjectBase):
 
         interface_hashes = {}
         interface_list = sources.get_interface_list()
+
+        build_json: dict
         for path in build_path.glob("interfaces/*.json"):
             try:
                 with path.open() as fp:
@@ -294,7 +298,7 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
+    def _get_changed_contracts(self, compiled_hashes: Dict[str, str]) -> Dict:
         sources = self._sources
         build = self._build
         
@@ -302,11 +306,15 @@ class Project(_ProjectBase):
         new_hashes = sources.get_interface_hashes()
         
         # remove outdated build artifacts
-        for name in (k for k, v in new_hashes.items() if compiled_hashes.get(k) != v):
-            build._remove_interface(name)
+        for name in new_hashes:
+            existing_hash = compiled_hashes.get(name)
+            if existing_hash and existing_hash == new_hashes[name]:
+                build._remove_interface(name)
 
-        contracts = set(filter(self._compare_build_json, sources.get_contract_list()))
-        for dependents in map(build.get_dependents, list(contracts)):
+        _contracts = (self._compare_build_json(c) for c in sources.get_contract_list())
+        contracts = set(c for c in _contracts if c)
+        for contract in list(contracts):
+            dependents = build.get_dependents(contract)
             contracts.update(dependents)
 
         # remove outdated build artifacts
@@ -314,10 +322,10 @@ class Project(_ProjectBase):
             build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set: Set = set(map(sources.get_source_path, contracts))
-        return dict(zip(changed_set, map(sources.get, changed_set)))
+        changed_set = list(set(sources.get_source_path(contract) for contract in contracts))
+        return dict(zip(changed_set, (sources.get(changed) for changed in changed_set)))
 
-    def _compare_build_json(self, contract_name: str) -> bool:
+    def _compare_build_json(self, contract_name: ContractName) -> bool:
         config = self._compiler_config
         # confirm that this contract was previously compiled
         try:
@@ -329,18 +337,19 @@ class Project(_ProjectBase):
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
+        compiler: dict = build_json["compiler"]
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
             solc_config["remappings"] = None
-            if not _solidity_compiler_equal(solc_config, build_json["compiler"]):
+            if not _solidity_compiler_equal(solc_config, compiler):
                 return True
             # compare solc pragma against compiled version
-            if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+            if Version(compiler["version"]) not in get_pragma_spec(source):
                 return True
         else:
             vyper_config = config["vyper"].copy()
-            if not _vyper_compiler_equal(vyper_config, build_json["compiler"]):
+            if not _vyper_compiler_equal(vyper_config, compiler):
                 return True
         return False
 
@@ -393,6 +402,8 @@ class Project(_ProjectBase):
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
         deployment_map = self._load_deployment_map()
+        
+        build: dict
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
@@ -543,7 +554,7 @@ class Project(_ProjectBase):
                     deployment.unlink()
                 else:
                     with deployment.open("r") as fp:
-                        deployment_artifact = json.load(fp)
+                        deployment_artifact: dict = json.load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
                     if block_height > height:
                         deployment.unlink()
