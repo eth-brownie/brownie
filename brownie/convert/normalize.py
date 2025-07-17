@@ -47,7 +47,7 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
         event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"  # type: ignore [typeddict-item]
         return event  # type: ignore [return-value]
 
-    data = event["data"]
+    data: Sequence[ABIComponent] = event["data"]
     for e in data:
         if not e["decoded"]:
             e["type"] = "bytes32"
@@ -56,7 +56,7 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)
     for e, value in zip(data, values):
         e["value"] = value
-    return event
+    return event  # type: ignore [return-value]
 
 
 def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> List:
