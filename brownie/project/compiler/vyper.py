@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
 import logging
 from collections import deque
