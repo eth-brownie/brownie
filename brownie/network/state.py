@@ -623,7 +623,7 @@ def _get_deployment(
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
     pc_map = build_json["pcMap"]
     if isinstance(pc_map, dict):
-        build_json["pcMap"] = keymap(int, pc_map)
+        build_json["pcMap"] = {int(key): pc_map[v] for key in pc_map}
 
     return build_json, sources
 
