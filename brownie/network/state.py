@@ -17,7 +17,7 @@ from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
-from brownie.network import rpc
+from brownie.network.rpc import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
