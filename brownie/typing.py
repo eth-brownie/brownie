@@ -3,10 +3,9 @@ from typing import List, Literal, TypedDict, TypeVar, final
 from eth_event.main import EventData
 from eth_typing import ChecksumAddress
 
-from brownie.network.transaction import TransactionReceipt
-
 if TYPE_CHECKING:
     from brownie.network.account import Accounts
+    from brownie.network.transaction import TransactionReceipt
 
 # NETWORK
 # Account
@@ -21,4 +20,4 @@ class FormattedEvent(TypedDict):
     address: ChecksumAddress
 
 # Transactions
-TransactionReceiptType = TypeVar("TransactionReceiptType", bound=TransactionReceipt)
+TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")
