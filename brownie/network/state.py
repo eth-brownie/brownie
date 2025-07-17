@@ -13,11 +13,11 @@ from eth_typing import BlockNumber
 from eth_utils.toolz import keymap
 from web3.types import BlockData
 
+import brownie.network.rpc as rpc
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
-from brownie.network.rpc import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
