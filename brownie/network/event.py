@@ -31,6 +31,7 @@ from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
+from brownie.typing import FormattedEvent
 from brownie.utils import hexbytes_to_hexstring
 
 from .web3 import ContractEvent, web3
@@ -41,7 +42,7 @@ class EventDict:
     Dict/list hybrid container, base class for all events fired in a transaction.
     """
 
-    def __init__(self, events: Optional[List] = None) -> None:
+    def __init__(self, events: Optional[List[FormattedEvent]] = None) -> None:
         """Instantiates the class.
 
         Args:
