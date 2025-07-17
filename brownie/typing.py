@@ -53,13 +53,14 @@ class CompilerConfig(TypedDict):
     vyper_config: VyperConfig
 
 @final
-class InputJsonSettings(TypedDict):
+class Settings(TypedDict):
     outputSelection: Dict[str, Dict[str, List[str]]]
     evmVersion: EvmVersion
-    remappings: List[dict]
+    remappings: List[str]
+    viaIR: NotRequired[bool]
 
 @final
 class InputJson(TypedDict):
     language: Optional[Language]
     sources: dict
-    settings: StandardJsonSettings
+    settings: Settings
