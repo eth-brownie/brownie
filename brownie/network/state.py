@@ -7,7 +7,7 @@ import weakref
 from hashlib import sha1
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from eth_typing import BlockNumber
 from eth_utils.toolz import keymap
@@ -24,6 +24,9 @@ from brownie.utils.sql import Cursor
 
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
+
+if TYPE_CHECKING:
+    from .contract import Contract
 
 _contract_map: Dict = {}
 _revert_refs: List = []
@@ -612,7 +615,7 @@ def _get_deployment(
     build_json = dict(zip(keys, row))
     path_map = build_json.pop("paths")
     sources = {
-        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]
+        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
