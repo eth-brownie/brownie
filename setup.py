@@ -38,6 +38,7 @@ else:
                 "brownie/_expansion.py",
                 "brownie/convert",
                 "brownie/network/__init__.py",
+                "brownie/network/alert.py",
                 "brownie/network/event.py",
                 "brownie/network/state.py",
                 "brownie/project",
