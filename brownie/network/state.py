@@ -309,7 +309,7 @@ class Chain(metaclass=_Singleton):
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
             return rpc_client.snapshot()
         rpc_client.revert(id_)
         id_ = rpc_client.snapshot()
@@ -338,7 +338,7 @@ class Chain(metaclass=_Singleton):
             self.reset()
         except NotImplementedError:
             # required for geth dev
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
 
     def _network_disconnected(self) -> None:
         self._undo_buffer.clear()
@@ -347,7 +347,7 @@ class Chain(metaclass=_Singleton):
         self._reset_id = None
         self._current_id = None
         self._chainid = None
-        _notify_registry(0)
+        _notify_registry(0)  # type: ignore [arg-type]
 
     def get_transaction(self, txid: Union[str, bytes]) -> TransactionReceipt:
         """
@@ -474,7 +474,7 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer.clear()
         if self._reset_id is None:
             self._reset_id = self._current_id = rpc.Rpc().snapshot()
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
         return web3.eth.block_number
