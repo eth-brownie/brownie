@@ -21,7 +21,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import ContractName, EvmVersion, InputJson, Language
+from brownie.typing import CompilerConfig, ContractName, EvmVersion, InputJson, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -52,8 +52,8 @@ sha1: Final = hashlib.sha1
 Version: Final = semantic_version.Version
 
 _from_standard_output: Final = solcast.from_standard_output
-
-
+    
+    
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
@@ -99,7 +99,7 @@ def compile_and_format(
     build_json: Dict = {}
     compiler_targets = {}
 
-    vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
+    vyper_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".vy"}
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
         if vyper_version is None:
@@ -108,7 +108,8 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
+    
+    solc_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"}
     if solc_sources:
         if solc_version is None:
             compiler_targets.update(
@@ -120,17 +121,17 @@ def compile_and_format(
         if optimizer is None:
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
+    compiler_data: CompilerData
     for version, path_list in compiler_targets.items():
-        compiler_data: Dict = {}
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
-            compiler_data["version"] = str(vyper.get_version())
+            compiler_data = {"version": str(vyper.get_version())}
             interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data["version"] = str(solidity.get_version())
+            compiler_data = {"version": str(solidity.get_version())}
             interfaces = {
                 k: v
                 for k in interface_sources
@@ -275,7 +276,7 @@ def compile_from_input_json(
 
 
 def generate_build_json(
-    input_json: InputJson, output_json: Dict, compiler_data: Optional[Dict] = None, silent: bool = True
+    input_json: InputJson, output_json: Dict, compiler_data: Optional[CompilerData] = None, silent: bool = True
 ) -> Dict:
     """Formats standard compiler output to the brownie build json.
 
