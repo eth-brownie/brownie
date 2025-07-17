@@ -14,7 +14,7 @@ from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple, Union, final
 from urllib.parse import quote
 
 import requests
@@ -181,15 +181,15 @@ class Project(_ProjectBase):
     """
 
     def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
-        self._path = project_path
-        self._envvars = _load_project_envvars(project_path)
-        self._structure = expand_posix_vars(
+        self._path: Final = project_path
+        self._envvars: Final = _load_project_envvars(project_path)
+        self._structure: Final = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
-        self._build_path = project_path.joinpath(self._structure["build"])
+        self._build_path: Final = project_path.joinpath(self._structure["build"])
 
-        self._name = name
-        self._active = False
+        self._name: Final = name
+        self._active: bool = False
         self.load(compile=compile)
 
     def load(self, raise_if_loaded: bool = True, compile: bool = True) -> None:
