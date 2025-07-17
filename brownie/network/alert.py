@@ -2,7 +2,7 @@
 
 import time
 from threading import Thread
-from typing import Callable, Dict, Final, List, Set, Tuple, Union
+from typing import Callable, Dict, Final, List, Optional, Set, Tuple, Union
 
 from mypy_extensions import mypyc_attr
 
@@ -27,11 +27,11 @@ class Alert:
     def __init__(
         self,
         fn: Callable,
-        args: Tuple = None,
-        kwargs: Dict = None,
+        args: Optional[Tuple] = None,
+        kwargs: Optional[Dict] = None,
         delay: float = 2,
-        msg: str = None,
-        callback: Callable = None,
+        msg: Optional[str] = None,
+        callback: Optional[Callable] = None,
         repeat: bool = False,
     ) -> None:
         """Creates a new Alert.
@@ -106,7 +106,7 @@ class Alert:
         """Checks if the alert is currently active."""
         return self._thread.is_alive()
 
-    def wait(self, timeout: int = None) -> None:
+    def wait(self, timeout: Optional[int] = None) -> None:
         """Waits for the alert to fire.
         Args:
             timeout: Number of seconds to wait. If None, will wait indefinitely."""
@@ -127,18 +127,18 @@ class Alert:
 
 def new(
     fn: Callable,
-    args: Tuple = None,
-    kwargs: Dict = None,
+    args: Optional[Tuple] = None,
+    kwargs: Optional[Dict] = None,
     delay: float = 0.5,
-    msg: str = None,
-    callback: Callable = None,
+    msg: Optional[str] = None,
+    callback: Optional[Callable] = None,
     repeat: bool = False,
 ) -> "Alert":
     """Alias for creating a new Alert instance."""
     return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 
 
-def show() -> List:
+def show() -> List[Alert]:
     """Returns a list of all currently active Alert instances."""
     return sorted(_instances, key=Alert.__get_start_time)
 
