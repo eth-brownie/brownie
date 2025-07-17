@@ -27,6 +27,7 @@ class FormattedEvent(TypedDict):
 # Transactions
 TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")
 
+# PROJECT
 # Compiler
 Language = str
 EvmVersion = str
