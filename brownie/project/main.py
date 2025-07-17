@@ -55,6 +55,7 @@ from brownie.network.state import _add_contract, _remove_contract, _revert_regis
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
+from brownie.types import CompilerConfig
 from brownie.utils import notify
 
 BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
@@ -84,7 +85,7 @@ class _ProjectBase:
     _sources: Sources
     _build: Build
 
-    def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
+    def _compile(self, contract_sources: Dict, compiler_config: CompilerConfig, silent: bool) -> None:
         compiler_config.setdefault("solc", {})
 
         allow_paths = None
@@ -94,25 +95,27 @@ class _ProjectBase:
             _install_dependencies(path)
             allow_paths = path.as_posix()
             os.chdir(path)
-
+            
         try:
             project_evm_version = compiler_config["evm_version"]
+            solc_config = compiler_config["solc"]
+            vyper_config = compiler_config["vyper"]
             evm_version = {
-                "Solidity": compiler_config["solc"].get("evm_version", project_evm_version),
-                "Vyper": compiler_config["vyper"].get("evm_version", project_evm_version),
+                "Solidity": solc_config.get("evm_version", project_evm_version),
+                "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
             build_json = compiler.compile_and_format(
                 contract_sources,
-                solc_version=compiler_config["solc"].get("version", None),
-                vyper_version=compiler_config["vyper"].get("version", None),
-                optimize=compiler_config["solc"].get("optimize", None),
-                runs=compiler_config["solc"].get("runs", None),
+                solc_version=solc_config.get("version", None),
+                vyper_version=vyper_config.get("version", None),
+                optimize=solc_config.get("optimize", None),
+                runs=solc_config.get("runs", None),
                 evm_version=evm_version,
                 silent=silent,
                 allow_paths=allow_paths,
-                remappings=compiler_config["solc"].get("remappings", []),
-                optimizer=compiler_config["solc"].get("optimizer", None),
-                viaIR=compiler_config["solc"].get("viaIR", None),
+                remappings=solc_config.get("remappings", []),
+                optimizer=solc_config.get("optimizer", None),
+                viaIR=solc_config.get("viaIR", None),
             )
         finally:
             os.chdir(cwd)
