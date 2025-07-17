@@ -39,10 +39,13 @@ jobs:
     - name: Run Pip Compile for Dev Deps
       run: pip-compile -U requirements-dev.in
     
-    - name: Install Mypyc and Compile
+    - name: Install Mypyc and Deps
       run: |
-        pip install "mypy[mypyc]==1.16.0" types-PyYAML
-        pip install .
+        pip install -U mypy[mypyc] types-PyYAML
+        pip install -r requirements.txt
+
+    - name: Compile
+      run: pip install .
 
     - name: Check for changes
       id: changes
