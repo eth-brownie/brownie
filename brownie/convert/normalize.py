@@ -3,7 +3,10 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from eth_abi.grammar import ABIType, TupleType, parse
+from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
+
+from brownie.typing import FormattedEvent
 
 from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
@@ -30,19 +33,19 @@ def format_output(abi: ABIFunction, outputs: Union[List, Tuple]) -> ReturnValue:
     return ReturnValue(result, abi_outputs)
 
 
-def format_event(event: Dict) -> Any:
+def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     # Format event data based on ABI types
     if not event["decoded"]:
         topics = (
-            {"type": "bytes32", "name": c, "value": i}
-            for c, i in zip(("topic1", "topic2", "topic3"), event.get("topics", ()))
+            {"type": "bytes32", "name": name, "value": data}
+            for name, data in zip(("topic1", "topic2", "topic3"), event.get("topics", ()))
         )
-        event["data"] = [
+        event["data"] = [  # type: ignore [typeddict-item]
             *topics,
             {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])},
         ]
-        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
-        return event
+        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"  # type: ignore [typeddict-item]
+        return event  # type: ignore [return-value]
 
     data = event["data"]
     for e in data:
