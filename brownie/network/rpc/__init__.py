@@ -6,7 +6,7 @@ import platform
 import socket
 import time
 import warnings
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Final, Tuple, Union
 from urllib.parse import urlparse
 
 import psutil
@@ -254,3 +254,6 @@ class Rpc(metaclass=_Singleton):
         for proc in psutil.process_iter():
             if process_name.lower() in proc.name().lower():
                 return proc
+
+
+rpc: Final = Rpc()
