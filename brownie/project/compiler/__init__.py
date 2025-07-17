@@ -4,7 +4,7 @@ import copy
 import hashlib
 import json
 import pathlib
-from typing import Dict, Final, List, Optional, TypedDict, Union
+from typing import Dict, Final, List, Optional, TypedDict, Union, final
 
 import semantic_version
 import solcast
@@ -126,18 +126,18 @@ def compile_and_format(
             set_vyper_version(version)
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
-            interfaces = {k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"}
+            interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
             compiler_data["version"] = str(solidity.get_version())
             interfaces = {
                 k: v
-                for k, v in interface_sources.items()
-                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
+                for k in interface_sources
+                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
             }
 
-        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+        to_compile = {key: contract_sources[key] for key in contract_sources if key in path_list}
 
         input_json = generate_input_json(
             to_compile,
@@ -389,7 +389,16 @@ def generate_build_json(
     return build_json
 
 
-def _sources_dict(original: Dict, language: str) -> Dict:
+@final
+class _AbiDict(TypedDict):
+    abi: Any
+
+@final
+class _ContentDict(TypedDict, Generic[_V]):
+    content: _V
+
+
+def _sources_dict(original: Dict[str, str | _V], language: Language) -> Dict[str, _AbiDict | _ContentDict[_V]]:
     result: Dict = {}
     for key, value in original.items():
         if Path(key).suffix == ".json":
