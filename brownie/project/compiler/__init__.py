@@ -4,7 +4,7 @@ import copy
 import hashlib
 import json
 import pathlib
-from typing import Dict, Final, List, Optional, Union
+from typing import Dict, Final, List, Optional, TypedDict, Union
 
 import semantic_version
 import solcast
@@ -21,12 +21,12 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import ContractName
+from brownie.typing import ContractName, EvmVersion, InputJson, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
-
-STANDARD_JSON: Dict = {
+    
+STANDARD_JSON: Final[InputJson] = {
     "language": None,
     "sources": {},
     "settings": {
@@ -41,8 +41,6 @@ STANDARD_JSON: Dict = {
     },
 }
 
-Language = str
-EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
 # C constants
