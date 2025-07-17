@@ -421,35 +421,38 @@ def _generate_coverage_data(
         if node is None:
             continue
 
+        node_ast_type: str = node["ast_type"]
         if op == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
-            if node["ast_type"] == "FunctionDef":
+            if node_ast_type == "FunctionDef":
                 if (op == "REVERT" and pc_list[-7]["op"] == "CALLVALUE") or (
                     op == "JUMPI" and pc_list[-3]["op"] == "CALLVALUE"
                 ):
                     this["dev"] = "Cannot send ether to nonpayable function"
-            elif node["ast_type"] == "Subscript":
+            elif node_ast_type == "Subscript":
                 this["dev"] = "Index out of range"
-            elif node["ast_type"] in ("AugAssign", "BinOp"):
-                if this["ast_type"] == "Sub":
+            elif node_ast_type in ("AugAssign", "BinOp"):
+                node_op: dict = node["op"]
+                node_op_ast_type: str = node_op["ast_type"]
+                if node_op_ast_type == "Sub":
                     this["dev"] = "Integer underflow"
-                elif node["op"]["ast_type"] == "Div":
+                elif node_op_ast_type == "Div":
                     this["dev"] = "Division by zero"
-                elif node["op"]["ast_type"] == "Mod":
+                elif node_op_ast_type == "Mod":
                     this["dev"] = "Modulo by zero"
                 else:
                     this["dev"] = "Integer overflow"
             continue
 
-        if node["ast_type"] in ("Assert", "If") or (
-            node["ast_type"] == "Expr"
-            and node["value"].get("func", {}).get("id", None) == "assert_modifiable"
+        if node_ast_type in ("Assert", "If") or (
+            node_ast_type == "Expr"
+            and node["value"].get("func", {}).get("id") == "assert_modifiable"
         ):
             # branch coverage
             this["branch"] = count
             this_fn = this["fn"]
             branch_map.setdefault(this_fn, {})
-            if node["ast_type"] == "If":
+            if node_ast_type == "If":
                 branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)
             else:
                 branch_map[this_fn][count] = offset + (True,)
