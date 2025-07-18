@@ -20,7 +20,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import CompilerData, InputJson
+from brownie.typing import CompilerData, EvmVersion, InputJson, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -194,7 +194,7 @@ def generate_input_json(
             i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
         )
 
-    input_json: Dict = deepcopy(STANDARD_JSON)
+    input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
