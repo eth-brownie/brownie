@@ -41,6 +41,7 @@ else:
                 "brownie/network/__init__.py",
                 "brownie/network/state.py",
                 "brownie/project",
+                "brownie/typing.py",
                 "brownie/utils/__init__.py",
                 "brownie/utils/_color.py",
                 "brownie/utils/output.py",
