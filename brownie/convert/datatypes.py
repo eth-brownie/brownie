@@ -299,7 +299,9 @@ class ReturnValue(tuple):
     _abi: Optional[List[ABIComponent]] = None
     _dict: Dict[str, Any] = {}
 
-    def __new__(cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None) -> "ReturnValue":
+    def __new__(
+        cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None
+    ) -> "ReturnValue":
         values = list(values)
         for i in range(len(values)):
             if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):

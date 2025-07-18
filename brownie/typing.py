@@ -22,5 +22,6 @@ class FormattedEvent(TypedDict):
     decoded: bool
     address: ChecksumAddress
 
+
 # Transactions
 TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")
