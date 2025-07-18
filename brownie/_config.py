@@ -360,4 +360,4 @@ warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG = Config()
+CONFIG: Final = Config()
