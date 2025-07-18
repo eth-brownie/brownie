@@ -256,7 +256,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("errors.json")
 
 
-def parse_errors_from_abi(abi: List):
+def parse_errors_from_abi(abi: List[ABIElement]):
     updated = False
     for item in [i for i in abi if i.get("type", None) == "error"]:
         selector = build_function_selector(item)
