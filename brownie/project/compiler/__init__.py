@@ -323,8 +323,8 @@ def generate_build_json(
     
             if not silent:
                 print(f" - {contract_alias}")
-    
-            abi: dict = contract["abi"]
+
+            abi: List[dict] = contract["abi"]
             natspec = merge_natspec(
                 contract.get("devdoc", {}),
                 contract.get("userdoc", {}),
