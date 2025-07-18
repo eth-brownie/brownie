@@ -18,18 +18,18 @@ from brownie.project import sources
 from brownie.project.compiler.utils import expand_source_map
 from brownie.project.sources import is_inside_offset
 
-vvm_logger = logging.getLogger("vvm")
+vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
-sh = logging.StreamHandler()
+sh: Final = logging.StreamHandler()
 sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 vvm_logger.addHandler(sh)
 
-AVAILABLE_VYPER_VERSIONS = None
+AVAILABLE_VYPER_VERSIONS: Optional[List[Version]] = None
 _active_version = Version(vyper.__version__)
 
 
-EVM_VERSION_MAPPING = [
+EVM_VERSION_MAPPING: Final = [
     ("shanghai", Version("0.3.9")),
     ("paris", Version("0.3.7")),
     ("berlin", Version("0.2.12")),
@@ -59,13 +59,13 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     return str(_active_version)
 
 
-def get_abi(contract_source: str, name: str) -> Dict:
+def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[Dict[str, Any]]]:
     """
     Given a contract source and name, returns a dict of {name: abi}
 
     This function is deprecated in favor of `brownie.project.compiler.get_abi`
     """
-    input_json = {
+    input_json: InputJson = {
         "language": "Vyper",
         "sources": {name: {"content": contract_source}},
         "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
@@ -84,7 +84,7 @@ def get_abi(contract_source: str, name: str) -> Dict:
     return {name: compiled["contracts"][name][name]["abi"]}
 
 
-def _get_vyper_version_list() -> Tuple[List, List]:
+def _get_vyper_version_list() -> Tuple[List[Version], List[Version]]:
     global AVAILABLE_VYPER_VERSIONS
     installed_versions = _convert_to_semver(vvm.get_installed_vyper_versions())
     lib_version = Version(vyper.__version__)
@@ -218,7 +218,7 @@ def find_best_vyper_version(
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJson, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.
@@ -294,7 +294,7 @@ def _is_revert_jump(pc_list: List[dict], revert_pc: int) -> bool:
 
 def _generate_coverage_data(
     source_map_str: str, opcodes_str: str, contract_name: str, ast_json: List[dict]
-) -> Tuple:
+) -> Tuple[Dict, Dict, Dict[str, Dict]]:
     if not opcodes_str:
         return {}, {}, {}
 
@@ -306,7 +306,7 @@ def _generate_coverage_data(
     stmt_nodes = {_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes)}
 
     statement_map: Dict = {}
-    branch_map: Dict = {}
+    branch_map: Dict[str, Dict] = {}
 
     pc_list: List = []
     count, pc = 0, 0
@@ -430,7 +430,7 @@ def _convert_src(src: str) -> Tuple[int, int]:
     return src_int[0], src_int[0] + src_int[1]
 
 
-def _find_node_by_offset(ast_json: List, offset: Tuple) -> Optional[Dict]:
+def _find_node_by_offset(ast_json: List[Dict], offset: Tuple[int, int]) -> Optional[Dict]:
     for node in [i for i in ast_json if is_inside_offset(offset, _convert_src(i["src"]))]:
         if _convert_src(node["src"]) == offset:
             return node
@@ -445,8 +445,8 @@ def _find_node_by_offset(ast_json: List, offset: Tuple) -> Optional[Dict]:
     return None
 
 
-def _get_statement_nodes(ast_json: List) -> List:
-    stmt_nodes: List = []
+def _get_statement_nodes(ast_json: List[Dict]) -> List[Dict]:
+    stmt_nodes = []
     for node in ast_json:
         if children := [x for v in node.values() if isinstance(v, list) for x in v]:
             stmt_nodes += _get_statement_nodes(children)
