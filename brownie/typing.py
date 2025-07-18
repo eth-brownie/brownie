@@ -46,6 +46,7 @@ class VyperConfig(TypedDict):
 
 @final
 class CompilerConfig(TypedDict):
+    version: str
     evm_version: EvmVersion
     solc_config: NotRequired[SolcConfig]
     vyper_config: VyperConfig
