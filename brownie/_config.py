@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
-from typing import Any, Dict, List, Literal, NewType, Optional, final
+from typing import Any, Dict, Final, List, Literal, NewType, Optional, final
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
