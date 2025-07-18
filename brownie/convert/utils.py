@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
+from typing import Dict, Final, List, Optional, Sequence, Tuple
 
 import eth_hash.auto
 from eth_typing import ABIComponent, ABIFunction, HexStr
