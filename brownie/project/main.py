@@ -175,12 +175,12 @@ class Project(_ProjectBase):
     """
 
     def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
-        self._path: Path = project_path
+        self._path = project_path
         self._envvars = _load_project_envvars(project_path)
         self._structure = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
-        self._build_path: Path = project_path.joinpath(self._structure["build"])
+        self._build_path = project_path.joinpath(self._structure["build"])
 
         self._name = name
         self._active = False
