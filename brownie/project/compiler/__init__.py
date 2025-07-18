@@ -194,7 +194,7 @@ def generate_input_json(
             i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
         )
 
-    input_json: Dict = deepcopy(STANDARD_JSON)
+    input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
@@ -318,13 +318,18 @@ def generate_build_json(
         if not silent:
             print(f" - {contract_alias}")
 
-        abi = output_json["contracts"][path_str][contract_name]["abi"]
-        natspec = merge_natspec(
-            output_json["contracts"][path_str][contract_name].get("devdoc", {}),
-            output_json["contracts"][path_str][contract_name].get("userdoc", {}),
-        )
-        output_evm = output_json["contracts"][path_str][contract_name]["evm"]
-        if contract_alias in build_json and not output_evm["deployedBytecode"]["object"]:
+        contracts_output: dict = output_json["contracts"]
+        path_output: dict = contracts_output[path_str]
+        contract_output: dict = path_output[contract_name]
+        
+        natspec = merge_natspec(contract_output.get("devdoc", {}), contract_output.get("userdoc", {}))
+        
+        abi = contract_output["abi"]
+        output_evm: dict = contract_output["evm"]
+        deployed_bytecode: dict = output_evm["deployedBytecode"]
+        bytecode: HexStr = deployed_bytecode["object"]
+        
+        if contract_alias in build_json and not bytecode:
             continue
 
         if input_json["language"] == "Solidity":
@@ -356,18 +361,18 @@ def generate_build_json(
                 "ast": output_json["sources"][path_str]["ast"],
                 "compiler": compiler_data,
                 "contractName": contract_name,
-                "deployedBytecode": output_evm["deployedBytecode"]["object"],
-                "deployedSourceMap": output_evm["deployedBytecode"]["sourceMap"],
+                "deployedBytecode": bytecode,
+                "deployedSourceMap": deployed_bytecode["sourceMap"],
                 "language": input_json["language"],
                 "natspec": natspec,
-                "opcodes": output_evm["deployedBytecode"]["opcodes"],
+                "opcodes": deployed_bytecode["opcodes"],
                 "sha1": sha1(source.encode()).hexdigest(),
                 "source": source,
                 "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                 "sourcePath": path_str,
             }
         )
-        size = len(output_evm["deployedBytecode"]["object"].removeprefix("0x")) / 2  # type: ignore
+        size = len(bytecode.removeprefix("0x")) / 2
         if size > 24577:
             notify(
                 "WARNING",
