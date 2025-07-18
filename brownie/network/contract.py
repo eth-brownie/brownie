@@ -1907,13 +1907,15 @@ def _get_method_object(
         return ContractCall(address, abi, name, owner, natspec)
     return ContractTx(address, abi, name, owner, natspec)
 
+_fixed168x10: Final = {"fixed168x10": "decimal"}
+
 
 def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     abi_inputs = abi["inputs"]
     types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
-    params = zip((i["name"] for i in abi_inputs), types_list)
     return ", ".join(
-        f"{i[1]}{color('bright blue')}{f' {i[0]}' if i[0] else ''}{color}" for i in params
+        f"{types}{color('bright blue')}{f' {name}' if name else ''}{color}"
+        for name, types in zip((i["name"] for i in abi_inputs), types_list)
     )
 
 
