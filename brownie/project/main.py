@@ -14,7 +14,7 @@ from hashlib import sha1
 from io import BytesIO
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple, Union
 from urllib.parse import quote
 
 import requests
@@ -56,10 +56,10 @@ from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
 from brownie.utils import notify
 
-BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
-MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
+BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
+MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
 
-GITIGNORE = """__pycache__
+GITIGNORE: Final = """__pycache__
 .env
 .history
 .hypothesis/
@@ -67,11 +67,11 @@ build/
 reports/
 """
 
-GITATTRIBUTES = """*.sol linguist-language=Solidity
+GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
 
-_loaded_projects = []
+_loaded_projects: Final[List["Project"]] = []
 
 
 class _ProjectBase:
