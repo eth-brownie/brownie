@@ -235,7 +235,7 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     return [f"{k}={v}" for k, v in dict(remap_dict, **remapped_dict).items()]
 
 
-def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:
+def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
     # generate the final allow_paths field based on path remappings
     path_list = [] if allow_paths is None else [allow_paths]
 
@@ -433,24 +433,25 @@ def get_abi(
         if Path(k).suffix == ".json"
     }
 
-    for path, source in [(k, v) for k, v in contract_sources.items() if Path(k).suffix == ".vy"]:
-        input_json = generate_input_json({path: source}, language="Vyper")
-        input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
-        try:
-            output_json = compile_from_input_json(input_json, silent, allow_paths)
-        except Exception:
-            # vyper interfaces do not convert to ABIs
-            # https://github.com/vyperlang/vyper/issues/1944
-            continue
-        name = Path(path).stem
-        final_output[name] = {
-            "abi": output_json["contracts"][path][name]["abi"],
-            "contractName": name,
-            "type": "interface",
-            "source": source,
-            "offset": [0, len(source)],
-            "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-        }
+    for path, source in contract_sources.items():
+        if Path(k).suffix == ".vy":
+            input_json = generate_input_json({path: source}, language="Vyper")
+            input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+            try:
+                output_json = compile_from_input_json(input_json, silent, allow_paths)
+            except Exception:
+                # vyper interfaces do not convert to ABIs
+                # https://github.com/vyperlang/vyper/issues/1944
+                continue
+            name = Path(path).stem
+            final_output[name] = {
+                "abi": output_json["contracts"][path][name]["abi"],
+                "contractName": name,
+                "type": "interface",
+                "source": source,
+                "offset": [0, len(source)],
+                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+            }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
 
@@ -476,12 +477,11 @@ def get_abi(
         for path, name, data in [(k, x, y) for k, v in abi_json.items() for x, y in v.items()]:
             contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
             dependencies = []
-            for node in [
-                i for i in contract_node.dependencies if i.nodeType == "ContractDefinition"
-            ]:
-                dependency_name = node.name
-                path_str = node.parent().absolutePath
-                dependencies.append(_get_alias(dependency_name, path_str))
+            for node in contract_node.dependencies:
+                if node.nodeType == "ContractDefinition":
+                    dependency_name = node.name
+                    path_str = node.parent().absolutePath
+                    dependencies.append(_get_alias(dependency_name, path_str))
 
             final_output[name] = {
                 "abi": data["abi"],
