@@ -344,9 +344,13 @@ def _make_data_folders(data_folder: Path) -> None:
         )
 
 
+class Config(ConfigContainer, metaclass=_Singleton):
+    pass
+
+
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG = _Singleton("Config", (ConfigContainer,), {})()
+CONFIG = Config()
