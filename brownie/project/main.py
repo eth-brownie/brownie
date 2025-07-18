@@ -20,6 +20,7 @@ from urllib.parse import quote
 import requests
 import yaml
 from eth_utils.toolz import mapcat
+from mypy_extensions import mypyc_attr
 from semantic_version import Version
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
@@ -163,6 +164,7 @@ class _ProjectBase:
         return self._containers.keys()
 
 
+@mypyc_attr(native_class=False)  # TODO: remove this once weakref support is implemented
 class Project(_ProjectBase):
     """
     Top level dict-like container that holds data and objects related to
