@@ -4,11 +4,11 @@ PyMODINIT_FUNC
 PyInit_utils(void)
 {
     PyObject *tmp;
-    if (!(tmp = PyImport_ImportModule("67ba59a4b46c20ffa2b1__mypyc"))) return NULL;
+    if (!(tmp = PyImport_ImportModule("1f6d4040f11363df733c__mypyc"))) return NULL;
     PyObject *capsule = PyObject_GetAttrString(tmp, "init_brownie___project___compiler___utils");
     Py_DECREF(tmp);
     if (capsule == NULL) return NULL;
-    void *init_func = PyCapsule_GetPointer(capsule, "67ba59a4b46c20ffa2b1__mypyc.init_brownie___project___compiler___utils");
+    void *init_func = PyCapsule_GetPointer(capsule, "1f6d4040f11363df733c__mypyc.init_brownie___project___compiler___utils");
     Py_DECREF(capsule);
     if (!init_func) {
         return NULL;
