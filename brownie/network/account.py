@@ -18,6 +18,7 @@ from eip712.messages import EIP712Message
 from eth_account._utils.signing import sign_message_hash
 from eth_account.datastructures import SignedMessage
 from eth_account.messages import _hash_eip191_message, defunct_hash_message
+from eth_typing import BlockNumber, HexAddress
 from faster_eth_utils import keccak
 from faster_eth_utils.applicators import apply_formatters_to_dict
 from hexbytes import HexBytes
@@ -99,11 +100,11 @@ class Accounts(metaclass=_Singleton):
         if self.default not in self._accounts:
             self.default = None
 
-    def _revert(self, height: int) -> None:
+    def _revert(self, height: BlockNumber) -> None:
         # must exist for rpc registry callback
         pass
 
-    def __contains__(self, address: str) -> bool:
+    def __contains__(self, address: HexAddress) -> bool:
         try:
             address = to_address(address)
             return address in self._accounts
