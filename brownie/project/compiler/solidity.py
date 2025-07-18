@@ -333,9 +333,9 @@ def _generate_coverage_data(
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
     branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict[str, dict] = statement_map.copy()
+    branch_active: Dict[str, dict] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict[str, dict] = branch_active.copy()
+    branch_set: Dict[str, dict] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
     pc_list: List[dict] = []
