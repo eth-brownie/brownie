@@ -26,7 +26,7 @@ TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionRec
 
 # PROJECT
 # Compiler
-Language = str
+Language = Literal["Solidity", "Vyper"]
 EvmVersion = str
 
 @final
@@ -56,16 +56,29 @@ class OptimizerSettings(TypedDict):
     enabled: bool
     runs: int
 
+OutputSelection = Dict[str, Dict[str, List[str]]]
+
 @final
-class Settings(TypedDict):
-    outputSelection: Dict[str, Dict[str, List[str]]]
+class SettingsSolc(TypedDict):
+    outputSelection: OutputSelection
     evmVersion: Optional[EvmVersion]
     remappings: List[str]
     optimizer: NotRequired[OptimizerSettings]
     viaIR: NotRequired[bool]
 
 @final
-class InputJson(TypedDict):
-    language: Optional[Language]
+class SettingsVyper(TypedDict):
+    outputSelection: OutputSelection
+@final
+class InputJsonSolc(TypedDict):
+    language: Literal["Solidity"]
     sources: dict
-    settings: Settings
+    settings: SettingsSolc
+
+@final
+class InputJsonVyper(TypedDict):
+    language: Literal["Vyper"]
+    sources: dict
+    settings: SettingsVyper
+
+InputJson = InputJsonSolc | InputJsonVyper
