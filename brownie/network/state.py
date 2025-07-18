@@ -26,7 +26,7 @@ from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
 if TYPE_CHECKING:
-    from .contract import Contract
+    from .contract import _DeployedContractBase, Contract
 
 _contract_map: Dict = {}
 _revert_refs: List = []
@@ -581,11 +581,11 @@ def _get_current_dependencies() -> List:
     return sorted(dependencies)
 
 
-def _add_contract(contract: "Contract") -> None:
+def _add_contract(contract: "_DeployedContractBase") -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract: "Contract") -> None:
+def _remove_contract(contract: "_DeployedContractBase") -> None:
     _contract_map.pop(contract.address, None)
 
 

@@ -46,7 +46,7 @@ class Build:
         self._contracts: Dict = {}
         self._interfaces: Dict = {}
 
-    def _add_contract(self, build_json: Dict, alias: str = None) -> None:
+    def _add_contract(self, build_json: Dict, alias: Optional[str] = None) -> None:
         contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
             return

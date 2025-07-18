@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="union-attr"
 
 import importlib
 import json
@@ -175,12 +176,12 @@ class Project(_ProjectBase):
     """
 
     def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
-        self._path: Path = project_path
+        self._path = project_path
         self._envvars = _load_project_envvars(project_path)
         self._structure = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
-        self._build_path: Path = project_path.joinpath(self._structure["build"])
+        self._build_path = project_path.joinpath(self._structure["build"])
 
         self._name = name
         self._active = False
@@ -194,8 +195,9 @@ class Project(_ProjectBase):
                 raise ProjectAlreadyLoaded("Project is already active")
             return None
 
-        contract_sources = _load_sources(self._path, self._structure["contracts"], False)
-        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
+        project_path: Path = self._path  # type: ignore [assignment]
+        contract_sources = _load_sources(project_path, self._structure["contracts"], False)
+        interface_sources = _load_sources(project_path, self._structure["interfaces"], True)
         self._sources = Sources(contract_sources, interface_sources)
         self._build = Build(self._sources)
 
@@ -220,7 +222,7 @@ class Project(_ProjectBase):
                 if test_path.exists():
                     test_path.unlink()
                 continue
-            if not self._path.joinpath(build_json["sourcePath"]).exists():
+            if not project_path.joinpath(build_json["sourcePath"]).exists():
                 path.unlink()
                 continue
             self._build._add_contract(build_json)
@@ -249,7 +251,7 @@ class Project(_ProjectBase):
 
         if compile:
             self._compiler_config = expand_posix_vars(
-                _load_project_compiler_config(self._path), self._envvars
+                _load_project_compiler_config(project_path), self._envvars
             )
 
             # compile updated sources, update build
@@ -611,7 +613,7 @@ def new(
 
 
 def from_brownie_mix(
-    project_name: str, project_path: Union[Path, str] = None, ignore_subfolder: bool = False
+    project_name: str, project_path: Optional[Path | str] = None, ignore_subfolder: bool = False
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
