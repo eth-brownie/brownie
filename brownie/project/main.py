@@ -75,7 +75,8 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 _loaded_projects: Final[List["Project"]] = []
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)  # TODO: remove this once weakref support is implemented
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class _ProjectBase:
 
     _path: Optional[Path]
@@ -165,7 +166,8 @@ class _ProjectBase:
         return self._containers.keys()
 
 
-@mypyc_attr(native_class=False)  # TODO: remove this once weakref support is implemented
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class Project(_ProjectBase):
     """
     Top level dict-like container that holds data and objects related to
