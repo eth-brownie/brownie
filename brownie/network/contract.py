@@ -1392,7 +1392,7 @@ class OverloadedMethod:
             )
         return self.methods[keys[0]]
 
-    def __getitem__(self, key: tuple | str) -> "ContractCall" | "ContractTx":
+    def __getitem__(self, key: tuple | str) -> Union["ContractCall", "ContractTx"]:
         if isinstance(key, str):
             key = tuple(i.strip() for i in key.split(","))
 
