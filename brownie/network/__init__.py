@@ -21,6 +21,6 @@ __all__ = ["accounts", "chain", "history", "rpc", "web3"]
 __console_dir__ = ["connect", "disconnect", "show_active", "is_connected", "gas_limit", "gas_price"]
 
 accounts: Final[Accounts] = Accounts()
-history: Final[TxHistory] = TxHistory()
 rpc: Final[Rpc] = Rpc()
+history: Final[TxHistory] = TxHistory()
 chain: Final[Chain] = Chain()
