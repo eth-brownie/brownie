@@ -89,7 +89,7 @@ class _ContractBase:
         self._project: Final = project
         self._build: Final = build.copy()
         self._sources: Final = sources
-        
+
         abi = self.abi
         self.topics: Final = _get_topics(abi)
         self.selectors: Final[Dict[HexStr, FunctionName]] = {
