@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Literal, TypedDict, TypeVar, final
+from typing import TYPE_CHECKING, List, Literal, Optional, TypedDict, TypeVar, final
 
 from typing_extensions import NotRequired
 
@@ -54,7 +54,7 @@ class CompilerConfig(TypedDict):
 @final
 class Settings(TypedDict):
     outputSelection: Dict[str, Dict[str, List[str]]]
-    evmVersion: EvmVersion
+    evmVersion: Optional[EvmVersion]
     remappings: List[str]
     viaIR: NotRequired[bool]
 
