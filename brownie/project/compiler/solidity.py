@@ -7,7 +7,7 @@ from typing import Any, Dict, Final, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
-from eth_typing import HexStr
+from eth_typing import ABIElement, HexStr
 from requests.exceptions import ConnectionError
 from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
