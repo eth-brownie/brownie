@@ -4,7 +4,7 @@ import copy
 import hashlib
 import json
 import pathlib
-from typing import Dict, Final, List, Optional, Union
+from typing import Any, Dict, Final, List, Optional, Union
 
 import semantic_version
 import solcast
