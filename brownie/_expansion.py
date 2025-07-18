@@ -1,5 +1,5 @@
 import re
-from typing import Any, Mapping, Optional, Text, TypeVar, overload
+from typing import Any, Final, Mapping, Optional, Text, TypeVar, overload
 
 from dotenv.variables import parse_variables
 
@@ -25,7 +25,7 @@ def expand_posix_vars(obj: Any, variables: Mapping[Text, Optional[Any]]) -> Any:
     return obj
 
 
-def _expand(value: _T, variables: dict = {}) -> _T:
+def _expand(value: _T, variables: Mapping = {}) -> _T:
     """_expand does POSIX-style variable expansion
 
     This is adapted from python-dotenv, specifically here:
@@ -39,7 +39,7 @@ def _expand(value: _T, variables: dict = {}) -> _T:
     if not isinstance(value, (str,)):
         return value
     atoms = parse_variables(value)
-    return "".join([str(atom.resolve(variables)) for atom in atoms])
+    return "".join([str(atom.resolve(variables)) for atom in atoms])  # type: ignore [return-value]
 
 
 INT_REGEX: Final = re.compile(r"^[-+]?[0-9]+$")
