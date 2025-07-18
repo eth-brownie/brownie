@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, Final, List, Optional, Tuple
+from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
 
 import eth_hash.auto
-from eth_typing import HexStr
+from eth_typing import ABIComponent, ABIFunction, HexStr
 
 
 keccak: Final = eth_hash.auto.keccak
@@ -35,7 +35,7 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
 
 
 def get_type_strings(
-    abi_params: List[Dict[str, Any]],
+    abi_params: Sequence[ABIComponent],
     substitutions: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """Converts a list of parameters from an ABI into a list of type strings."""
@@ -58,11 +58,11 @@ def get_type_strings(
     return types_list
 
 
-def build_function_signature(abi: Dict[str, Any]) -> str:
+def build_function_signature(abi: ABIFunction) -> str:
     types_list = get_type_strings(abi["inputs"])
     return f"{abi['name']}({','.join(types_list)})"
 
 
-def build_function_selector(abi: Dict[str, Any]) -> HexStr:
+def build_function_selector(abi: ABIFunction) -> HexStr:
     sig = build_function_signature(abi)
     return HexStr(f"0x{keccak(sig.encode()).hex()[:8]}")
