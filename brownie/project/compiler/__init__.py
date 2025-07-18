@@ -198,7 +198,7 @@ def generate_input_json(
 
     input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
-    settings = input_json["settings"]
+    settings: dict = input_json["settings"]
     settings["evmVersion"] = evm_version
     if language == "Solidity":
         settings["optimizer"] = optimizer
