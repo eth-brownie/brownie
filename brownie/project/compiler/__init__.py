@@ -215,20 +215,22 @@ def generate_input_json(
 
 
 def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[str]:
+    remap_dict: Dict[str, str]
     if remappings is None:
-        remap_dict: Dict = {}
+        remap_dict = {}
     elif isinstance(remappings, str):
         remap_dict = dict([remappings.split("=")])
     else:
         remap_dict = dict(i.split("=") for i in remappings)
-    remapped_dict = {}
+    remapped_dict: Dict[str, str] = {}
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
-        key = next((k for k, v in remap_dict.items() if v.startswith(path.name)), None)
+        pathname = path.name
+        key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
-            remapped_dict[path.name] = path.as_posix()
+            remapped_dict[pathname] = path.as_posix()
     for k, v in remap_dict.items():
         if packages.joinpath(v).exists():
             remapped_dict[k] = packages.joinpath(v).as_posix()
