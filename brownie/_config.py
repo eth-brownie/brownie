@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
-from typing import Any, Dict, Final, List, Literal, NewType, Optional, final
+from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional, final
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -50,7 +50,8 @@ class ConfigContainer:
 
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
 
-        self.networks = {}
+        networks: Dict[str, dict] = {}
+        self.networks: Final = networks
         for value in network_config["development"]:
             key = value["id"]
             if key in self.networks:
@@ -67,38 +68,38 @@ class ConfigContainer:
             if "chainid" in values:
                 self.networks[network]["chainid"] = str(values["chainid"])
 
-        self.argv = defaultdict(__get_None)
+        self.argv: Final[DefaultDict[str, Optional[str]]] = defaultdict(__get_None)
         self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
-        self._active_network = None
+        self._active_network: Optional[NetworkConfig] = None
 
         self.settings._lock()
         _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
 
-    def set_active_network(self, id_: str = None) -> NetworkConfig:
+    def set_active_network(self, id_: Optional[str] = None) -> NetworkConfig:
         """Modifies the 'active_network' configuration settings"""
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = NetworkConfig(copy.deepcopy(self.networks[id_]))
+        network = NetworkConfig(copy.deepcopy(self.networks[id_]))  # type: ignore [index]
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
         if (
             key == "development"
-            and isinstance(network["cmd_settings"], dict)
-            and "fork" in network["cmd_settings"]
+            and isinstance(cmd_settings := network["cmd_settings"], dict)
+            and "fork" in cmd_settings
         ):
 
-            fork = network["cmd_settings"]["fork"]
+            fork = cmd_settings["fork"]
             if fork in self.networks:
-                network["cmd_settings"]["fork"] = self.networks[fork]["host"]
+                cmd_settings["fork"] = self.networks[fork]["host"]
                 network["chainid"] = self.networks[fork]["chainid"]
-                if "chain_id" not in network["cmd_settings"]:
-                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chainid"])
+                if "chain_id" not in cmd_settings:
+                    cmd_settings["chain_id"] = int(self.networks[fork]["chainid"])
                 if "explorer" in self.networks[fork]:
                     network["explorer"] = self.networks[fork]["explorer"]
 
-            network["cmd_settings"]["fork"] = os.path.expandvars(network["cmd_settings"]["fork"])
+            cmd_settings["fork"] = os.path.expandvars(cmd_settings["fork"])
 
         self._active_network = network
         return network
@@ -119,7 +120,7 @@ class ConfigContainer:
         return "development" if "cmd" in self._active_network else "live"
 
     @property
-    def mode(self):
+    def mode(self) -> Optional[str]:
         return self.argv["cli"]
 
 
@@ -144,7 +145,7 @@ class ConfigDict(Dict[str, Any]):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg: Dict[str, Any]) -> None:
+    def update(self, arg: Dict[str, Any]) -> None:  # type: ignore [override]
         for k, v in arg.items():
             self.__setitem__(k, v)
 
@@ -296,7 +297,7 @@ def _load_project_dependencies(project_path: Path) -> List:
 def _modify_hypothesis_settings(settings, name, parent=None):
     settings = settings.copy()
     if parent is None:
-        parent = hp_settings._current_profile
+        parent = hp_settings._current_profile  # type: ignore [attr-defined]
 
     if "phases" in settings:
         try:
@@ -307,7 +308,7 @@ def _modify_hypothesis_settings(settings, name, parent=None):
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),
-        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),  # type: ignore [arg-type]
         **settings,
     )
     hp_settings.load_profile(name)
@@ -324,7 +325,7 @@ def _recursive_update(original: Dict, new: Dict) -> None:
             original[k] = new[k]
 
 
-def _update_argv_from_docopt(args: Dict) -> None:
+def _update_argv_from_docopt(args: Dict[str, Any]) -> None:
     CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
 
 
