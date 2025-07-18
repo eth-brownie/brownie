@@ -20,11 +20,12 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
+from brownie.typing import CompilerData, InputJson
 from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Dict = {
+STANDARD_JSON: Final[InputJson] = {
     "language": None,
     "sources": {},
     "settings": {
@@ -39,8 +40,6 @@ STANDARD_JSON: Dict = {
     },
 }
 
-Language = str
-EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
 # C constants
@@ -120,8 +119,9 @@ def compile_and_format(
         if optimizer is None:
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
+    compiler_data: CompilerData
     for version, path_list in compiler_targets.items():
-        compiler_data: Dict = {}
+        compiler_data = {}
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
@@ -165,7 +165,7 @@ def generate_input_json(
     remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
-) -> Dict:
+) -> InputJson:
     """Formats contracts to the standard solc input json.
 
     Args:
@@ -248,7 +248,7 @@ def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJson, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.
@@ -261,7 +261,7 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    language: Language = input_json["language"]
+    language = input_json["language"]
     if language == "Vyper":
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
 
@@ -273,7 +273,7 @@ def compile_from_input_json(
 
 
 def generate_build_json(
-    input_json: Dict, output_json: Dict, compiler_data: Optional[Dict] = None, silent: bool = True
+    input_json: InputJson, output_json: Dict, compiler_data: Optional[CompilerData] = None, silent: bool = True
 ) -> Dict:
     """Formats standard compiler output to the brownie build json.
 
@@ -285,7 +285,7 @@ def generate_build_json(
 
     Returns: build json dict"""
 
-    language: Language = input_json["language"]
+    language = input_json["language"]
     if language not in ("Solidity", "Vyper"):
         raise UnsupportedLanguage(language)
 
@@ -295,7 +295,7 @@ def generate_build_json(
     if compiler_data is None:
         compiler_data = {}
 
-    settings: dict = input_json["settings"]
+    settings = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
     build_json: Dict = {}
 
@@ -380,7 +380,7 @@ def generate_build_json(
     return build_json
 
 
-def _sources_dict(original: Dict, language: str) -> Dict:
+def _sources_dict(original: Dict[str, Any], language: Language) -> Dict[str, Any]:
     result: Dict = {}
     for key, value in original.items():
         if Path(key).suffix == ".json":
