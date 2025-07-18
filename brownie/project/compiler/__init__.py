@@ -449,7 +449,14 @@ def get_abi(
     for path, source in contract_sources.items():
         if Path(path).suffix == ".vy":
             input_json = generate_input_json({path: source}, language="Vyper")
-            input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+            
+            # this helper is for mypyc compiler
+            dict_helper: dict = input_json["settings"]
+            dict_helper = dict_helper["outputSelection"]
+
+            output_selection = dict_helper
+            output_selection["*"] = {"*": ["abi"]}
+            
             try:
                 output_json = compile_from_input_json(input_json, silent, allow_paths)
             except Exception:
@@ -457,8 +464,13 @@ def get_abi(
                 # https://github.com/vyperlang/vyper/issues/1944
                 continue
             name = Path(path).stem
+            
+            dict_helper = output_json["contracts"]
+            dict_helper = dict_helper[path]
+            dict_helper = dict_helper[name]
+            
             final_output[name] = {
-                "abi": output_json["contracts"][path][name]["abi"],
+                "abi": dict_helper["abi"],
                 "contractName": name,
                 "type": "interface",
                 "source": source,
