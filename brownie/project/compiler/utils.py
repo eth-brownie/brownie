@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import pathlib
-from typing import Dict, Final, List, Optional, Union
+from typing import Dict, Final, List, Optional, Set, Union
 
 from brownie._config import _get_data_folder
 from brownie.typing import ContractName
@@ -62,7 +62,7 @@ def merge_natspec(
     usermethods = userdoc.get("methods", {})
     devmethods = devdoc.get("methods", {})
 
-    keys = set()
+    keys: Set[str] = set()
     keys.update(usermethods)
     keys.update(devmethods)
     for key in keys:
@@ -83,6 +83,6 @@ def _get_alias(contract_name: ContractName, path_str: str) -> ContractName:
     path_parts = Path(path_str).parts
     if path_parts[: len(data_path)] == data_path:
         idx = len(data_path) + 1
-        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"
+        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"  # type: ignore [return-value]
     else:
         return contract_name
