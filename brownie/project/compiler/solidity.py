@@ -327,18 +327,18 @@ def _generate_coverage_data(
     source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
 
     stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
-    statement_map: Dict = {i: {} for i in source_nodes}
+    statement_map: Dict[str, dict] = {i: {} for i in source_nodes}
 
     # possible branch offsets
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
     branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict = {i: {} for i in source_nodes}
+    branch_active: Dict[str, dict] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict = {i: {} for i in source_nodes}
+    branch_set: Dict[str, dict] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
-    pc_list: List = []
+    pc_list: List[dict] = []
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
@@ -499,7 +499,7 @@ def _generate_coverage_data(
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map: Dict = {i: {} for i in source_nodes}
+    branch_map: Dict[str, dict] = {i: {} for i in source_nodes}
     for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
         # for branch to be hit, need an op relating to the source and the next JUMPI
         # this is because of how the compiler optimizes nested BinaryOperations

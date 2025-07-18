@@ -14,6 +14,7 @@ AccountsType = TypeVar("AccountsType", bound="Accounts")
 # Contract
 ContractName = NewType("ContractName", str)
 
+
 # Event
 @final
 class FormattedEvent(TypedDict):
@@ -21,6 +22,7 @@ class FormattedEvent(TypedDict):
     data: List[EventData]
     decoded: bool
     address: ChecksumAddress
+
 
 # Transactions
 TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")

@@ -696,10 +696,10 @@ class _DeployedContractBase(_ContractBase):
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner: Final = owner
         self.tx: Final = tx
-        self.address: Final= address
+        self.address: Final = address
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
-        
+
         fn_abis = [abi for abi in self.abi if abi["type"] == "function"]
         fn_names = [abi["name"] for abi in fn_abis]
 

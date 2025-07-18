@@ -20,6 +20,7 @@ from urllib.parse import quote
 import requests
 import yaml
 from eth_utils.toolz import mapcat
+from mypy_extensions import mypyc_attr
 from semantic_version import Version
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
@@ -74,6 +75,8 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 _loaded_projects: Final[List["Project"]] = []
 
 
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class _ProjectBase:
 
     _path: Optional[Path]
@@ -163,6 +166,8 @@ class _ProjectBase:
         return self._containers.keys()
 
 
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class Project(_ProjectBase):
     """
     Top level dict-like container that holds data and objects related to
@@ -545,6 +550,8 @@ class Project(_ProjectBase):
         self._clear_dev_deployments(0)
 
 
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
