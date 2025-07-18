@@ -78,12 +78,13 @@ from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
 
 FunctionName = NewType("FunctionName", str)
+Selector = NewType("Selector", HexStr)
 
 _unverified_addresses: Set = set()
 
 
 class _ContractBase:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(self, project: Any, build: Dict[str, Any], sources: Dict[str, Any]) -> None:
         self._project: Final = project
@@ -92,13 +93,13 @@ class _ContractBase:
 
         abi = self.abi
         self.topics: Final = _get_topics(abi)
-        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
             build_function_selector(i): FunctionName(i["name"])
             for i in abi
             if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures: Final[Dict[FunctionName, HexStr]] = {
+        self.signatures: Final[Dict[FunctionName, Selector]] = {
             v: k for k, v in self.selectors.items()
         }
         parse_errors_from_abi(abi)
@@ -494,7 +495,7 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: ContractName) -> None:
         self._parent: Final = parent
@@ -630,7 +631,7 @@ class InterfaceConstructor:
     def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
         self._name: Final = name
         self.abi: Final = abi
-        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
             build_function_selector(i): FunctionName(i["name"])
             for i in abi
             if i["type"] == "function"
@@ -1514,13 +1515,12 @@ class OverloadedMethod:
         Decoded values
         """
         selector = hexbytes_to_hexstring(HexBytes(hexstr)[:4])
-
-        fn = next((i for i in self.methods.values() if i == selector), None)
-        if fn is None:
-            raise ValueError(
-                "Data cannot be decoded using any input signatures of functions of this name"
-            )
-        return fn.decode_input(hexstr)
+        for fn in self.methods.values():
+            if fn == selector:
+                return fn.decode_input(hexstr)
+        raise ValueError(
+            "Data cannot be decoded using any input signatures of functions of this name"
+        )
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1555,7 +1555,7 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(
         self,
