@@ -2058,7 +2058,7 @@ _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 def _contract_method_autosuggest(
     args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
 ) -> List[str]:
-    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
+    types_list = get_type_strings(args, _fixed168x10)
     params = zip([i["name"] for i in args], types_list)
 
     suggestions = (f" {i[1]}{f' {i[0]}' if i[0] else ''}" for i in params)
