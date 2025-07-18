@@ -827,6 +827,8 @@ struct export_table_67ba59a4b46c20ffa2b1 {
     char (*CPyDef_main___to_bool)(PyObject *cpy_r_value);
     PyObject *(*CPyDef_main___to_string)(PyObject *cpy_r_value);
     char (*CPyDef_main_____top_level__)(void);
+    PyObject **CPyStatic_normalize____TupleType;
+    PyObject **CPyStatic_normalize____parse;
     PyObject *(*CPyDef_normalize___format_input)(PyObject *cpy_r_abi, PyObject *cpy_r_inputs);
     PyObject *(*CPyDef_normalize___format_output)(PyObject *cpy_r_abi, PyObject *cpy_r_outputs);
     PyObject *(*CPyDef_normalize___format_event)(PyObject *cpy_r_event);

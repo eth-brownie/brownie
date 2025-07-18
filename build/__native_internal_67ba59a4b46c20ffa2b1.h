@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1409];
+extern PyObject *CPyStatics[1412];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -412,6 +412,8 @@ extern PyObject *CPyPy_main___to_bool(PyObject *self, PyObject *const *args, siz
 extern PyObject *CPyDef_main___to_string(PyObject *cpy_r_value);
 extern PyObject *CPyPy_main___to_string(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_main_____top_level__(void);
+extern PyObject *CPyStatic_normalize____TupleType;
+extern PyObject *CPyStatic_normalize____parse;
 extern PyObject *CPyDef_normalize___format_input(PyObject *cpy_r_abi, PyObject *cpy_r_inputs);
 extern PyObject *CPyPy_normalize___format_input(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_normalize___format_output(PyObject *cpy_r_abi, PyObject *cpy_r_outputs);
