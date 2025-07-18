@@ -694,25 +694,27 @@ class _DeployedContractBase(_ContractBase):
         self.address = address
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
+        
+        fn_abis = [abi for abi in self.abi if abi["type"] == "function"]
+        fn_names = [abi["name"] for abi in fn_abis]
 
-        fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
-        for abi in [i for i in self.abi if i["type"] == "function"]:
-            name = f"{self._name}.{abi['name']}"
+        contract_name = self._name
+        methods_natspec: dict = self._build.get("natspec", {}).get("methods", {})
+        for abi, abi_name in zip(fn_abis, fn_names):
+            name = f"{contract_name}.{abi_name}"
             sig = build_function_signature(abi)
-            natspec: Dict = {}
-            if self._build.get("natspec"):
-                natspec = self._build["natspec"]["methods"].get(sig, {})
+            natspec = methods_natspec.get(sig, {})
 
-            if fn_names.count(abi["name"]) == 1:
+            if fn_names.count(abi_name) == 1:
                 fn = _get_method_object(address, abi, name, owner, natspec)
-                self._check_and_set(abi["name"], fn)
+                self._check_and_set(abi_name, fn)
                 continue
 
             # special logic to handle function overloading
-            if not hasattr(self, abi["name"]):
+            if not hasattr(self, abi_name):
                 overloaded = OverloadedMethod(address, name, owner)
-                self._check_and_set(abi["name"], overloaded)
-            getattr(self, abi["name"])._add_fn(abi, natspec)
+                self._check_and_set(abi_name, overloaded)
+            getattr(self, abi_name)._add_fn(abi, natspec)
 
         self._initialized = True
 
