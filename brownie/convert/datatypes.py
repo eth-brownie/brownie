@@ -10,6 +10,7 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
+from eth_typing import ABIComponent
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from hexbytes import HexBytes
 
@@ -298,7 +299,7 @@ class ReturnValue(tuple):
     _abi: Optional[List] = None
     _dict: Dict = {}
 
-    def __new__(cls, values: Sequence, abi: Optional[List] = None) -> "ReturnValue":
+    def __new__(cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None) -> "ReturnValue":
         values = list(values)
         for i in range(len(values)):
             if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):
