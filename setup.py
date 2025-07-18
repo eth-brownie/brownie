@@ -40,7 +40,7 @@ else:
                 "brownie/convert/utils.py",
                 "brownie/network/__init__.py",
                 "brownie/network/state.py",
-                "brownie/project/compiler.py",
+                "brownie/project/compiler",
                 "brownie/project/flattener.py",
                 "brownie/utils/__init__.py",
                 "brownie/utils/_color.py",
