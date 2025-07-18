@@ -146,7 +146,7 @@ def _return_int(original: Any, value: Any) -> int:
         raise TypeError(f"Cannot convert {type(original).__name__} '{original}' to wei.")
 
 
-class Fixed(Decimal):
+class Fixed(decimal.Decimal):
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
 
@@ -197,7 +197,7 @@ class Fixed(Decimal):
         return Fixed(super().__sub__(_to_fixed(other)))
 
 
-def _to_fixed(value: Any) -> Decimal:
+def _to_fixed(value: Any) -> decimal.Decimal:
     if isinstance(value, float):
         raise TypeError("Cannot convert float to decimal - use a string instead")
 
@@ -230,7 +230,7 @@ class EthAddress(str):
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
-            raise ValueError(f"'{value}' is not a valid ETH address") from None
+            raise ValueError(f"'{value}' is not a valid ETH address") from None  # type: ignore [str-bytes-safe]
         return super().__new__(cls, converted_value)  # type: ignore
 
     def __hash__(self) -> int:
@@ -393,7 +393,7 @@ class ReturnValue(tuple):
                 response[k] = v
         return response
 
-    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
+    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:  # type: ignore [override]
         """ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present."""
         if stop is None:
