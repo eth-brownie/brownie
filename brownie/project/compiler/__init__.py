@@ -307,7 +307,8 @@ def generate_build_json(
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     sources: dict = input_json["sources"]
-    contracts: Dict[str, Dict[str, dict]] = output_json["contracts"]
+    contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
+
     for path_str, path_contracts in contracts.items():
         for contract_name in path_contracts:
             contract_alias = contract_name
