@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Literal, TypedDict, TypeVar, final
+from typing import TYPE_CHECKING, List, Literal, NewType, TypedDict, TypeVar, final
 
 from eth_event.main import EventData
 from eth_typing import ChecksumAddress
@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 # NETWORK
 # Account
 AccountsType = TypeVar("AccountsType", bound="Accounts")
+
+# Contract
+ContractName = NewType("ContractName", str)
 
 # Event
 @final

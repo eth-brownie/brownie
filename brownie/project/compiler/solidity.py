@@ -18,16 +18,16 @@ from brownie.project.compiler.utils import _get_alias, expand_source_map
 
 from . import sources
 
-solcx_logger = logging.getLogger("solcx")
+solcx_logger: Final = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
-sh = logging.StreamHandler()
+sh: Final = logging.StreamHandler()
 sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-AVAILABLE_SOLC_VERSIONS = None
+AVAILABLE_SOLC_VERSIONS: Optional[List[Version]] = None
 
-EVM_VERSION_MAPPING = [
+EVM_VERSION_MAPPING: Final = [
     ("istanbul", Version("0.5.13")),
     ("petersburg", Version("0.5.5")),
     ("byzantium", Version("0.4.0")),
@@ -230,7 +230,7 @@ def find_best_solc_version(
     return str(max(installed_versions))
 
 
-def _get_solc_version_list() -> Tuple[List, List]:
+def _get_solc_version_list() -> Tuple[List[Version], List[Version]]:
     global AVAILABLE_SOLC_VERSIONS
     installed_versions = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:

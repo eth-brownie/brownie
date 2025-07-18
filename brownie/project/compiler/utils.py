@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
 import pathlib
-from typing import Dict, Final, List, Optional, Union
+from typing import Dict, Final, List, Optional, Set, Union
 
 from brownie._config import _get_data_folder
+from brownie.typing import ContractName
 
 
 Path: Final = pathlib.Path
@@ -38,7 +39,10 @@ def _expand_row(row: str) -> List[Optional[Union[str, int]]]:
     return result
 
 
-def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
+def merge_natspec(
+    devdoc: Dict[str, Dict[str, Dict]],
+    userdoc: Dict[str, Dict[str, Dict]],
+) -> Dict[str, Dict[str, Dict]]:
     """
     Merge devdoc and userdoc compiler output to a single dict.
 
@@ -58,7 +62,10 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
     usermethods = userdoc.get("methods", {})
     devmethods = devdoc.get("methods", {})
 
-    for key in set(list(usermethods) + list(devmethods)):
+    keys: Set[str] = set()
+    keys.update(usermethods)
+    keys.update(devmethods)
+    for key in keys:
         try:
             natspec["methods"][key] = {**usermethods.get(key, {}), **devmethods.get(key, {})}
         except TypeError:
@@ -67,7 +74,7 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
     return natspec
 
 
-def _get_alias(contract_name: str, path_str: str) -> str:
+def _get_alias(contract_name: ContractName, path_str: str) -> ContractName:
     # Generate an alias for a contract, used when tracking dependencies.
     # For a contract within the project, the alias == the name. For contracts
     # imported from a dependency, the alias is set as [PACKAGE]/[NAME]
@@ -76,6 +83,6 @@ def _get_alias(contract_name: str, path_str: str) -> str:
     path_parts = Path(path_str).parts
     if path_parts[: len(data_path)] == data_path:
         idx = len(data_path) + 1
-        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"
+        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"  # type: ignore [return-value]
     else:
         return contract_name

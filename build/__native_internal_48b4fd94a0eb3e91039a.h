@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1772];
+extern PyObject *CPyStatics[1776];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -248,6 +248,7 @@ extern PyObject *CPyPy_compile_____mypyc_lambda__0_main_obj_____call__(PyObject 
 extern PyObject *CPyDef_compile___main(void);
 extern PyObject *CPyPy_compile___main(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_compile_____top_level__(void);
+extern PyObject *CPyStatic_console___ConsolePrinter____builtins_print;
 extern PyObject *CPyStatic_console___brownie____cli___console___ConsolePrinter_____call_____file;
 extern PyTypeObject *CPyType_console____Quitter;
 extern PyObject *CPyDef_console____Quitter(PyObject *cpy_r_name);
@@ -478,6 +479,7 @@ extern PyObject *CPyStatic_network___rpc;
 extern PyObject *CPyStatic_network___history;
 extern PyObject *CPyStatic_network___chain;
 extern char CPyDef_network_____top_level__(void);
+extern PyObject *CPyStatic_state___cur;
 extern PyTypeObject *CPyType_state___TxHistory;
 extern PyTypeObject *CPyType_state___Chain;
 extern PyTypeObject *CPyType_state_____init___3_TxHistory_obj;
@@ -793,6 +795,9 @@ extern PyObject *CPyPy_compiler____sources_dict(PyObject *self, PyObject *const 
 extern PyObject *CPyDef_compiler___get_abi(PyObject *cpy_r_contract_sources, PyObject *cpy_r_solc_version, PyObject *cpy_r_allow_paths, PyObject *cpy_r_remappings, char cpy_r_silent);
 extern PyObject *CPyPy_compiler___get_abi(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_compiler_____top_level__(void);
+extern PyObject *CPyStatic_solidity___solcx_logger;
+extern PyObject *CPyStatic_solidity___sh;
+extern PyObject *CPyStatic_solidity___EVM_VERSION_MAPPING;
 extern PyObject *CPyStatic_solidity____BINOPS_PARAMS;
 extern PyObject *CPyDef_solidity___get_version(void);
 extern PyObject *CPyPy_solidity___get_version(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
@@ -847,6 +852,9 @@ extern PyObject *CPyPy_compiler___utils___merge_natspec(PyObject *self, PyObject
 extern PyObject *CPyDef_compiler___utils____get_alias(PyObject *cpy_r_contract_name, PyObject *cpy_r_path_str);
 extern PyObject *CPyPy_compiler___utils____get_alias(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_compiler___utils_____top_level__(void);
+extern PyObject *CPyStatic_vyper___vvm_logger;
+extern PyObject *CPyStatic_vyper___sh;
+extern PyObject *CPyStatic_vyper___EVM_VERSION_MAPPING;
 extern PyObject *CPyDef_vyper___get_version(void);
 extern PyObject *CPyPy_vyper___get_version(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper___set_vyper_version(PyObject *cpy_r_version);
@@ -869,11 +877,11 @@ extern PyObject *CPyDef_vyper____get_dependencies(PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____get_dependencies(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_vyper____is_revert_jump(PyObject *cpy_r_pc_list, CPyTagged cpy_r_revert_pc);
 extern PyObject *CPyPy_vyper____is_revert_jump(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_vyper____generate_coverage_data(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json);
+extern tuple_T3OOO CPyDef_vyper____generate_coverage_data(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____generate_coverage_data(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern tuple_T2II CPyDef_vyper____convert_src(PyObject *cpy_r_src);
 extern PyObject *CPyPy_vyper____convert_src(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_vyper____find_node_by_offset(PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
+extern PyObject *CPyDef_vyper____find_node_by_offset(PyObject *cpy_r_ast_json, tuple_T2II cpy_r_offset);
 extern PyObject *CPyPy_vyper____find_node_by_offset(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper____get_statement_nodes(PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____get_statement_nodes(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
@@ -955,6 +963,8 @@ extern PyObject *CPyPy_flattener___Flattener___make_import_absolute(PyObject *se
 extern PyObject *CPyDef_flattener____wipe(PyObject *cpy_r_src);
 extern PyObject *CPyPy_flattener____wipe(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_flattener_____top_level__(void);
+extern PyObject *CPyStatic_project___main___BUILD_FOLDERS;
+extern PyObject *CPyStatic_project___main____loaded_projects;
 extern PyObject *CPyStatic_project___main___brownie___project___main____stream_download___headers;
 extern PyObject *CPyStatic_project___main___brownie___project___main____get_mix_default_branch___headers;
 extern PyTypeObject *CPyType_project___main____ProjectBase;

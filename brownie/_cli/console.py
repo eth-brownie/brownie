@@ -93,7 +93,7 @@ class ConsolePrinter:
     is written to during user input.
     """
 
-    _builtins_print = builtins.print
+    _builtins_print: Final = builtins.print
 
     def __init__(self, console):
         self.console: Final = console

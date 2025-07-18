@@ -27,7 +27,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress
+from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
 from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
@@ -57,7 +57,7 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
-from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.typing import AccountsType, ContractName, TransactionReceiptType
 from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
@@ -173,7 +173,7 @@ class ContractContainer(_ContractBase):
         # instead we create when it's requested, but still define it here
         self._flattener: Flattener = None  # type: ignore
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["ProjectContract"]:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> "ProjectContract":
@@ -317,7 +317,7 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: Any, silent: bool = False) -> bool:
+    def publish_source(self, contract: "Contract", silent: bool = False) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -486,7 +486,7 @@ class ContractContainer(_ContractBase):
 class ContractConstructor:
     _dir_color = "bright magenta"
 
-    def __init__(self, parent: "ContractContainer", name: str) -> None:
+    def __init__(self, parent: "ContractContainer", name: ContractName) -> None:
         self._parent = parent
         try:
             self.abi = next(i for i in parent.abi if i["type"] == "constructor")
@@ -542,7 +542,7 @@ class ContractConstructor:
         )
 
     @staticmethod
-    def _autosuggest(obj: "ContractConstructor") -> List:
+    def _autosuggest(obj: "ContractConstructor") -> List[str]:
         return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
     def encode_input(self, *args: Any) -> str:
@@ -605,7 +605,7 @@ class InterfaceContainer:
                 abi = json.load(fp)
             self._add(path.stem, abi)
 
-    def _add(self, name: str, abi: List[ABIElement]) -> None:
+    def _add(self, name: ContractName, abi: List[ABIElement]) -> None:
         constructor = InterfaceConstructor(name, abi)
         setattr(self, name, constructor)
 
@@ -615,7 +615,7 @@ class InterfaceConstructor:
     Constructor used to create Contract objects from a project interface.
     """
 
-    def __init__(self, name: str, abi: List[ABIElement]) -> None:
+    def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
         self._name = name
         self.abi = abi
         self.selectors = {
@@ -681,19 +681,22 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self,
+        address: HexAddress,
+        owner: Optional[AccountsType] = None,
+        tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode = (
+        self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
             # removeprefix is used for compatability with both hexbytes<1 and >=1
             self._build.get("deployedBytecode", None)
             or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
-        self._owner = owner
-        self.tx = tx
-        self.address = address
+        self._owner: Final = owner
+        self.tx: Final = tx
+        self.address: Final= address
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
         
@@ -888,7 +891,7 @@ class Contract(_DeployedContractBase):
 
     def _deprecated_init(
         self,
-        name: str,
+        name: ContractName,
         address: Optional[str] = None,
         abi: Optional[List[ABIElement]] = None,
         manifest_uri: Optional[str] = None,
@@ -907,7 +910,7 @@ class Contract(_DeployedContractBase):
     @classmethod
     def from_abi(
         cls,
-        name: str,
+        name: ContractName,
         address: str,
         abi: List[ABIElement],
         owner: Optional[AccountsType] = None,
@@ -1569,7 +1572,7 @@ class _ContractMethod:
             return abi["stateMutability"] == "payable"
 
     @staticmethod
-    def _autosuggest(obj: "_ContractMethod") -> List:
+    def _autosuggest(obj: "_ContractMethod") -> List[str]:
         # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
         return _contract_method_autosuggest(
             obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
@@ -2017,14 +2020,14 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
 # console auto-completion logic
 
 
-def _call_autosuggest(method: Any) -> List:
+def _call_autosuggest(method: ContractCall | ContractTx) -> List[str]:
     # since methods are not unique for each object, we use `__reduce__`
     # to locate the specific object so we can access the correct ABI
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], False, False)
 
 
-def _transact_autosuggest(method: Any) -> List:
+def _transact_autosuggest(method: ContractCall | ContractTx) -> List[str]:
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
 
@@ -2039,7 +2042,9 @@ _ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
 _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 
 
-def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
+def _contract_method_autosuggest(
+    args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
+) -> List[str]:
     types_list = get_type_strings(args, {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in args], types_list)
 

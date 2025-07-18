@@ -8,6 +8,7 @@ from typing import Dict, Final, List, Optional, Union
 
 import semantic_version
 import solcast
+from eth_typing import HexStr
 
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
@@ -20,6 +21,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
+from brownie.typing import ContractName
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -194,7 +196,7 @@ def generate_input_json(
             i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
         )
 
-    input_json: Dict = deepcopy(STANDARD_JSON)
+    input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
     input_json["settings"]["evmVersion"] = evm_version
     if language == "Solidity":
@@ -214,20 +216,22 @@ def generate_input_json(
 
 
 def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[str]:
+    remap_dict: Dict[str, str]
     if remappings is None:
-        remap_dict: Dict = {}
+        remap_dict = {}
     elif isinstance(remappings, str):
         remap_dict = dict([remappings.split("=")])
     else:
         remap_dict = dict(i.split("=") for i in remappings)
-    remapped_dict = {}
+    remapped_dict: Dict[str, str] = {}
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
-        key = next((k for k, v in remap_dict.items() if v.startswith(path.name)), None)
+        pathname = path.name
+        key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
-            remapped_dict[path.name] = path.as_posix()
+            remapped_dict[pathname] = path.as_posix()
     for k, v in remap_dict.items():
         if packages.joinpath(v).exists():
             remapped_dict[k] = packages.joinpath(v).as_posix()
@@ -235,7 +239,7 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     return [f"{k}={v}" for k, v in dict(remap_dict, **remapped_dict).items()]
 
 
-def _get_allow_paths(allow_paths: Optional[str], remappings: list) -> str:
+def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
     # generate the final allow_paths field based on path remappings
     path_list = [] if allow_paths is None else [allow_paths]
 
@@ -303,76 +307,83 @@ def generate_build_json(
         compiler_data["optimizer"] = settings["optimizer"]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
-    for path_str, contract_name in [
-        (k, x) for k, v in output_json["contracts"].items() for x in v.keys()
-    ]:
-        contract_alias = contract_name
+    sources: dict = input_json["sources"]
+    contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
 
-        if path_str in input_json["sources"]:
-            source = input_json["sources"][path_str]["content"]
-        else:
-            with Path(path_str).open(encoding="utf-8") as fp:
-                source = fp.read()
-            contract_alias = _get_alias(contract_name, path_str)
-
-        if not silent:
-            print(f" - {contract_alias}")
-
-        abi = output_json["contracts"][path_str][contract_name]["abi"]
-        natspec = merge_natspec(
-            output_json["contracts"][path_str][contract_name].get("devdoc", {}),
-            output_json["contracts"][path_str][contract_name].get("userdoc", {}),
-        )
-        output_evm = output_json["contracts"][path_str][contract_name]["evm"]
-        if contract_alias in build_json and not output_evm["deployedBytecode"]["object"]:
-            continue
-
-        if input_json["language"] == "Solidity":
-            contract_node = next(
-                i[contract_name] for i in source_nodes if i.absolutePath == path_str
+    for path_str, path_contracts in contracts.items():
+        for contract_name in path_contracts:
+            contract_alias = contract_name
+    
+            if path_str in input_json["sources"]:
+                source = input_json["sources"][path_str]["content"]
+            else:
+                with Path(path_str).open(encoding="utf-8") as fp:
+                    source = fp.read()
+                contract_alias = _get_alias(contract_name, path_str)
+    
+            if not silent:
+                print(f" - {contract_alias}")
+    
+            contracts_output: dict = output_json["contracts"]
+            path_output: dict = contracts_output[path_str]
+            contract_output: dict = path_output[contract_name]
+            
+            natspec = merge_natspec(contract_output.get("devdoc", {}), contract_output.get("userdoc", {}))
+            
+            abi = contract_output["abi"]
+            output_evm: dict = contract_output["evm"]
+            deployed_bytecode: dict = output_evm["deployedBytecode"]
+            bytecode: HexStr = deployed_bytecode["object"]
+            
+            if contract_alias in build_json and not bytecode:
+                continue
+    
+            if input_json["language"] == "Solidity":
+                contract_node = next(
+                    i[contract_name] for i in source_nodes if i.absolutePath == path_str
+                )
+                build_json[contract_alias] = solidity._get_unique_build_json(
+                    output_evm,
+                    contract_node,
+                    statement_nodes,
+                    branch_nodes,
+                    next((True for i in abi if i["type"] == "fallback"), False),
+                )
+    
+            else:
+                if contract_name == "<stdin>":
+                    contract_name = contract_alias = "Vyper"  # type: ignore [assignment]
+                build_json[contract_alias] = vyper._get_unique_build_json(
+                    output_evm,
+                    path_str,
+                    contract_alias,
+                    output_json["sources"][path_str]["ast"],
+                    (0, len(source)),
+                )
+    
+            build_json[contract_alias].update(
+                {
+                    "abi": abi,
+                    "ast": output_json["sources"][path_str]["ast"],
+                    "compiler": compiler_data,
+                    "contractName": contract_name,
+                    "deployedBytecode": bytecode,
+                    "deployedSourceMap": deployed_bytecode["sourceMap"],
+                    "language": input_json["language"],
+                    "natspec": natspec,
+                    "opcodes": deployed_bytecode["opcodes"],
+                    "sha1": sha1(source.encode()).hexdigest(),
+                    "source": source,
+                    "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
+                    "sourcePath": path_str,
+                }
             )
-            build_json[contract_alias] = solidity._get_unique_build_json(
-                output_evm,
-                contract_node,
-                statement_nodes,
-                branch_nodes,
-                next((True for i in abi if i["type"] == "fallback"), False),
-            )
-
-        else:
-            if contract_name == "<stdin>":
-                contract_name = contract_alias = "Vyper"
-            build_json[contract_alias] = vyper._get_unique_build_json(
-                output_evm,
-                path_str,
-                contract_alias,
-                output_json["sources"][path_str]["ast"],
-                (0, len(source)),
-            )
-
-        build_json[contract_alias].update(
-            {
-                "abi": abi,
-                "ast": output_json["sources"][path_str]["ast"],
-                "compiler": compiler_data,
-                "contractName": contract_name,
-                "deployedBytecode": output_evm["deployedBytecode"]["object"],
-                "deployedSourceMap": output_evm["deployedBytecode"]["sourceMap"],
-                "language": input_json["language"],
-                "natspec": natspec,
-                "opcodes": output_evm["deployedBytecode"]["opcodes"],
-                "sha1": sha1(source.encode()).hexdigest(),
-                "source": source,
-                "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
-                "sourcePath": path_str,
-            }
-        )
-        size = len(output_evm["deployedBytecode"]["object"].removeprefix("0x")) / 2  # type: ignore
-        if size > 24577:
-            notify(
-                "WARNING",
-                f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
-            )
+            size = len(bytecode.removeprefix("0x")) / 2
+            if size > 24577:
+                notify(
+                    "WARNING",
+                    f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
+                )
 
     if not silent:
         print("")

@@ -840,6 +840,7 @@ struct export_table_48b4fd94a0eb3e91039a {
     CPyTagged (*CPyDef_compile_____mypyc_lambda__0_main_obj_____call__)(PyObject *cpy_r___mypyc_self__, tuple_T2OI cpy_r_k);
     PyObject *(*CPyDef_compile___main)(void);
     char (*CPyDef_compile_____top_level__)(void);
+    PyObject **CPyStatic_console___ConsolePrinter____builtins_print;
     PyObject **CPyStatic_console___brownie____cli___console___ConsolePrinter_____call_____file;
     PyTypeObject **CPyType_console____Quitter;
     PyObject *(*CPyDef_console____Quitter)(PyObject *cpy_r_name);
@@ -981,6 +982,7 @@ struct export_table_48b4fd94a0eb3e91039a {
     PyObject **CPyStatic_network___history;
     PyObject **CPyStatic_network___chain;
     char (*CPyDef_network_____top_level__)(void);
+    PyObject **CPyStatic_state___cur;
     PyTypeObject **CPyType_state___TxHistory;
     PyTypeObject **CPyType_state___Chain;
     PyTypeObject **CPyType_state_____init___3_TxHistory_obj;
@@ -1188,6 +1190,9 @@ struct export_table_48b4fd94a0eb3e91039a {
     PyObject *(*CPyDef_compiler____sources_dict)(PyObject *cpy_r_original, PyObject *cpy_r_language);
     PyObject *(*CPyDef_compiler___get_abi)(PyObject *cpy_r_contract_sources, PyObject *cpy_r_solc_version, PyObject *cpy_r_allow_paths, PyObject *cpy_r_remappings, char cpy_r_silent);
     char (*CPyDef_compiler_____top_level__)(void);
+    PyObject **CPyStatic_solidity___solcx_logger;
+    PyObject **CPyStatic_solidity___sh;
+    PyObject **CPyStatic_solidity___EVM_VERSION_MAPPING;
     PyObject **CPyStatic_solidity____BINOPS_PARAMS;
     PyObject *(*CPyDef_solidity___get_version)(void);
     PyObject *(*CPyDef_solidity___compile_from_input_json)(PyObject *cpy_r_input_json, char cpy_r_silent, PyObject *cpy_r_allow_paths);
@@ -1217,6 +1222,9 @@ struct export_table_48b4fd94a0eb3e91039a {
     PyObject *(*CPyDef_compiler___utils___merge_natspec)(PyObject *cpy_r_devdoc, PyObject *cpy_r_userdoc);
     PyObject *(*CPyDef_compiler___utils____get_alias)(PyObject *cpy_r_contract_name, PyObject *cpy_r_path_str);
     char (*CPyDef_compiler___utils_____top_level__)(void);
+    PyObject **CPyStatic_vyper___vvm_logger;
+    PyObject **CPyStatic_vyper___sh;
+    PyObject **CPyStatic_vyper___EVM_VERSION_MAPPING;
     PyObject *(*CPyDef_vyper___get_version)(void);
     PyObject *(*CPyDef_vyper___set_vyper_version)(PyObject *cpy_r_version);
     PyObject *(*CPyDef_vyper___get_abi)(PyObject *cpy_r_contract_source, PyObject *cpy_r_name);
@@ -1228,9 +1236,9 @@ struct export_table_48b4fd94a0eb3e91039a {
     PyObject *(*CPyDef_vyper____get_unique_build_json)(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
     PyObject *(*CPyDef_vyper____get_dependencies)(PyObject *cpy_r_ast_json);
     char (*CPyDef_vyper____is_revert_jump)(PyObject *cpy_r_pc_list, CPyTagged cpy_r_revert_pc);
-    PyObject *(*CPyDef_vyper____generate_coverage_data)(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json);
+    tuple_T3OOO (*CPyDef_vyper____generate_coverage_data)(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json);
     tuple_T2II (*CPyDef_vyper____convert_src)(PyObject *cpy_r_src);
-    PyObject *(*CPyDef_vyper____find_node_by_offset)(PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
+    PyObject *(*CPyDef_vyper____find_node_by_offset)(PyObject *cpy_r_ast_json, tuple_T2II cpy_r_offset);
     PyObject *(*CPyDef_vyper____get_statement_nodes)(PyObject *cpy_r_ast_json);
     PyObject *(*CPyDef_vyper____convert_to_semver)(PyObject *cpy_r_versions);
     char (*CPyDef_vyper_____top_level__)(void);
@@ -1284,6 +1292,8 @@ struct export_table_48b4fd94a0eb3e91039a {
     PyObject *(*CPyDef_flattener___Flattener___make_import_absolute)(PyObject *cpy_r_import_path, PyObject *cpy_r_source_file_dir);
     PyObject *(*CPyDef_flattener____wipe)(PyObject *cpy_r_src);
     char (*CPyDef_flattener_____top_level__)(void);
+    PyObject **CPyStatic_project___main___BUILD_FOLDERS;
+    PyObject **CPyStatic_project___main____loaded_projects;
     PyObject **CPyStatic_project___main___brownie___project___main____stream_download___headers;
     PyObject **CPyStatic_project___main___brownie___project___main____get_mix_default_branch___headers;
     PyTypeObject **CPyType_project___main____ProjectBase;
