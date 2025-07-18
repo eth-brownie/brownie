@@ -701,7 +701,8 @@ class _DeployedContractBase(_ContractBase):
         fn_names = [abi["name"] for abi in fn_abis]
 
         contract_name = self._name
-        methods_natspec: dict = self._build.get("natspec", {}).get("methods", {})
+        contract_natspec: dict = self._build.get("natspec") or {}
+        methods_natspec: dict = contract_natspec.get("methods") or {}
         for abi, abi_name in zip(fn_abis, fn_names):
             name = f"{contract_name}.{abi_name}"
             sig = build_function_signature(abi)
