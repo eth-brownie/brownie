@@ -20,7 +20,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import CompilerConfig, EvmVersion, InputJson, Language
+from brownie.typing import CompilerConfig, EvmVersion, InputJson, Language, OptimizerSettings
 from brownie.utils import notify
 
 from . import solidity, vyper
