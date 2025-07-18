@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 from decimal import Decimal, getcontext
-from typing import Any, Dict, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Dict, Final, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
 
 try:
     from vyper.exceptions import DecimalOverrideException
@@ -13,10 +13,11 @@ import cchecksum
 from eth_typing import ABIComponent
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from hexbytes import HexBytes
+from typing_extensions import Self
 
 from brownie.utils import bytes_to_hexstring
 
-UNITS = {
+UNITS: Final = {
     "wei": 0,
     "kwei": 3,
     "babbage": 3,
@@ -45,9 +46,8 @@ class Wei(int):
         * bytes: b'\xff\xff'
         * hex strings: "0x330124\" """
 
-    # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value: Any) -> Any:  # type: ignore
-        return super().__new__(cls, _to_wei(value))  # type: ignore
+    def __new__(cls, value: WeiInputTypes) -> Self:
+        return super().__new__(cls, _to_wei(value))
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -109,16 +109,17 @@ def _to_wei(value: WeiInputTypes) -> int:
         num_str, dec = str(value).split("e+")
         num = num_str.split(".") if "." in num_str else [num_str, ""]
         return int(num[0] + num[1][: int(dec)] + "0" * (int(dec) - len(num[1])))
-    if not isinstance(value, str):
+    if isinstance(value, str):
+        if value[:2] == "0x":
+            return int(value, 16)
+    else:
         return _return_int(original, value)
-    if value[:2] == "0x":
-        return int(value, 16)
-    for unit, dec in UNITS.items():
+    for unit, decimals in UNITS.items():
         if f" {unit}" not in value:
             continue
         num_str = value.split(" ")[0]
         num = num_str.split(".") if "." in num_str else [num_str, ""]
-        return int(num[0] + num[1][: int(dec)] + "0" * (int(dec) - len(num[1])))
+        return int(num[0] + num[1][: decimals] + "0" * (decimals - len(num[1])))
     return _return_int(original, value)
 
 
@@ -136,9 +137,8 @@ class Fixed(Decimal):
     Raises TypeError when operations are attempted against floats.
     """
 
-    # Known typing error: https://github.com/python/mypy/issues/4290
-    def __new__(cls, value: Any) -> Any:  # type: ignore
-        return super().__new__(cls, _to_fixed(value))  # type: ignore
+    def __new__(cls, value: Any) -> Self:
+        return super().__new__(cls, _to_fixed(value))
 
     def __repr__(self) -> str:
         return f"Fixed('{str(self)}')"
@@ -205,7 +205,7 @@ def _to_fixed(value: Any) -> Decimal:
 class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
-    def __new__(cls, value: Union[bytes, str]) -> str:
+    def __new__(cls, value: Union[bytes, str]) -> Self:
         converted_value = value
         if isinstance(value, bytes):
             converted_value = bytes_to_hexstring(value)
@@ -238,8 +238,8 @@ class HexString(bytes):
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
     leading zeros or capitalization."""
 
-    def __new__(cls, value, type_str):  # type: ignore
-        return super().__new__(cls, _to_bytes(value, type_str))  # type: ignore
+    def __new__(cls, value: Any, type_str: str) -> Self:
+        return super().__new__(cls, _to_bytes(value, type_str))
 
     def __eq__(self, other: Any) -> bool:
         return _hex_compare(self.hex(), other)
@@ -247,11 +247,11 @@ class HexString(bytes):
     def __ne__(self, other: Any) -> bool:
         return not _hex_compare(self.hex(), other)
 
-    def __str__(self) -> str:
-        return f"0x{self.hex()}"
+    def __str__(self) -> HexStr:
+        return f"0x{self.hex()}"  # type: ignore [return-value]
 
-    def __repr__(self) -> str:
-        return str(self)
+    def __repr__(self) -> HexStr:
+        return str(self)  # type: ignore [return-value]
 
 
 def _hex_compare(a: str, b: Any) -> bool:
@@ -279,25 +279,25 @@ def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
         raise OverflowError(f"'{value}' exceeds maximum length for {type_str}")
 
 
-def _to_hex(value: Any) -> str:
+def _to_hex(value: Any) -> HexStr:
     """Convert a value to a hexstring"""
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
     if isinstance(value, int):
-        return hex(value)
+        return hex(value)  # type: ignore [return-value]
     if isinstance(value, str):
         if value in ("", "0x"):
-            return "0x00"
+            return "0x00"  # type: ignore [return-value]
         if is_hex(value):
-            return add_0x_prefix(value)  # type: ignore
+            return add_0x_prefix(value)
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List] = None
-    _dict: Dict = {}
+    _abi: Optional[List[ABIComponent]] = None
+    _dict: Dict[str, Any] = {}
 
     def __new__(cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None) -> "ReturnValue":
         values = list(values)
