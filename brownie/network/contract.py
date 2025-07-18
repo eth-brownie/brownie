@@ -57,7 +57,7 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
-from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.typing import AccountsType, ContractName, TransactionReceiptType
 from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
@@ -486,7 +486,7 @@ class ContractContainer(_ContractBase):
 class ContractConstructor:
     _dir_color = "bright magenta"
 
-    def __init__(self, parent: "ContractContainer", name: str) -> None:
+    def __init__(self, parent: "ContractContainer", name: ContractName) -> None:
         self._parent = parent
         try:
             self.abi = next(i for i in parent.abi if i["type"] == "constructor")
@@ -605,7 +605,7 @@ class InterfaceContainer:
                 abi = json.load(fp)
             self._add(path.stem, abi)
 
-    def _add(self, name: str, abi: List[ABIElement]) -> None:
+    def _add(self, name: ContractName, abi: List[ABIElement]) -> None:
         constructor = InterfaceConstructor(name, abi)
         setattr(self, name, constructor)
 
@@ -615,7 +615,7 @@ class InterfaceConstructor:
     Constructor used to create Contract objects from a project interface.
     """
 
-    def __init__(self, name: str, abi: List[ABIElement]) -> None:
+    def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
         self._name = name
         self.abi = abi
         self.selectors = {
@@ -888,7 +888,7 @@ class Contract(_DeployedContractBase):
 
     def _deprecated_init(
         self,
-        name: str,
+        name: ContractName,
         address: Optional[str] = None,
         abi: Optional[List[ABIElement]] = None,
         manifest_uri: Optional[str] = None,
@@ -907,7 +907,7 @@ class Contract(_DeployedContractBase):
     @classmethod
     def from_abi(
         cls,
-        name: str,
+        name: ContractName,
         address: str,
         abi: List[ABIElement],
         owner: Optional[AccountsType] = None,
