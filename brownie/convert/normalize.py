@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Final, List, Optional, Sequence, Tuple
 
 from eth_abi.grammar import ABIType, TupleType, parse
 from eth_event.main import DecodedEvent, NonDecodedEvent
@@ -12,8 +12,16 @@ from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
+AnyListOrTuple = List[Any] | Tuple[Any, ...]
 
-def format_input(abi: ABIFunction, inputs: Union[List, Tuple]) -> List:
+# Internal C constants 
+
+_TupleType: Final = TupleType
+
+_parse: Final = parse
+
+
+def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> List:
     """Format contract inputs based on ABI types."""
     abi_inputs = abi["inputs"]
     if len(inputs) and not len(abi_inputs):
@@ -25,7 +33,7 @@ def format_input(abi: ABIFunction, inputs: Union[List, Tuple]) -> List:
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi: ABIFunction, outputs: Union[List, Tuple]) -> ReturnValue:
+def format_output(abi: ABIFunction, outputs: AnyListOrTuple) -> ReturnValue:
     """Format contract outputs based on ABI types."""
     abi_outputs = abi["outputs"]
     abi_types = _get_abi_types(abi_outputs)
@@ -34,7 +42,7 @@ def format_output(abi: ABIFunction, outputs: Union[List, Tuple]) -> ReturnValue:
 
 
 def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
-    # Format event data based on ABI types
+    """Format event data based on ABI types."""
     if not event["decoded"]:
         topics = (
             {"type": "bytes32", "name": name, "value": data}
@@ -59,14 +67,14 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     return event  # type: ignore [return-value]
 
 
-def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> List:
+def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[Any]:
     result = []
     _check_array(values, len(abi_types))
     for type_, value in zip(abi_types, values):
         try:
             if type_.is_array:
                 result.append(_format_array(type_, value))
-            elif isinstance(type_, TupleType):
+            elif isinstance(type_, _TupleType):
                 result.append(_format_tuple(type_.components, value))
             else:
                 result.append(_format_single(type_.to_type_str(), value))
@@ -75,12 +83,12 @@ def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> L
     return result
 
 
-def _format_array(abi_type: ABIType, values: Union[List, Tuple]) -> List[Any]:
+def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> List[Any]:
     _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
-    elif isinstance(item_type, TupleType):
+    elif isinstance(item_type, _TupleType):
         item_type_components = item_type.components
         return [_format_tuple(item_type_components, i) for i in values]
     item_type_str = item_type.to_type_str()
@@ -106,8 +114,9 @@ def _format_single(type_str: str, value: Any) -> Any:
     raise TypeError(f"Unknown type: {type_str}")
 
 
-def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
+def _check_array(values: AnyListOrTuple, length: Optional[int]) -> None:
     if not isinstance(values, (list, tuple)):
+        # NOTE: we keep this check here in case the user is running in interpreted mode
         raise TypeError(f"Expected list or tuple, got {type(values).__name__}")
     if length is not None and len(values) != length:
         raise ValueError(f"Sequence has incorrect length, expected {length} but got {len(values)}")
@@ -117,5 +126,5 @@ def _get_abi_types(abi_params: Sequence[ABIComponent]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
-    tuple_type = parse(type_str)
+    tuple_type = _parse(type_str)
     return tuple_type.components
