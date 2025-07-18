@@ -40,8 +40,8 @@ def _expand_row(row: str) -> List[Optional[Union[str, int]]]:
 
 
 def merge_natspec(
-    devdoc: Dict[str, Dict[str, Dict],
-    userdoc: Dict[str, Dict[str, Dict],
+    devdoc: Dict[str, Dict[str, Dict]],
+    userdoc: Dict[str, Dict[str, Dict]],
 ) -> Dict[str, Dict[str, Dict]]:
     """
     Merge devdoc and userdoc compiler output to a single dict.
