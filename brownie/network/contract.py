@@ -27,7 +27,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress
+from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
 from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
@@ -173,7 +173,7 @@ class ContractContainer(_ContractBase):
         # instead we create when it's requested, but still define it here
         self._flattener: Flattener = None  # type: ignore
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["ProjectContract"]:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> "ProjectContract":
@@ -317,7 +317,7 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: Any, silent: bool = False) -> bool:
+    def publish_source(self, contract: "Contract", silent: bool = False) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -681,19 +681,22 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self,
+        address: HexAddress,
+        owner: Optional[AccountsType] = None,
+        tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode = (
+        self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
             # removeprefix is used for compatability with both hexbytes<1 and >=1
             self._build.get("deployedBytecode", None)
             or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
-        self._owner = owner
-        self.tx = tx
-        self.address = address
+        self._owner: Final = owner
+        self.tx: Final = tx
+        self.address: Final= address
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
         
