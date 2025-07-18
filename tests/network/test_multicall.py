@@ -1,10 +1,12 @@
 import inspect
 
+import pytest
 from lazy_object_proxy import Proxy
 
 import brownie
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_auto_deploy_on_testnet(config, devnetwork):
     with brownie.multicall:
         # gets deployed on init
