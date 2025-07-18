@@ -3,28 +3,31 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from eth_abi.grammar import ABIType, TupleType, parse
+from eth_typing import ABIFunction
 
 from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
 
-def format_input(abi: Dict, inputs: Union[List, Tuple]) -> List:
-    # Format contract inputs based on ABI types
-    if len(inputs) and not len(abi["inputs"]):
+def format_input(abi: ABIFunction, inputs: Union[List, Tuple]) -> List:
+    """Format contract inputs based on ABI types."""
+    abi_inputs = abi["inputs"]
+    if len(inputs) and not len(abi_inputs):
         raise TypeError(f"{abi['name']} requires no arguments")
-    abi_types = _get_abi_types(abi["inputs"])
+    abi_types = _get_abi_types(abi_inputs)
     try:
         return _format_tuple(abi_types, inputs)
     except Exception as e:
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
-    # Format contract outputs based on ABI types
-    abi_types = _get_abi_types(abi["outputs"])
+def format_output(abi: ABIFunction, outputs: Union[List, Tuple]) -> ReturnValue:
+    """Format contract outputs based on ABI types."""
+    abi_outputs = abi["outputs"]
+    abi_types = _get_abi_types(abi_outputs)
     result = _format_tuple(abi_types, outputs)
-    return ReturnValue(result, abi["outputs"])
+    return ReturnValue(result, abi_outputs)
 
 
 def format_event(event: Dict) -> Any:
