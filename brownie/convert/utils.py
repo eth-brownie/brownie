@@ -65,4 +65,4 @@ def build_function_signature(abi: ABIFunction) -> str:
 
 def build_function_selector(abi: ABIFunction) -> HexStr:
     sig = build_function_signature(abi)
-    return HexStr(f"0x{keccak(sig.encode()).hex()[:8]}")
+    return f"0x{keccak(sig.encode()).hex()[:8]}"  # type: ignore [return-value]
