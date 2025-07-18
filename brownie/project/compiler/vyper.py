@@ -256,7 +256,11 @@ def compile_from_input_json(
 
 
 def _get_unique_build_json(
-    output_evm: Dict, path_str: str, contract_name: ContractName, ast_json: Union[Dict, List], offset: Tuple
+    output_evm: Dict,
+    path_str: str,
+    contract_name: ContractName,
+    ast_json: Union[Dict, List],
+    offset: Tuple,
 ) -> Dict:
 
     ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json

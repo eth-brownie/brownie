@@ -14,6 +14,7 @@ AccountsType = TypeVar("AccountsType", bound="Accounts")
 # Contract
 ContractName = NewType("ContractName", str)
 
+
 # Event
 @final
 class FormattedEvent(TypedDict):
