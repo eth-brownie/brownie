@@ -110,7 +110,7 @@ def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
         raise ValueError(f"Sequence has incorrect length, expected {length} but got {len(values)}")
 
 
-def _get_abi_types(abi_params: List[ABIComponent]) -> Sequence[ABIType]:
+def _get_abi_types(abi_params: Sequence[ABIComponent]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
