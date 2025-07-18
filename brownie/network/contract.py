@@ -497,10 +497,11 @@ class ContractConstructor:
 
     @property
     def payable(self) -> bool:
-        if "payable" in self.abi:
-            return self.abi["payable"]
+        abi = self.abi
+        if "payable" in abi:
+            return abi["payable"]
         else:
-            return self.abi["stateMutability"] == "payable"
+            return abi["stateMutability"] == "payable"
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
@@ -556,8 +557,9 @@ class ContractConstructor:
             address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
-        data = format_input(self.abi, args)
-        types_list = get_type_strings(self.abi["inputs"])
+        abi = self.abi
+        data = format_input(abi, args)
+        types_list = get_type_strings(abi["inputs"])
         return bytecode + eth_abi.encode(types_list, data).hex()
 
     def estimate_gas(self, *args: Any) -> int:
@@ -1369,7 +1371,7 @@ class OverloadedMethod:
         self.methods: Dict = {}
         self.natspec: Dict = {}
 
-    def _add_fn(self, abi: Dict, natspec: Dict) -> None:
+    def _add_fn(self, abi: ABIFunction, natspec: Dict) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1576,7 +1578,8 @@ class _ContractMethod:
         """
         Display NatSpec documentation for this method.
         """
-        print(f"{self.abi['name']}({_inputs(self.abi)})")
+        abi = self.abi
+        print(f"{abi['name']}({_inputs(abi)})")
         _print_natspec(self.natspec)
 
     def call(
