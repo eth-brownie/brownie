@@ -1,38 +1,55 @@
+
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, Set
+from typing import Any, DefaultDict, Dict, Final, Iterator, Set, final
 
-from eth_utils.toolz import mapcat
+import eth_utils.toolz
 
 from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
-IMPORT_PATTERN = re.compile(
+IMPORT_PATTERN: Final = re.compile(
     r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"
 )
-PRAGMA_PATTERN = re.compile(r"^pragma.*;$", re.MULTILINE)
-LICENSE_PATTERN = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
+PRAGMA_PATTERN: Final = re.compile(r"^pragma.*;$", re.MULTILINE)
+LICENSE_PATTERN: Final = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
 
 
+# C Constants
+
+_Path: Final = Path
+
+_defaultdict: Final = defaultdict
+
+_sub: Final = re.sub
+
+_mapcat: Final = eth_utils.toolz.mapcat
+
+
+@final
 class Flattener:
     """Brownie's Robust Solidity Flattener."""
 
     def __init__(
-        self, primary_source_fp: str, contract_name: str, remappings: dict, compiler_settings: dict
+        self,
+        primary_source_fp: str,
+        contract_name: str,
+        remappings: Dict[str, str],
+        compiler_settings: Dict[str, Any],
     ) -> None:
-        self.sources: Dict[str, str] = {}
-        self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
-        self.compiler_settings = compiler_settings
-        self.contract_name = contract_name
-        self.contract_file = self.path_to_name(primary_source_fp)
-        self.remappings = remappings
+        self.sources: Final[Dict[str, str]] = {}
+        self.dependencies: Final[DefaultDict[str, Set[str]]] = _defaultdict(set)
+        self.compiler_settings: Final = compiler_settings
+        self.contract_name: Final = contract_name
+        self.contract_file: Final = self.path_to_name(primary_source_fp)
+        self.remappings: Final = remappings
 
         self.traverse(primary_source_fp)
 
-        license_search = LICENSE_PATTERN.search(self.path_to_name(primary_source_fp))
-        self.license = license_search.group(1) if license_search else "NONE"
+        license_search = _LICENSE_PATTERN_SEARCH(self.path_to_name(primary_source_fp))
+        self.license: Final = license_search.group(1) if license_search else "NONE"
 
     @classmethod
     def path_to_name(cls, pth: str) -> str:
@@ -54,7 +71,7 @@ class Flattener:
         """
         # if already traversed file, return early
         name = self.path_to_name(fp)
-        fp_obj = Path(fp)
+        fp_obj = _Path(fp)
         if name in self.sources:
             return
 
@@ -71,12 +88,12 @@ class Flattener:
             + f'"{self.path_to_name(sanitize(m.group("path")))}"'
             + f'{m.group("suffix")}'
         )
-        self.sources[name] = IMPORT_PATTERN.sub(repl, source)
+        self.sources[name] = _IMPORT_PATTERN_SUB(repl, source)
         if fp_obj.name not in self.dependencies:
             self.dependencies[name] = set()
 
         # traverse dependency files - can circular imports happen?
-        for m in IMPORT_PATTERN.finditer(source):
+        for m in _IMPORT_PATTERN_FINDITER(source):
             import_path = sanitize(m.group("path"))
             self.dependencies[name].add(self.path_to_name(import_path))
             self.traverse(import_path)
@@ -86,25 +103,25 @@ class Flattener:
         """The flattened source code for use verifying."""
         flattened_deps = toposort_flatten(self.dependencies)
         # all source files in the correct order for concatenation
-        sources = list(map(self.sources.__getitem__, flattened_deps))
+        sources = [self.sources[x] for x in flattened_deps]
+
+        pragmas_iter: Iterator[str] = _mapcat(_PRAGMA_PATTERN_FINDALL, sources)
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set(map(str.strip, mapcat(PRAGMA_PATTERN.findall, sources)))
-        # now we go through and remove all imports/pragmas/license stuff
-        wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
-            "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
-        )
+        pragmas = set(s.strip() for s in pragmas_iter)
 
-        sources = (f"// File: {file}\n\n{wipe(src)}" for src, file in zip(sources, flattened_deps))
-
+        # now we go through and remove all imports/pragmas/license stuff, then flatten
         flat = (
             "\n".join(pragma for pragma in pragmas if "pragma solidity" not in pragma)
             + "\n\n"
-            + "\n".join(sources)
+            + "\n".join(
+                f"// File: {file}\n\n{_wipe(src)}" for src, file in zip(sources, flattened_deps)
+            )
         )
+
         # hopefully this doesn't mess up anything pretty, but just gotta remove all
         # that extraneous whitespace
-        return re.sub(r"\n{3,}", "\n\n", flat)
+        return _sub(r"\n{3,}", "\n\n", flat)
 
     @property
     def standard_input_json(self) -> Dict:
@@ -143,15 +160,32 @@ class Flattener:
         Returns:
             str: The import path string in absolute form.
         """
-        path: Path = Path(import_path)
+        path = _Path(import_path)
         if path.is_absolute():
             return path.as_posix()
 
-        source_file_dir = Path(source_file_dir).resolve()
-        newpath = (source_file_dir / path).resolve()
+        dir_path = _Path(source_file_dir).resolve()
+        newpath = (dir_path / path).resolve()
         while not newpath.exists():
-            source_file_dir = source_file_dir.parent
-            newpath = (source_file_dir / path).resolve()
-            if source_file_dir == Path("/"):
+            dir_path = dir_path.parent
+            newpath = (dir_path / path).resolve()
+            if dir_path == _Path("/"):
                 raise FileNotFoundError(f"Cannot determine location of {import_path}")
         return newpath.as_posix()
+
+
+def _wipe(src: str) -> str:
+    """go through and remove all imports/pragmas/license stuff."""
+    return _PRAGMA_PATTERN_SUB("", _LICENSE_PATTERN_SUB("", _IMPORT_PATTERN_SUB("", src)))
+
+
+# Internal C Constants
+
+_IMPORT_PATTERN_FINDITER: Final = IMPORT_PATTERN.finditer
+_IMPORT_PATTERN_SUB: Final = IMPORT_PATTERN.sub
+
+_PRAGMA_PATTERN_FINDALL: Final = PRAGMA_PATTERN.findall
+_PRAGMA_PATTERN_SUB: Final = PRAGMA_PATTERN.sub
+
+_LICENSE_PATTERN_SEARCH: Final = LICENSE_PATTERN.search
+_LICENSE_PATTERN_SUB: Final = LICENSE_PATTERN.sub
