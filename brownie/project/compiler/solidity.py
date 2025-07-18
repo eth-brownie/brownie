@@ -7,7 +7,7 @@ from typing import Any, Dict, Final, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
-from eth_typing import HexStr
+from eth_typing import ABIElement, HexStr
 from requests.exceptions import ConnectionError
 from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
@@ -15,19 +15,20 @@ from solcast.nodes import NodeBase, is_inside_offset
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import _get_alias, expand_source_map
+from brownie.typing import InputJson
 
 from . import sources
 
-solcx_logger = logging.getLogger("solcx")
+solcx_logger: Final = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
-sh = logging.StreamHandler()
+sh: Final = logging.StreamHandler()
 sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-AVAILABLE_SOLC_VERSIONS = None
+AVAILABLE_SOLC_VERSIONS: Optional[List[Version]] = None
 
-EVM_VERSION_MAPPING = [
+EVM_VERSION_MAPPING: Final = [
     ("istanbul", Version("0.5.13")),
     ("petersburg", Version("0.5.5")),
     ("byzantium", Version("0.4.0")),
@@ -44,7 +45,7 @@ def get_version() -> Version:
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJson, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.
@@ -57,15 +58,15 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    settings: dict = input_json["settings"]
-    optimizer: dict = settings["optimizer"]
+    settings = input_json["settings"]
     settings.setdefault("evmVersion", None)
     if settings["evmVersion"] in EVM_EQUIVALENTS:
         settings["evmVersion"] = EVM_EQUIVALENTS[settings["evmVersion"]]
 
     if not silent:
         print(f"Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
-
+        
+        optimizer = settings["optimizer"]
         opt = f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
         print(f"  Optimizer: {opt}")
 
@@ -105,7 +106,7 @@ def install_solc(*versions: Union[Version, str]) -> None:
 
 def get_abi(
     contract_source: str, allow_paths: Optional[str] = None
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> Dict[str, List[ABIElement]]:
     """
     Given a contract source, returns a dict of {name: abi}
 
@@ -124,7 +125,7 @@ def find_solc_versions(
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict:
+) -> Dict[str, List[str]]:
     """
     Analyzes contract pragmas and determines which solc version(s) to use.
 
@@ -179,7 +180,7 @@ def find_solc_versions(
         )
 
     # organize source paths by latest available solc version
-    compiler_versions: Dict = {}
+    compiler_versions: Dict[str, List[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
@@ -230,7 +231,7 @@ def find_best_solc_version(
     return str(max(installed_versions))
 
 
-def _get_solc_version_list() -> Tuple[List, List]:
+def _get_solc_version_list() -> Tuple[List[Version], List[Version]]:
     global AVAILABLE_SOLC_VERSIONS
     installed_versions = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:

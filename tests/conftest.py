@@ -296,12 +296,7 @@ def network():  # sourcery skip: use-contextlib-suppress
 
 @pytest.fixture
 def connect_to_mainnet(network):
-    try:
-        network.connect("mainnet")
-    except ConnectionError:
-        _disconnect_network()
-        network.connect("mainnet")
-    yield network
+    yield from _connect_to_mainnet(network)
 
 
 @pytest.fixture(scope="session")
@@ -441,6 +436,23 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
             # This happens sometimes in the runner, I think its just a race condition
             # due to multithreaded testing and doesn't need to be debugged.
             pass
+
+
+def _connect_to_mainnet(network):
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        _disconnect_network()
+        try:
+            yield from _connect_to_mainnet(network)
+        except RecursionError:
+            pass
+        else:
+            return
+        raise
+    else:
+        yield network
+        return
 
 
 def _disconnect_network():
