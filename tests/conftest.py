@@ -296,11 +296,7 @@ def network():  # sourcery skip: use-contextlib-suppress
 
 @pytest.fixture
 def connect_to_mainnet(network):
-    try:
-        network.connect("mainnet")
-    except ConnectionError:
-        _disconnect_network()
-        network.connect("mainnet")
+    _connect_to_mainnet(network)
     yield network
 
 
@@ -443,7 +439,17 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
             pass
 
 
-def _disconnect_network():
+def _connect_to_mainnet(network) -> None:
+    # This recursive helper helps us with a race condition.
+    # Usually the first call of this func will work fine, but in edge cases we need to call it more than once to make all of the tests succeed.
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        _disconnect_network()
+        _connect_to_mainnet()
+
+
+def _disconnect_network() -> None:
     try:
         brownie.network.disconnect(False)
     except ConnectionError:
