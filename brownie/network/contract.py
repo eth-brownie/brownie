@@ -542,7 +542,7 @@ class ContractConstructor:
         )
 
     @staticmethod
-    def _autosuggest(obj: "ContractConstructor") -> List:
+    def _autosuggest(obj: "ContractConstructor") -> List[str]:
         return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
     def encode_input(self, *args: Any) -> str:
@@ -1572,7 +1572,7 @@ class _ContractMethod:
             return abi["stateMutability"] == "payable"
 
     @staticmethod
-    def _autosuggest(obj: "_ContractMethod") -> List:
+    def _autosuggest(obj: "_ContractMethod") -> List[str]:
         # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
         return _contract_method_autosuggest(
             obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
@@ -2020,14 +2020,14 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
 # console auto-completion logic
 
 
-def _call_autosuggest(method: Any) -> List:
+def _call_autosuggest(method: ContractCall | ContractTx) -> List[str]:
     # since methods are not unique for each object, we use `__reduce__`
     # to locate the specific object so we can access the correct ABI
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], False, False)
 
 
-def _transact_autosuggest(method: Any) -> List:
+def _transact_autosuggest(method: ContractCall | ContractTx) -> List[str]:
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
 
@@ -2042,7 +2042,9 @@ _ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
 _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 
 
-def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
+def _contract_method_autosuggest(
+    args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
+) -> List[str]:
     types_list = get_type_strings(args, {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in args], types_list)
 
