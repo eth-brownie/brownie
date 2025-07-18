@@ -27,7 +27,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
-from eth_typing import ABIFunction
+from eth_typing import ABIConstructor, ABIElement, ABIFunction
 from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
