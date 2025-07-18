@@ -3,54 +3,60 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from eth_abi.grammar import ABIType, TupleType, parse
+from eth_event.main import DecodedEvent, NonDecodedEvent
+from eth_typing import ABIComponent, ABIFunction
+
+from brownie.typing import FormattedEvent
 
 from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
 
-def format_input(abi: Dict, inputs: Union[List, Tuple]) -> List:
-    # Format contract inputs based on ABI types
-    if len(inputs) and not len(abi["inputs"]):
+def format_input(abi: ABIFunction, inputs: Union[List, Tuple]) -> List:
+    """Format contract inputs based on ABI types."""
+    abi_inputs = abi["inputs"]
+    if len(inputs) and not len(abi_inputs):
         raise TypeError(f"{abi['name']} requires no arguments")
-    abi_types = _get_abi_types(abi["inputs"])
+    abi_types = _get_abi_types(abi_inputs)
     try:
         return _format_tuple(abi_types, inputs)
     except Exception as e:
         raise type(e)(f"{abi['name']} {e}") from None
 
 
-def format_output(abi: Dict, outputs: Union[List, Tuple]) -> ReturnValue:
-    # Format contract outputs based on ABI types
-    abi_types = _get_abi_types(abi["outputs"])
+def format_output(abi: ABIFunction, outputs: Union[List, Tuple]) -> ReturnValue:
+    """Format contract outputs based on ABI types."""
+    abi_outputs = abi["outputs"]
+    abi_types = _get_abi_types(abi_outputs)
     result = _format_tuple(abi_types, outputs)
-    return ReturnValue(result, abi["outputs"])
+    return ReturnValue(result, abi_outputs)
 
 
-def format_event(event: Dict) -> Any:
+def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     # Format event data based on ABI types
     if not event["decoded"]:
         topics = (
-            {"type": "bytes32", "name": c, "value": i}
-            for c, i in zip(("topic1", "topic2", "topic3"), event.get("topics", ()))
+            {"type": "bytes32", "name": name, "value": data}
+            for name, data in zip(("topic1", "topic2", "topic3"), event.get("topics", ()))
         )
-        event["data"] = [
+        event["data"] = [  # type: ignore [typeddict-item]
             *topics,
             {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])},
         ]
-        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
-        return event
+        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"  # type: ignore [typeddict-item]
+        return event  # type: ignore [return-value]
 
     data = event["data"]
     for e in data:
         if not e["decoded"]:
             e["type"] = "bytes32"
             e["name"] += " (indexed)"
-    abi_types = _get_abi_types(data)
-    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)
+    abi_types = _get_abi_types(data)  # type: ignore [arg-type]
+    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)  # type: ignore [arg-type]
     for e, value in zip(data, values):
         e["value"] = value
-    return event
+    return event  # type: ignore [return-value]
 
 
 def _format_tuple(abi_types: Sequence[ABIType], values: Union[List, Tuple]) -> List:
@@ -107,7 +113,7 @@ def _check_array(values: Union[List, Tuple], length: Optional[int]) -> None:
         raise ValueError(f"Sequence has incorrect length, expected {length} but got {len(values)}")
 
 
-def _get_abi_types(abi_params: List[Dict[str, Any]]) -> Sequence[ABIType]:
+def _get_abi_types(abi_params: Sequence[ABIComponent]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"

@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1398];
+extern PyObject *CPyStatics[1409];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -102,6 +102,8 @@ extern CPyModule *CPyModule_brownie___convert___normalize_internal;
 extern CPyModule *CPyModule_brownie___convert___normalize;
 extern PyObject *CPyStatic_normalize___globals;
 extern CPyModule *CPyModule_eth_abi___grammar;
+extern CPyModule *CPyModule_eth_event___main;
+extern CPyModule *CPyModule_brownie___typing;
 extern PyObject *CPyStatic_convert___utils___globals;
 extern CPyModule *CPyModule_eth_hash___auto;
 extern CPyModule *CPyModule_brownie___network_internal;
