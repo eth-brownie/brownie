@@ -42,7 +42,7 @@ class TxHistory(metaclass=_Singleton):
     added to this container."""
 
     def __init__(self) -> None:
-        self._list: Final[List[TransactionReceipt]] = []
+        self._list: List[TransactionReceipt] = []
         self.gas_profile: Final[Dict[str, Dict]] = {}
         _revert_register(self)
 
