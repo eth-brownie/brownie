@@ -1959,9 +1959,10 @@ def _verify_deployed_code(address: HexAddress, expected_bytecode: str, language:
 
 def _print_natspec(natspec: Dict[str, Any]) -> None:
     wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
-    for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
-        wrapper.subsequent_indent = " " * (len(key) + 4)
-        print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
+    for key in ("title", "notice", "author", "details"):
+        if key in natspec:
+            wrapper.subsequent_indent = " " * (len(key) + 4)
+            print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
 
     for key, value in natspec.get("params", {}).items():
         wrapper.subsequent_indent = " " * 9
