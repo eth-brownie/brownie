@@ -27,6 +27,7 @@ from typing import (
 import eth_abi
 import requests
 import solcx
+from eth_typing import ABIFunction
 from faster_eth_utils import combomethod
 from hexbytes import HexBytes
 from semantic_version import Version
@@ -93,7 +94,7 @@ class _ContractBase:
         parse_errors_from_abi(self.abi)
 
     @property
-    def abi(self) -> List:
+    def abi(self) -> List[ABIElement]:
         return self._build["abi"]
 
     @property
@@ -132,14 +133,12 @@ class _ContractBase:
 
         fn_selector = hexbytes_to_hexstring(calldata[:4])
 
-        abi = next(
-            (
-                i
-                for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == fn_selector
-            ),
-            None,
-        )
+        abi: Optional[ABIFunction] = None
+        for _abi in self.abi:
+            if _abi["type"] == "function" and build_function_selector(i) == fn_selector:
+                abi = _abi
+                break
+
         if abi is None:
             raise ValueError("Four byte selector does not match the ABI for this contract")
 
@@ -493,7 +492,7 @@ class ContractConstructor:
             self.abi = next(i for i in parent.abi if i["type"] == "constructor")
             self.abi["name"] = "constructor"
         except Exception:
-            self.abi = {"inputs": [], "name": "constructor", "type": "constructor"}
+            self.abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
         self._name = name
 
     @property
@@ -604,7 +603,7 @@ class InterfaceContainer:
                 abi = json.load(fp)
             self._add(path.stem, abi)
 
-    def _add(self, name: str, abi: List) -> None:
+    def _add(self, name: str, abi: List[ABIElement]) -> None:
         constructor = InterfaceConstructor(name, abi)
         setattr(self, name, constructor)
 
@@ -614,7 +613,7 @@ class InterfaceConstructor:
     Constructor used to create Contract objects from a project interface.
     """
 
-    def __init__(self, name: str, abi: List) -> None:
+    def __init__(self, name: str, abi: List[ABIElement]) -> None:
         self._name = name
         self.abi = abi
         self.selectors = {
@@ -648,14 +647,12 @@ class InterfaceConstructor:
 
         fn_selector = hexbytes_to_hexstring(calldata[:4])
 
-        abi = next(
-            (
-                i
-                for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == fn_selector
-            ),
-            None,
-        )
+        abi: Optional[ABIFunction] = None
+        for _abi in self.abi:
+            if _abi["type"] == "function" and build_function_selector(_abi) == fn_selector:
+                abi = _abi
+                break
+
         if abi is None:
             raise ValueError("Four byte selector does not match the ABI for this contract")
 
@@ -888,7 +885,7 @@ class Contract(_DeployedContractBase):
         self,
         name: str,
         address: Optional[str] = None,
-        abi: Optional[List] = None,
+        abi: Optional[List[ABIElement]] = None,
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> None:
@@ -907,7 +904,7 @@ class Contract(_DeployedContractBase):
         cls,
         name: str,
         address: str,
-        abi: List,
+        abi: List[ABIElement],
         owner: Optional[AccountsType] = None,
         persist: bool = True,
     ) -> "Contract":
@@ -1363,7 +1360,7 @@ class ContractEvents(_ContractEvents):
 
 
 class OverloadedMethod:
-    def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
+    def __init__(self, address: ChecksumAddress, name: str, owner: Optional[AccountsType]):
         self._address = address
         self._name = name
         self._owner = owner
@@ -1391,7 +1388,7 @@ class OverloadedMethod:
             )
         return self.methods[keys[0]]
 
-    def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
+    def __getitem__(self, key: tuple | str) -> "ContractCall" | "ContractTx":
         if isinstance(key, str):
             key = tuple(i.strip() for i in key.split(","))
 
@@ -1540,8 +1537,8 @@ class _ContractMethod:
 
     def __init__(
         self,
-        address: str,
-        abi: Dict,
+        address: ChecksumAddress,
+        abi: ABIFunction,
         name: str,
         owner: Optional[AccountsType],
         natspec: Optional[Dict] = None,
@@ -1560,10 +1557,11 @@ class _ContractMethod:
 
     @property
     def payable(self) -> bool:
-        if "payable" in self.abi:
-            return self.abi["payable"]
+        abi = self.abi
+        if "payable" in abi:
+            return abi["payable"]
         else:
-            return self.abi["stateMutability"] == "payable"
+            return abi["stateMutability"] == "payable"
 
     @staticmethod
     def _autosuggest(obj: "_ContractMethod") -> List:
@@ -1672,9 +1670,10 @@ class _ContractMethod:
         -------
         Decoded values
         """
-        types_list = get_type_strings(self.abi["inputs"])
+        abi = self.abi
+        types_list = get_type_strings(abi["inputs"])
         result = eth_abi.decode(types_list, HexBytes(hexstr)[4:])
-        return format_input(self.abi, result)
+        return format_input(abi, result)
 
     def encode_input(self, *args: Any) -> str:
         """
@@ -1690,8 +1689,9 @@ class _ContractMethod:
         str
             Hexstring of encoded ABI data
         """
-        data = format_input(self.abi, args)
-        types_list = get_type_strings(self.abi["inputs"])
+        abi = self.abi
+        data = format_input(abi, args)
+        types_list = get_type_strings(abi["inputs"])
         return self.signature + eth_abi.encode(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
@@ -1707,9 +1707,10 @@ class _ContractMethod:
         -------
         Decoded values
         """
-        types_list = get_type_strings(self.abi["outputs"])
+        abi = self.abi
+        types_list = get_type_strings(abi["outputs"])
         result = eth_abi.decode(types_list, HexBytes(hexstr))
-        result = format_output(self.abi, result)
+        result = format_output(abi, result)
         if len(result) == 1:
             result = result[0]
         return result
@@ -1872,8 +1873,12 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 
 
 def _get_method_object(
-    address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
-) -> Union["ContractCall", "ContractTx"]:
+    address: ChecksumAddress,
+    abi: ABIFunction,
+    name: str,
+    owner: Optional[AccountsType],
+    natspec: Dict[str, Any],
+) -> ContractCall | ContractTx:
     if "constant" in abi:
         constant = abi["constant"]
     else:
@@ -1884,9 +1889,10 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner, natspec)
 
 
-def _inputs(abi: Dict) -> str:
-    types_list = get_type_strings(abi["inputs"], {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in abi["inputs"]], types_list)
+def _inputs(abi: ABIFunction | ABIConstructor) -> str:
+    abi_inputs = abi["inputs"]
+    types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
+    params = zip([i["name"] for i in abi_inputs], types_list)
     return ", ".join(
         f"{i[1]}{color('bright blue')}{f' {i[0]}' if i[0] else ''}{color}" for i in params
     )
