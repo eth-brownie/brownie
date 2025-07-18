@@ -52,10 +52,16 @@ class CompilerConfig(TypedDict):
     vyper_config: VyperConfig
 
 @final
+class OptimizerSettings(TypedDict):
+    enabled: bool
+    runs: int
+
+@final
 class Settings(TypedDict):
     outputSelection: Dict[str, Dict[str, List[str]]]
     evmVersion: Optional[EvmVersion]
     remappings: List[str]
+    optimizer: NotRequired[OptimizerSettings]
     viaIR: NotRequired[bool]
 
 @final
