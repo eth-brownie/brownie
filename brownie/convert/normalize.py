@@ -21,7 +21,7 @@ _TupleType: Final = TupleType
 _parse: Final = parse
 
 
-def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> List:
+def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> List[Any]:
     """Format contract inputs based on ABI types."""
     abi_inputs = abi["inputs"]
     if len(inputs) and not len(abi_inputs):
