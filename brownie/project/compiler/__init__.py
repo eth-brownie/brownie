@@ -8,6 +8,7 @@ from typing import Dict, Final, List, Optional, Union
 
 import semantic_version
 import solcast
+from eth_typing import HexStr
 
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
