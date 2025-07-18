@@ -441,7 +441,7 @@ def get_abi(
     }
 
     for path, source in contract_sources.items():
-        if Path(k).suffix == ".vy":
+        if Path(path).suffix == ".vy":
             input_json = generate_input_json({path: source}, language="Vyper")
             input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
             try:
