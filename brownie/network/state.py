@@ -7,23 +7,26 @@ import weakref
 from hashlib import sha1
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
 from eth_typing import BlockNumber
 from eth_utils.toolz import keymap
 from web3.types import BlockData
 
+import brownie.network.rpc as rpc
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
-from brownie.network import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
+
+if TYPE_CHECKING:
+    from .contract import Contract
 
 _contract_map: Dict = {}
 _revert_refs: List = []
@@ -72,7 +75,7 @@ class TxHistory(metaclass=_Singleton):
     def _reset(self) -> None:
         self._list.clear()
 
-    def _revert(self, height: int) -> None:
+    def _revert(self, height: BlockNumber) -> None:
         self._list = [i for i in self._list if i.block_number <= height]
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
@@ -215,13 +218,13 @@ class Chain(metaclass=_Singleton):
         """
         return web3.eth.block_number + 1
 
-    def __getitem__(self, block_number: int) -> BlockData:
+    def __getitem__(self, block_number: BlockNumber) -> BlockData:
         """
         Return information about a block by block number.
 
         Arguments
         ---------
-        block_number : int
+        block_number : BlockNumber
             Integer of a block number. If the value is negative, the block returned
             is relative to the most recently mined block, e.g. `chain[-1]` returns
             the most recent block.
@@ -306,7 +309,7 @@ class Chain(metaclass=_Singleton):
     def _revert(self, id_: int) -> int:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
             return rpc_client.snapshot()
         rpc_client.revert(id_)
         id_ = rpc_client.snapshot()
@@ -335,7 +338,7 @@ class Chain(metaclass=_Singleton):
             self.reset()
         except NotImplementedError:
             # required for geth dev
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
 
     def _network_disconnected(self) -> None:
         self._undo_buffer.clear()
@@ -344,7 +347,7 @@ class Chain(metaclass=_Singleton):
         self._reset_id = None
         self._current_id = None
         self._chainid = None
-        _notify_registry(0)
+        _notify_registry(0)  # type: ignore [arg-type]
 
     def get_transaction(self, txid: Union[str, bytes]) -> TransactionReceipt:
         """
@@ -376,7 +379,9 @@ class Chain(metaclass=_Singleton):
             self._redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
 
-    def mine(self, blocks: int = 1, timestamp: int = None, timedelta: int = None) -> int:
+    def mine(
+        self, blocks: int = 1, timestamp: Optional[int] = None, timedelta: Optional[int] = None
+    ) -> BlockNumber:
         """
         Increase the block height within the test RPC.
 
@@ -394,7 +399,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         if not isinstance(blocks, int):
@@ -435,7 +440,7 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer.clear()
         self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
 
-    def revert(self) -> int:
+    def revert(self) -> BlockNumber:
         """
         Revert the EVM to the most recently taken snapshot.
 
@@ -443,7 +448,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         if self._snapshot_id is None:
@@ -453,7 +458,7 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
         return web3.eth.block_number
 
-    def reset(self) -> int:
+    def reset(self) -> BlockNumber:
         """
         Revert the EVM to the initial state when loaded.
 
@@ -461,7 +466,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         self._snapshot_id = None
@@ -469,12 +474,12 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer.clear()
         if self._reset_id is None:
             self._reset_id = self._current_id = rpc.Rpc().snapshot()
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
         return web3.eth.block_number
 
-    def undo(self, num: int = 1) -> int:
+    def undo(self, num: int = 1) -> BlockNumber:
         """
         Undo one or more transactions.
 
@@ -485,7 +490,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         with self._undo_lock:
@@ -503,7 +508,7 @@ class Chain(metaclass=_Singleton):
             self._current_id = self._revert(id_)
             return web3.eth.block_number
 
-    def redo(self, num: int = 1) -> int:
+    def redo(self, num: int = 1) -> BlockNumber:
         """
         Redo one or more undone transactions.
 
@@ -514,7 +519,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         with self._undo_lock:
@@ -539,7 +544,7 @@ def _revert_register(obj: object) -> None:
     _revert_refs.append(weakref.ref(obj))
 
 
-def _notify_registry(height: int = None) -> None:
+def _notify_registry(height: Optional[BlockNumber] = None) -> None:
     gc.collect()
     if height is None:
         height = web3.eth.block_number
@@ -576,16 +581,16 @@ def _get_current_dependencies() -> List:
     return sorted(dependencies)
 
 
-def _add_contract(contract: Any) -> None:
+def _add_contract(contract: "Contract") -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract: Any) -> None:
+def _remove_contract(contract: "Contract") -> None:
     _contract_map.pop(contract.address, None)
 
 
 def _get_deployment(
-    address: str = None, alias: str = None
+    address: Optional[str] = None, alias: Optional[str] = None
 ) -> Tuple[Optional[Dict], Optional[Dict]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
@@ -610,7 +615,7 @@ def _get_deployment(
     build_json = dict(zip(keys, row))
     path_map = build_json.pop("paths")
     sources = {
-        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]
+        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
@@ -620,7 +625,7 @@ def _get_deployment(
     return build_json, sources
 
 
-def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
+def _add_deployment(contract: "Contract", alias: Optional[str] = None) -> None:
     if "chainid" not in CONFIG.active_network:
         return
 
@@ -652,7 +657,7 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
 
 
 def _remove_deployment(
-    address: str = None, alias: str = None
+    address: Optional[str] = None, alias: Optional[str] = None
 ) -> Tuple[Optional[Dict], Optional[Dict]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")

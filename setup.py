@@ -39,6 +39,7 @@ else:
                 "brownie/convert/normalize.py",
                 "brownie/convert/utils.py",
                 "brownie/network/__init__.py",
+                "brownie/network/state.py",
                 "brownie/project/compiler",
                 "brownie/utils/__init__.py",
                 "brownie/utils/_color.py",
