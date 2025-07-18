@@ -75,6 +75,7 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 _loaded_projects: Final[List["Project"]] = []
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)  # TODO: remove this once weakref support is implemented
 class _ProjectBase:
 
     _path: Optional[Path]
