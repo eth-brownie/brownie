@@ -89,7 +89,7 @@ class Build:
         self._interfaces[contract_name] = build_json
 
     def _generate_revert_map(
-        self, pcMap: Dict[str, Any] | Dict[int, Any], source_map: Dict[str, Any], language: Language
+        self, pcMap: Dict[str, Any] | Dict[int, Any], source_map: Dict[str, str], language: Language
     ) -> None:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
