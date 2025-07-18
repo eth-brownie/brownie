@@ -9,7 +9,7 @@ from pathlib import Path
 from sqlite3 import OperationalError
 from typing import TYPE_CHECKING, Any, Callable, Dict, Final, Iterator, List, Optional, Tuple, Union, final
 
-from eth_typing import BlockNumber
+from eth_typing import BlockNumber, HexStr
 from eth_utils.toolz import keymap
 from web3.types import BlockData
 
