@@ -43,3 +43,22 @@ class SolcConfig(TypedDict):
 class VyperConfig(TypedDict):
     version: NotRequired[str]
     evm_version: NotRequired[EvmVersion]
+
+@final
+class CompilerConfig(TypedDict):
+    evm_version: EvmVersion
+    solc_config: NotRequired[SolcConfig]
+    vyper_config: VyperConfig
+
+@final
+class Settings(TypedDict):
+    outputSelection: Dict[str, Dict[str, List[str]]]
+    evmVersion: EvmVersion
+    remappings: List[str]
+    viaIR: NotRequired[bool]
+
+@final
+class InputJson(TypedDict):
+    language: Optional[Language]
+    sources: dict
+    settings: Settings
