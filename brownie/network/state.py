@@ -7,7 +7,7 @@ import weakref
 from hashlib import sha1
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, Union, final
 
 from eth_typing import BlockNumber
 from eth_utils.toolz import keymap
@@ -31,18 +31,19 @@ if TYPE_CHECKING:
 _contract_map: Dict = {}
 _revert_refs: List = []
 
-cur = Cursor(_get_data_folder().joinpath("deployments.db"))
+cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 
+@final
 class TxHistory(metaclass=_Singleton):
     """List-like singleton container that contains TransactionReceipt objects.
     Whenever a transaction is broadcast, the TransactionReceipt is automatically
     added to this container."""
 
     def __init__(self) -> None:
-        self._list: List = []
-        self.gas_profile: Dict = {}
+        self._list: Final[List[TransactionReceipt]] = []
+        self.gas_profile: Final[Dict[str, Dict]] = {}
         _revert_register(self)
 
     def __repr__(self) -> str:
@@ -52,7 +53,7 @@ class TxHistory(metaclass=_Singleton):
 
     def __getattribute__(self, name: str) -> Any:
         # filter dropped transactions prior to attribute access
-        items = super().__getattribute__("_list")
+        items: List[TransactionReceipt] = super().__getattribute__("_list")
         items = [i for i in items if i.status != -2]
         setattr(self, "_list", items)
         return super().__getattribute__(name)
@@ -63,7 +64,7 @@ class TxHistory(metaclass=_Singleton):
     def __contains__(self, item: Any) -> bool:
         return item in self._list
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[TransactionReceipt]:
         return iter(self._list)
 
     def __getitem__(self, key: int) -> TransactionReceipt:
@@ -188,6 +189,7 @@ class TxHistory(metaclass=_Singleton):
                 gas["avg_success"] = (avg * count + gas_used) // (count + 1)
 
 
+@final
 class Chain(metaclass=_Singleton):
     """
     List-like singleton used to access block data, and perform actions such as
@@ -199,9 +201,9 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id: Optional[int] = None
         self._reset_id: Optional[int] = None
         self._current_id: Optional[int] = None
-        self._undo_lock = threading.Lock()
-        self._undo_buffer: List = []
-        self._redo_buffer: List = []
+        self._undo_lock: Final = threading.Lock()
+        self._undo_buffer: Final[List[Tuple[Any, Any, Any, Any]]] = []
+        self._redo_buffer: Final[List[Tuple[Any, Any, Any]]] = []
         self._chainid: Optional[int] = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
@@ -591,7 +593,7 @@ def _remove_contract(contract: "_DeployedContractBase") -> None:
 
 def _get_deployment(
     address: Optional[str] = None, alias: Optional[str] = None
-) -> Tuple[Optional[Dict], Optional[Dict]]:
+) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -613,14 +615,15 @@ def _get_deployment(
 
     keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
     build_json = dict(zip(keys, row))
-    path_map = build_json.pop("paths")
-    sources = {
+    path_map: Dict[str, tuple[HexStr, str]] = build_json.pop("paths")
+    sources: Dict[str, Any] = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
-    if isinstance(build_json["pcMap"], dict):
-        build_json["pcMap"] = keymap(int, build_json["pcMap"])
+    pc_map = build_json["pcMap"]
+    if isinstance(pc_map, dict):
+        build_json["pcMap"] = keymap(int, pc_map)
 
     return build_json, sources
 
