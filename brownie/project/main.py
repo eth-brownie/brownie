@@ -53,6 +53,7 @@ from brownie.network.state import _add_contract, _remove_contract, _revert_regis
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
+from brownie.typing import CompilerConfig
 from brownie.utils import notify
 
 BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
@@ -80,7 +81,7 @@ class _ProjectBase:
     _sources: Sources
     _build: Build
 
-    def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
+    def _compile(self, contract_sources: Dict, compiler_config: CompilerConfig, silent: bool) -> None:
         compiler_config.setdefault("solc", {})
 
         allow_paths = None
