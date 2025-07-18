@@ -18,6 +18,9 @@ to_text: Final = faster_eth_utils.to_text
 
 _TEN_DECIMALS: Final = Decimal("1.0000000000")
 
+is_hex: Final = faster_eth_utils.is_hex
+to_text: Final = faster_eth_utils.to_text
+
 
 def to_uint(value: Any, type_str: str = "uint256") -> Wei:
     """Convert a value to an unsigned integer"""
