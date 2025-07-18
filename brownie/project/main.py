@@ -550,6 +550,8 @@ class Project(_ProjectBase):
         self._clear_dev_deployments(0)
 
 
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
