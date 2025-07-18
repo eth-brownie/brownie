@@ -10,7 +10,7 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
-from eth_typing import ABIComponent
+from eth_typing import ABIComponent, HexStr
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from hexbytes import HexBytes
 from typing_extensions import Self
