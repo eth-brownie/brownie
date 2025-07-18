@@ -20,7 +20,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import CompilerData, EvmVersion, InputJson, Language
+from brownie.typing import CompilerConfig, EvmVersion, InputJson, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -119,7 +119,7 @@ def compile_and_format(
         if optimizer is None:
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
-    compiler_data: CompilerData
+    compiler_data: CompilerConfig
     for version, path_list in compiler_targets.items():
         compiler_data = {}
         if path_list[0].endswith(".vy"):
