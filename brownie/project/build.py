@@ -5,7 +5,7 @@ from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, 
 
 from eth_utils.toolz import keymap
 
-from brownie.typing import Language
+from brownie.typing import ContractName, Language
 
 from .sources import Sources, highlight_source
 
@@ -40,10 +40,6 @@ BUILD_KEYS: Final = (
 
 _revert_map: Final[Dict[int, Union[tuple, Literal[False]]]] = {}
 
-ContractAlias = NewType("ContractAlias", str)
-ContractName = NewType("ContractName", str)
-ContractId = ContractName | ContractAlias
-
 class _Bytecode(TypedDict, total=False):
     object: HexStr
 
@@ -65,9 +61,9 @@ class Build:
     def __init__(self, sources: Sources) -> None:
         self._sources: Final = sources
         self._contracts: Final[Dict[str, Dict[str, Any]]] = {}
-        self._interfaces: Final[Dict[ContractName | ContractAlias, Dict[str, Any]]] = {}
+        self._interfaces: Final[Dict[ContractName | ContractName, Dict[str, Any]]] = {}
 
-    def _add_contract(self, build_json: _BuildJSON, alias: Optional[ContractAlias] = None) -> None:
+    def _add_contract(self, build_json: _BuildJSON, alias: Optional[ContractName] = None) -> None:
         contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
             return
@@ -130,17 +126,17 @@ class Build:
                 continue
             _revert_map[pc] = False
 
-    def _remove_contract(self, contract_name: ContractId) -> None:
+    def _remove_contract(self, contract_name: ContractName) -> None:
         key = self._stem(contract_name)
         if key in self._contracts:
             del self._contracts[key]
 
-    def _remove_interface(self, contract_name: ContractId) -> None:
+    def _remove_interface(self, contract_name: ContractName) -> None:
         key = self._stem(contract_name)
         if key in self._interfaces:
             del self._interfaces[key]
 
-    def get(self, contract_name: ContractId) -> Dict:
+    def get(self, contract_name: ContractName) -> Dict:
         """Returns build data for the given contract name."""
         key = self._stem(contract_name)
         if key in self._contracts:
@@ -155,18 +151,18 @@ class Build:
             return items
         return [(k, v) for k, v in items if v.get("sourcePath") == path]
 
-    def contains(self, contract_name: ContractId) -> bool:
+    def contains(self, contract_name: ContractName) -> bool:
         """Checks if the contract name exists in the currently loaded build data."""
         stem = self._stem(contract_name)
         return stem in self._contracts or stem in self._interfaces
 
-    def get_dependents(self, contract_name: ContractId) -> List:
+    def get_dependents(self, contract_name: ContractName) -> List:
         """Returns a list of contract names that inherit from or link to the given
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file."""
         return [k for k, v in self._contracts.items() if contract_name in v.get("dependencies", [])]
 
-    def _stem(self, contract_name: ContractId) -> ContractId:
+    def _stem(self, contract_name: ContractName) -> ContractName:
         return contract_name.replace(".json", "")
 
 
