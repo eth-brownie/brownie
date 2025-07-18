@@ -199,7 +199,7 @@ def generate_input_json(
     input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
     settings = input_json["settings"]
-    input_json["settings"]["evmVersion"] = evm_version
+    settings["evmVersion"] = evm_version
     if language == "Solidity":
         settings["optimizer"] = optimizer
         settings["remappings"] = _get_solc_remappings(remappings)
