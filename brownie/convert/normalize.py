@@ -3,14 +3,14 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from eth_abi.grammar import ABIType, TupleType, parse
-from eth_typing import ABIComponent, ABIConstructor, ABIFunction
+from eth_typing import ABIComponent, ABIFunction
 
 from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
 
-def format_input(abi: ABIFunction | ABIConstructor, inputs: Union[List, Tuple]) -> List:
+def format_input(abi: ABIFunction, inputs: Union[List, Tuple]) -> List:
     """Format contract inputs based on ABI types."""
     abi_inputs = abi["inputs"]
     if len(inputs) and not len(abi_inputs):
