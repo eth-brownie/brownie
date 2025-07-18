@@ -3,7 +3,7 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Final, List, Optional, Tuple, Union
 
 import vvm
 import vyper
@@ -17,6 +17,7 @@ from brownie.exceptions import CompilerError, IncompatibleVyperVersion
 from brownie.project import sources
 from brownie.project.compiler.utils import expand_source_map
 from brownie.project.sources import is_inside_offset
+from brownie.typing import ContractName, InputJson
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
