@@ -121,7 +121,7 @@ def compile_and_format(
 
     compiler_data: CompilerConfig
     for version, path_list in compiler_targets.items():
-        compiler_data = {}
+        compiler_data = {}  # type: ignore [typeddict-item]
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
@@ -273,7 +273,7 @@ def compile_from_input_json(
 
 
 def generate_build_json(
-    input_json: InputJson, output_json: Dict, compiler_data: Optional[CompilerData] = None, silent: bool = True
+    input_json: InputJson, output_json: Dict, compiler_data: Optional[CompilerConfig] = None, silent: bool = True
 ) -> Dict:
     """Formats standard compiler output to the brownie build json.
 
