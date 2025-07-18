@@ -229,7 +229,7 @@ class EthAddress(str):
             converted_value = bytes_to_hexstring(value)
         converted_value = add_0x_prefix(str(converted_value))  # type: ignore [arg-type]
         try:
-            converted_value = cchecksum.to_checksum_address(converted_value)
+            converted_value = to_checksum_address(converted_value)
         except ValueError:
             raise ValueError(f"'{value}' is not a valid ETH address") from None  # type: ignore [str-bytes-safe]
         return super().__new__(cls, converted_value)  # type: ignore
