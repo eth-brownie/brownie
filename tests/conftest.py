@@ -446,7 +446,7 @@ def _connect_to_mainnet(network) -> None:
         network.connect("mainnet")
     except ConnectionError:
         _disconnect_network()
-        _connect_to_mainnet()
+        _connect_to_mainnet(network)
 
 
 def _disconnect_network() -> None:
