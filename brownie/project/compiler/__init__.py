@@ -64,7 +64,7 @@ def compile_and_format(
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[Union[List[str], str]] = None,
-    optimizer: Optional[Dict] = None,
+    optimizer: Optional[OptimizerSettings] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict:
     """Compiles contracts and returns build data.
@@ -163,7 +163,7 @@ def generate_input_json(
     language: str = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[Union[List[str], str]] = None,
-    optimizer: Optional[Dict] = None,
+    optimizer: Optional[OptimizerSettings] = None,
     viaIR: Optional[bool] = None,
 ) -> InputJson:
     """Formats contracts to the standard solc input json.
