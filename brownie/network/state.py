@@ -32,8 +32,8 @@ _Path: Final = Path
 
 _sha1: Final = sha1
 
-_contract_map: Dict = {}
-_revert_refs: List = []
+_contract_map: Final[Dict[ChecksumAddress, "Contract"]] = {}
+_revert_refs: Final[List[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
