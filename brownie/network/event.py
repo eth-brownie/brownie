@@ -49,6 +49,7 @@ Topics = Dict[HexStr, TopicMapData]
 DeploymentTopics = Dict[ChecksumAddress, Topics]
 
 
+@final
 class EventDict:
     """
     Dict/list hybrid container, base class for all events fired in a transaction.
