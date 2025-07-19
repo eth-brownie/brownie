@@ -4,7 +4,7 @@ import copy
 import hashlib
 import json
 import pathlib
-from typing import Dict, Final, List, Optional, Union
+from typing import Dict, Final, List, Optional, TypedDict, Union, final
 
 import semantic_version
 import solcast
@@ -21,12 +21,12 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import ContractName
+from brownie.typing import CompilerConfig, ContractName, EvmVersion, InputJson, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Dict = {
+STANDARD_JSON: Final[InputJson] = {
     "language": None,
     "sources": {},
     "settings": {
@@ -41,8 +41,6 @@ STANDARD_JSON: Dict = {
     },
 }
 
-Language = str
-EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
 # C constants
@@ -101,7 +99,7 @@ def compile_and_format(
     build_json: Dict = {}
     compiler_targets = {}
 
-    vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
+    vyper_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".vy"}
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
         if vyper_version is None:
@@ -110,7 +108,8 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
+    
+    solc_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"}
     if solc_sources:
         if solc_version is None:
             compiler_targets.update(
@@ -122,24 +121,24 @@ def compile_and_format(
         if optimizer is None:
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
+    compiler_data: CompilerData
     for version, path_list in compiler_targets.items():
-        compiler_data: Dict = {}
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
-            compiler_data["version"] = str(vyper.get_version())
-            interfaces = {k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"}
+            compiler_data = {"version": str(vyper.get_version())}
+            interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data["version"] = str(solidity.get_version())
+            compiler_data = {"version": str(solidity.get_version())}
             interfaces = {
                 k: v
-                for k, v in interface_sources.items()
-                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
+                for k in interface_sources
+                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
             }
 
-        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+        to_compile = {key: contract_sources[key] for key in contract_sources if key in path_list}
 
         input_json = generate_input_json(
             to_compile,
@@ -167,7 +166,7 @@ def generate_input_json(
     remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
-) -> Dict:
+) -> InputJson:
     """Formats contracts to the standard solc input json.
 
     Args:
@@ -252,7 +251,7 @@ def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJson, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.
@@ -265,7 +264,7 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    language: Language = input_json["language"]
+    language = input_json["language"]
     if language == "Vyper":
         return vyper.compile_from_input_json(input_json, silent, allow_paths)
 
@@ -277,7 +276,7 @@ def compile_from_input_json(
 
 
 def generate_build_json(
-    input_json: Dict, output_json: Dict, compiler_data: Optional[Dict] = None, silent: bool = True
+    input_json: InputJson, output_json: Dict, compiler_data: Optional[CompilerData] = None, silent: bool = True
 ) -> Dict:
     """Formats standard compiler output to the brownie build json.
 
@@ -289,7 +288,7 @@ def generate_build_json(
 
     Returns: build json dict"""
 
-    language: Language = input_json["language"]
+    language = input_json["language"]
     if language not in ("Solidity", "Vyper"):
         raise UnsupportedLanguage(language)
 
@@ -299,7 +298,7 @@ def generate_build_json(
     if compiler_data is None:
         compiler_data = {}
 
-    settings: dict = input_json["settings"]
+    settings = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
     build_json: Dict = {}
 
@@ -391,7 +390,16 @@ def generate_build_json(
     return build_json
 
 
-def _sources_dict(original: Dict, language: str) -> Dict:
+@final
+class _AbiDict(TypedDict):
+    abi: Any
+
+@final
+class _ContentDict(TypedDict, Generic[_V]):
+    content: _V
+
+
+def _sources_dict(original: Dict[str, str | _V], language: Language) -> Dict[str, _AbiDict | _ContentDict[_V]]:
     result: Dict = {}
     for key, value in original.items():
         if Path(key).suffix == ".json":

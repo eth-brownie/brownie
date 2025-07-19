@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
 import logging
 from collections import deque
@@ -448,7 +449,7 @@ def _generate_coverage_data(
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = active_fn_name
             else:
-                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
+                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)  # type: ignore [arg-type]
                 pc_list[-1]["fn"] = active_fn_name
                 stmt_offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)

@@ -10,7 +10,6 @@ from sqlite3 import OperationalError
 from typing import TYPE_CHECKING, Any, Callable, Dict, Final, Iterator, List, Optional, Tuple, Union, final
 
 from eth_typing import BlockNumber, HexStr
-from eth_utils.toolz import keymap
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
@@ -28,8 +27,13 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import _DeployedContractBase, Contract
 
-_contract_map: Dict = {}
-_revert_refs: List = []
+# C Constants
+_Path: Final = Path
+
+_sha1: Final = sha1
+
+_contract_map: Final[Dict[ChecksumAddress, "Contract"]] = {}
+_revert_refs: Final[List[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
@@ -613,7 +617,7 @@ def _get_deployment(
     if not row:
         return None, None
 
-    keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
+    keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
     build_json = dict(zip(keys, row))
     path_map: Dict[str, tuple[HexStr, str]] = build_json.pop("paths")
     sources: Dict[str, Any] = {
@@ -623,7 +627,7 @@ def _get_deployment(
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
     pc_map = build_json["pcMap"]
     if isinstance(pc_map, dict):
-        build_json["pcMap"] = keymap(int, pc_map)
+        build_json["pcMap"] = {int(key): pc_map[key] for key in pc_map}
 
     return build_json, sources
 
@@ -640,22 +644,26 @@ def _add_deployment(contract: "Contract", alias: Optional[str] = None) -> None:
         f"(address UNIQUE, alias UNIQUE, paths, {', '.join(DEPLOYMENT_KEYS)})"
     )
 
-    if "compiler" not in contract._build:
+    contract_build = contract._build
+    if "compiler" not in contract_build:
         # do not replace full contract artifacts with ABI-only ones
         row = cur.fetchone(f"SELECT compiler FROM {name} WHERE address=?", (address,))
         if row and row[0]:
             return
 
     all_sources = {}
-    for key, path in contract._build.get("allSourcePaths", {}).items():
-        source = contract._sources.get(path)
-        if source is None:
-            source = Path(path).read_text()
-        hash_ = sha1(source.encode()).hexdigest()
-        cur.insert("sources", hash_, source)
-        all_sources[key] = [hash_, path]
+    source_paths: dict = contract_build.get("allSourcePaths", {})
+    if source_paths:
+        contract_sources: dict = contract._sources
+        for key, path in source_paths.items():
+            source = contract_sources.get(path)
+            if source is None:
+                source = _Path(path).read_text()
+            hash_ = _sha1(source.encode()).hexdigest()
+            cur.insert("sources", hash_, source)
+            all_sources[key] = [hash_, path]
 
-    values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
+    values = (contract_build.get(i) for i in DEPLOYMENT_KEYS)
     cur.insert(name, address, alias, all_sources, *values)
 
 
@@ -683,8 +691,8 @@ def _remove_deployment(
         for key, path in contract._build.get("allSourcePaths", {}).items():
             source = contract._sources.get(path)
             if source is None:
-                source = Path(path).read_text()
-            hash_ = sha1(source.encode()).hexdigest()
+                source = _Path(path).read_text()
+            hash_ = _sha1(source.encode()).hexdigest()
             cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
     return build_json, sources
