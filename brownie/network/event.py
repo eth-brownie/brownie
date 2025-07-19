@@ -28,7 +28,6 @@ import eth_event
 from eth_event import EventError
 from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData
 from eth_typing import ChecksumAddress, HexStr
-from mypy_extensions import mypyc_attr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
@@ -50,7 +49,6 @@ Topics = Dict[HexStr, TopicMapData]
 DeploymentTopics = Dict[ChecksumAddress, Topics]
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
 class EventDict:
     """
     Dict/list hybrid container, base class for all events fired in a transaction.
@@ -346,7 +344,6 @@ class _EventWatchData:
         return max(0.0, self.delay - (time.time() - self.timer))
 
 
-@mypyc_attr(native_class=False)
 class EventWatcher(metaclass=_Singleton):
     """
     Singleton class containing methods to set callbacks on user-specified events.
