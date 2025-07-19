@@ -32,7 +32,7 @@ UNITS: Final = {
     "ether": 18,
 }
 
-WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
+WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, None)
 
 
 class Wei(int):
