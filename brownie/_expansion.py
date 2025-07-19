@@ -46,11 +46,9 @@ INT_REGEX: Final = re.compile(r"^[-+]?[0-9]+$")
 
 
 @overload
-def _str_to_python_value(val: str) -> bool | int | str:
-    ...
+def _str_to_python_value(val: str) -> bool | int | str: ...
 @overload
-def _str_to_python_value(val: _T) -> _T:
-    ...
+def _str_to_python_value(val: _T) -> _T: ...
 def _str_to_python_value(val):
     """_str_to_python_value infers the data type from a string.
 

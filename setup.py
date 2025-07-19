@@ -40,6 +40,7 @@ else:
                 "brownie/convert/normalize.py",
                 "brownie/convert/utils.py",
                 "brownie/network/__init__.py",
+                "brownie/network/event.py",
                 "brownie/network/state.py",
                 "brownie/project",
                 "brownie/typing.py",
@@ -58,7 +59,7 @@ else:
 setup(
     name="eth-brownie",
     packages=find_packages(),
-    version="1.21.0",  # don't change this manually, use bumpversion instead
+    version="1.22.0",  # don't change this manually, use bumpversion instead
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,
