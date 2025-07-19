@@ -556,7 +556,7 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
     return EventDict(format_event(event) for event in events)
 
 
-def _decode_ds_note(log: _EventItem, contract: "Contract") -> DecodedEvent:
+def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> DecodedEvent:
     # ds-note encodes function selector as the first topic
     selector, tail = log.topics[0][:4], log.topics[0][4:]
     selector_hexstr = hexbytes_to_hexstring(selector)
