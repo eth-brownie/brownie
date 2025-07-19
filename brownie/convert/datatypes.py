@@ -213,7 +213,7 @@ class EthAddress(str):
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
-            raise ValueError(f"'{value}' is not a valid ETH address") from None
+            raise ValueError(f"'{value!r}' is not a valid ETH address") from None
         return super().__new__(cls, converted_value)  # type: ignore
 
     def __hash__(self) -> int:
@@ -323,8 +323,8 @@ class ReturnValue(tuple):
                     values[i] = ReturnValue(values[i])
 
         self = super().__new__(cls, values)  # type: ignore
-        self._abi = abi or []
-        self._dict = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
+        self._abi: Final[List[ABIComponent]] = abi or []
+        self._dict: Final = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
 
         return self
 
@@ -372,7 +372,7 @@ class ReturnValue(tuple):
                 response[k] = v
         return response
 
-    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
+    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:  # type: ignore [override]
         """ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present."""
         if stop is None:
