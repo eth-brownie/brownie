@@ -340,7 +340,7 @@ class ReturnValue(tuple):
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: str | int | slice) -> Any:
         if type(key) is slice:
             abi = None
             if self._abi is not None:
