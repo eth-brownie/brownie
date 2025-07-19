@@ -23,6 +23,9 @@ from typing import (
 
 import eth_event
 from eth_event import EventError
+from eth_event.main import TopicMapData
+from eth_typing import ChecksumAddress, HexStr
+from mypy_extensions import mypyc_attr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
@@ -37,6 +40,11 @@ from brownie.utils import hexbytes_to_hexstring
 from .web3 import ContractEvent, web3
 
 
+Topics = Dict[HexStr, TopicMapData]
+DeploymentTopics = Dict[ChecksumAddress, Topics]
+
+
+@mypyc_attr(allow_interpreted_subclasses=True)
 class EventDict:
     """
     Dict/list hybrid container, base class for all events fired in a transaction.
@@ -133,6 +141,7 @@ class EventDict:
         return self._dict.values()
 
 
+@final
 class _EventItem:
     """
     Dict/list hybrid container, represents one or more events with the same name
@@ -234,6 +243,7 @@ class _EventItem:
         return ReturnValue(self._ordered[0].values())
 
 
+@final
 class _EventWatchData:
     """
     Class containing the data needed to check, time, and execute callbacks on a specified event.
@@ -247,11 +257,11 @@ class _EventWatchData:
         repeat: bool = True,
     ) -> None:
         # Args
-        self.event: ContractEvent = event
+        self.event: Final[ContractEvent] = event
         self._callbacks_list: List[dict] = []
         self.delay: float = delay
         # Members
-        self._event_filter: filters.LogFilter = event.create_filter(
+        self._event_filter: Final[filters.LogFilter] = event.create_filter(
             fromBlock=(web3.eth.block_number - 1)
         )
         self._cooldown_time_over: bool = False
@@ -315,7 +325,7 @@ class _EventWatchData:
             )
             threads[-1].start()
         # Remove non-repeating callbacks from list
-        self._callbacks_list = list(filter(lambda x: x.get("repeat"), self._callbacks_list))
+        self._callbacks_list = [x for x in (x.get("repeat") for x in self._callbacks_list) if x]
         return threads
 
     @property
@@ -327,9 +337,10 @@ class _EventWatchData:
             float: Time difference between self.delay and the time between
             now and the last callback_trigger_time.
         """
-        return max(float(0), self.delay - (time.time() - self.timer))
+        return max(0.0, self.delay - (time.time() - self.timer))
 
 
+@mypyc_attr(native_class=False)
 class EventWatcher(metaclass=_Singleton):
     """
     Singleton class containing methods to set callbacks on user-specified events.
@@ -501,11 +512,11 @@ def _get_topics(abi: List) -> Dict:
     return {v["name"]: k for k, v in topic_map.items()}
 
 
-def _add_deployment_topics(address: str, abi: List) -> None:
+def _add_deployment_topics(address: ChecksumAddress, abi: List) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
-def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
+def _decode_logs(logs: List[Dict], contracts: Optional[Dict[ChecksumAddress, "Contract"]] = None) -> EventDict:
     if not logs:
         return EventDict()
 
@@ -534,10 +545,10 @@ def _decode_logs(logs: List, contracts: Optional[Dict] = None) -> EventDict:
         if log_slice[-1] == logs[-1]:
             break
 
-    return EventDict(map(format_event, events))
+    return EventDict(format_event(event) for event in events)
 
 
-def _decode_ds_note(log, contract):  # type: ignore
+def _decode_ds_note(log, contract: "Contract"):  # type: ignore
     # ds-note encodes function selector as the first topic
     selector, tail = log.topics[0][:4], log.topics[0][4:]
     selector_hexstr = hexbytes_to_hexstring(selector)
@@ -570,20 +581,20 @@ def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
     events = eth_event.decode_traceTransaction(
         trace, _topics, allow_undecoded=True, initial_address=initial_address
     )
-    return EventDict(map(format_event, events))
+    return EventDict(format_event(event) for event in events)
 
 
 # dictionary of event topic ABIs specific to a single contract deployment
-_deployment_topics: Dict = {}
-
-# general event topic ABIs for decoding events on unknown contracts
-_topics: Dict = {}
+_deployment_topics: Final[DeploymentTopics] = {}
 
 # EventWatcher program instance
-event_watcher = EventWatcher()
+event_watcher: Final = EventWatcher()
 
 try:
     with __get_path().open() as fp:
-        _topics = json.load(fp)
+        __topics = json.load(fp)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
-    pass
+    __topics = None
+
+# general event topic ABIs for decoding events on unknown contracts
+_topics: Final[Topics] = __topics or {}
