@@ -31,6 +31,7 @@ from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMap
 from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
+from web3.types import StructLog
 
 from brownie._config import _get_data_folder
 from brownie._singleton import _Singleton
@@ -586,7 +587,7 @@ def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> Optional[De
     }
 
 
-def _decode_trace(trace: Sequence, initial_address: AnyAddress) -> EventDict:
+def _decode_trace(trace: Sequence[StructLog], initial_address: AnyAddress) -> EventDict:
     if not trace:
         return EventDict()
 
