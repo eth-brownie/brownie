@@ -326,7 +326,7 @@ class ReturnValue(tuple):
                     values[i] = ReturnValue(value)
 
         self = super().__new__(cls, values)
-        self._abi = abi or []
+        self._abi = list(abi) if abi else []
         self._dict = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
 
         return self
