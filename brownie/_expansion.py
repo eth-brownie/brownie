@@ -1,7 +1,10 @@
 import re
-from typing import Any, Mapping, Optional, Text
+from typing import Any, Final, Mapping, Optional, Text, TypeVar, overload
 
 from dotenv.variables import parse_variables
+
+
+_T = TypeVar("_T")
 
 
 def expand_posix_vars(obj: Any, variables: Mapping[Text, Optional[Any]]) -> Any:
@@ -22,7 +25,7 @@ def expand_posix_vars(obj: Any, variables: Mapping[Text, Optional[Any]]) -> Any:
     return obj
 
 
-def _expand(value, variables={}):
+def _expand(value: _T, variables: Mapping = {}) -> _T:
     """_expand does POSIX-style variable expansion
 
     This is adapted from python-dotenv, specifically here:
@@ -36,12 +39,18 @@ def _expand(value, variables={}):
     if not isinstance(value, (str,)):
         return value
     atoms = parse_variables(value)
-    return "".join([str(atom.resolve(variables)) for atom in atoms])
+    return "".join([str(atom.resolve(variables)) for atom in atoms])  # type: ignore [return-value]
 
 
-INT_REGEX = re.compile(r"^[-+]?[0-9]+$")
+INT_REGEX: Final = re.compile(r"^[-+]?[0-9]+$")
 
 
+@overload
+def _str_to_python_value(val: str) -> bool | int | str:
+    ...
+@overload
+def _str_to_python_value(val: _T) -> _T:
+    ...
 def _str_to_python_value(val):
     """_str_to_python_value infers the data type from a string.
 
