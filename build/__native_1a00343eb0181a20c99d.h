@@ -693,43 +693,86 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    PyObject *__path;
-    PyObject *__build_path;
-    PyObject *__sources;
-    PyObject *__build;
-    PyObject *_interface;
-    PyObject *__containers;
-} brownie___project___main____ProjectBaseObject;
+    vectorcallfunc vectorcall;
+} brownie___project___main____compile__ProjectBase_objObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    PyObject *__path;
-    PyObject *__build_path;
-    PyObject *__sources;
-    PyObject *__build;
-    PyObject *_interface;
-    PyObject *__containers;
-    PyObject *__envvars;
-    PyObject *__structure;
-    PyObject *__name;
-    char __active;
-    PyObject *__compiler_config;
-    PyObject *___all__;
-    PyObject *__namespaces;
-} brownie___project___main___ProjectObject;
+    vectorcallfunc vectorcall;
+} brownie___project___main____create_containers__ProjectBase_objObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    PyObject *__path;
-    PyObject *__build_path;
-    PyObject *__sources;
-    PyObject *__build;
-    PyObject *_interface;
-    PyObject *__containers;
-    PyObject *__name;
-} brownie___project___main___TempProjectObject;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____getitem___3__ProjectBase_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____iter___3__ProjectBase_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____len___3__ProjectBase_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____contains___3__ProjectBase_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main___dict__ProjectBase_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main___keys__ProjectBase_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____init___3_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main___load_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____get_changed_contracts_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____compare_build_json_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____compile_interfaces_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____load_dependency_artifacts_Project_objObject;
 
 typedef struct {
     PyObject_HEAD
@@ -745,8 +788,104 @@ typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
     vectorcallfunc vectorcall;
+} brownie___project___main____load_deployments_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
     PyObject *___mypyc_env__;
 } brownie___project___main_____mypyc_lambda__0__load_deployments_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____load_deployment_map_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____save_deployment_map_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____remove_from_deployment_map_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____add_to_deployment_map_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____update_and_register_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____add_to_main_namespace_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____remove_from_main_namespace_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____repr___3_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main___load_config_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main___close_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____clear_dev_deployments_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____revert_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main____reset_Project_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____init___3_TempProject_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___project___main_____repr___3_TempProject_objObject;
 
 typedef struct {
     PyObject_HEAD
@@ -1303,47 +1442,134 @@ struct export_table_1a00343eb0181a20c99d {
     PyObject **CPyStatic_project___main___brownie___project___main____stream_download___headers;
     PyObject **CPyStatic_project___main___brownie___project___main____get_mix_default_branch___headers;
     PyTypeObject **CPyType_project___main____ProjectBase;
-    PyObject *(*CPyDef_project___main____ProjectBase)(void);
     PyTypeObject **CPyType_project___main___Project;
-    PyObject *(*CPyDef_project___main___Project)(PyObject *cpy_r_name, PyObject *cpy_r_project_path, char cpy_r_compile);
     PyTypeObject **CPyType_project___main___TempProject;
-    PyObject *(*CPyDef_project___main___TempProject)(PyObject *cpy_r_name, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config);
+    PyTypeObject **CPyType_project___main____compile__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main____compile__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main____create_containers__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main____create_containers__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main_____getitem___3__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main_____getitem___3__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main_____iter___3__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main_____len___3__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main_____len___3__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main_____contains___3__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main_____contains___3__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main___dict__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main___dict__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main___keys__ProjectBase_obj;
+    PyObject *(*CPyDef_project___main___keys__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main_____init___3_Project_obj;
+    PyObject *(*CPyDef_project___main_____init___3_Project_obj)(void);
+    PyTypeObject **CPyType_project___main___load_Project_obj;
+    PyObject *(*CPyDef_project___main___load_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____get_changed_contracts_Project_obj;
+    PyObject *(*CPyDef_project___main____get_changed_contracts_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____compare_build_json_Project_obj;
+    PyObject *(*CPyDef_project___main____compare_build_json_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____compile_interfaces_Project_obj;
+    PyObject *(*CPyDef_project___main____compile_interfaces_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____load_dependency_artifacts_Project_obj;
+    PyObject *(*CPyDef_project___main____load_dependency_artifacts_Project_obj)(void);
     PyTypeObject **CPyType_project___main____load_deployments_Project_env;
     PyObject *(*CPyDef_project___main____load_deployments_Project_env)(void);
+    PyTypeObject **CPyType_project___main____load_deployments_Project_obj;
+    PyObject *(*CPyDef_project___main____load_deployments_Project_obj)(void);
     PyTypeObject **CPyType_project___main_____mypyc_lambda__0__load_deployments_Project_obj;
     PyObject *(*CPyDef_project___main_____mypyc_lambda__0__load_deployments_Project_obj)(void);
-    char (*CPyDef_project___main____ProjectBase____compile)(PyObject *cpy_r_self, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config, char cpy_r_silent);
-    char (*CPyDef_project___main____ProjectBase____create_containers)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef_project___main____ProjectBase_____getitem__)(PyObject *cpy_r_self, PyObject *cpy_r_key);
-    PyObject *(*CPyDef_project___main____ProjectBase_____iter__)(PyObject *cpy_r_self);
-    CPyTagged (*CPyDef_project___main____ProjectBase_____len__)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main____ProjectBase_____contains__)(PyObject *cpy_r_self, PyObject *cpy_r_item);
-    PyObject *(*CPyDef_project___main____ProjectBase___dict)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef_project___main____ProjectBase___keys)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main___Project_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_project_path, char cpy_r_compile);
-    char (*CPyDef_project___main___Project___load)(PyObject *cpy_r_self, char cpy_r_raise_if_loaded, char cpy_r_compile);
-    PyObject *(*CPyDef_project___main___Project____get_changed_contracts)(PyObject *cpy_r_self, PyObject *cpy_r_compiled_hashes);
-    char (*CPyDef_project___main___Project____compare_build_json)(PyObject *cpy_r_self, PyObject *cpy_r_contract_name);
-    char (*CPyDef_project___main___Project____compile_interfaces)(PyObject *cpy_r_self, PyObject *cpy_r_compiled_hashes);
-    char (*CPyDef_project___main___Project____load_dependency_artifacts)(PyObject *cpy_r_self);
+    PyTypeObject **CPyType_project___main____load_deployment_map_Project_obj;
+    PyObject *(*CPyDef_project___main____load_deployment_map_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____save_deployment_map_Project_obj;
+    PyObject *(*CPyDef_project___main____save_deployment_map_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____remove_from_deployment_map_Project_obj;
+    PyObject *(*CPyDef_project___main____remove_from_deployment_map_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____add_to_deployment_map_Project_obj;
+    PyObject *(*CPyDef_project___main____add_to_deployment_map_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____update_and_register_Project_obj;
+    PyObject *(*CPyDef_project___main____update_and_register_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____add_to_main_namespace_Project_obj;
+    PyObject *(*CPyDef_project___main____add_to_main_namespace_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____remove_from_main_namespace_Project_obj;
+    PyObject *(*CPyDef_project___main____remove_from_main_namespace_Project_obj)(void);
+    PyTypeObject **CPyType_project___main_____repr___3_Project_obj;
+    PyObject *(*CPyDef_project___main_____repr___3_Project_obj)(void);
+    PyTypeObject **CPyType_project___main___load_config_Project_obj;
+    PyObject *(*CPyDef_project___main___load_config_Project_obj)(void);
+    PyTypeObject **CPyType_project___main___close_Project_obj;
+    PyObject *(*CPyDef_project___main___close_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____clear_dev_deployments_Project_obj;
+    PyObject *(*CPyDef_project___main____clear_dev_deployments_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____revert_Project_obj;
+    PyObject *(*CPyDef_project___main____revert_Project_obj)(void);
+    PyTypeObject **CPyType_project___main____reset_Project_obj;
+    PyObject *(*CPyDef_project___main____reset_Project_obj)(void);
+    PyTypeObject **CPyType_project___main_____init___3_TempProject_obj;
+    PyObject *(*CPyDef_project___main_____init___3_TempProject_obj)(void);
+    PyTypeObject **CPyType_project___main_____repr___3_TempProject_obj;
+    PyObject *(*CPyDef_project___main_____repr___3_TempProject_obj)(void);
+    PyObject *(*CPyDef_project___main____compile__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____compile__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config, char cpy_r_silent);
+    PyObject *(*CPyDef_project___main____create_containers__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____create_containers__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main_____getitem___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main_____getitem___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_key);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main_____len___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    CPyTagged (*CPyDef_project___main_____len___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main_____contains___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main_____contains___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_item);
+    PyObject *(*CPyDef_project___main___dict__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main___dict__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main___keys__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main___keys__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main_____init___3_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main_____init___3_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_project_path, char cpy_r_compile);
+    PyObject *(*CPyDef_project___main___load_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main___load_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, char cpy_r_raise_if_loaded, char cpy_r_compile);
+    PyObject *(*CPyDef_project___main____get_changed_contracts_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main____get_changed_contracts_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_compiled_hashes);
+    PyObject *(*CPyDef_project___main____compare_build_json_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____compare_build_json_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_contract_name);
+    PyObject *(*CPyDef_project___main____compile_interfaces_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____compile_interfaces_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_compiled_hashes);
+    PyObject *(*CPyDef_project___main____load_dependency_artifacts_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____load_dependency_artifacts_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
     PyObject *(*CPyDef_project___main_____mypyc_lambda__0__load_deployments_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     PyObject *(*CPyDef_project___main_____mypyc_lambda__0__load_deployments_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_k);
-    char (*CPyDef_project___main___Project____load_deployments)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef_project___main___Project____load_deployment_map)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main___Project____save_deployment_map)(PyObject *cpy_r_self, PyObject *cpy_r_deployment_map);
-    char (*CPyDef_project___main___Project____remove_from_deployment_map)(PyObject *cpy_r_self, PyObject *cpy_r_contract);
-    char (*CPyDef_project___main___Project____add_to_deployment_map)(PyObject *cpy_r_self, PyObject *cpy_r_contract);
-    char (*CPyDef_project___main___Project____update_and_register)(PyObject *cpy_r_self, PyObject *cpy_r_dict_);
-    char (*CPyDef_project___main___Project____add_to_main_namespace)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main___Project____remove_from_main_namespace)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef_project___main___Project_____repr__)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main___Project___load_config)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main___Project___close)(PyObject *cpy_r_self, char cpy_r_raises);
-    char (*CPyDef_project___main___Project____clear_dev_deployments)(PyObject *cpy_r_self, CPyTagged cpy_r_height);
-    char (*CPyDef_project___main___Project____revert)(PyObject *cpy_r_self, CPyTagged cpy_r_height);
-    char (*CPyDef_project___main___Project____reset)(PyObject *cpy_r_self);
-    char (*CPyDef_project___main___TempProject_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config);
-    PyObject *(*CPyDef_project___main___TempProject_____repr__)(PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main____load_deployments_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____load_deployments_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main____load_deployment_map_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main____load_deployment_map_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main____save_deployment_map_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____save_deployment_map_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_deployment_map);
+    PyObject *(*CPyDef_project___main____remove_from_deployment_map_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____remove_from_deployment_map_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_contract);
+    PyObject *(*CPyDef_project___main____add_to_deployment_map_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____add_to_deployment_map_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_contract);
+    PyObject *(*CPyDef_project___main____update_and_register_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____update_and_register_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_dict_);
+    PyObject *(*CPyDef_project___main____add_to_main_namespace_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____add_to_main_namespace_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main____remove_from_main_namespace_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____remove_from_main_namespace_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main_____repr___3_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main_____repr___3_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main___load_config_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main___load_config_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main___close_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main___close_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, char cpy_r_raises);
+    PyObject *(*CPyDef_project___main____clear_dev_deployments_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____clear_dev_deployments_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, CPyTagged cpy_r_height);
+    PyObject *(*CPyDef_project___main____revert_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____revert_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, CPyTagged cpy_r_height);
+    PyObject *(*CPyDef_project___main____reset_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main____reset_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main_____init___3_TempProject_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_project___main_____init___3_TempProject_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config);
+    PyObject *(*CPyDef_project___main_____repr___3_TempProject_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main_____repr___3_TempProject_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
     PyObject *(*CPyDef_project___main___check_for_project)(PyObject *cpy_r_path);
     PyObject *(*CPyDef_project___main___get_loaded_projects)(void);
     PyObject *(*CPyDef_project___main___new)(PyObject *cpy_r_project_path_str, char cpy_r_ignore_subfolder, char cpy_r_ignore_existing);
