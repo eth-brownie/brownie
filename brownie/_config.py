@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
-from typing import Any, Dict, Final, List, Literal, NewType, Optional
+from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -66,7 +66,7 @@ class ConfigContainer:
             if "chainid" in values:
                 self.networks[network]["chainid"] = str(values["chainid"])
 
-        self.argv = defaultdict(lambda: None)
+        self.argv: DefaultDict[str, Optional[str]] = defaultdict(lambda: None)
         self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
         self._active_network = None
 
