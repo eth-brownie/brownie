@@ -35,7 +35,7 @@ BUILD_KEYS: Final = (
     "sourcePath",
 ) + DEPLOYMENT_KEYS
 
-_revert_map: Final[Dict[int, tuple] = {}
+_revert_map: Final[Dict[int, tuple]] = {}
 
 
 @final
