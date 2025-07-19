@@ -40,7 +40,7 @@ else:
                 "brownie/convert/normalize.py",
                 "brownie/convert/utils.py",
                 "brownie/network/__init__.py",
-                "brownie/network/events.py",
+                "brownie/network/event.py",
                 "brownie/network/state.py",
                 "brownie/project",
                 "brownie/typing.py",
