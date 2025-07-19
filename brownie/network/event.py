@@ -494,7 +494,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("topics.json")
 
 
-def _get_topics(abi: List[ABIElement]) -> Dict[HexStr, TopicMapData]:
+def _get_topics(abi: List[ABIElement]) -> Topics:
     topic_map = eth_event.get_topic_map(abi)
 
     updated_topics = _topics.copy()
@@ -506,7 +506,7 @@ def _get_topics(abi: List[ABIElement]) -> Dict[HexStr, TopicMapData]:
         elif value == updated_topics[key]:
             # existing event topic, nothing has changed
             continue
-        elif not next((i for i in updated_topics[key]["inputs"] if i["indexed"]), False):
+        elif not any(i["indexed"] for i in updated_topics[key]["inputs"]):
             # existing topic, but the old abi has no indexed events - keep the new one
             updated_topics[key] = value
 
