@@ -8,7 +8,7 @@ from typing import Dict, Final, List, Optional, Type, final
 import eth_abi
 import psutil
 import yaml
-from eth_typing import ABIError, HexStr
+from eth_typing import ABIComponent, ABIElement, ABIError, HexStr
 from hexbytes import HexBytes
 
 import brownie
@@ -105,7 +105,7 @@ class VirtualMachineError(Exception):
     """
 
     def __init__(self, exc: ValueError) -> None:
-        self.txid: HexStr = ""
+        self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""
         self.pc: Optional[int] = None
@@ -129,7 +129,7 @@ class VirtualMachineError(Exception):
         exc_data = exc["data"]
         if isinstance(exc_data, str) and exc_data.startswith("0x"):
             self.revert_type = "revert"
-            self.revert_msg = decode_typed_error(exc_data)
+            self.revert_msg = decode_typed_error(exc_data)  # type: ignore [arg-type]
             return
 
         try:
@@ -146,7 +146,7 @@ class VirtualMachineError(Exception):
 
         reason = data.get("reason")
         if isinstance(reason, str) and reason.startswith("0x"):
-            self.revert_msg = decode_typed_error(reason)
+            self.revert_msg = decode_typed_error(reason)  # type: ignore [arg-type]
         else:
             self.revert_msg = reason
 
@@ -222,7 +222,7 @@ class CompilerError(Exception):
     def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
-        err_json: List[Dict[str, str]] = yaml.safe_load(e.stdout_data)
+        err_json: Dict[str, List[Dict[str, str]]] = yaml.safe_load(e.stdout_data)
         err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
         super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 
@@ -294,20 +294,21 @@ def parse_errors_from_abi(abi: List[ABIElement]):
     updated = False
     for item in abi:
         if item.get("type", "") == "error":
-            selector = build_function_selector(item)
+            selector = build_function_selector(item)  # type: ignore [arg-type]
             if selector in _errors:
                 continue
             updated = True
-            _errors[selector] = item
+            _errors[selector] = item  # type: ignore [assignment]
 
     if updated:
         with __get_path().open("w") as fp:
             json.dump(_errors, fp, sort_keys=True, indent=2)
 
-    
+__abi_component: ABIComponent = {"name": "", "type": "string"}
 _errors: Dict[HexStr, ABIError] = {
-    ERROR_SIG: {"name": "Error", "inputs": [{"name": "", "type": "string"}]}
+    ERROR_SIG: {"name": "Error", "inputs": [__abi_component]}
 }
+del __abi_component
 
 try:
     with __get_path().open() as fp:
@@ -316,8 +317,8 @@ except (FileNotFoundError, json.decoder.JSONDecodeError):
     pass
 
 
-def decode_typed_error(data: str) -> str:
-    selector = data[:10]
+def decode_typed_error(data: HexStr) -> str:
+    selector: HexStr = data[:10]  # type: ignore [assignment]
     if selector == "0x4e487b71":
         # special case, solidity compiler panics
         error_code = int(HexBytes(data[10:]).hex(), 16)
