@@ -488,7 +488,9 @@ def _find_node_by_offset(ast_json: List[Dict], offset: Tuple[int, int]) -> Optio
             if _convert_src(node["src"]) == offset:
                 return node
             node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
-            node_list.extend((x for i in node.values() if isinstance(i, list) for x in i))
+            for i in node.values():
+                if isinstance(i, list):
+                    node_list.extend(i)
             if node_list:
                 result = _find_node_by_offset(node_list, offset)
             else:
