@@ -301,7 +301,7 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict[str, str]) -> Dict:
+    def _get_changed_contracts(self, compiled_hashes: Dict[str, str]) -> Dict[str, str]:
         sources = self._sources
         build = self._build
         
