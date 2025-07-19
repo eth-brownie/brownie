@@ -81,7 +81,7 @@ _unverified_addresses: Set = set()
 class _ContractBase:
     _dir_color = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
+    def __init__(self, project: Any, build: Dict[str, Any], sources: Dict[str, Any]) -> None:
         self._project = project
         self._build = build.copy()
         self._sources = sources
@@ -1903,7 +1903,7 @@ def _get_method_object(
 def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     abi_inputs = abi["inputs"]
     types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in abi_inputs], types_list)
+    params = zip((i["name"] for i in abi_inputs), types_list)
     return ", ".join(
         f"{i[1]}{color('bright blue')}{f' {i[0]}' if i[0] else ''}{color}" for i in params
     )
@@ -1942,7 +1942,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
     return actual_bytecode == expected_bytecode
 
 
-def _print_natspec(natspec: Dict) -> None:
+def _print_natspec(natspec: Dict[str, Any]) -> None:
     wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
     for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
         wrapper.subsequent_indent = " " * (len(key) + 4)
@@ -1986,7 +1986,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     ):
         address = _resolve_address(code[120:160])
 
-    params: Dict = {
+    params: Dict[str, Any] = {
         "module": "contract",
         "action": action,
         "address": address,
