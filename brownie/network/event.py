@@ -543,7 +543,7 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
             if contracts and contracts[item.address]:
-                if note := _decode_ds_note(item, contracts[item.address]):
+                if note := _decode_ds_note(item, contracts[item.address]):  # type: ignore [arg-type]
                     events.append(note)
                     continue
             try:
@@ -559,12 +559,13 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
 
 def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> DecodedEvent:
     # ds-note encodes function selector as the first topic
-    selector, tail = log.topics[0][:4], log.topics[0][4:]
+    # TODO double check typing for `log` input
+    selector, tail = log.topics[0][:4], log.topics[0][4:]  # type: ignore [attr-defined]
     selector_hexstr = hexbytes_to_hexstring(selector)
     if selector_hexstr not in contract.selectors or sum(tail):
         return
     name = contract.selectors[selector_hexstr]
-    data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data
+    data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data  # type: ignore [attr-defined]
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
     # instead of trying them all, assume the payload starts from selector
     try:
@@ -574,7 +575,7 @@ def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> DecodedEven
     selector_hexstr = hexbytes_to_hexstring(selector)
     return {
         "name": name,
-        "address": log.address,
+        "address": log.address,  # type: ignore [attr-defined]
         "decoded": True,
         "data": [
             {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}
