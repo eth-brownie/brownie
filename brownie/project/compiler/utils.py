@@ -10,7 +10,7 @@ from brownie.typing import ContractName
 Path: Final = pathlib.Path
 
 
-def expand_source_map(source_map_str: str) -> List[List]:
+def expand_source_map(source_map_str: str) -> List[Optional[str]]:
     # Expands the compressed sourceMap supplied by solc into a list of lists
 
     if isinstance(source_map_str, dict):
@@ -19,7 +19,7 @@ def expand_source_map(source_map_str: str) -> List[List]:
     if not isinstance(source_map_str, str):
         raise TypeError(source_map_str)
 
-    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
+    source_map = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:
             source_map[i] = source_map[i - 1]
