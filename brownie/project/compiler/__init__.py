@@ -25,7 +25,7 @@ from brownie.typing import CompilerConfig, ContractName, EvmVersion, InputJson, 
 from brownie.utils import notify
 
 from . import solidity, vyper
-    
+
 STANDARD_JSON: Final[InputJson] = {
     "language": None,
     "sources": {},
@@ -52,8 +52,8 @@ sha1: Final = hashlib.sha1
 Version: Final = semantic_version.Version
 
 _from_standard_output: Final = solcast.from_standard_output
-    
-    
+
+
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
