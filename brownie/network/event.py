@@ -27,7 +27,7 @@ from typing import (
 import eth_event
 from eth_event import EventError
 from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData
-from eth_typing import ChecksumAddress, HexStr
+from eth_typing import AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
@@ -155,17 +155,17 @@ class _EventItem:
     ----------
     name : str
         Name of the event.
-    address : str
+    address : ChecksumAddress
         Address where this event fired. When the object represents more than one event,
         this value is set to `None`.
-    pos : tuple
+    pos : Tuple[int, ...]
         Tuple of indexes where this event fired.
     """
 
     def __init__(
         self,
         name: str,
-        address: Optional[str],
+        address: Optional[ChecksumAddress],
         event_data: List[Union["_EventItem", OrderedDict]],
         pos: Tuple[int, ...],
     ) -> None:
@@ -577,7 +577,7 @@ def _decode_ds_note(log: _EventItem, contract: "Contract") -> DecodedEvent:
     }
 
 
-def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
+def _decode_trace(trace: Sequence, initial_address: AnyAddress) -> EventDict:
     if not trace:
         return EventDict()
 
