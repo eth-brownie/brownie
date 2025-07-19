@@ -35,6 +35,7 @@ EVM_VERSION_MAPPING: Final = [
 
 StatementNodes = Dict[str, Set[Tuple[int, int]]]
 BranchNodes = Dict[str, Set[NodeBase]]
+BranchMap = Dict[str, Dict[str, Tuple[int, int, int]]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
@@ -315,7 +316,7 @@ def _generate_coverage_data(
     branch_nodes: BranchNodes,
     has_fallback: bool,
     instruction_count: int,
-) -> Tuple[dict, dict, dict]:
+) -> Tuple[dict, dict, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
         return {}, {}, {}
@@ -499,7 +500,7 @@ def _generate_coverage_data(
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map: Dict[str, dict] = {i: {} for i in source_nodes}
+    branch_map: BranchMap = {i: {} for i in source_nodes}
     for path, markers in branch_set.items():
         for offset, idx in markers.items()
             # for branch to be hit, need an op relating to the source and the next JUMPI
@@ -517,7 +518,7 @@ def _generate_coverage_data(
 
 
 def _find_revert_offset(
-    pc_list: List,
+    pc_list: List[dict],
     source_map: deque,
     source_node: NodeBase,
     fn_node: NodeBase,
