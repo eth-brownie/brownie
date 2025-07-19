@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
-from typing import Any, Dict, List, Literal, NewType, Optional
+from typing import Any, Dict, Final, List, Literal, NewType, Optional
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -20,20 +20,20 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
-__version__ = "1.21.0"
+__version__: Final = "1.21.0"
 
-BROWNIE_FOLDER = Path(__file__).parent
-DATA_FOLDER = Path.home().joinpath(".brownie")
+BROWNIE_FOLDER: Final = Path(__file__).parent
+DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
-DATA_SUBFOLDERS = ("accounts", "packages")
+DATA_SUBFOLDERS: Final = ("accounts", "packages")
 
-EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
+EVM_EQUIVALENTS: Final = {"atlantis": "byzantium", "agharta": "petersburg"}
 
-python_version = (
+python_version: Final = (
     f"{sys.version_info.major}.{sys.version_info.minor}"
     f".{sys.version_info.micro} {sys.version_info.releaselevel}"
 )
-REQUEST_HEADERS = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
+REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
 
 NetworkType = Literal["live", "development", None]
@@ -349,4 +349,4 @@ warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG = _Singleton("Config", (ConfigContainer,), {})()
+CONFIG: Final[ConfigContainer] = _Singleton("Config", (ConfigContainer,), {})()
