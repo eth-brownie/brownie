@@ -13,6 +13,7 @@ import cchecksum
 from eth_typing import ABIComponent, HexStr
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from hexbytes import HexBytes
+from mypy_extensions import mypyc_attr
 from typing_extensions import Self
 
 from brownie.utils import bytes_to_hexstring
@@ -35,6 +36,7 @@ UNITS: Final = {
 WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
 
 
+@mypyc_attr(native_class=False)
 class Wei(int):
     """Integer subclass that converts a value to wei and allows comparison against
     similarly formatted values.
@@ -202,6 +204,7 @@ def _to_fixed(value: Any) -> Decimal:
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.") from e
 
 
+@mypyc_attr(native_class=False)
 class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
@@ -233,6 +236,7 @@ def _address_compare(a: str, b: Any) -> bool:
     return a.lower() == b.lower()
 
 
+@mypyc_attr(native_class=False)
 class HexString(bytes):
     """Bytes subclass for hexstring comparisons. Raises TypeError if compared to
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
@@ -293,6 +297,7 @@ def _to_hex(value: Any) -> HexStr:
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
+@mypyc_attr(native_class=False)
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
