@@ -1053,7 +1053,7 @@ Contract Internal Attributes
 
 .. py:attribute:: Contract._reverted
 
-    Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
+    Boolean. Once set to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
 
 ContractEvents
 --------------
