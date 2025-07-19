@@ -497,7 +497,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("topics.json")
 
 
-def _get_topics(abi: List[ABIElement]) -> Topics:
+def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
     topic_map = eth_event.get_topic_map(abi)
 
     updated_topics = _topics.copy()
@@ -608,3 +608,4 @@ except (FileNotFoundError, json.decoder.JSONDecodeError):
 
 # general event topic ABIs for decoding events on unknown contracts
 _topics: Final[Topics] = __topics or {}
+del __topics
