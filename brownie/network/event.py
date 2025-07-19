@@ -27,7 +27,7 @@ from typing import (
 import eth_event
 from eth_event import EventError
 from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData
-from eth_typing import AnyAddress, ChecksumAddress, HexStr
+from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
