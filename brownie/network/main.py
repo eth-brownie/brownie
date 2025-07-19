@@ -18,7 +18,7 @@ chain = Chain()
 rpc = Rpc()
 
 
-def connect(network: str = None, launch_rpc: bool = True) -> None:
+def connect(network: Optional[str] = None, launch_rpc: bool = True) -> None:
     """Connects to the network.
 
     Args:
