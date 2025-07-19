@@ -494,7 +494,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("topics.json")
 
 
-def _get_topics(abi: List) -> Dict:
+def _get_topics(abi: List[ABIElement]) -> Dict[HexStr, TopicMapData]:
     topic_map = eth_event.get_topic_map(abi)
 
     updated_topics = _topics.copy()
@@ -518,7 +518,7 @@ def _get_topics(abi: List) -> Dict:
     return {v["name"]: k for k, v in topic_map.items()}
 
 
-def _add_deployment_topics(address: ChecksumAddress, abi: List) -> None:
+def _add_deployment_topics(address: ChecksumAddress, abi: List[ABIElement]) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
