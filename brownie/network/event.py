@@ -27,7 +27,7 @@ from typing import (
 
 import eth_event
 from eth_event import EventError
-from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData
+from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMap
 from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
@@ -46,8 +46,7 @@ if TYPE_CHECKING:
     from .contract import Contract
 
 
-Topics = Dict[HexStr, TopicMapData]
-DeploymentTopics = Dict[ChecksumAddress, Topics]
+DeploymentTopics = Dict[ChecksumAddress, TopicMap]
 
 
 @final
@@ -610,5 +609,5 @@ except (FileNotFoundError, json.decoder.JSONDecodeError):
     __topics = None
 
 # general event topic ABIs for decoding events on unknown contracts
-_topics: Final[Topics] = __topics or {}
+_topics: Final[TopicMap] = __topics or {}
 del __topics
