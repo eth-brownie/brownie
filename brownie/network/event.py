@@ -72,16 +72,19 @@ class EventDict:
             for pos, i in enumerate(events)
         ]
 
-        self._dict: Final[OrderedDict[str, _EventItem]] = OrderedDict()
+        _dict: OrderedDict[str, _EventItem] = OrderedDict()
         for event in self._ordered:
             event_name = event.name
-            if event_name not in self._dict:
-                self._dict[event_name] = _EventItem(
+            if event_name not in _dict:
+                events_for_name = [i for i in self._ordered if i.name == event_name]
+                _dict[event_name] = _EventItem(
                     event_name,
                     None,
-                    [i for i in self._ordered if i.name == event_name],
-                    tuple(i.pos[0] for i in events),
+                    events_for_name,
+                    tuple(i.pos[0] for i in events_for_name),
                 )
+                
+        self._dict: Final = _dict
 
     def __repr__(self) -> str:
         return str(self)
