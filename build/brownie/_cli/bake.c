@@ -4,11 +4,11 @@ PyMODINIT_FUNC
 PyInit_bake(void)
 {
     PyObject *tmp;
-    if (!(tmp = PyImport_ImportModule("1a00343eb0181a20c99d__mypyc"))) return NULL;
+    if (!(tmp = PyImport_ImportModule("42291a5fc61d44f940da__mypyc"))) return NULL;
     PyObject *capsule = PyObject_GetAttrString(tmp, "init_brownie____cli___bake");
     Py_DECREF(tmp);
     if (capsule == NULL) return NULL;
-    void *init_func = PyCapsule_GetPointer(capsule, "1a00343eb0181a20c99d__mypyc.init_brownie____cli___bake");
+    void *init_func = PyCapsule_GetPointer(capsule, "42291a5fc61d44f940da__mypyc.init_brownie____cli___bake");
     Py_DECREF(capsule);
     if (!init_func) {
         return NULL;
