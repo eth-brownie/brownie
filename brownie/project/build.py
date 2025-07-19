@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Dict, Final, ItemsView, List, Optional, Tuple, Union, final
+from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union, final
 
 from eth_utils.toolz import keymap
 
@@ -35,7 +35,7 @@ BUILD_KEYS: Final = (
     "sourcePath",
 ) + DEPLOYMENT_KEYS
 
-_revert_map: Final[Dict[int, tuple]] = {}
+_revert_map: Final[Dict[int, Union[tuple, Literal[False]]]] = {}
 
 
 @final
