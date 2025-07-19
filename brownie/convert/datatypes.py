@@ -362,7 +362,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():
