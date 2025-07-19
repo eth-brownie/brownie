@@ -313,31 +313,33 @@ def generate_build_json(
     for path_str, path_contracts in contracts.items():
         for contract_name in path_contracts:
             contract_alias = contract_name
-    
+
             if path_str in input_json["sources"]:
                 source = input_json["sources"][path_str]["content"]
             else:
                 with Path(path_str).open(encoding="utf-8") as fp:
                     source = fp.read()
                 contract_alias = _get_alias(contract_name, path_str)
-    
+
             if not silent:
                 print(f" - {contract_alias}")
-    
+
             contracts_output: dict = output_json["contracts"]
             path_output: dict = contracts_output[path_str]
             contract_output: dict = path_output[contract_name]
-            
-            natspec = merge_natspec(contract_output.get("devdoc", {}), contract_output.get("userdoc", {}))
-            
+
+            natspec = merge_natspec(
+                contract_output.get("devdoc", {}), contract_output.get("userdoc", {})
+            )
+
             abi = contract_output["abi"]
             output_evm: dict = contract_output["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
-            
+
             if contract_alias in build_json and not bytecode:
                 continue
-    
+
             if input_json["language"] == "Solidity":
                 contract_node = next(
                     i[contract_name] for i in source_nodes if i.absolutePath == path_str
@@ -347,9 +349,9 @@ def generate_build_json(
                     contract_node,
                     statement_nodes,
                     branch_nodes,
-                    next((True for i in abi if i["type"] == "fallback"), False),
+                    any(i["type"] == "fallback" for i in abi),
                 )
-    
+
             else:
                 if contract_name == "<stdin>":
                     contract_name = contract_alias = "Vyper"  # type: ignore [assignment]
@@ -360,7 +362,7 @@ def generate_build_json(
                     output_json["sources"][path_str]["ast"],
                     (0, len(source)),
                 )
-    
+
             build_json[contract_alias].update(
                 {
                     "abi": abi,
