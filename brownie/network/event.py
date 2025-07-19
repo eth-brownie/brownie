@@ -62,7 +62,7 @@ class EventDict:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
         events = list(events) if events else []
 
-        self._ordered: Final = [
+        ordered = [
             _EventItem(
                 i["name"],
                 i["address"],
@@ -71,12 +71,13 @@ class EventDict:
             )
             for pos, i in enumerate(events)
         ]
+        self._ordered: Final = ordered
 
         _dict: OrderedDict[str, _EventItem] = OrderedDict()
-        for event in self._ordered:
+        for event in ordered:
             event_name = event.name
             if event_name not in _dict:
-                events_for_name = [i for i in self._ordered if i.name == event_name]
+                events_for_name = [i for i in ordered if i.name == event_name]
                 _dict[event_name] = _EventItem(
                     event_name,
                     None,
