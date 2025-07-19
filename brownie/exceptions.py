@@ -304,9 +304,11 @@ def parse_errors_from_abi(abi: List[ABIElement]):
         with __get_path().open("w") as fp:
             json.dump(_errors, fp, sort_keys=True, indent=2)
 
+
 _errors: Dict[HexStr, ABIError] = {
     ERROR_SIG: {"name": "Error", "inputs": [{"name": "", "type": "string"}]}
 }
+
 
 try:
     with __get_path().open() as fp:
