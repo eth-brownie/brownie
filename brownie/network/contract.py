@@ -15,9 +15,11 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Final,
     Iterator,
     List,
     Match,
+    NewType,
     Optional,
     Set,
     Tuple,
@@ -73,25 +75,34 @@ from .state import (
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
+AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+
+FunctionName = NewType("FunctionName", str)
+Selector = NewType("Selector", HexStr)
+
 _unverified_addresses: Set = set()
 
 
 class _ContractBase:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
-        self._project = project
-        self._build = build.copy()
-        self._sources = sources
-        self.topics = _get_topics(self.abi)
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+    def __init__(self, project: Any, build: Dict[str, Any], sources: Dict[str, Any]) -> None:
+        self._project: Final = project
+        self._build: Final = build.copy()
+        self._sources: Final = sources
+
+        abi = self.abi
+        self.topics: Final = _get_topics(abi)
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in abi
+            if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures = {
-            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
+        self.signatures: Final[Dict[FunctionName, Selector]] = {
+            v: k for k, v in self.selectors.items()
         }
-        parse_errors_from_abi(self.abi)
+        parse_errors_from_abi(abi)
 
     @property
     def abi(self) -> List[ABIElement]:
@@ -105,8 +116,8 @@ class _ContractBase:
         """
         Display NatSpec documentation for this contract.
         """
-        if self._build.get("natspec"):
-            _print_natspec(self._build["natspec"])
+        if natspec := self._build.get("natspec"):
+            _print_natspec(natspec)
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
@@ -163,10 +174,10 @@ class ContractContainer(_ContractBase):
 
     def __init__(self, project: Any, build: Dict) -> None:
         self.tx = None
-        self.bytecode = build["bytecode"]
-        self._contracts: List["ProjectContract"] = []
+        self.bytecode: Final = HexStr(build["bytecode"])
+        self._contracts: Final[List["ProjectContract"]] = []
         super().__init__(project, build, project._sources)
-        self.deploy = ContractConstructor(self, self._name)
+        self.deploy: Final = ContractConstructor(self, self._name)
         _revert_register(self)
 
         # messes with tests if it is created on init
@@ -484,16 +495,18 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: ContractName) -> None:
-        self._parent = parent
+        self._parent: Final = parent
         try:
-            self.abi = next(i for i in parent.abi if i["type"] == "constructor")
-            self.abi["name"] = "constructor"
+            abi = next(i for i in parent.abi if i["type"] == "constructor")
         except Exception:
-            self.abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
-        self._name = name
+            abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
+        else:
+            abi["name"] = "constructor"
+        self.abi: Final = abi
+        self._name: Final = name
 
     @property
     def payable(self) -> bool:
@@ -616,10 +629,12 @@ class InterfaceConstructor:
     """
 
     def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
-        self._name = name
-        self.abi = abi
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self._name: Final = name
+        self.abi: Final = abi
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in abi
+            if i["type"] == "function"
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
@@ -765,7 +780,7 @@ class _DeployedContractBase(_ContractBase):
                 return False
         return super().__eq__(other)
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattribute__(self, name: str) -> AnyContractMethod:
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
         try:
@@ -892,7 +907,7 @@ class Contract(_DeployedContractBase):
     def _deprecated_init(
         self,
         name: ContractName,
-        address: Optional[str] = None,
+        address: Optional[ChecksumAddress] = None,
         abi: Optional[List[ABIElement]] = None,
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
@@ -1228,8 +1243,8 @@ class ProjectContract(_DeployedContractBase):
     def __init__(
         self,
         project: Any,
-        build: Dict,
-        address: str,
+        build: Dict[str, Any],
+        address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
@@ -1369,13 +1384,13 @@ class ContractEvents(_ContractEvents):
 
 class OverloadedMethod:
     def __init__(self, address: ChecksumAddress, name: str, owner: Optional[AccountsType]):
-        self._address = address
-        self._name = name
-        self._owner = owner
-        self.methods: Dict = {}
-        self.natspec: Dict = {}
+        self._address: Final = address
+        self._name: Final = name
+        self._owner: Final = owner
+        self.methods: Final[Dict[Any, Any]] = {}
+        self.natspec: Final[Dict[str, Any]] = {}
 
-    def _add_fn(self, abi: ABIFunction, natspec: Dict) -> None:
+    def _add_fn(self, abi: ABIFunction, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1396,9 +1411,9 @@ class OverloadedMethod:
             )
         return self.methods[keys[0]]
 
-    def __getitem__(self, key: tuple | str) -> Union["ContractCall", "ContractTx"]:
+    def __getitem__(self, key: Tuple[str, ...] | str) -> Union["ContractCall", "ContractTx"]:
         if isinstance(key, str):
-            key = tuple(i.strip() for i in key.split(","))
+            key = (i.strip() for i in key.split(","))
 
         key = tuple(i.replace("256", "") for i in key)
         return self.methods[key]
@@ -1500,13 +1515,12 @@ class OverloadedMethod:
         Decoded values
         """
         selector = hexbytes_to_hexstring(HexBytes(hexstr)[:4])
-
-        fn = next((i for i in self.methods.values() if i == selector), None)
-        if fn is None:
-            raise ValueError(
-                "Data cannot be decoded using any input signatures of functions of this name"
-            )
-        return fn.decode_input(hexstr)
+        for fn in self.methods.values():
+            if fn == selector:
+                return fn.decode_input(hexstr)
+        raise ValueError(
+            "Data cannot be decoded using any input signatures of functions of this name"
+        )
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1541,7 +1555,7 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(
         self,
@@ -1549,15 +1563,15 @@ class _ContractMethod:
         abi: ABIFunction,
         name: str,
         owner: Optional[AccountsType],
-        natspec: Optional[Dict] = None,
+        natspec: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._address = address
-        self._name = name
-        self.abi = abi
-        self._owner = owner
-        self.signature = build_function_selector(abi)
-        self._input_sig = build_function_signature(abi)
-        self.natspec = natspec or {}
+        self._address: Final = address
+        self._name: Final = name
+        self.abi: Final = abi
+        self._owner: Final = owner
+        self.signature: Final = build_function_selector(abi)
+        self._input_sig: Final = build_function_signature(abi)
+        self.natspec: Final[Dict[str, Any]] = natspec or {}
 
     def __repr__(self) -> str:
         pay = "payable " if self.payable else ""
@@ -1898,16 +1912,19 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner, natspec)
 
 
+_fixed168x10: Final = {"fixed168x10": "decimal"}
+
+
 def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     abi_inputs = abi["inputs"]
     types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in abi_inputs], types_list)
     return ", ".join(
-        f"{i[1]}{color('bright blue')}{f' {i[0]}' if i[0] else ''}{color}" for i in params
+        f"{types}{color('bright blue')}{f' {name}' if name else ''}{color}"
+        for name, types in zip((i["name"] for i in abi_inputs), types_list)
     )
 
 
-def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
+def _verify_deployed_code(address: HexAddress, expected_bytecode: str, language: str) -> bool:
     # removeprefix is used for compatability with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
@@ -1940,11 +1957,12 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
     return actual_bytecode == expected_bytecode
 
 
-def _print_natspec(natspec: Dict) -> None:
+def _print_natspec(natspec: Dict[str, Any]) -> None:
     wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
-    for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
-        wrapper.subsequent_indent = " " * (len(key) + 4)
-        print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
+    for key in ("title", "notice", "author", "details"):
+        if key in natspec:
+            wrapper.subsequent_indent = " " * (len(key) + 4)
+            print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
 
     for key, value in natspec.get("params", {}).items():
         wrapper.subsequent_indent = " " * 9
@@ -1961,7 +1979,7 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
-def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
+def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) -> Dict[str, Any]:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
@@ -1984,7 +2002,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     ):
         address = _resolve_address(code[120:160])
 
-    params: Dict = {
+    params: Dict[str, Any] = {
         "module": "contract",
         "action": action,
         "address": address,
@@ -2045,16 +2063,16 @@ _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 def _contract_method_autosuggest(
     args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
 ) -> List[str]:
-    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in args], types_list)
-
-    suggestions = (f" {i[1]}{f' {i[0]}' if i[0] else ''}" for i in params)
+    types_list = get_type_strings(args, _fixed168x10)
+    names = (i["name"] for i in args)
+    suggestions = [f" {typ}{f' {name}' if name else ''}" for name, typ in zip(names, types_list)]
     if not is_transaction:
-        return list(suggestions)
-    elif is_payable:
-        return [*suggestions, " {'from': Account", " 'value': Wei}"]
+        return suggestions
+    if is_payable:
+        suggestions.append(" {'from': Account", " 'value': Wei}")
     else:
-        return [*suggestions, " {'from': Account}"]
+        suggestions.append(" {'from': Account}")
+    return suggestions
 
 
 def _comment_slicer(match: Match) -> str:

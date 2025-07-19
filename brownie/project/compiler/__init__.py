@@ -198,12 +198,13 @@ def generate_input_json(
 
     input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
-    input_json["settings"]["evmVersion"] = evm_version
+    settings: dict = input_json["settings"]
+    settings["evmVersion"] = evm_version
     if language == "Solidity":
-        input_json["settings"]["optimizer"] = optimizer
-        input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
+        settings["optimizer"] = optimizer
+        settings["remappings"] = _get_solc_remappings(remappings)
         if viaIR is not None:
-            input_json["settings"]["viaIR"] = viaIR
+            settings["viaIR"] = viaIR
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
@@ -227,7 +228,12 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
         pathname = path.name
-        key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
+        key = None
+        for k, v in remap_dict.items():
+            if v.startswith(pathname):
+                key = k
+                break
+        
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
@@ -308,37 +314,33 @@ def generate_build_json(
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     sources: dict = input_json["sources"]
-    contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
-
+    contracts: Dict[str, Dict[str, dict]] = output_json["contracts"]
     for path_str, path_contracts in contracts.items():
-        for contract_name in path_contracts:
-            contract_alias = contract_name
+        if path_str in sources:
+            source = sources[path_str]["content"]
+            get_alias = False
+        else:
+            with Path(path_str).open(encoding="utf-8") as fp:
+                source = fp.read()
+            get_alias = True
     
-            if path_str in input_json["sources"]:
-                source = input_json["sources"][path_str]["content"]
-            else:
-                with Path(path_str).open(encoding="utf-8") as fp:
-                    source = fp.read()
-                contract_alias = _get_alias(contract_name, path_str)
+        for contract_name, contract in path_contracts.items():
+            contract_alias = _get_alias(contract_name, path_str) if get_alias else contract_name
     
             if not silent:
                 print(f" - {contract_alias}")
-    
-            contracts_output: dict = output_json["contracts"]
-            path_output: dict = contracts_output[path_str]
-            contract_output: dict = path_output[contract_name]
-            
-            natspec = merge_natspec(contract_output.get("devdoc", {}), contract_output.get("userdoc", {}))
-            
-            abi = contract_output["abi"]
-            output_evm: dict = contract_output["evm"]
+
+            abi: List[dict] = contract["abi"]
+            natspec = merge_natspec(
+                contract.get("devdoc", {}),
+                contract.get("userdoc", {}),
+            )
+            output_evm: dict = contract["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
-            bytecode: HexStr = deployed_bytecode["object"]
-            
-            if contract_alias in build_json and not bytecode:
+            if contract_alias in build_json and not deployed_bytecode["object"]:
                 continue
     
-            if input_json["language"] == "Solidity":
+            if language == "Solidity":
                 contract_node = next(
                     i[contract_name] for i in source_nodes if i.absolutePath == path_str
                 )
@@ -352,24 +354,24 @@ def generate_build_json(
     
             else:
                 if contract_name == "<stdin>":
-                    contract_name = contract_alias = "Vyper"  # type: ignore [assignment]
+                    contract_name = contract_alias = "Vyper"
                 build_json[contract_alias] = vyper._get_unique_build_json(
                     output_evm,
                     path_str,
                     contract_alias,
-                    output_json["sources"][path_str]["ast"],
+                    sources[path_str]["ast"],
                     (0, len(source)),
                 )
     
             build_json[contract_alias].update(
                 {
                     "abi": abi,
-                    "ast": output_json["sources"][path_str]["ast"],
+                    "ast": sources[path_str]["ast"],
                     "compiler": compiler_data,
                     "contractName": contract_name,
-                    "deployedBytecode": bytecode,
+                    "deployedBytecode": deployed_bytecode["object"],
                     "deployedSourceMap": deployed_bytecode["sourceMap"],
-                    "language": input_json["language"],
+                    "language": language,
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
                     "sha1": sha1(source.encode()).hexdigest(),
@@ -444,24 +446,37 @@ def get_abi(
         if Path(k).suffix == ".json"
     }
 
-    for path, source in [(k, v) for k, v in contract_sources.items() if Path(k).suffix == ".vy"]:
-        input_json = generate_input_json({path: source}, language="Vyper")
-        input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
-        try:
-            output_json = compile_from_input_json(input_json, silent, allow_paths)
-        except Exception:
-            # vyper interfaces do not convert to ABIs
-            # https://github.com/vyperlang/vyper/issues/1944
-            continue
-        name = Path(path).stem
-        final_output[name] = {
-            "abi": output_json["contracts"][path][name]["abi"],
-            "contractName": name,
-            "type": "interface",
-            "source": source,
-            "offset": [0, len(source)],
-            "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-        }
+    for path, source in contract_sources.items():
+        if Path(path).suffix == ".vy":
+            input_json = generate_input_json({path: source}, language="Vyper")
+            
+            # this helper is for mypyc compiler
+            dict_helper: dict = input_json["settings"]
+            dict_helper = dict_helper["outputSelection"]
+
+            output_selection = dict_helper
+            output_selection["*"] = {"*": ["abi"]}
+            
+            try:
+                output_json = compile_from_input_json(input_json, silent, allow_paths)
+            except Exception:
+                # vyper interfaces do not convert to ABIs
+                # https://github.com/vyperlang/vyper/issues/1944
+                continue
+            name = Path(path).stem
+            
+            dict_helper = output_json["contracts"]
+            dict_helper = dict_helper[path]
+            dict_helper = dict_helper[name]
+            
+            final_output[name] = {
+                "abi": dict_helper["abi"],
+                "contractName": name,
+                "type": "interface",
+                "source": source,
+                "offset": [0, len(source)],
+                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+            }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
 
@@ -481,28 +496,31 @@ def get_abi(
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
-        source_nodes = solcast.from_standard_output(output_json)
-        abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        output_sources: dict = output_json["sources"]
+        source_nodes = _from_standard_output(output_json)
+        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
-        for path, name, data in [(k, x, y) for k, v in abi_json.items() for x, y in v.items()]:
-            contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
-            dependencies = []
-            for node in [
-                i for i in contract_node.dependencies if i.nodeType == "ContractDefinition"
-            ]:
-                dependency_name = node.name
-                path_str = node.parent().absolutePath
-                dependencies.append(_get_alias(dependency_name, path_str))
-
-            final_output[name] = {
-                "abi": data["abi"],
-                "ast": output_json["sources"][path]["ast"],
-                "contractName": name,
-                "dependencies": dependencies,
-                "type": "interface",
-                "source": contract_sources[path],
-                "offset": contract_node.offset,
-                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-            }
+        for path, path_data in abi_json.items():
+            path_source: str = contract_sources[path]
+            ast = output_sources[path]["ast"]
+            for name, data in path_data.items():
+                contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
+                dependencies = []
+                for node in contract_node.dependencies:
+                    if node.nodeType == "ContractDefinition":
+                        dependency_name = node.name
+                        path_str = node.parent().absolutePath
+                        dependencies.append(_get_alias(dependency_name, path_str))
+    
+                final_output[name] = {
+                    "abi": data["abi"],
+                    "ast": ast,
+                    "contractName": name,
+                    "dependencies": dependencies,
+                    "type": "interface",
+                    "source": path_source,
+                    "offset": contract_node.offset,
+                    "sha1": sha1(path_source.encode()).hexdigest(),
+                }
 
     return final_output

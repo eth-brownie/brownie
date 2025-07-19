@@ -9,7 +9,7 @@ import warnings
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
-from typing import Any, Dict, List, Literal, NewType, Optional
+from typing import Any, Dict, Final, List, Literal, NewType, Optional
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -20,27 +20,28 @@ from hypothesis.database import DirectoryBasedExampleDatabase
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
-__version__ = "1.21.0"
+__version__: Final = "1.21.0"
 
-BROWNIE_FOLDER = Path(__file__).parent
-DATA_FOLDER = Path.home().joinpath(".brownie")
+BROWNIE_FOLDER: Final = Path(__file__).parent
+DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
-DATA_SUBFOLDERS = ("accounts", "packages")
+DATA_SUBFOLDERS: Final = ("accounts", "packages")
 
-EVM_EQUIVALENTS = {"atlantis": "byzantium", "agharta": "petersburg"}
+EVM_EQUIVALENTS: Final = {"atlantis": "byzantium", "agharta": "petersburg"}
 
-python_version = (
+python_version: Final = (
     f"{sys.version_info.major}.{sys.version_info.minor}"
     f".{sys.version_info.micro} {sys.version_info.releaselevel}"
 )
-REQUEST_HEADERS = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
+REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
 
 NetworkType = Literal["live", "development", None]
 NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
+# TODO: make this a typed dict
 
 
-class ConfigContainer:
+class Config(metaclass=_Singleton):
     def __init__(self) -> None:
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
         if Path.home().joinpath("brownie-config.yaml").exists():
@@ -49,26 +50,30 @@ class ConfigContainer:
 
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
 
-        self.networks = {}
+        networks: Dict[str, dict] = {}
+        self.networks: Final = networks
+
         for value in network_config["development"]:
             key = value["id"]
-            if key in self.networks:
+            if key in networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
-            self.networks[key] = value
-        for value in [x for i in network_config["live"] for x in i["networks"]]:
-            key = value["id"]
-            if key in self.networks:
-                raise ValueError(f"Multiple networks using ID '{key}'")
-            self.networks[key] = value
+            networks[key] = value
+        
+        for chain in network_config["live"]:
+            for network in chain:
+                key = network["id"]
+                if key in networks:
+                    raise ValueError(f"Multiple networks using ID '{key}'")
+                networks[key] = value
 
         # make sure chainids are always strings
-        for network, values in self.networks.items():
-            if "chainid" in values:
-                self.networks[network]["chainid"] = str(values["chainid"])
+        for settings in networks.values():
+            if "chainid" in settings:
+                settings["chainid"] = str(settings["chainid"])
 
-        self.argv = defaultdict(lambda: None)
-        self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
-        self._active_network = None
+        self.argv: Final = defaultdict(lambda: None)
+        self.settings: Final = ConfigDict(base_config)
+        self._active_network: Optional[NetworkConfig] = None
 
         self.settings._lock()
         _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
@@ -84,20 +89,21 @@ class ConfigContainer:
 
         if (
             key == "development"
-            and isinstance(network["cmd_settings"], dict)
-            and "fork" in network["cmd_settings"]
+            and isinstance(cmd_settings := network["cmd_settings"], dict)
+            and "fork" in cmd_settings
         ):
 
-            fork = network["cmd_settings"]["fork"]
+            fork = cmd_settings["fork"]
             if fork in self.networks:
-                network["cmd_settings"]["fork"] = self.networks[fork]["host"]
-                network["chainid"] = self.networks[fork]["chainid"]
-                if "chain_id" not in network["cmd_settings"]:
-                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chainid"])
-                if "explorer" in self.networks[fork]:
-                    network["explorer"] = self.networks[fork]["explorer"]
+                fork_settings: dict = self.networks[fork]
+                cmd_settings["fork"] = fork_settings["host"]
+                network["chainid"] = fork_settings["chainid"]
+                if "chain_id" not in cmd_settings:
+                    cmd_settings["chain_id"] = int(fork_settings["chainid"])
+                if "explorer" in fork_settings:
+                    network["explorer"] = fork_settings["explorer"]
 
-            network["cmd_settings"]["fork"] = os.path.expandvars(network["cmd_settings"]["fork"])
+            cmd_settings["fork"] = os.path.expandvars(cmd_settings["fork"])
 
         self._active_network = network
         return network
@@ -122,7 +128,7 @@ class ConfigContainer:
         return self.argv["cli"]
 
 
-class ConfigDict(Dict[str, Any]):
+class ConfigDict(Dict[str, Any], metaclass=_Singleton):
     """Dict subclass that prevents adding new keys when locked"""
 
     def __init__(self, values: Dict[str, Any] = {}) -> None:
@@ -317,7 +323,7 @@ def _recursive_update(original: Dict, new: Dict) -> None:
             original[k] = new[k]
 
 
-def _update_argv_from_docopt(args: Dict) -> None:
+def _update_argv_from_docopt(args: Dict[str, Any]) -> None:
     CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
 
 
@@ -349,4 +355,4 @@ warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG = _Singleton("Config", (ConfigContainer,), {})()
+CONFIG: Final = Config()
