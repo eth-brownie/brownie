@@ -167,7 +167,7 @@ class _EventItem:
         self,
         name: str,
         address: Optional[ChecksumAddress],
-        event_data: List[Union["_EventItem", OrderedDict]],
+        event_data: List["_EventItem"] | List[OrderedDict],
         pos: Tuple[int, ...],
     ) -> None:
         self.name: Final = name
