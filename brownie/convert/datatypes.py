@@ -302,25 +302,26 @@ class ReturnValue(tuple):
     def __new__(cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None) -> "ReturnValue":
         values = list(values)
         for i in range(len(values)):
-            if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):
+            value = values[i]
+            if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
                 if abi is not None and "components" in abi[i]:
                     if abi[i]["type"] == "tuple":
                         # tuple
-                        values[i] = ReturnValue(values[i], abi[i]["components"])
+                        values[i] = ReturnValue(value, abi[i]["components"])
                     else:
                         # array of tuples
                         inner_abi = abi[i].copy()
                         inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
-                        final_abi = [deepcopy(inner_abi) for i in range(len(values[i]))]
+                        final_abi = [deepcopy(inner_abi) for i in range(len(value))]
                         if inner_abi.get("name"):
                             name = inner_abi["name"]
                             for x in range(len(final_abi)):
                                 final_abi[x]["name"] = f"{name}[{x}]"
 
-                        values[i] = ReturnValue(values[i], final_abi)
+                        values[i] = ReturnValue(value, final_abi)
                 else:
                     # array
-                    values[i] = ReturnValue(values[i])
+                    values[i] = ReturnValue(value)
 
         self = super().__new__(cls, values)  # type: ignore
         self._abi = abi or []
