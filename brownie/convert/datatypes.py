@@ -296,7 +296,7 @@ def _to_hex(value: Any) -> HexStr:
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List[ABIComponent]] = None
+    _abi: List[ABIComponent]
     _dict: Dict[str, Any] = {}
 
     def __new__(cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None) -> "ReturnValue":
@@ -323,7 +323,7 @@ class ReturnValue(tuple):
                     values[i] = ReturnValue(values[i])
 
         self = super().__new__(cls, values)  # type: ignore
-        self._abi: Final[List[ABIComponent]] = abi or []
+        self._abi = abi or []
         self._dict: Final = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
 
         return self
