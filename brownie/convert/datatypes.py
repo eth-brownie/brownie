@@ -2,7 +2,18 @@
 
 from copy import deepcopy
 from decimal import Decimal, getcontext
-from typing import Any, Dict, Final, ItemsView, KeysView, List, Optional, Sequence, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Final,
+    ItemsView,
+    KeysView,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
 try:
     from vyper.exceptions import DecimalOverrideException
