@@ -35,6 +35,7 @@ else:
             [
                 "brownie/_cli",
                 "brownie/_expansion.py",
+                "brownie/exceptions.py",
                 "brownie/convert/__init__.py",
                 "brownie/convert/main.py",
                 "brownie/convert/normalize.py",
