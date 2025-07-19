@@ -542,12 +542,15 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
 
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
-            if contracts and contracts[item.address]:
-                if note := _decode_ds_note(item, contracts[item.address]):  # type: ignore [arg-type]
-                    events.append(note)
-                    continue
+            if contracts:
+                contract = contracts[item.address]
+                if contract is not None:
+                    note = _decode_ds_note(item, contract)  # type: ignore [arg-type]
+                    if note is not None: 
+                        events.append(note)
+                        continue
             try:
-                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
+                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))  # type: ignore [arg-type]
             except EventError as exc:
                 warnings.warn(f"{address}: {exc}")
 
