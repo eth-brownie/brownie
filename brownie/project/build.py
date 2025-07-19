@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Final, ItemsView, List, Optional, Tuple, Union, final
+from typing import Any, Dict, Final, ItemsView, List, Optional, Tuple, Union, final
 
 from eth_utils.toolz import keymap
 
