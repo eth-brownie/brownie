@@ -27,7 +27,7 @@ from typing import (
 
 import eth_event
 from eth_event import EventError
-from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMap
+from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData
 from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from .contract import Contract
 
 
+TopicMap = Dict[HexStr, TopicMapData]
 DeploymentTopics = Dict[ChecksumAddress, TopicMap]
 
 
@@ -543,14 +544,14 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
             if contracts:
-                contract = contracts[item.address]
+                contract = contracts[item.address]  # type: ignore [index]
                 if contract is not None:
                     note = _decode_ds_note(item, contract)  # type: ignore [arg-type]
                     if note is not None: 
                         events.append(note)
                         continue
             try:
-                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
+                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))  # type: ignore [arg-type]
             except EventError as exc:
                 warnings.warn(f"{address}: {exc}")
 
