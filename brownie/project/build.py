@@ -40,18 +40,18 @@ BUILD_KEYS: Final = (
 
 _revert_map: Final[Dict[int, Union[tuple, Literal[False]]]] = {}
 
-class _Bytecode(TypedDict, total=False):
+class BytecodeJSON(TypedDict, total=False):
     object: HexStr
 
 class BuildJSON(TypedDict, total=False):
+    type: Literal["contract", "interface"]
     contractName: ContractName
-    type: Literal["interface"]
+    language: Language
     sourcePath: str
     pcMap: Dict[str | int, Any]
-    language: Language
     allSourcePaths: Dict[str, Any]
     offset: tuple
-    bytecode: _Bytecode
+    bytecode: BytecodeJSON
     bytecodeSha1: HexStr
     
 @final
