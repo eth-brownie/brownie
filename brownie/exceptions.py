@@ -8,7 +8,7 @@ from typing import Dict, Final, List, Optional, Type, final
 import eth_abi
 import psutil
 import yaml
-from eth_typing import ABIComponent, ABIElement, ABIError, HexStr
+from eth_typing import ABIElement, ABIError, HexStr
 from hexbytes import HexBytes
 
 import brownie
@@ -304,11 +304,9 @@ def parse_errors_from_abi(abi: List[ABIElement]):
         with __get_path().open("w") as fp:
             json.dump(_errors, fp, sort_keys=True, indent=2)
 
-__abi_component: ABIComponent = {"name": "", "type": "string"}
 _errors: Dict[HexStr, ABIError] = {
-    ERROR_SIG: {"name": "Error", "inputs": [__abi_component]}
+    ERROR_SIG: {"name": "Error", "inputs": [{"name": "", "type": "string"}]}
 }
-del __abi_component
 
 try:
     with __get_path().open() as fp:
