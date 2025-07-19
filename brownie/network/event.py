@@ -549,7 +549,7 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
                         events.append(note)
                         continue
             try:
-                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))  # type: ignore [arg-type]
+                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
             except EventError as exc:
                 warnings.warn(f"{address}: {exc}")
 
