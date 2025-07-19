@@ -494,22 +494,23 @@ def _generate_coverage_data(
         for node in revert_nodes:
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
-            if not next((x for x in pc_list if "offset" in x and x["offset"] == offset), False):
+            if not any("offset" in x and x["offset"] == offset for x in pc_list):
                 pc_list[values[0]].update(offset=offset, jump_revert=True)
                 del values[0]
 
     # set branch index markers and build final branch map
     branch_map: Dict[str, dict] = {i: {} for i in source_nodes}
-    for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
-        # for branch to be hit, need an op relating to the source and the next JUMPI
-        # this is because of how the compiler optimizes nested BinaryOperations
-        if "fn" in pc_list[idx[0]]:
-            fn = pc_list[idx[0]]["fn"]
-            pc_list[idx[0]]["branch"] = count
-            pc_list[idx[1]]["branch"] = count
-            node = next(i for i in branch_original[path] if i.offset == offset)
-            branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
-            count += 1
+    for path, markers in branch_set.items():
+        for offset, idx in markers.items()
+            # for branch to be hit, need an op relating to the source and the next JUMPI
+            # this is because of how the compiler optimizes nested BinaryOperations
+            if "fn" in pc_list[idx[0]]:
+                fn = pc_list[idx[0]]["fn"]
+                pc_list[idx[0]]["branch"] = count
+                pc_list[idx[1]]["branch"] = count
+                node = next(i for i in branch_original[path] if i.offset == offset)
+                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
+                count += 1
 
     pc_map = {i.pop("pc"): i for i in pc_list}
     return pc_map, statement_map, branch_map
