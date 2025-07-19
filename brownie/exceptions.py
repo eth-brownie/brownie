@@ -144,9 +144,11 @@ class VirtualMachineError(Exception):
         if self.pc and self.revert_type == "revert":
             self.pc -= 1
 
-        self.revert_msg = data.get("reason")
-        if isinstance(data.get("reason"), str) and data["reason"].startswith("0x"):
-            self.revert_msg = decode_typed_error(data["reason"])
+        reason = data.get("reason")
+        if isinstance(reason, str) and reason.startswith("0x"):
+            self.revert_msg = decode_typed_error(reason)
+        else:
+            self.revert_msg = reason
 
         self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
         if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
