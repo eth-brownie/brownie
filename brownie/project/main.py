@@ -620,7 +620,9 @@ def new(
 
 
 def from_brownie_mix(
-    project_name: str, project_path: Optional[Path | str] = None, ignore_subfolder: bool = False
+    project_name: str,
+    project_path: Optional[Path | str] = None,
+    ignore_subfolder: bool = False,
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
