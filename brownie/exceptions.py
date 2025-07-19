@@ -222,7 +222,7 @@ class CompilerError(Exception):
     def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
-        err_json = yaml.safe_load(e.stdout_data)
+        err_json: List[Dict[str, str]] = yaml.safe_load(e.stdout_data)
         err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
         super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 
