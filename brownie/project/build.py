@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
 from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union, final
 
