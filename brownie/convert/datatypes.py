@@ -296,10 +296,12 @@ def _to_hex(value: Any) -> HexStr:
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: List[ABIComponent]
+    _abi: Optional[List[ABIComponent]] = None
     _dict: Dict[str, Any] = {}
 
-    def __new__(cls, values: Sequence, abi: Optional[Sequence[ABIComponent]] = None) -> "ReturnValue":
+    def __new__(
+        cls, values: Sequence[Any], abi: Optional[Sequence[ABIComponent]] = None
+    ) -> "ReturnValue":
         values = list(values)
         for i in range(len(values)):
             value = values[i]
@@ -323,9 +325,9 @@ class ReturnValue(tuple):
                     # array
                     values[i] = ReturnValue(value)
 
-        self = super().__new__(cls, values)  # type: ignore
+        self = super().__new__(cls, values)
         self._abi = abi or []
-        self._dict: Final = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
+        self._dict = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
 
         return self
 
@@ -342,7 +344,7 @@ class ReturnValue(tuple):
         if type(key) is slice:
             abi = None
             if self._abi is not None:
-                abi = deepcopy(self._abi)[key]  # type: ignore
+                abi = deepcopy(self._abi)[key]
             result = super().__getitem__(key)
             return ReturnValue(result, abi)
         if isinstance(key, int):
@@ -363,7 +365,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():
@@ -386,13 +388,13 @@ class ReturnValue(tuple):
                 continue
         raise ValueError(f"{value} is not in ReturnValue")
 
-    def items(self) -> ItemsView:
+    def items(self) -> ItemsView[str, Any]:
         """ReturnValue.items() -> a set-like object providing a view on ReturnValue's named items"""
-        return self._dict.items()  # type: ignore
+        return self._dict.items()
 
-    def keys(self) -> KeysView:
+    def keys(self) -> KeysView[str]:
         """ReturnValue.keys() -> a set-like object providing a view on ReturnValue's keys"""
-        return self._dict.keys()  # type: ignore
+        return self._dict.keys()
 
 
 def _kwargtuple_compare(a: Any, b: Any) -> bool:
