@@ -592,7 +592,10 @@ def _decode_trace(trace: Sequence[StructLog], initial_address: AnyAddress) -> Ev
         return EventDict()
 
     events = eth_event.decode_traceTransaction(
-        trace, _topics, allow_undecoded=True, initial_address=initial_address
+        trace if type(trace) is list else list(trace),
+        _topics,
+        allow_undecoded=True,
+        initial_address=initial_address,
     )
     return EventDict(format_event(event) for event in events)
 
