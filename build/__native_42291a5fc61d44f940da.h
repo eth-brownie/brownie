@@ -1651,8 +1651,6 @@ struct export_table_42291a5fc61d44f940da {
     char (*CPyDef_flattener_____top_level__)(void);
     PyObject **CPyStatic_project___main___BUILD_FOLDERS;
     PyObject **CPyStatic_project___main____loaded_projects;
-    PyObject **CPyStatic_project___main___brownie___project___main____stream_download___headers;
-    PyObject **CPyStatic_project___main___brownie___project___main____get_mix_default_branch___headers;
     PyTypeObject **CPyType_project___main____ProjectBase;
     PyTypeObject **CPyType_project___main___Project;
     PyTypeObject **CPyType_project___main___TempProject;
