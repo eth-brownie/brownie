@@ -557,13 +557,13 @@ def _decode_logs(logs: List[_EventItem], contracts: Optional[Dict[ChecksumAddres
     return EventDict(format_event(event) for event in events)
 
 
-def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> DecodedEvent:
+def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> Optional[DecodedEvent]:
     # ds-note encodes function selector as the first topic
     # TODO double check typing for `log` input
     selector, tail = log.topics[0][:4], log.topics[0][4:]  # type: ignore [attr-defined]
     selector_hexstr = hexbytes_to_hexstring(selector)
     if selector_hexstr not in contract.selectors or sum(tail):
-        return
+        return None
     name = contract.selectors[selector_hexstr]
     data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data  # type: ignore [attr-defined]
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
@@ -571,7 +571,7 @@ def _decode_ds_note(log: Mapping[str, Any], contract: "Contract") -> DecodedEven
     try:
         func, args = contract.decode_input(data[data.index(selector) :])
     except ValueError:
-        return
+        return None
     selector_hexstr = hexbytes_to_hexstring(selector)
     return {
         "name": name,
