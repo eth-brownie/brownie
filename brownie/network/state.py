@@ -21,7 +21,7 @@ from typing import (
     final,
 )
 
-from eth_typing import BlockNumber, HexStr
+from eth_typing import BlockNumber, ChecksumAddress, HexStr
 from eth_utils.toolz import keymap
 from web3.types import BlockData
 
@@ -40,8 +40,8 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import _DeployedContractBase, Contract
 
-_contract_map: Dict = {}
-_revert_refs: List = []
+_contract_map: Final[Dict[ChecksumAddress, "Contract"]] = {}
+_revert_refs: Final[List[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
@@ -109,12 +109,12 @@ class TxHistory(metaclass=_Singleton):
         else:
             self._list.clear()
 
-    def copy(self) -> List:
+    def copy(self) -> List[TransactionReceipt]:
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
     def filter(
-        self, key: Optional[Callable] = None, **kwargs: Optional[Any]
+        self, key: Optional[Callable] = None, **kwargs: Any
     ) -> List[TransactionReceipt]:
         """
         Return a filtered list of transactions.
@@ -138,7 +138,7 @@ class TxHistory(metaclass=_Singleton):
         result = (i for i in self._list if all(getattr(i, k) == v for k, v in kwargs.items()))
         return list(result if key is None else filter(key, result))
 
-    def wait(self, key: Optional[Callable] = None, **kwargs: Optional[Any]) -> None:
+    def wait(self, key: Optional[Callable] = None, **kwargs: Any) -> None:
         """
         Wait for pending transactions to confirm.
 
@@ -163,15 +163,15 @@ class TxHistory(metaclass=_Singleton):
                 return
             pending._confirmed.wait()
 
-    def from_sender(self, account: str) -> List:
+    def from_sender(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: str) -> List:
+    def to_receiver(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: str) -> List:
+    def of_address(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
@@ -258,10 +258,10 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return block
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[BlockData]:
         return iter(web3.eth.get_block(i) for i in range(web3.eth.block_number + 1))
 
-    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
+    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator[BlockData]:
         """
         Generator for iterating over new blocks.
 
@@ -334,7 +334,7 @@ class Chain(metaclass=_Singleton):
         _notify_registry()
         return id_
 
-    def _add_to_undo_buffer(self, tx: Any, fn: Any, args: Tuple, kwargs: Dict) -> None:
+    def _add_to_undo_buffer(self, tx: TransactionReceipt, fn: Any, args: Tuple, kwargs: Dict) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
             self._undo_buffer.append((self._current_id, fn, args, kwargs))
@@ -572,20 +572,22 @@ def _notify_registry(height: Optional[BlockNumber] = None) -> None:
             obj._reset()
 
 
-def _find_contract(address: Any) -> Any:
+def _find_contract(address: ChecksumAddress) -> Optional[Contract]:
     if address is None:
         return
 
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
-    if "chainid" in CONFIG.active_network:
-        try:
-            from brownie.network.contract import Contract
+    if "chainid" not in CONFIG.active_network:
+        return None
+    
+    from brownie.network.contract import Contract
 
-            return Contract(address)
-        except (ValueError, CompilerError):
-            pass
+    try:
+        return Contract(address)
+    except (ValueError, CompilerError):
+        return None
 
 
 def _get_current_dependencies() -> List:

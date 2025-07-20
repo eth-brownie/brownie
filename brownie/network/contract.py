@@ -59,7 +59,7 @@ from brownie.exceptions import (
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, ContractName, Language, TransactionReceiptType
-from brownie.utils import color, hexbytes_to_hexstring
+from brownie.utils import bright_blue, bright_magenta, color, hexbytes_to_hexstring
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher
@@ -1912,7 +1912,7 @@ def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
     params = zip([i["name"] for i in abi_inputs], types_list)
     return ", ".join(
-        f"{i[1]}{color('bright blue')}{f' {i[0]}' if i[0] else ''}{color}" for i in params
+        f"{i[1]}{bright_blue}{f' {i[0]}' if i[0] else ''}{color}" for i in params
     )
 
 
@@ -1950,14 +1950,14 @@ def _verify_deployed_code(address: ChecksumAddress, expected_bytecode: HexStr, l
 
 
 def _print_natspec(natspec: Dict[str, Any]) -> None:
-    wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
+    wrapper = TextWrapper(initial_indent=f"  {bright_magenta}")
     for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
         wrapper.subsequent_indent = " " * (len(key) + 4)
         print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
 
     for key, value in natspec.get("params", {}).items():
         wrapper.subsequent_indent = " " * 9
-        print(wrapper.fill(f"@param {color('bright blue')}{key}{color} {value}"))
+        print(wrapper.fill(f"@param {bright_blue}{key}{color} {value}"))
 
     if "return" in natspec:
         wrapper.subsequent_indent = " " * 10
@@ -2010,7 +2010,7 @@ def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) ->
             BrownieEnvironmentWarning,
         )
     if not silent:
-        print(f"Fetching source of {color('bright blue')}{address}{color} from Etherscan...")
+        print(f"Fetching source of {bright_blue}{address}{color} from Etherscan...")
 
     response = requests.get(
         "https://api.etherscan.io/v2/api", params=params, headers=REQUEST_HEADERS

@@ -10,7 +10,7 @@ from semantic_version import NpmSpec
 from vvm.utils.convert import to_vyper_version
 
 from brownie.exceptions import NamespaceCollision, PragmaError
-from brownie.utils import color
+from brownie.utils import color, dark_white
 
 
 class Sources:
@@ -151,20 +151,20 @@ def highlight_source(
     pad_stop = newlines[min(pad_stop + pad, len(newlines) - 1)]
 
     final = textwrap.indent(
-        f"{color('dark white')}"
+        f"{dark_white}"
         + textwrap.dedent(
             f"{source[pad_start:offset[0]]}{color}"
-            f"{source[offset[0]:offset[1]]}{color('dark white')}{source[offset[1]:pad_stop]}{color}"
+            f"{source[offset[0]:offset[1]]}{dark_white}{source[offset[1]:pad_stop]}{color}"
         ),
         "    ",
     )
 
     count = source[pad_start : offset[0]].count("\n")
-    final = final.replace("\n ", f"\n{color('dark white')} ", count)
+    final = final.replace("\n ", f"\n{dark_white} ", count)
     count = source[offset[0] : offset[1]].count("\n")
     final = final.replace("\n ", f"\n{color} ", count)
     count = source[offset[1] : pad_stop].count("\n")
-    final = final.replace("\n ", f"\n{color('dark white')} ", count)
+    final = final.replace("\n ", f"\n{dark_white} ", count)
 
     # prepend with a newline if the offset starts on the first line
     if offset[0] < newlines[1]:

@@ -8,7 +8,7 @@ from typing import Any, Dict, Tuple
 import yaml
 
 from brownie._config import CONFIG, _get_data_folder
-from brownie.utils import color, notify
+from brownie.utils import bright_black, bright_magenta, color, green, notify
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie networks <command> [<arguments> ...] [options]
@@ -113,7 +113,7 @@ def _list(verbose=False):
 
 def _add(env, id_, *args):
     if id_ in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' already exists")
+        raise ValueError(f"Network '{bright_magenta}{id_}{color}' already exists")
 
     args_dict = _parse_args(args)
 
@@ -151,14 +151,14 @@ def _add(env, id_, *args):
         yaml.dump(networks, fp)
 
     notify(
-        "SUCCESS", f"A new network '{color('bright magenta')}{new['name']}{color}' has been added"
+        "SUCCESS", f"A new network '{bright_magenta}{new['name']}{color}' has been added"
     )
     _print_verbose_network_description(new, True)
 
 
 def _modify(id_, *args):
     if id_ not in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
+        raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
     args_dict = _parse_args(args)
 
@@ -190,14 +190,14 @@ def _modify(id_, *args):
         yaml.dump(networks, fp)
 
     notify(
-        "SUCCESS", f"Network '{color('bright magenta')}{target['name']}{color}' has been modified"
+        "SUCCESS", f"Network '{bright_magenta}{target['name']}{color}' has been modified"
     )
     _print_verbose_network_description(target, True)
 
 
 def _delete(id_):
     if id_ not in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
+        raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -212,7 +212,7 @@ def _delete(id_):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify("SUCCESS", f"Network '{color('bright magenta')}{id_}{color}' has been deleted")
+    notify("SUCCESS", f"Network '{bright_magenta}{id_}{color}' has been deleted")
 
 
 def _import(path_str, replace=False):
@@ -262,7 +262,7 @@ def _import(path_str, replace=False):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(old_networks, fp)
 
-    notify("SUCCESS", f"Network settings imported from '{color('bright magenta')}{path}{color}'")
+    notify("SUCCESS", f"Network settings imported from '{bright_magenta}{path}{color}'")
 
 
 def _export(path_str):
@@ -276,7 +276,7 @@ def _export(path_str):
         path = path.with_suffix(".yaml")
     shutil.copy(_get_data_folder().joinpath("network-config.yaml"), path)
 
-    notify("SUCCESS", f"Network settings exported as '{color('bright magenta')}{path}{color}'")
+    notify("SUCCESS", f"Network settings exported as '{bright_magenta}{path}{color}'")
 
 
 def _update_provider(name, url):
@@ -288,7 +288,7 @@ def _update_provider(name, url):
     with _get_data_folder().joinpath("providers-config.yaml").open("w") as fp:
         yaml.dump(providers, fp)
 
-    notify("SUCCESS", f"Provider '{color('bright magenta')}{name}{color}' has been updated")
+    notify("SUCCESS", f"Provider '{bright_magenta}{name}{color}' has been updated")
 
 
 def _delete_provider(name):
@@ -296,14 +296,14 @@ def _delete_provider(name):
         providers = yaml.safe_load(fp)
 
     if name not in providers.keys():
-        raise ValueError(f"Provider '{color('bright magenta')}{name}{color}' does not exist")
+        raise ValueError(f"Provider '{bright_magenta}{name}{color}' does not exist")
 
     del providers[name]
 
     with _get_data_folder().joinpath("providers-config.yaml").open("w") as fp:
         yaml.dump(providers, fp)
 
-    notify("SUCCESS", f"Provider '{color('bright magenta')}{name}{color}' has been deleted")
+    notify("SUCCESS", f"Provider '{bright_magenta}{name}{color}' has been deleted")
 
 
 def _set_provider(name):
@@ -311,7 +311,7 @@ def _set_provider(name):
         providers = yaml.safe_load(fp)
 
     if name not in providers.keys():
-        raise ValueError(f"Provider '{color('bright magenta')}{name}{color}' does not exist")
+        raise ValueError(f"Provider '{bright_magenta}{name}{color}' does not exist")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -368,20 +368,20 @@ def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
 def _print_verbose_providers_description(providers) -> None:
     u = "\u251c"
     for provider in providers:
-        print(f"{color('bright black')}  {u}\u2500{color}provider: {provider}:")
-        print(f"{color('bright black')}  {u}\u2500{color}   host: {providers[provider]}:")
+        print(f"{bright_black}  {u}\u2500{color}provider: {provider}:")
+        print(f"{bright_black}  {u}\u2500{color}   host: {providers[provider]}:")
 
 
 def _print_simple_providers_description(providers) -> None:
     u = "\u251c"
-    print(f"{color('bright black')}  {u}\u2500{color}{providers.keys()}:")
+    print(f"{bright_black}  {u}\u2500{color}{providers.keys()}:")
 
 
 def _print_simple_network_description(network_dict, is_last) -> None:
     u = "\u2514" if is_last else "\u251c"
     print(
-        f"{color('bright black')}  {u}\u2500{color}{network_dict['name']}:"
-        f" {color('green')}{network_dict['id']}{color}"
+        f"{bright_black}  {u}\u2500{color}{network_dict['name']}:"
+        f" {green}{network_dict['id']}{color}"
     )
 
 
@@ -389,7 +389,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
     u = "\u2514" if is_last else "\u251c"
     v = " " if is_last else "\u2502"
     if "name" in network_dict:
-        print(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
+        print(f"{bright_black}  {u}\u2500{color}{network_dict.pop('name')}")
 
     obj_keys = sorted(network_dict)
     if "id" in obj_keys:
@@ -403,7 +403,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
         if indent:
             u = (" " * indent) + u
         c = color("green") if key == "id" else ""
-        print(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
+        print(f"{bright_black}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
 def _validate_network(network, required) -> None:

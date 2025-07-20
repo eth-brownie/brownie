@@ -17,7 +17,7 @@ from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
-from brownie.utils import color
+from brownie.utils import color, yellow
 
 from .base import PytestBrownieBase
 from .utils import convert_outcome
@@ -129,7 +129,7 @@ class PytestPrinter:
 
         if self.first_line:
             self.first_line = False
-            sys.stdout.write(f"{color('yellow')}RUNNING{color}\n")
+            sys.stdout.write(f"{yellow}RUNNING{color}\n")
         text = f"{sep.join(str(i) for i in values)}{end}"
         sys.stdout.write(text)
         if flush:
