@@ -7,6 +7,7 @@ from typing import Dict, Final, List, Optional, Tuple, Union
 
 import vvm
 import vyper
+from eth_typing import ABIElement
 from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
 from semantic_version import Version
@@ -62,7 +63,7 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     return str(_active_version)
 
 
-def get_abi(contract_source: str, name: str) -> Dict:
+def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, ABIElement]:
     """
     Given a contract source and name, returns a dict of {name: abi}
 
