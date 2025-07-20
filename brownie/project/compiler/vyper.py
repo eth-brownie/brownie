@@ -31,6 +31,8 @@ _active_version = Version(vyper.__version__)
 
 
 EVM_VERSION_MAPPING: Final = [
+    ("prague", Version("0.4.3")),
+    ("cancun", Version("0.4.0")),
     ("shanghai", Version("0.3.9")),
     ("paris", Version("0.3.7")),
     ("berlin", Version("0.2.12")),
