@@ -2,6 +2,7 @@ import pytest
 from eth_retry import auto_retry
 from web3.exceptions import TransactionNotFound
 
+
 @auto_retry
 def test_exists_in_history(accounts, chain, history):
     tx = accounts[0].transfer(accounts[1], 1000)
