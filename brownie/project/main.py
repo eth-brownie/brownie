@@ -189,7 +189,7 @@ class Project(_ProjectBase):
         self._build_path = project_path.joinpath(self._structure["build"])
 
         self._name: Final = name
-        self._active: Final = False
+        self._active: bool = False
         self.load(compile=compile)
 
     def load(self, raise_if_loaded: bool = True, compile: bool = True) -> None:
