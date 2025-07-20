@@ -74,7 +74,8 @@ from .state import (
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
-_unverified_addresses: Set = set()
+
+_unverified_addresses: Final[Set[ChecksumAddress]] = set()
 
 
 class _ContractBase:
