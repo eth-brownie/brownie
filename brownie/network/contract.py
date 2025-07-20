@@ -83,7 +83,7 @@ class _ContractBase:
     _dir_color: Final = "bright magenta"
 
     def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
-        self._project: Final = project
+        self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
         self.topics: Final = _get_topics(self.abi)
