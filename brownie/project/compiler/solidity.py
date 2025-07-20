@@ -41,6 +41,7 @@ EVM_VERSION_MAPPING: Final = [
 
 StatementNodes = Dict[str, Set[Tuple[int, int]]]
 BranchNodes = Dict[str, Set[NodeBase]]
+BranchMap = Dict[str, Dict[str, Tuple[int, int, int]]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
@@ -321,7 +322,7 @@ def _generate_coverage_data(
     branch_nodes: BranchNodes,
     has_fallback: bool,
     instruction_count: int,
-) -> Tuple[dict, dict, dict]:
+) -> Tuple[dict, dict, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
         return {}, {}, {}
@@ -333,18 +334,18 @@ def _generate_coverage_data(
     source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
 
     stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
-    statement_map: Dict = {i: {} for i in source_nodes}
+    statement_map: Dict[str, dict] = {i: {} for i in source_nodes}
 
     # possible branch offsets
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
     branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict = {i: {} for i in source_nodes}
+    branch_active: Dict[str, dict] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict = {i: {} for i in source_nodes}
+    branch_set: Dict[str, dict] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
-    pc_list: List = []
+    pc_list: List[dict] = []
     revert_map: Dict = {}
     fallback_hexstr: str = "unassigned"
 
@@ -500,29 +501,30 @@ def _generate_coverage_data(
         for node in revert_nodes:
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
-            if not next((x for x in pc_list if "offset" in x and x["offset"] == offset), False):
+            if not any("offset" in x and x["offset"] == offset for x in pc_list):
                 pc_list[values[0]].update(offset=offset, jump_revert=True)
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map: Dict = {i: {} for i in source_nodes}
-    for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
-        # for branch to be hit, need an op relating to the source and the next JUMPI
-        # this is because of how the compiler optimizes nested BinaryOperations
-        if "fn" in pc_list[idx[0]]:
-            fn = pc_list[idx[0]]["fn"]
-            pc_list[idx[0]]["branch"] = count
-            pc_list[idx[1]]["branch"] = count
-            node = next(i for i in branch_original[path] if i.offset == offset)
-            branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
-            count += 1
+    branch_map: BranchMap = {i: {} for i in source_nodes}
+    for path, markers in branch_set.items():
+        for offset, idx in markers.items():
+            # for branch to be hit, need an op relating to the source and the next JUMPI
+            # this is because of how the compiler optimizes nested BinaryOperations
+            if "fn" in pc_list[idx[0]]:
+                fn = pc_list[idx[0]]["fn"]
+                pc_list[idx[0]]["branch"] = count
+                pc_list[idx[1]]["branch"] = count
+                node = next(i for i in branch_original[path] if i.offset == offset)
+                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
+                count += 1
 
     pc_map = {i.pop("pc"): i for i in pc_list}
     return pc_map, statement_map, branch_map
 
 
 def _find_revert_offset(
-    pc_list: List,
+    pc_list: List[dict],
     source_map: deque,
     source_node: NodeBase,
     fn_node: NodeBase,
