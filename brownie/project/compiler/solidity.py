@@ -28,6 +28,12 @@ solcx_logger.addHandler(sh)
 AVAILABLE_SOLC_VERSIONS: Optional[List[Version]] = None
 
 EVM_VERSION_MAPPING: Final = [
+    ("prague", Version("0.8.30")),
+    ("cancun", Version("0.8.25")),
+    ("shanghai", Version("0.8.20")),
+    ("paris", Version("0.8.18")),
+    ("london", Version("0.8.7")),
+    ("berlin", Version("0.8.5")),
     ("istanbul", Version("0.5.13")),
     ("petersburg", Version("0.5.5")),
     ("byzantium", Version("0.4.0")),
