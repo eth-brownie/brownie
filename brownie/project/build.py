@@ -153,9 +153,12 @@ class Build:
 def _get_dev_revert(pc: int) -> Optional[str]:
     # Given the program counter from a stack trace that caused a transaction
     # to revert, returns the commented dev string (if any)
-    if pc not in _revert_map or _revert_map[pc] is False:
+    if pc not in _revert_map:
         return None
-    return _revert_map[pc][3]
+    revert = _revert_map[pc]
+    if revert is False:
+        return None
+    return revert[3]
 
 
 def _get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
@@ -164,6 +167,6 @@ def _get_error_source_from_pc(pc: int, pad: int = 3) -> Tuple:
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
     revert = _revert_map[pc]
-    source = revert[4].get(revert[0])
-    highlight, linenos = highlight_source(source, revert[1], pad=pad)  # type: ignore
-    return highlight, linenos, revert[0], revert[2]
+    source = revert[4].get(revert[0])  # type: ignore [index]
+    highlight, linenos = highlight_source(source, revert[1], pad=pad)
+    return highlight, linenos, revert[0], revert[2]  # type: ignore [index]
