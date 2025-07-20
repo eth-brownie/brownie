@@ -698,10 +698,7 @@ def _get_recursive_branches(base_node: NodeBase) -> Set[NodeBase]:
 def _is_rightmost_operation(node: NodeBase, depth: int) -> bool:
     # Check if the node is the final operation within the expression
     parents = node.parents(depth, _BINOPS_PARAMS)
-    return not next(
-        (i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)),
-        False,
-    )
+    return not any(i.leftExpression == node or node.is_child_of(i.leftExpression) for i in parents)
 
 
 def _check_left_operator(node: NodeBase, depth: int) -> bool:
