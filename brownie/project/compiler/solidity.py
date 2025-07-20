@@ -3,7 +3,7 @@
 import logging
 from collections import deque
 from hashlib import sha1
-from typing import Any, Dict, Final, List, Optional, Set, Tuple, Union
+from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple, Union
 
 import solcast
 import solcx
@@ -525,7 +525,7 @@ def _generate_coverage_data(
 
 def _find_revert_offset(
     pc_list: List[dict],
-    source_map: deque,
+    source_map: Deque[List],
     source_node: NodeBase,
     fn_node: NodeBase,
     fn_name: Optional[str],
