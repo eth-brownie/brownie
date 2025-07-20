@@ -10,8 +10,8 @@ from brownie.typing import ContractName
 Path: Final = pathlib.Path
 
 
-def expand_source_map(source_map_str: str) -> List[List]:
-    # Expands the compressed sourceMap supplied by solc into a list of lists
+def expand_source_map(source_map_str: str | dict) -> List[List]:
+    """Expand the compressed sourceMap supplied by solc into a list of lists."""
 
     if isinstance(source_map_str, dict):
         # NOTE: vyper >= 0.4 gives us a dict that contains the source map
