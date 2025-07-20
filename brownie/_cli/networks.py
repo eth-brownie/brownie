@@ -402,7 +402,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
 
         if indent:
             u = (" " * indent) + u
-        c = color("green") if key == "id" else ""
+        c = green if key == "id" else ""
         print(f"{bright_black}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
