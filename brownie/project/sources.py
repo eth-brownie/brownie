@@ -18,7 +18,7 @@ class Sources:
 
     def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
         self._contract_sources: Final[Dict] = {}
-        self._contracts: Final[Dict] = {}
+        self._contracts: Dict = {}
         self._interface_sources: Final[Dict] = {}
         self._interfaces: Final[Dict] = {}
 
