@@ -41,7 +41,7 @@ EVM_VERSION_MAPPING: Final = [
 
 StatementNodes = Dict[str, Set[Tuple[int, int]]]
 BranchNodes = Dict[str, Set[NodeBase]]
-BranchMap = Dict[str, Dict[str, Tuple[int, int, int]]]
+BranchMap = Dict[str, Dict[str, Dict[int, Tuple[int, int, int]]]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
