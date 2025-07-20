@@ -7,6 +7,7 @@ from typing import Dict, Final, List, Optional, Tuple, Union
 
 import vvm
 import vyper
+from eth_typing import ABIElement, HexStr
 from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
 from semantic_version import Version
@@ -62,7 +63,7 @@ def set_vyper_version(version: Union[str, Version]) -> str:
     return str(_active_version)
 
 
-def get_abi(contract_source: str, name: str) -> Dict:
+def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, ABIElement]:
     """
     Given a contract source and name, returns a dict of {name: abi}
 
@@ -262,16 +263,19 @@ def _get_unique_build_json(
 ) -> Dict:
 
     ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json
+    deployed_bytecode: dict = output_evm["deployedBytecode"]
     pc_map, statement_map, branch_map = _generate_coverage_data(
-        output_evm["deployedBytecode"]["sourceMap"],
-        output_evm["deployedBytecode"]["opcodes"],
+        deployed_bytecode["sourceMap"],
+        deployed_bytecode["opcodes"],
         contract_name,
         ast,
     )
+    bytecode_json: dict = output_evm["bytecode"]
+    bytecode: HexStr = bytecode_json["object"]
     return {
         "allSourcePaths": {"0": path_str},
-        "bytecode": output_evm["bytecode"]["object"],
-        "bytecodeSha1": sha1(output_evm["bytecode"]["object"].encode()).hexdigest(),
+        "bytecode": bytecode,
+        "bytecodeSha1": sha1(bytecode.encode()).hexdigest(),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": _get_dependencies(ast),
         "offset": offset,
@@ -434,17 +438,19 @@ def _convert_src(src: str) -> Tuple[int, int]:
 
 
 def _find_node_by_offset(ast_json: List[Dict], offset: Tuple[int, int]) -> Optional[Dict]:
-    for node in [i for i in ast_json if is_inside_offset(offset, _convert_src(i["src"]))]:
-        if _convert_src(node["src"]) == offset:
-            return node
-        node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
-        node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
-        if node_list:
-            result = _find_node_by_offset(node_list, offset)
-        else:
-            result = _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
-        if result is not None:
-            return result
+    for node in ast_json:
+        converted_src = _convert_src(node["src"])
+        if is_inside_offset(offset, converted_src):
+            if converted_src == offset:
+                return node
+            node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
+            node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
+            if node_list:
+                result = _find_node_by_offset(node_list, offset)
+            else:
+                result = _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
+            if result is not None:
+                return result
     return None
 
 

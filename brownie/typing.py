@@ -24,3 +24,7 @@ class FormattedEvent(TypedDict):
 
 # Transactions
 TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")
+
+# PROJECT
+# Compiler
+Language = Literal["Solidity", "Vyper"]

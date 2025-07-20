@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1956];
+extern PyObject *CPyStatics[1959];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -943,6 +943,7 @@ extern tuple_T2OO CPyDef_state____remove_deployment(PyObject *cpy_r_address, PyO
 extern PyObject *CPyPy_state____remove_deployment(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_state_____top_level__(void);
 extern char CPyDef_project_____top_level__(void);
+extern PyObject *CPyStatic_compiler___STANDARD_JSON;
 extern PyObject *CPyStatic_compiler___Path;
 extern PyObject *CPyStatic_compiler___deepcopy;
 extern PyObject *CPyStatic_compiler___sha1;
@@ -1058,6 +1059,10 @@ extern PyObject *CPyPy_vyper____get_statement_nodes(PyObject *self, PyObject *co
 extern PyObject *CPyDef_vyper____convert_to_semver(PyObject *cpy_r_versions);
 extern PyObject *CPyPy_vyper____convert_to_semver(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_vyper_____top_level__(void);
+extern PyObject *CPyStatic_build___INTERFACE_KEYS;
+extern PyObject *CPyStatic_build___DEPLOYMENT_KEYS;
+extern PyObject *CPyStatic_build___BUILD_KEYS;
+extern PyObject *CPyStatic_build____revert_map;
 extern PyTypeObject *CPyType_build___Build;
 extern PyObject *CPyDef_build___Build(PyObject *cpy_r_sources);
 extern char CPyDef_build___Build_____init__(PyObject *cpy_r_self, PyObject *cpy_r_sources);
@@ -1084,7 +1089,7 @@ extern PyObject *CPyDef_build___Build____stem(PyObject *cpy_r_self, PyObject *cp
 extern PyObject *CPyPy_build___Build____stem(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_build____get_dev_revert(CPyTagged cpy_r_pc);
 extern PyObject *CPyPy_build____get_dev_revert(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_build____get_error_source_from_pc(CPyTagged cpy_r_pc, CPyTagged cpy_r_pad);
+extern tuple_T4OOOO CPyDef_build____get_error_source_from_pc(CPyTagged cpy_r_pc, CPyTagged cpy_r_pad);
 extern PyObject *CPyPy_build____get_error_source_from_pc(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_build_____top_level__(void);
 extern PyObject *CPyStatic_flattener___IMPORT_PATTERN;
@@ -1409,9 +1414,9 @@ extern PyObject *CPyDef_sources___Sources___get_interface_sources(PyObject *cpy_
 extern PyObject *CPyPy_sources___Sources___get_interface_sources(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_sources___Sources___get_source_path(PyObject *cpy_r_self, PyObject *cpy_r_contract_name, char cpy_r_is_interface);
 extern PyObject *CPyPy_sources___Sources___get_source_path(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern char CPyDef_sources___is_inside_offset(PyObject *cpy_r_inner, PyObject *cpy_r_outer);
+extern char CPyDef_sources___is_inside_offset(tuple_T2II cpy_r_inner, tuple_T2II cpy_r_outer);
 extern PyObject *CPyPy_sources___is_inside_offset(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_sources___highlight_source(PyObject *cpy_r_source, PyObject *cpy_r_offset, CPyTagged cpy_r_pad);
+extern tuple_T2OO CPyDef_sources___highlight_source(PyObject *cpy_r_source, tuple_T2II cpy_r_offset, CPyTagged cpy_r_pad);
 extern PyObject *CPyPy_sources___highlight_source(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_sources___get_contract_names(PyObject *cpy_r_full_source);
 extern PyObject *CPyPy_sources___get_contract_names(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);

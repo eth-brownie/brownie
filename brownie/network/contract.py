@@ -15,6 +15,7 @@ from typing import (
     Callable,
     Coroutine,
     Dict,
+    Final,
     Iterator,
     List,
     Match,
@@ -57,7 +58,7 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
-from brownie.typing import AccountsType, ContractName, TransactionReceiptType
+from brownie.typing import AccountsType, ContractName, Language, TransactionReceiptType
 from brownie.utils import color, hexbytes_to_hexstring
 
 from . import accounts, chain
@@ -73,22 +74,24 @@ from .state import (
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
-_unverified_addresses: Set = set()
+AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+
+_unverified_addresses: Final[Set[ChecksumAddress]] = set()
 
 
 class _ContractBase:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
         self._project = project
-        self._build = build.copy()
-        self._sources = sources
-        self.topics = _get_topics(self.abi)
-        self.selectors = {
+        self._build: Final = build.copy()
+        self._sources: Final = sources
+        self.topics: Final = _get_topics(self.abi)
+        self.selectors: Final = {
             build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures = {
+        self.signatures: Final = {
             i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
         }
         parse_errors_from_abi(self.abi)
@@ -98,15 +101,15 @@ class _ContractBase:
         return self._build["abi"]
 
     @property
-    def _name(self) -> str:
+    def _name(self) -> ContractName:
         return self._build["contractName"]
 
     def info(self) -> None:
         """
         Display NatSpec documentation for this contract.
         """
-        if self._build.get("natspec"):
-            _print_natspec(self._build["natspec"])
+        if natspec := self._build.get("natspec"):
+            _print_natspec(natspec)
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
@@ -222,7 +225,7 @@ class ContractContainer(_ContractBase):
 
     def at(
         self,
-        address: str,
+        address: HexAddress,
         owner: Optional[AccountsType] = None,
         tx: Optional[TransactionReceiptType] = None,
         persist: bool = True,
@@ -765,7 +768,7 @@ class _DeployedContractBase(_ContractBase):
                 return False
         return super().__eq__(other)
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattribute__(self, name: str) -> AnyContractMethod:
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
         try:
@@ -837,7 +840,11 @@ class Contract(_DeployedContractBase):
     """
 
     def __init__(
-        self, address_or_alias: str, *args: Any, owner: Optional[AccountsType] = None, **kwargs: Any
+        self,
+        address_or_alias: HexAddress | ContractName,
+        *args: Any,
+        owner: Optional[AccountsType] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Recreate a `Contract` object from the local database.
@@ -892,7 +899,7 @@ class Contract(_DeployedContractBase):
     def _deprecated_init(
         self,
         name: ContractName,
-        address: Optional[str] = None,
+        address: Optional[HexAddress] = None,
         abi: Optional[List[ABIElement]] = None,
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
@@ -911,7 +918,7 @@ class Contract(_DeployedContractBase):
     def from_abi(
         cls,
         name: ContractName,
-        address: str,
+        address: HexAddress,
         abi: List[ABIElement],
         owner: Optional[AccountsType] = None,
         persist: bool = True,
@@ -951,7 +958,7 @@ class Contract(_DeployedContractBase):
     @classmethod
     def from_explorer(
         cls,
-        address: str,
+        address: HexAddress,
         as_proxy_for: Optional[str] = None,
         owner: Optional[AccountsType] = None,
         silent: bool = False,
@@ -1176,7 +1183,9 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def remove_deployment(
-        cls, address: str = None, alias: str = None
+        cls,
+        address: Optional[ChecksumAddress] = None,
+        alias: Optional[ContractName] = None,
     ) -> Tuple[Optional[Dict], Optional[Dict]]:
         """
         Removes this contract from the internal deployments db
@@ -1541,7 +1550,7 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(
         self,
@@ -1549,15 +1558,15 @@ class _ContractMethod:
         abi: ABIFunction,
         name: str,
         owner: Optional[AccountsType],
-        natspec: Optional[Dict] = None,
+        natspec: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._address = address
-        self._name = name
-        self.abi = abi
-        self._owner = owner
-        self.signature = build_function_selector(abi)
-        self._input_sig = build_function_signature(abi)
-        self.natspec = natspec or {}
+        self._address: Final = address
+        self._name: Final = name
+        self.abi: Final = abi
+        self._owner: Final = owner
+        self.signature: Final = build_function_selector(abi)
+        self._input_sig: Final = build_function_signature(abi)
+        self.natspec: Final[Dict[str, Any]] = natspec or {}
 
     def __repr__(self) -> str:
         pay = "payable " if self.payable else ""
@@ -1907,7 +1916,7 @@ def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     )
 
 
-def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
+def _verify_deployed_code(address: ChecksumAddress, expected_bytecode: HexStr, language: Language) -> bool:
     # removeprefix is used for compatability with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
@@ -1940,7 +1949,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
     return actual_bytecode == expected_bytecode
 
 
-def _print_natspec(natspec: Dict) -> None:
+def _print_natspec(natspec: Dict[str, Any]) -> None:
     wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
     for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
         wrapper.subsequent_indent = " " * (len(key) + 4)
@@ -1961,7 +1970,7 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
-def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
+def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) -> Dict[str, Any]:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
@@ -1984,7 +1993,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     ):
         address = _resolve_address(code[120:160])
 
-    params: Dict = {
+    params: Dict[str, Any] = {
         "module": "contract",
         "action": action,
         "address": address,

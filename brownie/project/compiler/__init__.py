@@ -8,7 +8,7 @@ from typing import Dict, Final, List, Optional, Union
 
 import semantic_version
 import solcast
-from eth_typing import HexStr
+from eth_typing import ABIElement, HexStr
 
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
@@ -26,7 +26,7 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Dict = {
+STANDARD_JSON: Final[Dict] = {
     "language": None,
     "sources": {},
     "settings": {
@@ -330,7 +330,7 @@ def generate_build_json(
             
             natspec = merge_natspec(contract_output.get("devdoc", {}), contract_output.get("userdoc", {}))
             
-            abi = contract_output["abi"]
+            abi: List[ABIElement] = contract_output["abi"]
             output_evm: dict = contract_output["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
@@ -338,7 +338,7 @@ def generate_build_json(
             if contract_alias in build_json and not bytecode:
                 continue
     
-            if input_json["language"] == "Solidity":
+            if language == "Solidity":
                 contract_node = next(
                     i[contract_name] for i in source_nodes if i.absolutePath == path_str
                 )
@@ -347,7 +347,7 @@ def generate_build_json(
                     contract_node,
                     statement_nodes,
                     branch_nodes,
-                    next((True for i in abi if i["type"] == "fallback"), False),
+                    any(i["type"] == "fallback" for i in abi),
                 )
     
             else:
@@ -369,7 +369,7 @@ def generate_build_json(
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
                     "deployedSourceMap": deployed_bytecode["sourceMap"],
-                    "language": input_json["language"],
+                    "language": language,
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
                     "sha1": sha1(source.encode()).hexdigest(),

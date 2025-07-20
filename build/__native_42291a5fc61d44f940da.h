@@ -164,6 +164,15 @@ typedef struct tuple_T2CC {
 } tuple_T2CC;
 #endif
 
+#ifndef MYPYC_DECLARED_tuple_T3IIO
+#define MYPYC_DECLARED_tuple_T3IIO
+typedef struct tuple_T3IIO {
+    CPyTagged f0;
+    CPyTagged f1;
+    PyObject *f2;
+} tuple_T3IIO;
+#endif
+
 #ifndef MYPYC_DECLARED_tuple_T1C
 #define MYPYC_DECLARED_tuple_T1C
 typedef struct tuple_T1C {
@@ -1533,6 +1542,7 @@ struct export_table_42291a5fc61d44f940da {
     tuple_T2OO (*CPyDef_state____remove_deployment)(PyObject *cpy_r_address, PyObject *cpy_r_alias);
     char (*CPyDef_state_____top_level__)(void);
     char (*CPyDef_project_____top_level__)(void);
+    PyObject **CPyStatic_compiler___STANDARD_JSON;
     PyObject **CPyStatic_compiler___Path;
     PyObject **CPyStatic_compiler___deepcopy;
     PyObject **CPyStatic_compiler___sha1;
@@ -1599,6 +1609,10 @@ struct export_table_42291a5fc61d44f940da {
     PyObject *(*CPyDef_vyper____get_statement_nodes)(PyObject *cpy_r_ast_json);
     PyObject *(*CPyDef_vyper____convert_to_semver)(PyObject *cpy_r_versions);
     char (*CPyDef_vyper_____top_level__)(void);
+    PyObject **CPyStatic_build___INTERFACE_KEYS;
+    PyObject **CPyStatic_build___DEPLOYMENT_KEYS;
+    PyObject **CPyStatic_build___BUILD_KEYS;
+    PyObject **CPyStatic_build____revert_map;
     PyTypeObject **CPyType_build___Build;
     PyObject *(*CPyDef_build___Build)(PyObject *cpy_r_sources);
     char (*CPyDef_build___Build_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_sources);
@@ -1613,7 +1627,7 @@ struct export_table_42291a5fc61d44f940da {
     PyObject *(*CPyDef_build___Build___get_dependents)(PyObject *cpy_r_self, PyObject *cpy_r_contract_name);
     PyObject *(*CPyDef_build___Build____stem)(PyObject *cpy_r_self, PyObject *cpy_r_contract_name);
     PyObject *(*CPyDef_build____get_dev_revert)(CPyTagged cpy_r_pc);
-    PyObject *(*CPyDef_build____get_error_source_from_pc)(CPyTagged cpy_r_pc, CPyTagged cpy_r_pad);
+    tuple_T4OOOO (*CPyDef_build____get_error_source_from_pc)(CPyTagged cpy_r_pc, CPyTagged cpy_r_pad);
     char (*CPyDef_build_____top_level__)(void);
     PyObject **CPyStatic_flattener___IMPORT_PATTERN;
     PyObject **CPyStatic_flattener___PRAGMA_PATTERN;
@@ -1830,8 +1844,8 @@ struct export_table_42291a5fc61d44f940da {
     PyObject *(*CPyDef_sources___Sources___get_interface_hashes)(PyObject *cpy_r_self);
     PyObject *(*CPyDef_sources___Sources___get_interface_sources)(PyObject *cpy_r_self);
     PyObject *(*CPyDef_sources___Sources___get_source_path)(PyObject *cpy_r_self, PyObject *cpy_r_contract_name, char cpy_r_is_interface);
-    char (*CPyDef_sources___is_inside_offset)(PyObject *cpy_r_inner, PyObject *cpy_r_outer);
-    PyObject *(*CPyDef_sources___highlight_source)(PyObject *cpy_r_source, PyObject *cpy_r_offset, CPyTagged cpy_r_pad);
+    char (*CPyDef_sources___is_inside_offset)(tuple_T2II cpy_r_inner, tuple_T2II cpy_r_outer);
+    tuple_T2OO (*CPyDef_sources___highlight_source)(PyObject *cpy_r_source, tuple_T2II cpy_r_offset, CPyTagged cpy_r_pad);
     PyObject *(*CPyDef_sources___get_contract_names)(PyObject *cpy_r_full_source);
     PyObject *(*CPyDef_sources___get_pragma_spec)(PyObject *cpy_r_source, PyObject *cpy_r_path);
     PyObject *(*CPyDef_sources___get_vyper_pragma_spec)(PyObject *cpy_r_source, PyObject *cpy_r_path);
