@@ -26,7 +26,7 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Dict = {
+STANDARD_JSON: Final[Dict] = {
     "language": None,
     "sources": {},
     "settings": {
