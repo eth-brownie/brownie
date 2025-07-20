@@ -182,14 +182,14 @@ class Project(_ProjectBase):
 
     def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
         self._path = project_path
-        self._envvars = _load_project_envvars(project_path)
-        self._structure = expand_posix_vars(
+        self._envvars: Final = _load_project_envvars(project_path)
+        self._structure: Final = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
         self._build_path = project_path.joinpath(self._structure["build"])
 
-        self._name = name
-        self._active = False
+        self._name: Final = name
+        self._active: Final = False
         self.load(compile=compile)
 
     def load(self, raise_if_loaded: bool = True, compile: bool = True) -> None:
@@ -286,7 +286,7 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
+    def _get_changed_contracts(self, compiled_hashes: Dict[str, str]) -> Dict[str, str]:
         # get list of changed interfaces and contracts
         new_hashes = self._sources.get_interface_hashes()
         # remove outdated build artifacts
@@ -527,7 +527,7 @@ class Project(_ProjectBase):
                     deployment.unlink()
                 else:
                     with deployment.open("r") as fp:
-                        deployment_artifact = json.load(fp)
+                        deployment_artifact: dict = json.load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
                     if block_height > height:
                         deployment.unlink()
@@ -559,7 +559,7 @@ class TempProject(_ProjectBase):
     def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
         self._path = None
         self._build_path = None
-        self._name = name
+        self._name: Final = name
         self._sources = Sources(contract_sources, {})
         self._build = Build(self._sources)
         self._compile(contract_sources, compiler_config, True)
