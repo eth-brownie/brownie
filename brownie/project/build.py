@@ -1,14 +1,14 @@
 #!/usr/bin/python3
 
-from typing import Dict, ItemsView, List, Optional, Tuple, Union
+from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
 
 from eth_utils.toolz import keymap
 
 from .sources import Sources, highlight_source
 
-INTERFACE_KEYS = ["abi", "contractName", "sha1", "type"]
+INTERFACE_KEYS: Final = ["abi", "contractName", "sha1", "type"]
 
-DEPLOYMENT_KEYS = [
+DEPLOYMENT_KEYS: Final = [
     "abi",
     "ast",
     "bytecode",
@@ -24,7 +24,7 @@ DEPLOYMENT_KEYS = [
     "type",
 ]
 
-BUILD_KEYS = [
+BUILD_KEYS: Final = [
     "allSourcePaths",
     "bytecodeSha1",
     "coverageMap",
@@ -35,18 +35,22 @@ BUILD_KEYS = [
     "sourcePath",
 ] + DEPLOYMENT_KEYS
 
-_revert_map: Dict = {}
+_revert_map: Final[Dict[int, Union[tuple, Literal[False]]]] = {}
 
 
 class Build:
     """Methods for accessing and manipulating a project's contract build data."""
 
     def __init__(self, sources: Sources) -> None:
-        self._sources = sources
-        self._contracts: Dict = {}
-        self._interfaces: Dict = {}
+        self._sources: Final = sources
+        self._contracts: Final[Dict] = {}
+        self._interfaces: Final[Dict] = {}
 
-    def _add_contract(self, build_json: Dict, alias: Optional[str] = None) -> None:
+    def _add_contract(
+        self,
+        build_json: Dict[str, Any],
+        alias: Optional[str] = None,
+    ) -> None:
         contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
             return
@@ -63,7 +67,7 @@ class Build:
             build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
         )
 
-    def _add_interface(self, build_json: Dict) -> None:
+    def _add_interface(self, build_json: Dict[str, Any]) -> None:
         contract_name = build_json["contractName"]
         self._interfaces[contract_name] = build_json
 
