@@ -106,7 +106,7 @@ class Build:
             )
 
             # do not compare the final tuple item in case the same project was loaded twice
-            if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):
+            if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):  # type: ignore [index]
                 _revert_map[pc] = revert
                 continue
             _revert_map[pc] = False
