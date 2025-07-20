@@ -338,7 +338,7 @@ def generate_build_json(
             if contract_alias in build_json and not bytecode:
                 continue
     
-            if input_json["language"] == "Solidity":
+            if language == "Solidity":
                 contract_node = next(
                     i[contract_name] for i in source_nodes if i.absolutePath == path_str
                 )
@@ -347,7 +347,7 @@ def generate_build_json(
                     contract_node,
                     statement_nodes,
                     branch_nodes,
-                    next((True for i in abi if i["type"] == "fallback"), False),
+                    any(i["type"] == "fallback" for i in abi),
                 )
     
             else:
@@ -369,7 +369,7 @@ def generate_build_json(
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
                     "deployedSourceMap": deployed_bytecode["sourceMap"],
-                    "language": input_json["language"],
+                    "language": language,
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
                     "sha1": sha1(source.encode()).hexdigest(),
