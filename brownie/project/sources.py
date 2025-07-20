@@ -127,7 +127,7 @@ def is_inside_offset(inner: Tuple[int, int], outer: Tuple[int, int]) -> bool:
 
 def highlight_source(
     source: str, offset: Tuple[int, int], pad: int = 3
-) -> Tuple[str, Tuple[int, int]]:
+) -> Tuple[Optional[str], Optional[Tuple[int, int]]]:
     """Returns a highlighted section of source code.
 
     Args:
