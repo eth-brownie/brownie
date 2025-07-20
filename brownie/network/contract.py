@@ -59,7 +59,14 @@ from brownie.exceptions import (
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import AccountsType, ContractName, Language, TransactionReceiptType
-from brownie.utils import bright_blue, bright_magenta, color, hexbytes_to_hexstring
+from brownie.utils import (
+    bright_blue,
+    bright_green,
+    bright_magenta,
+    bright_red,
+    color,
+    hexbytes_to_hexstring,
+)
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher
@@ -455,8 +462,8 @@ class ContractContainer(_ContractBase):
                     print("Verification pending...")
             else:
                 if not silent:
-                    col = "bright green" if data["message"] == "OK" else "bright red"
-                    print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
+                    color = bright_green if data["message"] == "OK" else bright_red
+                    print(f"Verification complete. Result: {color}{data['result']}{color}")
                 return data["message"] == "OK"
             time.sleep(10)
 

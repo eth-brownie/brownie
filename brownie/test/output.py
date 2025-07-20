@@ -3,14 +3,18 @@
 import json
 import warnings
 from pathlib import Path
+from typing import Final
 
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
-from brownie.utils import bright_magenta, color
+from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
+from brownie.utils._color import ColorStr
 
-COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
+COVERAGE_COLORS: Final[list[tuple[float, ColorStr]]] = [
+    (0.8, bright_red), (0.9, bright_yellow), (1.0, bright_green)
+]
 
 
 def _save_coverage_report(build, coverage_eval, report_path):
@@ -158,8 +162,8 @@ def _build_coverage_output(coverage_eval):
     return lines
 
 
-def _cov_color(pct):
-    return color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
+def _cov_color(pct) -> ColorStr:
+    return next(i[1] for i in COVERAGE_COLORS if pct <= i[0])
 
 
 def _pct(statement, branch):
