@@ -4,7 +4,7 @@ import re
 import textwrap
 from hashlib import sha1
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Final, List, Optional, Tuple
 
 from semantic_version import NpmSpec
 from vvm.utils.convert import to_vyper_version
@@ -17,10 +17,10 @@ class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
     def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
-        self._contract_sources: Dict = {}
-        self._contracts: Dict = {}
-        self._interface_sources: Dict = {}
-        self._interfaces: Dict = {}
+        self._contract_sources: Final[Dict] = {}
+        self._contracts: Final[Dict] = {}
+        self._interface_sources: Final[Dict] = {}
+        self._interfaces: Final[Dict] = {}
 
         contracts: Dict = {}
         collisions: Dict = {}
@@ -114,7 +114,7 @@ class Sources:
         raise KeyError(contract_name)
 
 
-def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
+def is_inside_offset(inner: Tuple[int, int], outer: Tuple[int, int]) -> bool:
     """Checks if the first offset is contained in the second offset
 
     Args:
@@ -125,7 +125,7 @@ def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
+def highlight_source(source: str, offset: Tuple[int, int], pad: int = 3) -> Tuple:
     """Returns a highlighted section of source code.
 
     Args:
@@ -171,7 +171,7 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     return final, ln
 
 
-def get_contract_names(full_source: str) -> List:
+def get_contract_names(full_source: str) -> List[Tuple[str, str]]:
     """
     Get contract names from Solidity source code.
 
