@@ -125,7 +125,7 @@ def is_inside_offset(inner: Tuple[int, int], outer: Tuple[int, int]) -> bool:
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def highlight_source(source: str, offset: Tuple[int, int], pad: int = 3) -> Tuple:
+def highlight_source(source: str, offset: Tuple[int, int], pad: int = 3) -> Tuple[str, int]:
     """Returns a highlighted section of source code.
 
     Args:
