@@ -144,9 +144,9 @@ class _ContractBase:
         fn_selector = hexbytes_to_hexstring(calldata[:4])
 
         abi: Optional[ABIFunction] = None
-        for _abi in self.abi:
-            if _abi["type"] == "function" and build_function_selector(i) == fn_selector:
-                abi = _abi
+        for i in self.abi:
+            if i["type"] == "function" and build_function_selector(i) == fn_selector:
+                abi = i
                 break
 
         if abi is None:
