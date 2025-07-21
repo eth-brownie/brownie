@@ -5,19 +5,19 @@ import shutil
 import pytest
 
 from brownie._cli import pm as cli_pm
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 
 
 @pytest.fixture(autouse=True)
 def setup():
     yield
-    path = _get_data_folder().joinpath("packages")
+    path = DATA_FOLDER.joinpath("packages")
     shutil.rmtree(path)
     path.mkdir()
 
 
 def _mk_repo_path(*folder_names):
-    path = _get_data_folder().joinpath("packages")
+    path = DATA_FOLDER.joinpath("packages")
 
     for name in folder_names:
         path = path.joinpath(name)

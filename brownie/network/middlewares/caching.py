@@ -8,7 +8,7 @@ from web3 import Web3
 from web3.types import LogReceipt, RPCEndpoint
 
 from brownie._c_constants import HexBytes, ujson_dumps
-from brownie._config import CONFIG, _get_data_folder
+from brownie._config import CONFIG, DATA_FOLDER
 from brownie.network.middlewares import BrownieMiddlewareABC
 from brownie.utils.sql import Cursor
 
@@ -106,7 +106,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         super().__init__(w3)
 
         self.table_key: Final = f"chain{CONFIG.active_network['chainid']}"
-        self.cur: Final = Cursor(_get_data_folder().joinpath("cache.db"))
+        self.cur: Final = Cursor(DATA_FOLDER.joinpath("cache.db"))
         self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
         self.lock: Final = threading.Lock()

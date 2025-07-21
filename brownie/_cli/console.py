@@ -26,7 +26,7 @@ from pygments.styles import get_style_by_name
 import brownie
 from brownie import network, project
 from brownie._c_constants import import_module
-from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
+from brownie._config import CONFIG, DATA_FOLDER, _update_argv_from_docopt
 from brownie.project.main import Project
 from brownie.utils import color
 from brownie.utils._color import bright_blue, bright_cyan
@@ -43,7 +43,7 @@ Options:
 Connects to the network and opens the brownie console.
 """
 
-_parser_cache: dict = {}
+_parser_cache: Final[dict] = {}
 
 
 def main():
@@ -176,7 +176,7 @@ class Console(code.InteractiveConsole):
             locals_dict.update(extra_locals)
 
         # create prompt session object
-        history_file = str(_get_data_folder().joinpath(".history").absolute())
+        history_file = str(DATA_FOLDER.joinpath(".history").absolute())
         kwargs: Dict[str, Any] = {}
         if console_settings["show_colors"]:
             kwargs.update(

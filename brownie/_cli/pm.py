@@ -5,7 +5,7 @@ import sys
 
 from brownie import project
 from brownie._c_constants import Path
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie.utils import color, notify
 from brownie.utils._color import blue, bright_black, bright_blue, bright_magenta
 from brownie.utils.docopt import docopt
@@ -45,7 +45,7 @@ def main():
 
 def _list():
     org_names = []
-    for path in _get_data_folder().joinpath("packages").iterdir():
+    for path in DATA_FOLDER.joinpath("packages").iterdir():
         if not path.is_dir():
             continue
         elif not [i for i in path.iterdir() if i.is_dir() and "@" in i.name]:
@@ -69,7 +69,7 @@ def _list():
 
 def _clone(package_id, path_str="."):
     org, repo, version = _split_id(package_id)
-    source_path = _get_data_folder().joinpath(f"packages/{org}/{repo}@{version}")
+    source_path = DATA_FOLDER.joinpath(f"packages/{org}/{repo}@{version}")
     if not source_path.exists():
         raise FileNotFoundError(f"Package '{_format_pkg(org, repo, version)}' is not installed")
     dest_path = Path(path_str)
@@ -83,7 +83,7 @@ def _clone(package_id, path_str="."):
 
 def _delete(package_id):
     org, repo, version = _split_id(package_id)
-    source_path = _get_data_folder().joinpath(f"packages/{org}/{repo}@{version}")
+    source_path = DATA_FOLDER.joinpath(f"packages/{org}/{repo}@{version}")
     if not source_path.exists():
         raise FileNotFoundError(f"Package '{_format_pkg(org, repo, version)}' is not installed")
     shutil.rmtree(source_path)

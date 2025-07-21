@@ -6,7 +6,7 @@ import warnings
 import pytest
 
 import brownie
-from brownie._config import CONFIG, _get_data_folder
+from brownie._config import CONFIG, DATA_FOLDER
 
 from .stateful import _BrownieStateMachine, state_machine
 
@@ -100,7 +100,7 @@ class PytestBrownieFixtures:
 
         def package_loader(project_id):
             if project_id not in _open_projects:
-                path = _get_data_folder().joinpath(f"packages/{project_id}")
+                path = DATA_FOLDER.joinpath(f"packages/{project_id}")
                 _open_projects[project_id] = brownie.project.load(path, project_id)
 
             return _open_projects[project_id]
