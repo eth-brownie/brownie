@@ -18,8 +18,6 @@ LICENSE_PATTERN: Final = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MU
 
 # C Constants
 
-_Path: Final = Path
-
 _defaultdict: Final = defaultdict
 
 _sub: Final = re.sub
@@ -70,7 +68,7 @@ class Flattener:
         """
         # if already traversed file, return early
         name = self.path_to_name(fp)
-        fp_obj = _Path(fp)
+        fp_obj = Path(fp)
         if name in self.sources:
             return
 
@@ -159,16 +157,16 @@ class Flattener:
         Returns:
             str: The import path string in absolute form.
         """
-        path = _Path(import_path)
+        path = Path(import_path)
         if path.is_absolute():
             return path.as_posix()
 
-        dir_path = _Path(source_file_dir).resolve()
+        dir_path = Path(source_file_dir).resolve()
         newpath = (dir_path / path).resolve()
         while not newpath.exists():
             dir_path = dir_path.parent
             newpath = (dir_path / path).resolve()
-            if dir_path == _Path("/"):
+            if dir_path == Path("/"):
                 raise FileNotFoundError(f"Cannot determine location of {import_path}")
         return newpath.as_posix()
 
