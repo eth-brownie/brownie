@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-from collections import deque
 from inspect import getmembers
 from types import FunctionType
 from typing import Any, Dict, Optional
@@ -11,6 +10,7 @@ from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
 
 import brownie
+from brownie._c_constants import deque
 from brownie.utils import red, yellow
 
 sf.__tracebackhide__ = True

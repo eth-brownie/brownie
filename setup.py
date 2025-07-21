@@ -33,6 +33,7 @@ else:
     else:
         ext_modules = mypycify(
             [
+                "brownie/_c_constants.py",
                 "brownie/_cli",
                 "brownie/_expansion.py",
                 "brownie/convert/__init__.py",

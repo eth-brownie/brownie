@@ -7,6 +7,7 @@ from typing import Any, Dict, Tuple
 
 import yaml
 
+from brownie._c_constants import Path
 from brownie._config import CONFIG, _get_data_folder
 from brownie.utils import bright_black, bright_magenta, color, green, notify
 from brownie.utils.docopt import docopt

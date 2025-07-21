@@ -4,7 +4,6 @@ import json
 import sys
 import threading
 import time
-from collections import deque
 from collections.abc import Iterator
 from getpass import getpass
 from importlib.metadata import version
@@ -21,10 +20,10 @@ from eth_account.messages import _hash_eip191_message, defunct_hash_message
 from eth_typing import BlockNumber, HexAddress
 from faster_eth_utils import keccak
 from faster_eth_utils.applicators import apply_formatters_to_dict
-from hexbytes import HexBytes
 from web3 import HTTPProvider, IPCProvider
 from web3.exceptions import InvalidTransaction, TransactionNotFound
 
+from brownie._c_constants import HexBytes, deque
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address

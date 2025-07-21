@@ -2,7 +2,6 @@
 
 import sys
 import traceback
-from pathlib import Path
 from typing import Any, Dict, Final, Literal, Optional, Sequence, final
 
 import pygments
@@ -12,6 +11,7 @@ from pygments.lexers import PythonLexer
 from pygments_lexer_solidity import SolidityLexer
 from vyper.exceptions import VyperException
 
+from brownie._c_constants import Path
 from brownie._config import CONFIG
 
 if sys.platform == "win32":

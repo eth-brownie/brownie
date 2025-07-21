@@ -1,8 +1,8 @@
-import re
 from typing import Callable, Dict, List, Optional
 
 from web3 import Web3
 
+from brownie._c_constants import regex_findall
 from brownie.network.middlewares import BrownieMiddlewareABC
 
 
@@ -40,7 +40,7 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                 elif message.startswith("revert"):
                     data.update({"error": "revert", "reason": message[7:]})
                 elif "reverted with reason string '" in message:
-                    data.update(error="revert", reason=re.findall(".*?'(.*)'$", message)[0])
+                    data.update(error="revert", reason=regex_findall(".*?'(.*)'$", message)[0])
                 elif "reverted with an unrecognized custom error" in message:
                     message = message[message.index("0x") : -1]
                     data.update(error="revert", reason=message)

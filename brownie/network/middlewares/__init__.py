@@ -1,10 +1,11 @@
 import functools
-import importlib
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from web3 import Web3
+
+from brownie._c_constants import import_module
 
 
 class BrownieMiddlewareABC(ABC):
@@ -103,7 +104,7 @@ for path in Path(__file__).parent.glob("[!_]*.py"):
     # load middleware classes from all modules within `brownie/networks/middlewares/`
     # to be included the module name must not begin with `_` and the middleware
     # must subclass `BrownieMiddlewareABC`
-    module = importlib.import_module(f"{__package__}.{path.stem}")
+    module = import_module(f"{__package__}.{path.stem}")
     _middlewares.extend(
         obj
         for obj in module.__dict__.values()

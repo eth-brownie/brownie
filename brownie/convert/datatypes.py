@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-from copy import deepcopy
-from decimal import Decimal, getcontext
+import decimal
 from typing import (
     Any,
     Dict,
@@ -24,9 +23,9 @@ except ImportError:
 import cchecksum
 from eth_typing import ABIComponent, HexStr
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
-from hexbytes import HexBytes
 from typing_extensions import Self
 
+from brownie._c_constants import Decimal, HexBytes, deepcopy, getcontext
 from brownie.utils import bytes_to_hexstring
 
 UNITS: Final = {
@@ -142,7 +141,7 @@ def _return_int(original: Any, value: Any) -> int:
         raise TypeError(f"Cannot convert {type(original).__name__} '{original}' to wei.")
 
 
-class Fixed(Decimal):
+class Fixed(decimal.Decimal):
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
 
@@ -193,7 +192,7 @@ class Fixed(Decimal):
         return Fixed(super().__sub__(_to_fixed(other)))
 
 
-def _to_fixed(value: Any) -> Decimal:
+def _to_fixed(value: Any) -> decimal.Decimal:
     if isinstance(value, float):
         raise TypeError("Cannot convert float to decimal - use a string instead")
 

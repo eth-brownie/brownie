@@ -3,7 +3,6 @@
 
 import builtins
 import code
-import importlib
 import inspect
 import sys
 import tokenize
@@ -26,6 +25,7 @@ from pygments.styles import get_style_by_name
 
 import brownie
 from brownie import network, project
+from brownie._c_constants import import_module
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.utils import bright_blue, bright_cyan, color
 from brownie.utils.docopt import docopt
@@ -160,7 +160,7 @@ class Console(code.InteractiveConsole):
 
         # only make GUI available if Tkinter is installed
         try:
-            Gui = importlib.import_module("brownie._gui").Gui
+            Gui = import_module("brownie._gui").Gui
             locals_dict["Gui"] = Gui
         except ModuleNotFoundError:
             pass

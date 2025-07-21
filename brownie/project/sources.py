@@ -1,14 +1,19 @@
 #!/usr/bin/python3
 
-import re
 import textwrap
-from hashlib import sha1
-from pathlib import Path
 from typing import Dict, Final, List, Optional, Tuple
 
-from semantic_version import NpmSpec
+import semantic_version
 from vvm.utils.convert import to_vyper_version
 
+from brownie._c_constants import (
+    Path,
+    NpmSpec,
+    regex_findall,
+    regex_finditer,
+    regex_sub,
+    sha1,
+)
 from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.utils import color, dark_white
 
@@ -184,15 +189,15 @@ def get_contract_names(full_source: str) -> List[Tuple[str, str]]:
     """
     # remove comments in case they contain code snippets that could fail the regex
     comment_regex = r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)"
-    uncommented_source = re.sub(comment_regex, "", full_source)
-    contracts = re.findall(
+    uncommented_source = regex_sub(comment_regex, "", full_source)
+    contracts = regex_findall(
         r"((?:abstract contract|contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:abstract contract|contract|library|interface|pragma|struct|enum)\s|$)",  # NOQA: E501
         uncommented_source,
     )
 
     contract_names = []
     for source in contracts:
-        if matches := re.findall(
+        if matches := regex_findall(
             r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
             source,
         ):
@@ -201,7 +206,7 @@ def get_contract_names(full_source: str) -> List[Tuple[str, str]]:
     return contract_names
 
 
-def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+def get_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version.NpmSpec:
     """
     Extracts pragma information from Solidity source code.
 
@@ -212,7 +217,7 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
 
-    pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
+    pragma_match = next(regex_finditer(r"pragma +solidity([^;]*);", source), None)
     if pragma_match is not None:
         pragma_string = pragma_match.groups()[0]
         pragma_string = " ".join(pragma_string.split())
@@ -222,7 +227,7 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     raise PragmaError("String does not contain a version pragma")
 
 
-def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version.NpmSpec:
     """
     Extracts pragma information from Vyper source code.
 
@@ -233,7 +238,7 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
     pragma_match = next(
-        re.finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
+        regex_finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
     )
     if pragma_match is None:
         if path:

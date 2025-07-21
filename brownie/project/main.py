@@ -1,31 +1,34 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="union-attr"
 
-import importlib
 import json
 import os
-import re
+import pathlib
 import shutil
 import sys
 import warnings
 import zipfile
 from base64 import b64encode
-from hashlib import sha1
 from io import BytesIO
-from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple
 from urllib.parse import quote
 
 import requests
 import yaml
-from eth_utils.toolz import mapcat
 from mypy_extensions import mypyc_attr
-from semantic_version import Version
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
 from vvm.exceptions import VyperNotInstalled
 
+from brownie._c_constants import (
+    Path,
+    Version,
+    import_module,
+    mapcat,
+    regex_match,
+    sha1,
+)
 from brownie._config import (
     CONFIG,
     REQUEST_HEADERS,
@@ -79,8 +82,8 @@ _loaded_projects: Final[List["Project"]] = []
 @mypyc_attr(native_class=False)
 class _ProjectBase:
 
-    _path: Optional[Path]
-    _build_path: Optional[Path]
+    _path: Optional[pathlib.Path]
+    _build_path: Optional[pathlib.Path]
     _sources: Sources
     _build: Build
 
@@ -180,7 +183,7 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, name: str, project_path: Path, compile: bool = True) -> None:
+    def __init__(self, name: str, project_path: pathlib.Path, compile: bool = True) -> None:
         self._path = project_path
         self._envvars: Final = _load_project_envvars(project_path)
         self._structure: Final = expand_posix_vars(
@@ -200,7 +203,7 @@ class Project(_ProjectBase):
                 raise ProjectAlreadyLoaded("Project is already active")
             return None
 
-        project_path: Path = self._path  # type: ignore [assignment]
+        project_path: pathlib.Path = self._path  # type: ignore [assignment]
         contract_sources = _load_sources(project_path, self._structure["contracts"], False)
         interface_sources = _load_sources(project_path, self._structure["interfaces"], True)
         self._sources = Sources(contract_sources, interface_sources)
@@ -569,7 +572,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject '{self._name}'>"
 
 
-def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
+def check_for_project(path: pathlib.Path | str = ".") -> Optional[pathlib.Path]:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
@@ -620,7 +623,9 @@ def new(
 
 
 def from_brownie_mix(
-    project_name: str, project_path: Optional[Path | str] = None, ignore_subfolder: bool = False
+    project_name: str,
+    project_path: Optional[pathlib.Path | str] = None,
+    ignore_subfolder: bool = False,
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
@@ -710,7 +715,7 @@ def compile_source(
 
 
 def load(
-    project_path: Union[Path, str, None] = None,
+    project_path: Optional[pathlib.Path | str] = None,
     name: Optional[str] = None,
     raise_if_loaded: bool = True,
     compile: bool = True,
@@ -769,7 +774,7 @@ def load(
     return Project(name, project_path, compile=compile)
 
 
-def _install_dependencies(path: Path) -> None:
+def _install_dependencies(path: pathlib.Path) -> None:
     for package_id in _load_project_dependencies(path):
         try:
             install_package(package_id)
@@ -825,7 +830,7 @@ def _install_from_github(package_id: str) -> str:
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
 
-    if re.match(r"^[0-9a-f]+$", version):
+    if regex_match(r"^[0-9a-f]+$", version):
         download_url = f"https://api.github.com/repos/{org}/{repo}/zipball/{version}"
     else:
         download_url = _get_download_url_from_tag(org, repo, version, headers)
@@ -917,7 +922,7 @@ def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict)
     return next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
 
 
-def _create_gitfiles(project_path: Path) -> None:
+def _create_gitfiles(project_path: pathlib.Path) -> None:
     gitignore = project_path.joinpath(".gitignore")
     if not gitignore.exists():
         with gitignore.open("w") as fp:
@@ -928,7 +933,7 @@ def _create_gitfiles(project_path: Path) -> None:
             fp.write(GITATTRIBUTES)
 
 
-def _create_folders(project_path: Path) -> None:
+def _create_folders(project_path: pathlib.Path) -> None:
     structure = _load_project_structure_config(project_path)
     for path in structure.values():
         project_path.joinpath(path).mkdir(exist_ok=True)
@@ -937,7 +942,7 @@ def _create_folders(project_path: Path) -> None:
         build_path.joinpath(path).mkdir(exist_ok=True)
 
 
-def _add_to_sys_path(project_path: Path) -> None:
+def _add_to_sys_path(project_path: pathlib.Path) -> None:
     project_path_string = str(project_path)
     if project_path_string in sys.path:
         return
@@ -945,9 +950,8 @@ def _add_to_sys_path(project_path: Path) -> None:
 
 
 def _compare_settings(left: Dict, right: Dict) -> bool:
-    return next(
-        (True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)),
-        False,
+    return any(
+        True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)
     )
 
 
@@ -967,7 +971,7 @@ def _vyper_compiler_equal(config: dict, build: dict) -> bool:
     return config["version"] is None or config["version"] == build["version"]
 
 
-def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
+def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) -> Dict:
     contract_sources: Dict = {}
     suffixes: Tuple = (".sol", ".vy")
     if allow_json:
@@ -976,7 +980,7 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
     # one day this will be a beautiful plugin system
     hooks: Optional[ModuleType] = None
     if project_path.joinpath("brownie_hooks.py").exists():
-        hooks = importlib.import_module("brownie_hooks")
+        hooks = import_module("brownie_hooks")
 
     for path in project_path.glob(f"{subfolder}/**/*"):
         if path.suffix not in suffixes:

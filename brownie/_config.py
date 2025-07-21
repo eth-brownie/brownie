@@ -2,13 +2,11 @@
 import copy
 import json
 import os
-import re
+import pathlib
 import shutil
 import sys
 import warnings
-from collections import defaultdict
 from itertools import groupby
-from pathlib import Path
 from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional
 
 import yaml
@@ -17,6 +15,7 @@ from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
+from brownie._c_constants import Path, defaultdict, regex_sub
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
@@ -166,7 +165,7 @@ class ConfigDict(Dict[str, Any]):
         return config_copy
 
 
-def _get_project_config_path(project_path: Path) -> Optional[Path]:
+def _get_project_config_path(project_path: pathlib.Path) -> Optional[pathlib.Path]:
     if project_path.is_dir():
         path = project_path.joinpath("brownie-config")
     else:
@@ -175,7 +174,7 @@ def _get_project_config_path(project_path: Path) -> Optional[Path]:
     return None if suffix is None else path.with_suffix(suffix)
 
 
-def _load_config(project_path: Path) -> Dict:
+def _load_config(project_path: pathlib.Path) -> Dict:
     """Loads configuration data from a file, returns as a dict"""
     path = _get_project_config_path(project_path)
     if path is None:
@@ -185,11 +184,11 @@ def _load_config(project_path: Path) -> Dict:
         if path.suffix in (".yaml", ".yml"):
             return yaml.safe_load(fp) or {}
         raw_json = fp.read()
-    valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
+    valid_json = regex_sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)
 
 
-def _load_project_config(project_path: Path) -> None:
+def _load_project_config(project_path: pathlib.Path) -> None:
     """Loads configuration settings from a project's brownie-config.yaml"""
     config_path = project_path.joinpath("brownie-config")
     config_data = _load_config(config_path)
@@ -242,7 +241,7 @@ def _load_project_config(project_path: Path) -> None:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
 
 
-def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
+def _load_project_compiler_config(project_path: Optional[pathlib.Path]) -> Dict:
     if not project_path:
         return CONFIG.settings["compiler"]
 
@@ -253,7 +252,7 @@ def _load_project_compiler_config(project_path: Optional[Path]) -> Dict:
     return compiler_data
 
 
-def _load_project_envvars(project_path: Path) -> Dict:
+def _load_project_envvars(project_path: pathlib.Path) -> Dict:
     config_vars = dict(os.environ)
     if CONFIG.settings.get("dotenv"):
         dotenv_path = CONFIG.settings["dotenv"]
@@ -278,7 +277,7 @@ def _load_project_structure_config(project_path):
     return structure
 
 
-def _load_project_dependencies(project_path: Path) -> List:
+def _load_project_dependencies(project_path: pathlib.Path) -> List[str]:
     data = _load_config(project_path.joinpath("brownie-config"))
     dependencies = data.get("dependencies", []) or []
     if isinstance(dependencies, str):
@@ -317,15 +316,15 @@ def _recursive_update(original: Dict, new: Dict) -> None:
             original[k] = new[k]
 
 
-def _update_argv_from_docopt(args: Dict) -> None:
+def _update_argv_from_docopt(args: Dict[str, Any]) -> None:
     CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
 
 
-def _get_data_folder() -> Path:
+def _get_data_folder() -> pathlib.Path:
     return DATA_FOLDER
 
 
-def _make_data_folders(data_folder: Path) -> None:
+def _make_data_folders(data_folder: pathlib.Path) -> None:
     # create data folder structure
     data_folder.mkdir(exist_ok=True)
     for folder in DATA_SUBFOLDERS:

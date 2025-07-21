@@ -2,9 +2,9 @@
 
 import shutil
 import sys
-from pathlib import Path
 
 from brownie import project
+from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.utils import blue, bright_black, bright_blue, bright_magenta, color, notify
 from brownie.utils.docopt import docopt

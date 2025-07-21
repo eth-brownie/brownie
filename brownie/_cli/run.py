@@ -2,9 +2,9 @@
 
 import inspect
 import sys
-from pathlib import Path
 
 from brownie import network, project
+from brownie._c_constants import Path
 from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.project.scripts import _get_path, run

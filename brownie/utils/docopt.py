@@ -28,6 +28,8 @@ import re
 import sys
 from typing import Any, Callable, NamedTuple, Tuple, Type, Union, cast
 
+from brownie._c_constants import regex_findall, regex_match, regex_sub
+
 __all__ = ["docopt", "DocoptExit", "ParsedOptions"]
 __version__ = "0.9.0"
 
@@ -291,7 +293,7 @@ class _Option(_LeafPattern):
             else:
                 argcount = 1
         if argcount:
-            matched = re.findall(r"\[default: (.*)\]", description, flags=re.I)
+            matched = regex_findall(r"\[default: (.*)\]", description, flags=re.I)
             value = matched[0] if matched else None
         return cls(short, longer, argcount, value)
 
@@ -382,7 +384,7 @@ class _Tokens(list):
 
     @staticmethod
     def from_pattern(source: str) -> _Tokens:
-        source = re.sub(r"([\[\]\(\)\|]|\.\.\.)", r" \1 ", source)
+        source = regex_sub(r"([\[\]\(\)\|]|\.\.\.)", r" \1 ", source)
         fragments = [s for s in re.split(r"\s+|(\S*<.*?>)", source) if s]
         return _Tokens(fragments, error=DocoptLanguageError)
 
@@ -670,7 +672,7 @@ def _parse_docstring_sections(docstring: str) -> _DocSections:
     # Everything else
     (?P<after_usage>(?:.|\n)*)\Z
     """
-    match = re.match(usage_pattern, docstring, flags=re.M | re.I | re.VERBOSE)
+    match = regex_match(usage_pattern, docstring, flags=re.M | re.I | re.VERBOSE)
     if not match:
         raise DocoptLanguageError(
             'Failed to parse doc: "usage:" section (case-insensitive) not found. '

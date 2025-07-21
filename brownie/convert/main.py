@@ -1,17 +1,15 @@
 #!/usr/bin/python3
 
-from decimal import Decimal
 from typing import Any, Final, Union
 
 import faster_eth_utils
-import hexbytes
 from eth_typing import ChecksumAddress
+
+from brownie._c_constants import Decimal, HexBytes
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
 from .utils import get_int_bounds
 
-
-HexBytes: Final = hexbytes.HexBytes
 
 is_hex: Final = faster_eth_utils.is_hex
 to_text: Final = faster_eth_utils.to_text

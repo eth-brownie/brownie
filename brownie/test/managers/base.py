@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import json
-from hashlib import sha1
 from operator import attrgetter
 from pathlib import Path
 
@@ -9,6 +8,7 @@ import hypothesis
 from eth_utils.toolz import compose, concat
 
 import brownie
+from brownie._c_constants import sha1
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
