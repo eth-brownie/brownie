@@ -4,11 +4,11 @@ PyMODINIT_FUNC
 PyInit_flattener(void)
 {
     PyObject *tmp;
-    if (!(tmp = PyImport_ImportModule("42291a5fc61d44f940da__mypyc"))) return NULL;
+    if (!(tmp = PyImport_ImportModule("7d26e585108a186f537a__mypyc"))) return NULL;
     PyObject *capsule = PyObject_GetAttrString(tmp, "init_brownie___project___flattener");
     Py_DECREF(tmp);
     if (capsule == NULL) return NULL;
-    void *init_func = PyCapsule_GetPointer(capsule, "42291a5fc61d44f940da__mypyc.init_brownie___project___flattener");
+    void *init_func = PyCapsule_GetPointer(capsule, "7d26e585108a186f537a__mypyc.init_brownie___project___flattener");
     Py_DECREF(capsule);
     if (!init_func) {
         return NULL;
