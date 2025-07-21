@@ -168,7 +168,10 @@ def test_from_explorer_unverified(connect_to_mainnet):
         Contract.from_explorer("0x0000000000000000000000000000000000000000")
 
 
-@pytest.mark.xfail
+@pytest.mark.skip(
+    "etc rpc fails to connect and blocks the test runner while retrying. "
+    "Maybe fix this test with a different network."
+)
 @auto_retry
 def test_from_explorer_etc(network):
     network.connect("etc")
