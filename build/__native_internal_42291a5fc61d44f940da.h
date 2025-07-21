@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1979];
+extern PyObject *CPyStatics[1984];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1030,6 +1030,11 @@ extern char CPyDef_compiler___utils_____top_level__(void);
 extern PyObject *CPyStatic_vyper___vvm_logger;
 extern PyObject *CPyStatic_vyper___sh;
 extern PyObject *CPyStatic_vyper___EVM_VERSION_MAPPING;
+extern PyObject *CPyStatic_vyper____get_installed_vyper_versions;
+extern PyObject *CPyStatic_vyper____get_installable_vyper_versions;
+extern PyObject *CPyStatic_vyper____vvm_set_vyper_version;
+extern PyObject *CPyStatic_vyper____vvm_install_vyper;
+extern PyObject *CPyStatic_vyper____vvm_compile_standard;
 extern PyObject *CPyDef_vyper___get_version(void);
 extern PyObject *CPyPy_vyper___get_version(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper___set_vyper_version(PyObject *cpy_r_version);

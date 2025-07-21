@@ -1595,6 +1595,11 @@ struct export_table_42291a5fc61d44f940da {
     PyObject **CPyStatic_vyper___vvm_logger;
     PyObject **CPyStatic_vyper___sh;
     PyObject **CPyStatic_vyper___EVM_VERSION_MAPPING;
+    PyObject **CPyStatic_vyper____get_installed_vyper_versions;
+    PyObject **CPyStatic_vyper____get_installable_vyper_versions;
+    PyObject **CPyStatic_vyper____vvm_set_vyper_version;
+    PyObject **CPyStatic_vyper____vvm_install_vyper;
+    PyObject **CPyStatic_vyper____vvm_compile_standard;
     PyObject *(*CPyDef_vyper___get_version)(void);
     PyObject *(*CPyDef_vyper___set_vyper_version)(PyObject *cpy_r_version);
     PyObject *(*CPyDef_vyper___get_abi)(PyObject *cpy_r_contract_source, PyObject *cpy_r_name);
