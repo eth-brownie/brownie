@@ -146,7 +146,7 @@ class _ContractBase:
         abi: Optional[ABIFunction] = None
         for i in self.abi:
             if i["type"] == "function" and build_function_selector(i) == fn_selector:
-                abi = _abi
+                abi = i
                 break
 
         if abi is None:
