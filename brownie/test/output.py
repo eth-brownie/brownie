@@ -161,7 +161,7 @@ def _build_coverage_output(coverage_eval):
     return lines
 
 
-def _cov_color(pct) -> ColorStr:
+def _cov_color(pct: float) -> str:
     return next(i[1] for i in COVERAGE_COLORS if pct <= i[0])
 
 
