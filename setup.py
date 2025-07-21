@@ -35,7 +35,6 @@ else:
             [
                 "brownie/_c_constants.py",
                 "brownie/_cli",
-                "brownie/_c_constants.py",
                 "brownie/_expansion.py",
                 "brownie/convert/__init__.py",
                 "brownie/convert/main.py",
