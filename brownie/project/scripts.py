@@ -5,15 +5,14 @@ import pathlib
 import sys
 import warnings
 from ast import FunctionDef, Import, ImportFrom, dump, parse
-from hashlib import sha1
-from importlib import import_module, reload
+from importlib import reload
 from importlib.machinery import SourceFileLoader
 from importlib.util import find_spec
 from pathlib import WindowsPath
 from types import FunctionType, ModuleType
 from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
 
-from brownie._c_constants import Path
+from brownie._c_constants import Path, import_module, sha1
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
 from brownie.utils import bright_blue, bright_cyan, color
@@ -28,8 +27,6 @@ _FunctionType: Final = FunctionType
 
 _parse: Final = parse
 _dump: Final = dump
-
-_sha1: Final = sha1
 
 _import_module: Final = import_module
 _find_spec: Final = find_spec
@@ -214,4 +211,4 @@ def _get_ast_hash(path: str) -> str:
                 ast_list.append(_parse(fp.read(), origin))
 
     dump = "\n".join(_dump(i) for i in ast_list)
-    return _sha1(dump.encode()).hexdigest()
+    return sha1(dump.encode()).hexdigest()

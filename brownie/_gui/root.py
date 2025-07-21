@@ -4,8 +4,7 @@ import json
 import tkinter as tk
 from tkinter import ttk
 
-from eth_utils.toolz import keymap
-
+from brownie._c_constants import keymap
 from brownie.project import get_loaded_projects
 
 from .console import Console, ConsoleButton

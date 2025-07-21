@@ -1,15 +1,12 @@
 #!/usr/bin/python3
 
-import copy
-import hashlib
 import json
 from typing import Dict, Final, List, Optional, Union
 
-import semantic_version
 import solcast
 from eth_typing import ABIElement, HexStr
 
-from brownie._c_constants import Path
+from brownie._c_constants import Path, Version, deepcopy, sha1
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
@@ -46,11 +43,6 @@ EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
 # C constants
-deepcopy: Final = copy.deepcopy
-sha1: Final = hashlib.sha1
-
-Version: Final = semantic_version.Version
-
 _from_standard_output: Final = solcast.from_standard_output
 
 

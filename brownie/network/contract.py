@@ -4,7 +4,6 @@ import asyncio
 import io
 import json
 import os
-import re
 import time
 import warnings
 from pathlib import Path
@@ -30,14 +29,13 @@ import requests
 import solcx
 from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
 from faster_eth_utils import combomethod
-from hexbytes import HexBytes
-from semantic_version import Version
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
+from brownie._c_constants import HexBytes, Version, regex_findall
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
@@ -303,7 +301,7 @@ class ContractContainer(_ContractBase):
                         compiler._get_solc_remappings(config["solc"]["remappings"]),
                     )
                 )
-                libs = {lib.strip("_") for lib in re.findall("_{1,}[^_]*_{1,}", self.bytecode)}
+                libs = {lib.strip("_") for lib in regex_findall("_{1,}[^_]*_{1,}", self.bytecode)}
                 compiler_settings = {
                     "evmVersion": self._build["compiler"]["evm_version"],
                     "optimizer": config["solc"]["optimizer"],
@@ -558,7 +556,7 @@ class ContractConstructor:
     def encode_input(self, *args: Any) -> str:
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
-        for marker in re.findall("_{1,}[^_]*_{1,}", bytecode):
+        for marker in regex_findall("_{1,}[^_]*_{1,}", bytecode):
             library = marker.strip("_")
             if not self._parent._project[library]:
                 raise UndeployedLibrary(
@@ -1936,7 +1934,7 @@ def _verify_deployed_code(address: ChecksumAddress, expected_bytecode: HexStr, l
         )
 
     if "_" in expected_bytecode:
-        for marker in re.findall("_{1,}[^_]*_{1,}", expected_bytecode):
+        for marker in regex_findall("_{1,}[^_]*_{1,}", expected_bytecode):
             idx = expected_bytecode.index(marker)
             actual_bytecode = actual_bytecode[:idx] + actual_bytecode[idx + 40 :]
             expected_bytecode = expected_bytecode[:idx] + expected_bytecode[idx + 40 :]

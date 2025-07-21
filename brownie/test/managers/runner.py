@@ -2,7 +2,6 @@
 
 import builtins
 import json
-import re
 import sys
 import warnings
 from pathlib import Path
@@ -12,6 +11,7 @@ from _pytest._io import TerminalWriter
 from eth_utils.toolz import keyfilter
 
 import brownie
+from brownie._c_constants import regex_compile, regex_fullmatch
 from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
@@ -58,9 +58,9 @@ class RevertContextManager:
             raise ValueError("Can only use one of `dev_revert_msg` and `dev_revert_pattern`")
 
         if revert_pattern:
-            re.compile(revert_pattern)
+            regex_compile(revert_pattern)
         if dev_revert_pattern:
-            re.compile(dev_revert_pattern)
+            regex_compile(dev_revert_pattern)
 
         self.revert_msg = revert_msg
         self.dev_revert_msg = dev_revert_msg
@@ -88,7 +88,7 @@ class RevertContextManager:
             actual = exc_value.dev_revert_msg
             if (
                 actual is None
-                or (self.dev_revert_pattern and not re.fullmatch(self.dev_revert_pattern, actual))
+                or (self.dev_revert_pattern and not regex_fullmatch(self.dev_revert_pattern, actual))
                 or (self.dev_revert_msg and self.dev_revert_msg != actual)
             ):
                 raise AssertionError(
@@ -99,7 +99,7 @@ class RevertContextManager:
             actual = exc_value.revert_msg
             if (
                 actual is None
-                or (self.revert_pattern and not re.fullmatch(self.revert_pattern, actual))
+                or (self.revert_pattern and not regex_fullmatch(self.revert_pattern, actual))
                 or (self.revert_msg and self.revert_msg != actual)
             ):
                 raise AssertionError(

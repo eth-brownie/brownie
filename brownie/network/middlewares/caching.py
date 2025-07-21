@@ -1,12 +1,13 @@
+import hexbytes
 import json
 import threading
 import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional
 
-from hexbytes import HexBytes
 from web3 import Web3
 
+from brownie._c_constants import HexBytes
 from brownie._config import CONFIG, _get_data_folder
 from brownie.network.middlewares import BrownieMiddlewareABC
 from brownie.utils.sql import Cursor
@@ -18,7 +19,7 @@ LONGTERM_CACHE = {
 }
 
 
-def _strip_push_data(bytecode: HexBytes) -> HexBytes:
+def _strip_push_data(bytecode: hexbytes.HexBytes) -> hexbytes.HexBytes:
     idx = 0
     while idx < len(bytecode):
         # if instruction is between PUSH1 and PUSH32
@@ -30,7 +31,7 @@ def _strip_push_data(bytecode: HexBytes) -> HexBytes:
     return bytecode
 
 
-def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
+def is_cacheable_bytecode(web3: Web3, bytecode: hexbytes.HexBytes) -> bool:
     """
     Check if bytecode can safely by cached.
 

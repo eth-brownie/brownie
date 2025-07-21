@@ -3,11 +3,9 @@ import copy
 import json
 import os
 import pathlib
-import re
 import shutil
 import sys
 import warnings
-from collections import defaultdict
 from itertools import groupby
 from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional
 
@@ -17,7 +15,7 @@ from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
-from brownie._c_constants import Path
+from brownie._c_constants import Path, defaultdict, regex_sub
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
@@ -186,7 +184,7 @@ def _load_config(project_path: pathlib.Path) -> Dict:
         if path.suffix in (".yaml", ".yml"):
             return yaml.safe_load(fp) or {}
         raw_json = fp.read()
-    valid_json = re.sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
+    valid_json = regex_sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
     return json.loads(valid_json)
 
 

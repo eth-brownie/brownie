@@ -1,13 +1,10 @@
 #!/usr/bin/python3
 
 import functools
-import re
 import sys
 import threading
 import time
-from collections import deque
 from enum import IntEnum
-from hashlib import sha1
 from pathlib import Path
 from typing import (
     Any,
@@ -27,9 +24,9 @@ from warnings import warn
 import black
 import requests
 from eth_abi import decode
-from hexbytes import HexBytes
 from web3.exceptions import TransactionNotFound
 
+from brownie._c_constants import HexBytes, deque, regex_compile, sha1
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
 from brownie.exceptions import ContractNotFound, RPCRequestError, decode_typed_error
@@ -866,7 +863,7 @@ class TransactionReceipt:
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
         coverage_eval: Dict = {last_map[0]["name"]: {}}
-        precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
+        precompile_contract = regex_compile(r"0x0{38}(?:0[1-9]|1[0-8])")
         call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
         for i in range(len(trace)):
             # if depth has increased, tx has called into a different contract
@@ -1467,5 +1464,5 @@ def _get_last_map(address: EthAddress, sig: str) -> Dict:
 
 
 def _is_call_to_precompile(subcall: dict) -> bool:
-    precompile_contract = re.compile(r"0x0{38}(?:0[1-9]|1[0-8])")
+    precompile_contract = regex_compile(r"0x0{38}(?:0[1-9]|1[0-8])")
     return True if precompile_contract.search(str(subcall["to"])) is not None else False

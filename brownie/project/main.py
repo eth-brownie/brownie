@@ -1,17 +1,14 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="union-attr"
 
-import importlib
 import json
 import os
 import pathlib
-import re
 import shutil
 import sys
 import warnings
 import zipfile
 from base64 import b64encode
-from hashlib import sha1
 from io import BytesIO
 from types import ModuleType
 from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple
@@ -19,14 +16,19 @@ from urllib.parse import quote
 
 import requests
 import yaml
-from eth_utils.toolz import mapcat
 from mypy_extensions import mypyc_attr
-from semantic_version import Version
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
 from vvm.exceptions import VyperNotInstalled
 
-from brownie._c_constants import Path
+from brownie._c_constants import (
+    Path,
+    Version,
+    import_module,
+    mapcat,
+    regex_match,
+    sha1,
+)
 from brownie._config import (
     CONFIG,
     REQUEST_HEADERS,
@@ -828,7 +830,7 @@ def _install_from_github(package_id: str) -> str:
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
 
-    if re.match(r"^[0-9a-f]+$", version):
+    if regex_match(r"^[0-9a-f]+$", version):
         download_url = f"https://api.github.com/repos/{org}/{repo}/zipball/{version}"
     else:
         download_url = _get_download_url_from_tag(org, repo, version, headers)
@@ -978,7 +980,7 @@ def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) 
     # one day this will be a beautiful plugin system
     hooks: Optional[ModuleType] = None
     if project_path.joinpath("brownie_hooks.py").exists():
-        hooks = importlib.import_module("brownie_hooks")
+        hooks = import_module("brownie_hooks")
 
     for path in project_path.glob(f"{subfolder}/**/*"):
         if path.suffix not in suffixes:

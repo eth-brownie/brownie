@@ -1,22 +1,25 @@
 #!/usr/bin/python3
 
 import logging
-from collections import deque
-from hashlib import sha1
 from typing import Dict, Final, List, Optional, Tuple, Union
 
+import semantic_version
 import vvm
 import vyper
 from eth_typing import ABIElement, HexStr
 from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
-from semantic_version import Version
 from vyper.cli import vyper_json
 from vyper.exceptions import VyperException
 
+from brownie._c_constants import Version, deque, sha1
 from brownie.exceptions import CompilerError, IncompatibleVyperVersion
 from brownie.project import sources
-from brownie.project.compiler.utils import expand_source_map
+from brownie.project.compiler.utils import (
+    VersionList,
+    VersionSpec,
+    expand_source_map,
+)
 from brownie.project.sources import is_inside_offset
 from brownie.typing import ContractName
 
@@ -27,7 +30,7 @@ sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 vvm_logger.addHandler(sh)
 
-AVAILABLE_VYPER_VERSIONS: Optional[List[Version]] = None
+AVAILABLE_VYPER_VERSIONS: Optional[VersionList] = None
 _active_version = Version(vyper.__version__)
 
 
@@ -46,11 +49,11 @@ _vvm_set_vyper_version: Final = vvm.set_vyper_version
 _vvm_install_vyper: Final = vvm.install_vyper
 _vvm_compile_standard: Final = vvm.compile_standard
 
-def get_version() -> Version:
+def get_version() -> semantic_version.Version:
     return _active_version
 
 
-def set_vyper_version(version: Union[str, Version]) -> str:
+def set_vyper_version(version: VersionSpec) -> str:
     """Sets the vyper version. If not available it will be installed."""
     global _active_version
     if isinstance(version, str):
@@ -93,7 +96,7 @@ def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, ABIE
     return {name: compiled["contracts"][name][name]["abi"]}
 
 
-def _get_vyper_version_list() -> Tuple[List[Version], List[Version]]:
+def _get_vyper_version_list() -> Tuple[VersionList, VersionList]:
     global AVAILABLE_VYPER_VERSIONS
     installed_versions = _convert_to_semver(_get_installed_vyper_versions())
     lib_version = Version(vyper.__version__)
@@ -469,7 +472,7 @@ def _get_statement_nodes(ast_json: List[Dict]) -> List[Dict]:
     return stmt_nodes
 
 
-def _convert_to_semver(versions: List[PVersion]) -> List[Version]:
+def _convert_to_semver(versions: List[PVersion]) -> VersionList:
     """
     Converts a list of `packaging.version.Version` objects to a list of
     `semantic_version.Version` objects.

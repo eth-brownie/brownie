@@ -4,7 +4,6 @@ import gc
 import threading
 import time
 import weakref
-from hashlib import sha1
 from pathlib import Path
 from sqlite3 import OperationalError
 from typing import (
@@ -22,10 +21,10 @@ from typing import (
 )
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
-from eth_utils.toolz import keymap
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
+from brownie._c_constants import keymap, sha1
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei

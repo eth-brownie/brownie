@@ -2,9 +2,15 @@
 
 from typing import Dict, List, Optional, Set, Union
 
+from semantic_version import Version
+
 from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.typing import ContractName
+
+
+VersionSpec = Union[str, Version]
+VersionList = List[Version]
 
 
 def expand_source_map(source_map_str: str | dict) -> List[List]:

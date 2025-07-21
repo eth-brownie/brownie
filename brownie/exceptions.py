@@ -8,9 +8,9 @@ import eth_abi
 import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
-from hexbytes import HexBytes
 
 import brownie
+from brownie._c_constants import HexBytes
 from brownie._config import _get_data_folder
 from brownie.convert.utils import build_function_selector, get_type_strings
 

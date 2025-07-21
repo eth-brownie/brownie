@@ -1,20 +1,19 @@
 #!/usr/bin/python3
 
 import logging
-from collections import deque
-from hashlib import sha1
-from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple, Union
+from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
 
+import semantic_version
 import solcast
 import solcx
 from eth_typing import HexStr
 from requests.exceptions import ConnectionError
-from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
 
+from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
-from brownie.project.compiler.utils import _get_alias, expand_source_map
+from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
 
 from . import sources
 
@@ -25,7 +24,7 @@ sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-AVAILABLE_SOLC_VERSIONS: Optional[List[Version]] = None
+AVAILABLE_SOLC_VERSIONS: Optional[VersionList] = None
 
 EVM_VERSION_MAPPING: Final = [
     ("prague", Version("0.8.30")),
@@ -46,7 +45,7 @@ BranchMap = Dict[str, Dict[str, Dict[int, Tuple[int, int, int]]]]
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
 
-def get_version() -> Version:
+def get_version() -> semantic_version.Version:
     return solcx.get_solc_version(with_commit_hash=True)
 
 
@@ -85,7 +84,7 @@ def compile_from_input_json(
         raise CompilerError(e, "solc")
 
 
-def set_solc_version(version: Union[str, Version]) -> str:
+def set_solc_version(version: VersionSpec) -> str:
     """Sets the solc version. If not available it will be installed."""
     if not isinstance(version, Version):
         version = Version(version.lstrip("v"))
@@ -104,7 +103,7 @@ def set_solc_version(version: Union[str, Version]) -> str:
     return str(solcx.get_solc_version())
 
 
-def install_solc(*versions: Union[Version, str]) -> None:
+def install_solc(*versions: VersionSpec) -> None:
     """Installs solc versions."""
     for version in versions:
         solcx.install_solc(version, show_progress=False)
@@ -237,7 +236,7 @@ def find_best_solc_version(
     return str(max(installed_versions))
 
 
-def _get_solc_version_list() -> Tuple[List[Version], List[Version]]:
+def _get_solc_version_list() -> Tuple[VersionList, VersionList]:
     global AVAILABLE_SOLC_VERSIONS
     installed_versions = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:

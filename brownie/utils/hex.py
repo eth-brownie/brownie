@@ -9,7 +9,8 @@ from importlib.metadata import version
 from typing import Final
 
 from eth_typing import HexStr
-from hexbytes import HexBytes
+
+from brownie._c_constants import HexBytes
 
 HEXBYTES_LT_1_0_0: Final = tuple(int(i) for i in version("hexbytes").split(".")) < (
     1,

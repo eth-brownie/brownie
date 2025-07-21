@@ -1,28 +1,23 @@
 import re
-from collections import defaultdict
 from typing import Any, DefaultDict, Dict, Final, Iterator, Set, final
 
-import eth_utils.toolz
-
-from brownie._c_constants import Path
+from brownie._c_constants import (
+    Path,
+    defaultdict,
+    mapcat,
+    regex_compile,
+    regex_sub,
+)
 from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
-IMPORT_PATTERN: Final = re.compile(
+IMPORT_PATTERN: Final = regex_compile(
     r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"
 )
-PRAGMA_PATTERN: Final = re.compile(r"^pragma.*;$", re.MULTILINE)
-LICENSE_PATTERN: Final = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
+PRAGMA_PATTERN: Final = regex_compile(r"^pragma.*;$", re.MULTILINE)
+LICENSE_PATTERN: Final = regex_compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
 
-
-# C Constants
-
-_defaultdict: Final = defaultdict
-
-_sub: Final = re.sub
-
-_mapcat: Final = eth_utils.toolz.mapcat
 
 
 @final
@@ -37,7 +32,7 @@ class Flattener:
         compiler_settings: Dict[str, Any],
     ) -> None:
         self.sources: Final[Dict[str, str]] = {}
-        self.dependencies: Final[DefaultDict[str, Set[str]]] = _defaultdict(set)
+        self.dependencies: Final[DefaultDict[str, Set[str]]] = defaultdict(set)
         self.compiler_settings: Final = compiler_settings
         self.contract_name: Final = contract_name
         self.contract_file: Final = self.path_to_name(primary_source_fp)
@@ -102,7 +97,7 @@ class Flattener:
         # all source files in the correct order for concatenation
         sources = [self.sources[x] for x in flattened_deps]
 
-        pragmas_iter: Iterator[str] = _mapcat(_PRAGMA_PATTERN_FINDALL, sources)
+        pragmas_iter: Iterator[str] = mapcat(_PRAGMA_PATTERN_FINDALL, sources)
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
         pragmas = set(s.strip() for s in pragmas_iter)
@@ -118,7 +113,7 @@ class Flattener:
 
         # hopefully this doesn't mess up anything pretty, but just gotta remove all
         # that extraneous whitespace
-        return _sub(r"\n{3,}", "\n\n", flat)
+        return regex_sub(r"\n{3,}", "\n\n", flat)
 
     @property
     def standard_input_json(self) -> Dict:

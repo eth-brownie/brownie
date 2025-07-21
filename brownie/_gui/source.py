@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-import re
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 
-from brownie._c_constants import Path
+from brownie._c_constants import Path, regex_finditer
 from brownie.project.sources import is_inside_offset
 
 from .bases import SelectBox
@@ -196,7 +195,7 @@ class SourceFrame(tk.Frame):
             pattern = r"((?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/))"
         else:
             pattern = r"((#[^\n]*\n)|(\"\"\"[\s\S]*?\"\"\")|('''[\s\S]*?'''))"
-        for match in re.finditer(pattern, text):
+        for match in regex_finditer(pattern, text):
             self.tag_add("comment", match.start(), match.end())
 
         self._line_no.insert(1.0, "\n".join(str(i) for i in range(1, text.count("\n") + 2)))

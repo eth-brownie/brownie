@@ -1,7 +1,8 @@
-import re
 from typing import Any, Final, Mapping, Optional, Text, TypeVar, overload
 
 from dotenv.variables import parse_variables
+
+from brownie._c_constants import regex_compile
 
 
 _T = TypeVar("_T")
@@ -42,7 +43,7 @@ def _expand(value: _T, variables: Mapping = {}) -> _T:
     return "".join([str(atom.resolve(variables)) for atom in atoms])  # type: ignore [return-value]
 
 
-INT_REGEX: Final = re.compile(r"^[-+]?[0-9]+$")
+INT_REGEX: Final = regex_compile(r"^[-+]?[0-9]+$")
 
 
 @overload

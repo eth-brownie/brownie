@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
 
-from eth_utils.toolz import keymap
+from brownie._c_constants import keymap
 
 from .sources import Sources, highlight_source
 
