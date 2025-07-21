@@ -574,7 +574,7 @@ def _notify_registry(height: Optional[BlockNumber] = None) -> None:
             obj._reset()
 
 
-def _find_contract(address: Optional[HexAddress]) -> Optional[Union[Contract, ProjectContract]]:
+def _find_contract(address: Optional[HexAddress]) -> Optional[Union["Contract", "ProjectContract"]]:
     if address is None:
         return None
 
