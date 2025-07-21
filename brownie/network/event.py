@@ -2,10 +2,10 @@
 # mypy: disable-error-code="union-attr"
 
 import json
-import pathlib
 import time
 import warnings
 from collections import OrderedDict
+from pathlib import Path
 from threading import Lock, Thread
 from typing import (
     TYPE_CHECKING,
