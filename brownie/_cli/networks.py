@@ -68,7 +68,7 @@ DEV_CMD_SETTINGS: Final = (
 )
 
 
-def main():
+def main() -> None:
     args = docopt(__doc__)
     try:
         fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
@@ -82,7 +82,7 @@ def main():
         return
 
 
-def _list(verbose: str | bool = False):
+def _list(verbose: str | bool = False) -> None:
     if isinstance(verbose, str):
         try:
             verbose = eval(verbose.capitalize())
@@ -115,7 +115,7 @@ def _list(verbose: str | bool = False):
             _print_simple_network_description(value, is_last)
 
 
-def _add(env, id_, *args):
+def _add(env: str, id_: str, *args: str) -> None:
     if id_ in CONFIG.networks:
         raise ValueError(f"Network '{bright_magenta}{id_}{color}' already exists")
 
@@ -158,7 +158,7 @@ def _add(env, id_, *args):
     _print_verbose_network_description(new, True)
 
 
-def _modify(id_, *args):
+def _modify(id_: str, *args: str) -> None:
     if id_ not in CONFIG.networks:
         raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
@@ -168,18 +168,22 @@ def _modify(id_, *args):
         networks = yaml.safe_load(fp)
 
     is_dev = "cmd" in CONFIG.networks[id_]
-    if is_dev:
-        target = next(i for i in networks["development"] if i["id"] == id_)
-    else:
-        target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-    for key, value in args_dict.items():
-        t = target
-        if key in DEV_CMD_SETTINGS and is_dev:
-            t = target["cmd_settings"]
-        if value is None:
-            del t[key]
+    try:
+        if is_dev:
+            target = next(i for i in networks["development"] if i["id"] == id_)
         else:
-            t[key] = value
+            target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
+        for key, value in args_dict.items():
+            t = target
+            if key in DEV_CMD_SETTINGS and is_dev:
+                t = target["cmd_settings"]
+            if value is None:
+                del t[key]
+            else:
+                t[key] = value
+    except TypeError as e:
+        raise TypeError(*e.args, networks) from e.__cause__
+
     if is_dev:
         _validate_network(target, DEV_REQUIRED)
     else:
@@ -202,12 +206,15 @@ def _delete(id_: str) -> None:
     with NETWORK_CONFIG_YAML.open() as fp:
         networks = yaml.safe_load(fp)
 
-    if "cmd" in CONFIG.networks[id_]:
-        networks["development"] = [i for i in networks["development"] if i["id"] != id_]
-    else:
-        target = next(i for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-        target["networks"] = [i for i in target["networks"] if i["id"] != id_]
-        networks["live"] = [i for i in networks["live"] if i["networks"]]
+    try:
+        if "cmd" in CONFIG.networks[id_]:
+            networks["development"] = [i for i in networks["development"] if i["id"] != id_]
+        else:
+            target = next(i for i in networks["live"] for x in i["networks"] if x["id"] == id_)
+            target["networks"] = [i for i in target["networks"] if i["id"] != id_]
+            networks["live"] = [i for i in networks["live"] if i["networks"]]
+    except TypeError as e:
+        raise TypeError(*e.args, networks) from e.__cause__
 
     with NETWORK_CONFIG_YAML.open("w") as fp:
         yaml.dump(networks, fp)
@@ -240,24 +247,25 @@ def _import(path_str: str, replace: str | bool = False) -> None:
         _validate_network(value, DEV_REQUIRED)
         old_networks["development"].append(value)
 
-    for chain, value in [(i, x) for i in new_networks.get("live", []) for x in i["networks"]]:
-        prod = next((i for i in old_networks["live"] if i["name"] == chain["name"]), None)
-        if prod is None:
-            prod = {"name": chain["name"], "networks": []}
-            old_networks["live"].append(prod)
-        id_ = value["id"]
-        if id_ in CONFIG.networks:
-            if not replace:
-                raise ValueError(f"Cannot overwrite existing network {id_}")
-            existing = next((i for i in prod["networks"] if i["id"] == id_), None)
-            if existing is None:
-                raise ValueError(
-                    f"Import file contains live network with id '{id_}',"
-                    " but this is already an existing network on a different environment."
-                )
-            prod["networks"].remove(existing)
-        _validate_network(value, PROD_REQUIRED)
-        prod["networks"].append(value)
+    for chain in new_networks.get("live", []):
+        for value in chain["networks"]:
+            prod = next((i for i in old_networks["live"] if i["name"] == chain["name"]), None)
+            if prod is None:
+                prod = {"name": chain["name"], "networks": []}
+                old_networks["live"].append(prod)
+            id_ = value["id"]
+            if id_ in CONFIG.networks:
+                if not replace:
+                    raise ValueError(f"Cannot overwrite existing network {id_}")
+                existing = next((i for i in prod["networks"] if i["id"] == id_), None)
+                if existing is None:
+                    raise ValueError(
+                        f"Import file contains live network with id '{id_}',"
+                        " but this is already an existing network on a different environment."
+                    )
+                prod["networks"].remove(existing)
+            _validate_network(value, PROD_REQUIRED)
+            prod["networks"].append(value)
 
     with NETWORK_CONFIG_YAML.open("w") as fp:
         yaml.dump(old_networks, fp)
