@@ -248,21 +248,25 @@ def plugintester(_project_factory, plugintesterbase, request):
     yield plugintesterbase
 
 
+_devnetwork_lock = threading.Lock()
+
+
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc, chain, network_name):
-    try:
-        network.connect(network_name)
-    except ConnectionError as e:
-        if not e.args[0].startswith("Already connected to network "):
-            raise
-        if network_name not in e.args[0]:
-            _disconnect_network()
+    with _devnetwork_lock:
+        try:
             network.connect(network_name)
-
-    yield network
-    if rpc.is_active():
-        chain.reset()
+        except ConnectionError as e:
+            if not e.args[0].startswith("Already connected to network "):
+                raise
+            if network_name not in e.args[0]:
+                _disconnect_network()
+                network.connect(network_name)
+    
+        yield network
+        if rpc.is_active():
+            chain.reset()
 
 
 # brownie object fixtures
