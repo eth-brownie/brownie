@@ -40,7 +40,9 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
-_contract_map: Final[Dict[ChecksumAddress, "Contract" | "ProjectContract"]] = {}
+AnyContract = Union["Contract", "ProjectContract"]
+
+_contract_map: Final[Dict[ChecksumAddress, AnyContract] = {}
 _revert_refs: Final[List[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
@@ -597,11 +599,11 @@ def _get_current_dependencies() -> List:
     return sorted(dependencies)
 
 
-def _add_contract(contract: Union["Contract", "ProjectContract"]) -> None:
+def _add_contract(contract: AnyContract) -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract: Union["Contract", "ProjectContract"]) -> None:
+def _remove_contract(contract: AnyContract) -> None:
     _contract_map.pop(contract.address, None)
 
 
