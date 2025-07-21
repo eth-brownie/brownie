@@ -11,7 +11,7 @@ from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
 
 import brownie
-from brownie.utils import color
+from brownie.utils import red, yellow
 
 sf.__tracebackhide__ = True
 
@@ -29,8 +29,8 @@ class _BrownieStateMachine:
         # pytest capturemanager plugin, added when accessed via the state_manager fixture
         if capman := getattr(self, "_capman", None):
             with capman.global_and_fixture_disabled():
-                c = color("red" if self._failed else "yellow")
-                sys.stdout.write(f"{c}{marker[0]}\033[1D")
+                color = red if self._failed else yellow
+                sys.stdout.write(f"{color}{marker[0]}\033[1D")
                 sys.stdout.flush()
             marker.rotate(1)
 

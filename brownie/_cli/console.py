@@ -27,7 +27,7 @@ from pygments.styles import get_style_by_name
 import brownie
 from brownie import network, project
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
-from brownie.utils import color
+from brownie.utils import bright_blue, bright_cyan, color
 from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie console [options]
@@ -324,9 +324,7 @@ def _dir_color(obj: Any) -> str:
         return color("brownie blue")
     elif hasattr(obj, "_dir_color"):
         return color(obj._dir_color)
-    elif not callable(obj):
-        return color("bright blue")
-    return color("bright cyan")
+    return bright_cyan if callable(obj) else bright_blue
 
 
 @final

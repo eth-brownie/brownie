@@ -34,7 +34,7 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import color, bytes_to_hexstring
+from brownie.utils import bright_blue, bright_cyan, bytes_to_hexstring, color
 
 from .gas.bases import GasABC
 from .rpc import Rpc
@@ -145,7 +145,7 @@ class Accounts(metaclass=_Singleton):
         """
         if private_key is None:
             w3account, mnemonic = eth_account.Account.create_with_mnemonic()
-            print(f"mnemonic: '{color('bright cyan')}{mnemonic}{color}'")
+            print(f"mnemonic: '{bright_cyan}{mnemonic}{color}'")
         else:
             w3account = web3.eth.account.from_key(private_key)
 
@@ -777,14 +777,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     if txid is None:
                         txid = bytes_to_hexstring(response)
                         if not silent:
-                            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                            print(f"\rTransaction sent: {bright_blue}{txid}{color}")
                 except ValueError as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
                         if not hasattr(exc, "txid"):
                             raise exc from None
                         txid = exc.txid
-                        print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                        print(f"\rTransaction sent: {bright_blue}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
                 try:
                     receipt = TransactionReceipt(

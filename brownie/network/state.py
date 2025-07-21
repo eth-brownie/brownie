@@ -21,7 +21,7 @@ from typing import (
     final,
 )
 
-from eth_typing import BlockNumber, HexStr
+from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from eth_utils.toolz import keymap
 from web3.types import BlockData
 
@@ -38,10 +38,12 @@ from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
 if TYPE_CHECKING:
-    from .contract import _DeployedContractBase, Contract
+    from .contract import Contract, ProjectContract
 
-_contract_map: Dict = {}
-_revert_refs: List = []
+AnyContract = Union["Contract", "ProjectContract"]
+
+_contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
+_revert_refs: Final[List[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
@@ -109,12 +111,12 @@ class TxHistory(metaclass=_Singleton):
         else:
             self._list.clear()
 
-    def copy(self) -> List:
+    def copy(self) -> List[TransactionReceipt]:
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
     def filter(
-        self, key: Optional[Callable] = None, **kwargs: Optional[Any]
+        self, key: Optional[Callable] = None, **kwargs: Any
     ) -> List[TransactionReceipt]:
         """
         Return a filtered list of transactions.
@@ -138,7 +140,7 @@ class TxHistory(metaclass=_Singleton):
         result = (i for i in self._list if all(getattr(i, k) == v for k, v in kwargs.items()))
         return list(result if key is None else filter(key, result))
 
-    def wait(self, key: Optional[Callable] = None, **kwargs: Optional[Any]) -> None:
+    def wait(self, key: Optional[Callable] = None, **kwargs: Any) -> None:
         """
         Wait for pending transactions to confirm.
 
@@ -163,15 +165,15 @@ class TxHistory(metaclass=_Singleton):
                 return
             pending._confirmed.wait()
 
-    def from_sender(self, account: str) -> List:
+    def from_sender(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: str) -> List:
+    def to_receiver(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: str) -> List:
+    def of_address(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
@@ -258,10 +260,10 @@ class Chain(metaclass=_Singleton):
             self._block_gas_time = block["timestamp"]
         return block
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[BlockData]:
         return iter(web3.eth.get_block(i) for i in range(web3.eth.block_number + 1))
 
-    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
+    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator[BlockData]:
         """
         Generator for iterating over new blocks.
 
@@ -334,7 +336,7 @@ class Chain(metaclass=_Singleton):
         _notify_registry()
         return id_
 
-    def _add_to_undo_buffer(self, tx: Any, fn: Any, args: Tuple, kwargs: Dict) -> None:
+    def _add_to_undo_buffer(self, tx: TransactionReceipt, fn: Any, args: Tuple, kwargs: Dict) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
             self._undo_buffer.append((self._current_id, fn, args, kwargs))
@@ -572,20 +574,22 @@ def _notify_registry(height: Optional[BlockNumber] = None) -> None:
             obj._reset()
 
 
-def _find_contract(address: Any) -> Any:
+def _find_contract(address: Optional[HexAddress]) -> Optional[AnyContract]:
     if address is None:
-        return
+        return None
 
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
-    if "chainid" in CONFIG.active_network:
-        try:
-            from brownie.network.contract import Contract
+    if "chainid" not in CONFIG.active_network:
+        return None
+    
+    from brownie.network.contract import Contract
 
-            return Contract(address)
-        except (ValueError, CompilerError):
-            pass
+    try:
+        return Contract(address)
+    except (ValueError, CompilerError):
+        return None
 
 
 def _get_current_dependencies() -> List:
@@ -595,11 +599,11 @@ def _get_current_dependencies() -> List:
     return sorted(dependencies)
 
 
-def _add_contract(contract: "_DeployedContractBase") -> None:
+def _add_contract(contract: AnyContract) -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract: "_DeployedContractBase") -> None:
+def _remove_contract(contract: AnyContract) -> None:
     _contract_map.pop(contract.address, None)
 
 
@@ -672,7 +676,7 @@ def _add_deployment(contract: "Contract", alias: Optional[str] = None) -> None:
 
 
 def _remove_deployment(
-    address: Optional[str] = None, alias: Optional[str] = None
+    address: Optional[HexAddress] = None, alias: Optional[str] = None
 ) -> Tuple[Optional[Dict], Optional[Dict]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")

@@ -37,7 +37,7 @@ from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie.utils import color, bytes_to_hexstring, hexbytes_to_hexstring
+from brownie.utils import bright_blue, bright_cyan, bright_magenta, bright_red, bright_yellow, bytes_to_hexstring, color, dark_white, red, hexbytes_to_hexstring
 from brownie.utils.output import build_tree
 
 from . import state
@@ -219,15 +219,15 @@ class TransactionReceipt:
                 max_gas = tx["maxFeePerGas"] / 10**9
                 priority_gas = tx["maxPriorityFeePerGas"] / 10**9
                 output_str = (
-                    f"  Max fee: {color('bright blue')}{max_gas}{color} gwei"
-                    f"   Priority fee: {color('bright blue')}{priority_gas}{color} gwei"
+                    f"  Max fee: {bright_blue}{max_gas}{color} gwei"
+                    f"   Priority fee: {bright_blue}{priority_gas}{color} gwei"
                 )
             elif self.gas_price is not None:
                 gas_price = self.gas_price / 10**9
-                output_str = f"  Gas price: {color('bright blue')}{gas_price}{color} gwei"
+                output_str = f"  Gas price: {bright_blue}{gas_price}{color} gwei"
             print(
-                f"{output_str}   Gas limit: {color('bright blue')}{self.gas_limit}{color}"
-                f"   Nonce: {color('bright blue')}{self.nonce}{color}"
+                f"{output_str}   Gas limit: {bright_blue}{self.gas_limit}{color}"
+                f"   Nonce: {bright_blue}{self.nonce}{color}"
             )
 
         # await confirmation of tx in a separate thread which is blocking if
@@ -504,7 +504,7 @@ class TransactionReceipt:
                     sys.stdout.write(f"  Waiting for confirmation... {_marker[0]}\r")
                 else:
                     sys.stdout.write(
-                        f"  Required confirmations: {color('bright yellow')}0/"
+                        f"  Required confirmations: {bright_yellow}0/"
                         f"{required_confs}{color}   {_marker[0]}\r"
                     )
                 _marker.rotate(1)
@@ -527,7 +527,7 @@ class TransactionReceipt:
                 self.block_number = receipt["blockNumber"]
             except TransactionNotFound:
                 if not self._silent:
-                    sys.stdout.write(f"\r{color('red')}Transaction was lost...{color}{' ' * 8}")
+                    sys.stdout.write(f"\r{red}Transaction was lost...{color}{' ' * 8}")
                     sys.stdout.flush()
                 # check if tx is still in mempool, this will raise otherwise
                 tx = web3.eth.get_transaction(self.txid)
@@ -537,7 +537,7 @@ class TransactionReceipt:
                 remaining_confs = required_confs - self.confirmations
                 if not self._silent:
                     sys.stdout.write(
-                        f"\rRequired confirmations: {color('bright yellow')}{self.confirmations}/"
+                        f"\rRequired confirmations: {bright_yellow}{self.confirmations}/"
                         f"{required_confs}{color}  "
                     )
                     if remaining_confs == 0:
@@ -620,19 +620,19 @@ class TransactionReceipt:
         status = ""
         if not self.status:
             revert_msg = self.revert_msg if web3.supports_traces else None
-            status = f"({color('bright red')}{revert_msg or 'reverted'}{color}) "
+            status = f"({bright_red}{revert_msg or 'reverted'}{color}) "
         result = (
             f"\r  {self._full_name()} confirmed {status}  "
-            f"Block: {color('bright blue')}{self.block_number}{color}   "
-            f"Gas used: {color('bright blue')}{self.gas_used}{color} "
-            f"({color('bright blue')}{self.gas_used / self.gas_limit:.2%}{color})"
+            f"Block: {bright_blue}{self.block_number}{color}   "
+            f"Gas used: {bright_blue}{self.gas_used}{color} "
+            f"({bright_blue}{self.gas_used / self.gas_limit:.2%}{color})"
         )
         if self.type == 2 and self.gas_price is not None:
-            result += f"   Gas price: {color('bright blue')}{self.gas_price / 10 ** 9}{color} gwei"
+            result += f"   Gas price: {bright_blue}{self.gas_price / 10 ** 9}{color} gwei"
         if self.status and self.contract_address:
             result += (
                 f"\n  {self.contract_name} deployed at: "
-                f"{color('bright blue')}{self.contract_address}{color}"
+                f"{bright_blue}{self.contract_address}{color}"
             )
         return result + "\n"
 
@@ -1081,7 +1081,7 @@ class TransactionReceipt:
         result = color.highlight(result)
         status = ""
         if not self.status:
-            status = f"({color('bright red')}{self.revert_msg or 'reverted'}{color})"
+            status = f"({bright_red}{self.revert_msg or 'reverted'}{color})"
         print(f"Transaction was Mined {status}\n---------------------\n{result}")
 
     def _get_trace_gas(self, start: int, stop: int) -> Tuple[int, int]:
@@ -1205,8 +1205,8 @@ class TransactionReceipt:
             active_tree.append(active_tree[-1][-1])
 
         print(
-            f"Call trace for '{color('bright blue')}{self.txid}{color}':\n"
-            f"Initial call cost  [{color('bright yellow')}{self._call_cost} gas{color}]"
+            f"Call trace for '{bright_blue}{self.txid}{color}':\n"
+            f"Initial call cost  [{bright_yellow}{self._call_cost} gas{color}]"
         )
         print(build_tree(call_tree).rstrip())
 
@@ -1244,7 +1244,7 @@ class TransactionReceipt:
                 depth, jump_depth = trace[idx]["depth"], trace[idx]["jumpDepth"]
             except StopIteration:
                 break
-        return f"{color}Traceback for '{color('bright blue')}{self.txid}{color}':\n" + "\n".join(
+        return f"{color}Traceback for '{bright_blue}{self.txid}{color}':\n" + "\n".join(
             self._source_string(i, 0) for i in result[::-1]
         )
 
@@ -1313,14 +1313,14 @@ class TransactionReceipt:
 
 
 def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, fn_name: str) -> str:
-    ln = f" {color('bright blue')}{linenos[0]}"
+    ln = f" {bright_blue}{linenos[0]}"
     if linenos[1] > linenos[0]:
-        ln = f"s{ln}{color('dark white')}-{color('bright blue')}{linenos[1]}"
+        ln = f"s{ln}{dark_white}-{bright_blue}{linenos[1]}"
     return (
-        f"{color('dark white')}Trace step {color('bright blue')}{idx}{color('dark white')}, "
-        f"program counter {color('bright blue')}{pc}{color('dark white')}:\n  {color('dark white')}"
-        f"File {color('bright magenta')}\"{path}\"{color('dark white')}, line{ln}"
-        f"{color('dark white')}, in {color('bright cyan')}{fn_name}{color('dark white')}:{source}"
+        f"{dark_white}Trace step {bright_blue}{idx}{dark_white}, "
+        f"program counter {bright_blue}{pc}{dark_white}:\n  {dark_white}"
+        f"File {bright_magenta}\"{path}\"{dark_white}, line{ln}"
+        f"{dark_white}, in {bright_cyan}{fn_name}{dark_white}:{source}"
     )
 
 
@@ -1340,10 +1340,10 @@ def _step_internal(
         contract_color = color("bright red")
     else:
         contract_color = color() if step["jumpDepth"] else color("bright cyan")
-    key = f"{color('dark white')}{contract_color}{step['fn']}  {color('dark white')}"
+    key = f"{dark_white}{contract_color}{step['fn']}  {dark_white}"
 
-    left_bracket = f"{color('dark white')}["
-    right_bracket = f"{color('dark white')}]"
+    left_bracket = f"{dark_white}["
+    right_bracket = f"{dark_white}]"
 
     if subcall:
         key = f"{key}[{color}{subcall['op']}{right_bracket}  "
@@ -1352,13 +1352,13 @@ def _step_internal(
 
     if gas:
         if gas[0] == gas[1]:
-            gas_str = f"{color('bright yellow')}{gas[0]} gas"
+            gas_str = f"{bright_yellow}{gas[0]} gas"
         else:
-            gas_str = f"{color('bright yellow')}{gas[0]} / {gas[1]} gas"
+            gas_str = f"{bright_yellow}{gas[0]} / {gas[1]} gas"
         key = f"{key}  {left_bracket}{gas_str}{right_bracket}{color}"
 
     if last_step["op"] == "SELFDESTRUCT":
-        key = f"{key}  {left_bracket}{color('bright red')}SELFDESTRUCT{right_bracket}{color}"
+        key = f"{key}  {left_bracket}{bright_red}SELFDESTRUCT{right_bracket}{color}"
 
     return key
 
@@ -1424,7 +1424,7 @@ def _step_external(
         result.append(f"returndata: {subcall['returndata']}")
 
     if "revert_msg" in subcall:
-        result.append(f"revert reason: {color('bright red')}{subcall['revert_msg']}{color}")
+        result.append(f"revert reason: {bright_red}{subcall['revert_msg']}{color}")
 
     return build_tree([result], multiline_pad=0).rstrip()
 

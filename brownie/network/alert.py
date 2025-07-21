@@ -4,7 +4,7 @@ import time
 from threading import Thread
 from typing import Callable, Dict, List, Tuple, Union
 
-from brownie.utils import color
+from brownie.utils import bright_red, color
 
 __console_dir__ = ["Alert", "new", "show", "stop_all"]
 _instances = set()
@@ -82,7 +82,7 @@ class Alert:
                     continue
                 if msg:
                     fmt_msg = msg.format(start_value, value)
-                    print(f"{color('bright red')}ALERT{color}: {fmt_msg}")
+                    print(f"{bright_red}ALERT{color}: {fmt_msg}")
                 if callback:
                     callback(start_value, value)
                 start_value = value

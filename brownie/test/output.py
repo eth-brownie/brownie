@@ -3,14 +3,17 @@
 import json
 import warnings
 from pathlib import Path
+from typing import Final
 
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
-from brownie.utils import color
+from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
 
-COVERAGE_COLORS = [(0.8, "bright red"), (0.9, "bright yellow"), (1, "bright green")]
+COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
+    (0.8, bright_red), (0.9, bright_yellow), (1.0, bright_green)
+]
 
 
 def _save_coverage_report(build, coverage_eval, report_path):
@@ -98,7 +101,7 @@ def _build_gas_profile_output():
             grouped_by_contract[contract] = {function: values}
 
     for contract, functions in grouped_by_contract.items():
-        lines.append(f"{color('bright magenta')}{contract}{color} <Contract>")
+        lines.append(f"{bright_magenta}{contract}{color} <Contract>")
         sorted_functions = dict(
             sorted(functions.items(), key=lambda value: value[1]["avg"], reverse=True)
         )
@@ -128,7 +131,7 @@ def _build_coverage_output(coverage_eval):
     for project, totals in all_totals:
 
         if len(all_totals) > 1:
-            lines.append(f"\n======== {color('bright magenta')}{project._name}{color} ========")
+            lines.append(f"\n======== {bright_magenta}{project._name}{color} ========")
 
         for contract_name in sorted(totals):
             if project._sources.get_source_path(contract_name) in exclude_paths:
@@ -139,7 +142,7 @@ def _build_coverage_output(coverage_eval):
                 totals[contract_name]["totals"]["branches"],
             )
             lines.append(
-                f"\n  contract: {color('bright magenta')}{contract_name}{color}"
+                f"\n  contract: {bright_magenta}{contract_name}{color}"
                 f" - {_cov_color(pct)}{pct:.1%}{color}"
             )
 
@@ -158,8 +161,8 @@ def _build_coverage_output(coverage_eval):
     return lines
 
 
-def _cov_color(pct):
-    return color(next(i[1] for i in COVERAGE_COLORS if pct <= i[0]))
+def _cov_color(pct: float) -> str:
+    return next(i[1] for i in COVERAGE_COLORS if pct <= i[0])
 
 
 def _pct(statement, branch):

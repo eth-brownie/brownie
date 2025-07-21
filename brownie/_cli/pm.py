@@ -6,7 +6,7 @@ from pathlib import Path
 
 from brownie import project
 from brownie._config import _get_data_folder
-from brownie.utils import color, notify
+from brownie.utils import blue, bright_black, bright_blue, bright_magenta, color, notify
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie pm <command> [<arguments> ...] [options]
@@ -59,11 +59,11 @@ def _list():
 
     for org_path in org_names:
         packages = list(org_path.iterdir())
-        print(f"\n{color('bright magenta')}{org_path.name}{color}")
+        print(f"\n{bright_magenta}{org_path.name}{color}")
         for path in packages:
             u = "\u2514" if path == packages[-1] else "\u251c"
             name, version = path.name.rsplit("@", maxsplit=1)
-            print(f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}")
+            print(f" {bright_black}{u}\u2500{_format_pkg(org_path.name, name, version)}")
 
 
 def _clone(package_id, path_str="."):
@@ -109,6 +109,6 @@ def _split_id(package_id):
 
 def _format_pkg(org, repo, version):
     return (
-        f"{color('blue')}{org}/{color('bright blue')}{repo}"
-        f"{color('blue')}@{color('bright blue')}{version}{color}"
+        f"{blue}{org}/{bright_blue}{repo}"
+        f"{blue}@{bright_blue}{version}{color}"
     )

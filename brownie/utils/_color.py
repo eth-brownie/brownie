@@ -3,9 +3,10 @@
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Dict, Final, Optional, Sequence, final
+from typing import Any, Dict, Final, Literal, Optional, Sequence, final
 
 import pygments
+from pygments.formatter import Formatter
 from pygments.formatters import get_formatter_by_name
 from pygments.lexers import PythonLexer
 from pygments_lexer_solidity import SolidityLexer
@@ -29,9 +30,10 @@ except Exception:
     # if curses won't import we are probably using Windows
     pass
 
-formatter: Final = get_formatter_by_name(fmt_name, style=CONFIG.settings["console"]["color_style"])
+COLOR_STYLE: str = CONFIG.settings["console"]["color_style"]
+formatter: Final[Formatter] = get_formatter_by_name(fmt_name, style=COLOR_STYLE)
 
-if fmt_name == "terminal256" and CONFIG.settings["console"]["color_style"] == "monokai":
+if fmt_name == "terminal256" and COLOR_STYLE == "monokai":
     # dirty hack to make tree diagrams not have a fixed black blackground
     formatter.style_string["Token.Error"] = ("\x1b[0;2;37m", "\x1b[0;m")
 
@@ -50,6 +52,8 @@ COLORS: Final = {
     "white": "37",
 }
 
+
+NotifyType = Literal["SUCCESS", "WARNING", "ERROR"]
 NOTIFY_COLORS: Final = {"WARNING": "bright red", "ERROR": "bright red", "SUCCESS": "bright green"}
 
 base_path: Final = str(Path(".").absolute())
@@ -199,7 +203,7 @@ class Color:
         return pygments.highlight(text, lexer, formatter)
 
 
-def notify(type_, msg):
+def notify(type_: NotifyType, msg):
     """Prepends a message with a colored tag and outputs it to the console."""
     color = Color()
     print(f"{color(NOTIFY_COLORS[type_])}{type_}{color}: {msg}")
