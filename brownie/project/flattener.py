@@ -1,10 +1,10 @@
 import re
 from collections import defaultdict
-from pathlib import Path
 from typing import Any, DefaultDict, Dict, Final, Iterator, Set, final
 
 import eth_utils.toolz
 
+from brownie._c_constants import Path
 from brownie.utils.toposort import toposort_flatten
 
 # Patten matching Solidity `import-directive`, capturing path component

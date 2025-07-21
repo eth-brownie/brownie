@@ -2,9 +2,9 @@
 
 import importlib
 import sys
-from pathlib import Path
 
 from brownie import network
+from brownie._c_constants import Path
 from brownie._config import CONFIG, __version__
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify

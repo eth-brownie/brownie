@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="arg-type,union-attr"
 
+import pathlib
 import sys
 import warnings
 from ast import FunctionDef, Import, ImportFrom, dump, parse
@@ -8,10 +9,11 @@ from hashlib import sha1
 from importlib import import_module, reload
 from importlib.machinery import SourceFileLoader
 from importlib.util import find_spec
-from pathlib import Path, WindowsPath
+from pathlib import WindowsPath
 from types import FunctionType, ModuleType
 from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
 
+from brownie._c_constants import Path
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
 from brownie.utils import bright_blue, bright_cyan, color
@@ -21,8 +23,6 @@ from brownie.utils import bright_blue, bright_cyan, color
 _FunctionDef: Final = FunctionDef
 _Import: Final = Import
 _ImportFrom: Final = ImportFrom
-
-_Path: Final = Path
 
 _FunctionType: Final = FunctionType
 
@@ -35,7 +35,7 @@ _import_module: Final = import_module
 _find_spec: Final = find_spec
 _reload: Final = reload
 
-_DOT_PATH: Final = _Path(".")
+_DOT_PATH: Final = Path(".")
 
 _import_cache: Final[Dict[str, ModuleType]] = {}
 
@@ -73,7 +73,7 @@ def run(
     if isinstance(script, WindowsPath):
         # far from elegant but just works
         root_path = str(_DOT_PATH.resolve())
-        script = script.relative_to(_Path("..").resolve())
+        script = script.relative_to(Path("..").resolve())
     else:
         root_path = _DOT_PATH.resolve().root
 
@@ -88,7 +88,7 @@ def run(
             raise AttributeError(f"Module '{module_name}' has no method '{method_name}'")
 
         file = module.__file__
-        absolute_path = _Path(file)
+        absolute_path = Path(file)
         try:
             module_path = absolute_path.relative_to(_DOT_PATH.absolute())
         except ValueError:
@@ -144,9 +144,9 @@ def run(
             project._remove_from_main_namespace()
 
 
-def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
+def _get_path(path_str: str) -> Tuple[pathlib.Path, Optional[Project]]:
     # Returns path to a python module
-    path = _Path(path_str).with_suffix(".py")
+    path = Path(path_str).with_suffix(".py")
 
     if not get_loaded_projects():
         if not path.exists():
@@ -175,7 +175,7 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     raise ProjectNotFound(f"{path_str} is not part of an active project")
 
 
-def _import_from_path(path: Path) -> ModuleType:
+def _import_from_path(path: pathlib.Path) -> ModuleType:
     # Imports a module from the given path
     import_str = f"{'.'.join(path.parts[1:-1])}.{path.stem}"
     if import_str in _import_cache:
@@ -189,7 +189,7 @@ def _import_from_path(path: Path) -> ModuleType:
 
 def _get_ast_hash(path: str) -> str:
     # Generates a hash based on the AST of a script.
-    with _Path(path).open() as fp:
+    with Path(path).open() as fp:
         ast_list = [_parse(fp.read(), path)]
     base_path = str(check_for_project(path))
 
@@ -204,7 +204,7 @@ def _get_ast_hash(path: str) -> str:
             origin = _find_spec(name).origin
         except Exception:
             warnings.warn(
-                f"{_Path(path).name}, unable to determine import spec for '{name}',"
+                f"{Path(path).name}, unable to determine import spec for '{name}',"
                 " the --update flag may not work correctly with this test file",
                 ImportWarning,
             )

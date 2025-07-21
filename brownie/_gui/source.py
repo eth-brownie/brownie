@@ -3,9 +3,9 @@
 import re
 import tkinter as tk
 import tkinter.font as tkFont
-from pathlib import Path
 from tkinter import ttk
 
+from brownie._c_constants import Path
 from brownie.project.sources import is_inside_offset
 
 from .bases import SelectBox

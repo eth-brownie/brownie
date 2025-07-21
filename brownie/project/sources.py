@@ -3,12 +3,12 @@
 import re
 import textwrap
 from hashlib import sha1
-from pathlib import Path
 from typing import Dict, Final, List, Optional, Tuple
 
 from semantic_version import NpmSpec
 from vvm.utils.convert import to_vyper_version
 
+from brownie._c_constants import Path
 from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.utils import color, dark_white
 

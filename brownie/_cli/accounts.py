@@ -3,9 +3,9 @@
 import json
 import shutil
 import sys
-from pathlib import Path
 
 from brownie import accounts
+from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.convert import to_address
 from brownie.utils import bright_black, bright_blue, bright_magenta, color, notify

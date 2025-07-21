@@ -1,13 +1,10 @@
 #!/usr/bin/python3
 
-import pathlib
-from typing import Dict, Final, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
+from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.typing import ContractName
-
-
-Path: Final = pathlib.Path
 
 
 def expand_source_map(source_map_str: str | dict) -> List[List]:
