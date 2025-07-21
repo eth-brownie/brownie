@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
 AnyContract = Union["Contract", "ProjectContract"]
 
-_contract_map: Final[Dict[ChecksumAddress, AnyContract] = {}
+_contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
 _revert_refs: Final[List[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
