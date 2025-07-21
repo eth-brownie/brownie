@@ -35,14 +35,6 @@ typedef struct tuple_T2FO {
 } tuple_T2FO;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T2IO
-#define MYPYC_DECLARED_tuple_T2IO
-typedef struct tuple_T2IO {
-    CPyTagged f0;
-    PyObject *f1;
-} tuple_T2IO;
-#endif
-
 #ifndef MYPYC_DECLARED_tuple_T1O
 #define MYPYC_DECLARED_tuple_T1O
 typedef struct tuple_T1O {
@@ -138,6 +130,14 @@ typedef struct tuple_T5OOOOO {
 typedef struct tuple_T0 {
     int empty_struct_error_flag;
 } tuple_T0;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T2IO
+#define MYPYC_DECLARED_tuple_T2IO
+typedef struct tuple_T2IO {
+    CPyTagged f0;
+    PyObject *f1;
+} tuple_T2IO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T1I
@@ -1100,6 +1100,7 @@ struct export_table_42291a5fc61d44f940da {
     char (*CPyDef_accounts_____top_level__)(void);
     PyObject *(*CPyDef_bake___main)(void);
     char (*CPyDef_bake_____top_level__)(void);
+    PyObject **CPyStatic_compile___CODESIZE_COLORS;
     PyTypeObject **CPyType_compile___main_env;
     PyObject *(*CPyDef_compile___main_env)(void);
     PyTypeObject **CPyType_compile_____mypyc_lambda__0_main_obj;
@@ -1348,6 +1349,8 @@ struct export_table_42291a5fc61d44f940da {
     PyObject *(*CPyDef_event____decode_ds_note)(PyObject *cpy_r_log, PyObject *cpy_r_contract);
     PyObject *(*CPyDef_event____decode_trace)(PyObject *cpy_r_trace, PyObject *cpy_r_initial_address);
     char (*CPyDef_event_____top_level__)(void);
+    PyObject **CPyStatic_state____contract_map;
+    PyObject **CPyStatic_state____revert_refs;
     PyObject **CPyStatic_state___cur;
     PyTypeObject **CPyType_state___TxHistory;
     PyTypeObject **CPyType_state___Chain;
@@ -1855,6 +1858,18 @@ struct export_table_42291a5fc61d44f940da {
     PyObject **CPyStatic_brownie___utils___color;
     PyObject **CPyStatic_brownie___utils___bytes_to_hexstring;
     PyObject **CPyStatic_brownie___utils___hexbytes_to_hexstring;
+    PyObject **CPyStatic_brownie___utils___blue;
+    PyObject **CPyStatic_brownie___utils___bright_black;
+    PyObject **CPyStatic_brownie___utils___bright_blue;
+    PyObject **CPyStatic_brownie___utils___bright_cyan;
+    PyObject **CPyStatic_brownie___utils___bright_green;
+    PyObject **CPyStatic_brownie___utils___bright_magenta;
+    PyObject **CPyStatic_brownie___utils___bright_red;
+    PyObject **CPyStatic_brownie___utils___bright_yellow;
+    PyObject **CPyStatic_brownie___utils___dark_white;
+    PyObject **CPyStatic_brownie___utils___green;
+    PyObject **CPyStatic_brownie___utils___red;
+    PyObject **CPyStatic_brownie___utils___yellow;
     char (*CPyDef_brownie___utils_____top_level__)(void);
     PyObject **CPyStatic__color___formatter;
     PyObject **CPyStatic__color___MODIFIERS;
