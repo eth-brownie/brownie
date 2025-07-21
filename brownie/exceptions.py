@@ -2,6 +2,7 @@
 
 import json
 import sys
+from pathlib import Path
 from typing import Dict, Final, List, Optional, Type, final
 
 import eth_abi
