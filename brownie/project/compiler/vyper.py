@@ -40,6 +40,11 @@ EVM_VERSION_MAPPING: Final = [
     ("istanbul", Version("0.1.0-beta.16")),
 ]
 
+_get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
+_get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
+_vvm_set_vyper_version: Final = vvm.set_vyper_version
+_vvm_install_vyper: Final = vvm.install_vyper
+_vvm_compile_standard: Final = vvm.compile_standard
 
 def get_version() -> Version:
     return _active_version
@@ -55,10 +60,10 @@ def set_vyper_version(version: Union[str, Version]) -> str:
         #       `semantic_version.Version` so we first must cast it as a string
         version_str = str(version)
         try:
-            vvm.set_vyper_version(version_str, silent=True)
+            _vvm_set_vyper_version(version_str, silent=True)
         except vvm.exceptions.VyperNotInstalled:
             install_vyper(version)
-            vvm.set_vyper_version(version_str, silent=True)
+            _vvm_set_vyper_version(version_str, silent=True)
     _active_version = version
     return str(_active_version)
 
@@ -81,7 +86,7 @@ def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, ABIE
             raise exc.with_traceback(None)
     else:
         try:
-            compiled = vvm.compile_standard(input_json, vyper_version=str(_active_version))
+            compiled = _vvm_compile_standard(input_json, vyper_version=str(_active_version))
         except vvm.exceptions.VyperError as exc:
             raise CompilerError(exc, "vyper")
 
@@ -90,13 +95,13 @@ def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, ABIE
 
 def _get_vyper_version_list() -> Tuple[List[Version], List[Version]]:
     global AVAILABLE_VYPER_VERSIONS
-    installed_versions = _convert_to_semver(vvm.get_installed_vyper_versions())
+    installed_versions = _convert_to_semver(_get_installed_vyper_versions())
     lib_version = Version(vyper.__version__)
     if lib_version not in installed_versions:
         installed_versions.append(lib_version)
     if AVAILABLE_VYPER_VERSIONS is None:
         try:
-            AVAILABLE_VYPER_VERSIONS = _convert_to_semver(vvm.get_installable_vyper_versions())
+            AVAILABLE_VYPER_VERSIONS = _convert_to_semver(_get_installable_vyper_versions())
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Vyper not installed and cannot connect to GitHub")
@@ -107,7 +112,7 @@ def _get_vyper_version_list() -> Tuple[List[Version], List[Version]]:
 def install_vyper(*versions: str) -> None:
     """Installs vyper versions."""
     for version in versions:
-        vvm.install_vyper(str(version), show_progress=False)
+        _vvm_install_vyper(str(version), show_progress=False)
 
 
 def find_vyper_versions(
@@ -253,7 +258,7 @@ def compile_from_input_json(
             # NOTE: vvm uses `packaging.version.Version` which is not compatible with
             #       `semantic_version.Version` so we first must cast it as a string
             version = str(version)
-            return vvm.compile_standard(input_json, base_path=allow_paths, vyper_version=version)
+            return _vvm_compile_standard(input_json, base_path=allow_paths, vyper_version=version)
         except vvm.exceptions.VyperError as exc:
             raise CompilerError(exc, "vyper")
 
