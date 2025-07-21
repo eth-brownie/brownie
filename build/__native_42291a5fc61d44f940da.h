@@ -1109,6 +1109,7 @@ struct export_table_42291a5fc61d44f940da {
     CPyTagged (*CPyDef_compile_____mypyc_lambda__0_main_obj_____call__)(PyObject *cpy_r___mypyc_self__, tuple_T2OI cpy_r_k);
     PyObject *(*CPyDef_compile___main)(void);
     char (*CPyDef_compile_____top_level__)(void);
+    PyObject **CPyStatic_console____parser_cache;
     PyObject **CPyStatic_console___ConsolePrinter____builtins_print;
     PyObject **CPyStatic_console___brownie____cli___console___ConsolePrinter_____call_____file;
     PyTypeObject **CPyType_console____Quitter;
@@ -1185,17 +1186,22 @@ struct export_table_42291a5fc61d44f940da {
     char (*CPyDef_gui_____top_level__)(void);
     PyObject *(*CPyDef_init___main)(void);
     char (*CPyDef_init_____top_level__)(void);
+    PyObject **CPyStatic_networks___PROVIDERS_CONFIG_YAML;
+    tuple_T4OOOO *CPyStatic_networks___DEV_REQUIRED;
+    tuple_T3OOO *CPyStatic_networks___PROD_REQUIRED;
+    tuple_T5OOOOO *CPyStatic_networks___OPTIONAL;
+    tuple_T14OOOOOOOOOOOOOO *CPyStatic_networks___DEV_CMD_SETTINGS;
     PyObject *(*CPyDef_networks___main)(void);
     PyObject *(*CPyDef_networks____list)(PyObject *cpy_r_verbose);
     PyObject *(*CPyDef_networks____add)(PyObject *cpy_r_env, PyObject *cpy_r_id_, PyObject *cpy_r_args);
     PyObject *(*CPyDef_networks____modify)(PyObject *cpy_r_id_, PyObject *cpy_r_args);
-    PyObject *(*CPyDef_networks____delete)(PyObject *cpy_r_id_);
-    PyObject *(*CPyDef_networks____import)(PyObject *cpy_r_path_str, PyObject *cpy_r_replace);
-    PyObject *(*CPyDef_networks____export)(PyObject *cpy_r_path_str);
+    char (*CPyDef_networks____delete)(PyObject *cpy_r_id_);
+    char (*CPyDef_networks____import)(PyObject *cpy_r_path_str, PyObject *cpy_r_replace);
+    char (*CPyDef_networks____export)(PyObject *cpy_r_path_str);
     PyObject *(*CPyDef_networks____update_provider)(PyObject *cpy_r_name, PyObject *cpy_r_url);
-    PyObject *(*CPyDef_networks____delete_provider)(PyObject *cpy_r_name);
-    PyObject *(*CPyDef_networks____set_provider)(PyObject *cpy_r_name);
-    PyObject *(*CPyDef_networks____list_providers)(PyObject *cpy_r_verbose);
+    char (*CPyDef_networks____delete_provider)(PyObject *cpy_r_name);
+    char (*CPyDef_networks____set_provider)(PyObject *cpy_r_name);
+    char (*CPyDef_networks____list_providers)(PyObject *cpy_r_verbose);
     PyObject *(*CPyDef_networks____parse_args)(PyObject *cpy_r_args);
     char (*CPyDef_networks____print_verbose_providers_description)(PyObject *cpy_r_providers);
     char (*CPyDef_networks____print_simple_providers_description)(PyObject *cpy_r_providers);
@@ -1257,6 +1263,7 @@ struct export_table_42291a5fc61d44f940da {
     PyObject **CPyStatic_network___history;
     PyObject **CPyStatic_network___chain;
     char (*CPyDef_network_____top_level__)(void);
+    PyObject **CPyStatic_event____TOPICS_JSON;
     PyObject **CPyStatic_event____deployment_topics;
     PyObject **CPyStatic_event___event_watcher;
     PyObject **CPyStatic_event____topics;
@@ -1342,7 +1349,6 @@ struct export_table_42291a5fc61d44f940da {
     char (*CPyDef_event_____mypyc_lambda__0__loop_EventWatcher_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_x);
     PyObject *(*CPyDef_event____loop_EventWatcher_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_event____loop_EventWatcher_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
-    PyObject *(*CPyDef_event_____get_path)(void);
     PyObject *(*CPyDef_event____get_topics)(PyObject *cpy_r_abi);
     char (*CPyDef_event____add_deployment_topics)(PyObject *cpy_r_address, PyObject *cpy_r_abi);
     PyObject *(*CPyDef_event____decode_logs)(PyObject *cpy_r_logs, PyObject *cpy_r_contracts);
@@ -1546,6 +1552,7 @@ struct export_table_42291a5fc61d44f940da {
     char (*CPyDef_state_____top_level__)(void);
     char (*CPyDef_project_____top_level__)(void);
     PyObject **CPyStatic_compiler___STANDARD_JSON;
+    PyObject **CPyStatic_compiler___PACKAGES_FOLDER;
     PyObject **CPyStatic_compiler___Path;
     PyObject **CPyStatic_compiler___deepcopy;
     PyObject **CPyStatic_compiler___sha1;
@@ -1587,6 +1594,8 @@ struct export_table_42291a5fc61d44f940da {
     char (*CPyDef_solidity____check_left_operator)(PyObject *cpy_r_node, CPyTagged cpy_r_depth);
     char (*CPyDef_solidity_____top_level__)(void);
     PyObject **CPyStatic_compiler___utils___Path;
+    PyObject **CPyStatic_compiler___utils____DATA_PATH;
+    CPyTagged *CPyStatic_compiler___utils____DATA_PATH_LEN;
     PyObject *(*CPyDef_compiler___utils___expand_source_map)(PyObject *cpy_r_source_map_str);
     PyObject *(*CPyDef_compiler___utils____expand_row)(PyObject *cpy_r_row);
     PyObject *(*CPyDef_compiler___utils___merge_natspec)(PyObject *cpy_r_devdoc, PyObject *cpy_r_userdoc);
@@ -1667,6 +1676,7 @@ struct export_table_42291a5fc61d44f940da {
     PyObject *(*CPyDef_flattener____wipe)(PyObject *cpy_r_src);
     char (*CPyDef_flattener_____top_level__)(void);
     PyObject **CPyStatic_project___main___BUILD_FOLDERS;
+    PyObject **CPyStatic_project___main___PACKAGES_FOLDER;
     PyObject **CPyStatic_project___main____loaded_projects;
     PyTypeObject **CPyType_project___main____ProjectBase;
     PyTypeObject **CPyType_project___main___Project;

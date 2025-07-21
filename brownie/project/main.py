@@ -28,8 +28,8 @@ from vvm.exceptions import VyperNotInstalled
 
 from brownie._config import (
     CONFIG,
+    DATA_FOLDER,
     REQUEST_HEADERS,
-    _get_data_folder,
     _load_project_compiler_config,
     _load_project_config,
     _load_project_dependencies,
@@ -71,6 +71,8 @@ reports/
 GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
+
+PACKAGES_FOLDER: Final = DATA_FOLDER.joinpath("packages")
 
 _loaded_projects: Final[List["Project"]] = []
 
@@ -737,9 +739,8 @@ def load(
     else:
         project_path = Path(project_path)
         if project_path.resolve() != check_for_project(project_path):
-            packages_path = _get_data_folder().joinpath("packages")
-            if not project_path.is_absolute() and packages_path.joinpath(project_path).exists():
-                project_path = packages_path.joinpath(project_path)
+            if not project_path.is_absolute() and PACKAGES_FOLDER.joinpath(project_path).exists():
+                project_path = PACKAGES_FOLDER.joinpath(project_path)
             else:
                 project_path = None
 
@@ -815,8 +816,7 @@ def _install_from_github(package_id: str) -> str:
             "\ne.g. 'OpenZeppelin/openzeppelin-contracts@v2.5.0'"
         ) from None
 
-    base_install_path = _get_data_folder().joinpath("packages")
-    install_path = base_install_path.joinpath(f"{org}")
+    install_path = PACKAGES_FOLDER.joinpath(f"{org}")
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():

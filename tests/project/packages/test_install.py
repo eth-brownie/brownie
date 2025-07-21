@@ -3,7 +3,7 @@ import shutil
 import pytest
 import yaml
 
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie.exceptions import InvalidPackage
 from brownie.project.main import install_package
 
@@ -11,7 +11,7 @@ from brownie.project.main import install_package
 @pytest.fixture(autouse=True)
 def setup(package_test):
     yield
-    path = _get_data_folder().joinpath("packages")
+    path = DATA_FOLDER.joinpath("packages")
     shutil.rmtree(path)
     path.mkdir()
 
@@ -30,7 +30,7 @@ def test_install_from_github():
 
 
 def test_github_already_installed():
-    path = _get_data_folder().joinpath("packages/brownie-mix")
+    path = DATA_FOLDER.joinpath("packages/brownie-mix")
     path.mkdir()
     path.joinpath("token-mix@1.0.0").mkdir()
 
@@ -57,11 +57,11 @@ def test_valid_repo_not_a_project():
     with pytest.raises(InvalidPackage):
         install_package("iamdefinitelyahuman/eth-event@0.2.2")
 
-    assert not _get_data_folder().joinpath("packages/iamdefinitelyahuman/eth-event@0.2.2").exists()
+    assert not DATA_FOLDER.joinpath("packages/iamdefinitelyahuman/eth-event@0.2.2").exists()
 
 
 def test_install_from_config_dependencies(dependentproject):
-    package_folder = _get_data_folder().joinpath("packages/brownie-mix/token-mix@1.0.0")
+    package_folder = DATA_FOLDER.joinpath("packages/brownie-mix/token-mix@1.0.0")
     assert not package_folder.exists()
 
     dependentproject.load()

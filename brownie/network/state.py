@@ -26,7 +26,7 @@ from eth_utils.toolz import keymap
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
-from brownie._config import CONFIG, _get_data_folder
+from brownie._config import CONFIG, DATA_FOLDER
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
@@ -45,7 +45,7 @@ AnyContract = Union["Contract", "ProjectContract"]
 _contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
 _revert_refs: Final[List[weakref.ReferenceType]] = []
 
-cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
+cur: Final = Cursor(DATA_FOLDER.joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 

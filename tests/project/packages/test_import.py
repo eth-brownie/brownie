@@ -12,7 +12,7 @@ from brownie.project.main import install_package
 @pytest.fixture(autouse=True)
 def setup():
     yield
-    path = brownie._config._get_data_folder().joinpath("packages")
+    path = brownie._config.DATA_FOLDER.joinpath("packages")
     shutil.rmtree(path)
     path.mkdir()
 

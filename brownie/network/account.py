@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from getpass import getpass
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Final, List, Optional, Tuple, Union, final
 
 import eth_account
 import eth_keys
@@ -25,7 +25,7 @@ from hexbytes import HexBytes
 from web3 import HTTPProvider, IPCProvider
 from web3.exceptions import InvalidTransaction, TransactionNotFound
 
-from brownie._config import CONFIG, _get_data_folder
+from brownie._config import CONFIG, DATA_FOLDER
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
 from brownie.exceptions import (
@@ -42,19 +42,22 @@ from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
-ETH_ACCOUNT_LT_0_13_0 = tuple(map(int, version("eth_account").split("."))) < (
+ACCOUNTS_FOLDER: Final = DATA_FOLDER.joinpath("accounts")
+
+ETH_ACCOUNT_LT_0_13_0: Final = tuple(map(int, version("eth_account").split("."))) < (
     0,
     13,
     0,
 )
 
-history = TxHistory()
-rpc = Rpc()
+history: Final = TxHistory()
+rpc: Final = Rpc()
 
 eth_account.Account.enable_unaudited_hdwallet_features()
-_marker = deque("-/|\\-/|\\")
+_marker: Final = deque("-/|\\-/|\\")
 
 
+@final
 class Accounts(metaclass=_Singleton):
     """
     List-like container that holds all available `Account` objects.
@@ -213,9 +216,8 @@ class Accounts(metaclass=_Singleton):
         -------
         LocalAccount
         """
-        base_accounts_path = _get_data_folder().joinpath("accounts")
         if not filename:
-            return [i.stem for i in base_accounts_path.glob("*.json")]
+            return [i.stem for i in ACCOUNTS_FOLDER.glob("*.json")]
 
         filename = str(filename)
         json_file = Path(filename).expanduser()
@@ -226,7 +228,7 @@ class Accounts(metaclass=_Singleton):
                 json_file = temp_json_file
             else:
                 json_file_name = json_file.name
-                json_file = base_accounts_path.joinpath(json_file_name)
+                json_file = ACCOUNTS_FOLDER.joinpath(json_file_name)
                 if json_file.suffix != ".json":
                     json_file = json_file.with_suffix(".json")
                 if not json_file.exists():
@@ -874,6 +876,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 return receipt
 
 
+@final
 class Account(_PrivateKeyAccount):
     """Class for interacting with an Ethereum account.
 
@@ -889,6 +892,7 @@ class Account(_PrivateKeyAccount):
         return web3.eth.send_transaction(tx)
 
 
+@final
 class LocalAccount(_PrivateKeyAccount):
     """Class for interacting with an Ethereum account.
 
@@ -917,7 +921,7 @@ class LocalAccount(_PrivateKeyAccount):
 
         Returns the absolute path to the keystore file as a string.
         """
-        path = _get_data_folder().joinpath("accounts")
+        path = ACCOUNTS_FOLDER
         path.mkdir(exist_ok=True)
         filename = str(filename)
         if not filename.endswith(".json"):
@@ -1014,6 +1018,7 @@ class LocalAccount(_PrivateKeyAccount):
         )
 
 
+@final
 class ClefAccount(_PrivateKeyAccount):
     """
     Class for interacting with an Ethereum account where signing is handled in Clef.

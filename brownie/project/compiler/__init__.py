@@ -10,7 +10,7 @@ import semantic_version
 import solcast
 from eth_typing import ABIElement, HexStr
 
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
 from brownie.project.compiler.solidity import (  # NOQA: F401
@@ -40,6 +40,8 @@ STANDARD_JSON: Final[Dict] = {
         "remappings": [],
     },
 }
+
+PACKAGES_FOLDER: Final = DATA_FOLDER.joinpath("packages")
 
 Language = str
 EvmVersion = Optional[str]
@@ -224,7 +226,7 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     else:
         remap_dict = dict(i.split("=") for i in remappings)
     remapped_dict: Dict[str, str] = {}
-    packages = _get_data_folder().joinpath("packages")
+    packages = PACKAGES_FOLDER
     for path in packages.iterdir():
         pathname = path.name
         key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
@@ -244,7 +246,7 @@ def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
     path_list = [] if allow_paths is None else [allow_paths]
 
     remapping_paths = [i[i.index("=") + 1 :] for i in remappings]
-    data_path = _get_data_folder().joinpath("packages").as_posix()
+    data_path = PACKAGES_FOLDER.as_posix()
     remapping_paths = [i for i in remapping_paths if not i.startswith(data_path)]
 
     path_list = path_list + [data_path] + remapping_paths

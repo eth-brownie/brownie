@@ -3,11 +3,14 @@
 import pathlib
 from typing import Dict, Final, List, Optional, Set, Union
 
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie.typing import ContractName
 
 
 Path: Final = pathlib.Path
+
+_DATA_PATH: Final = DATA_FOLDER.parts
+_DATA_PATH_LEN: Final = len(_DATA_PATH)
 
 
 def expand_source_map(source_map_str: str | dict) -> List[List]:
@@ -79,10 +82,8 @@ def _get_alias(contract_name: ContractName, path_str: str) -> ContractName:
     # For a contract within the project, the alias == the name. For contracts
     # imported from a dependency, the alias is set as [PACKAGE]/[NAME]
     # to avoid namespace collisions.
-    data_path = _get_data_folder().parts
     path_parts = Path(path_str).parts
-    if path_parts[: len(data_path)] == data_path:
-        idx = len(data_path) + 1
-        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"  # type: ignore [return-value]
-    else:
+    if path_parts[:_DATA_PATH_LEN] != _DATA_PATH:
         return contract_name
+    idx = _DATA_PATH_LEN + 1
+    return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"  # type: ignore [return-value]

@@ -35,7 +35,7 @@ from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
@@ -55,6 +55,7 @@ DeploymentTopics = Dict[ChecksumAddress, TopicMap]
 EventData = OrderedDict[str, Any]
 """An OrderedDict which contains the indexed args for a single on-chain event."""
 
+_TOPICS_JSON: Final = DATA_FOLDER.joinpath("topics.json")
 
 @final
 class EventDict:
@@ -510,10 +511,6 @@ class EventWatcher(metaclass=_Singleton):
                 )
 
 
-def __get_path() -> Path:
-    return _get_data_folder().joinpath("topics.json")
-
-
 def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
     topic_map = eth_event.get_topic_map(abi)
 
@@ -532,7 +529,7 @@ def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
 
     if updated_topics != _topics:
         _topics.update(updated_topics)
-        with __get_path().open("w") as fp:
+        with _TOPICS_JSON.open("w") as fp:
             json.dump(updated_topics, fp, sort_keys=True, indent=2)
 
     return {v["name"]: k for k, v in topic_map.items()}
@@ -630,7 +627,7 @@ _deployment_topics: Final[DeploymentTopics] = {}
 event_watcher: Final = EventWatcher()
 
 try:
-    with __get_path().open() as fp:
+    with _TOPICS_JSON.open() as fp:
         __topics = json.load(fp)
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     __topics = None

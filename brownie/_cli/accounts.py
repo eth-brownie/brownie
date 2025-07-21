@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from brownie import accounts
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie.convert import to_address
 from brownie.utils import bright_black, bright_blue, bright_magenta, color, notify
 from brownie.utils.docopt import docopt
@@ -45,7 +45,7 @@ def main():
 
 
 def _list():
-    account_paths = sorted(_get_data_folder().glob("accounts/*.json"))
+    account_paths = sorted(DATA_FOLDER.glob("accounts/*.json"))
     print(f"Found {len(account_paths)} account{'s' if len(account_paths)!=1 else ''}:")
     for path in account_paths:
         u = "\u2514" if path == account_paths[-1] else "\u251c"
@@ -80,7 +80,7 @@ def _generate(id_):
 
 
 def _import(id_, path):
-    dest_path = _get_data_folder().joinpath(f"accounts/{id_}.json")
+    dest_path = DATA_FOLDER.joinpath(f"accounts/{id_}.json")
     if dest_path.exists():
         raise FileExistsError(f"A keystore file already exists with the id '{id_}'")
 
@@ -102,7 +102,7 @@ def _import(id_, path):
 
 
 def _export(id_, path):
-    source_path = _get_data_folder().joinpath(f"accounts/{id_}.json")
+    source_path = DATA_FOLDER.joinpath(f"accounts/{id_}.json")
     if not source_path.exists():
         raise FileNotFoundError(f"No keystore exists with the id '{id_}'")
     dest_path = Path(path).absolute()
@@ -125,6 +125,6 @@ def _password(id_):
 
 
 def _delete(id_):
-    path = _get_data_folder().joinpath(f"accounts/{id_}.json")
+    path = DATA_FOLDER.joinpath(f"accounts/{id_}.json")
     path.unlink()
     notify("SUCCESS", f"Account '{bright_blue}{id_}{color}' has been deleted")

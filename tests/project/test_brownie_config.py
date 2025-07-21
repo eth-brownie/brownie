@@ -5,7 +5,7 @@ import copy
 import pytest
 import yaml
 
-from brownie._config import _get_data_folder, _load_config
+from brownie._config import DATA_FOLDER, NETWORK_CONFIG_YAML, _load_config
 from brownie.network import web3
 from brownie.network.rpc.ganache import _validate_cmd_settings
 
@@ -52,8 +52,7 @@ def project_settings(testproject):
 def test_load_project_cmd_settings(config, testproject, project_settings):
     """Tests if project specific cmd_settings update the network config when a project is loaded"""
     # get raw cmd_setting config data from the network-config.yaml file
-    config_path_network = _get_data_folder().joinpath("network-config.yaml")
-    cmd_settings_network_raw = _load_config(config_path_network)["development"][0]["cmd_settings"]
+    cmd_settings_network_raw = _load_config(NETWORK_CONFIG_YAML)["development"][0]["cmd_settings"]
 
     # compare the manually loaded network cmd_settings to the cmd_settings in the CONFIG singleton
     cmd_settings_config = config.networks["development"]["cmd_settings"]
@@ -172,7 +171,7 @@ def project_settings_with_dotenv(testproject, env_file):
 
 
 def test_dotenv_imports(config, testproject, env_file, project_settings_with_dotenv):
-    config_path = _get_data_folder().joinpath("brownie-config.yaml")
+    config_path = DATA_FOLDER.joinpath("brownie-config.yaml")
     _load_config(config_path)
     testproject.load_config()
     assert config.settings["console"]["show_colors"] == False  # noqa: E712

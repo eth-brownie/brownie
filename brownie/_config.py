@@ -24,6 +24,7 @@ __version__: Final = "1.22.0"
 
 BROWNIE_FOLDER: Final = Path(__file__).parent
 DATA_FOLDER: Final = Path.home().joinpath(".brownie")
+NETWORK_CONFIG_YAML: Final = DATA_FOLDER.joinpath("network-config.yaml")
 
 DATA_SUBFOLDERS: Final = ("accounts", "packages")
 
@@ -47,7 +48,7 @@ class ConfigContainer:
             home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
             _recursive_update(base_config, home_config)
 
-        network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
+        network_config = _load_config(NETWORK_CONFIG_YAML)
 
         self.networks = {}
         for value in network_config["development"]:
@@ -300,7 +301,7 @@ def _modify_hypothesis_settings(settings, name, parent=None):
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),
-        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+        database=DirectoryBasedExampleDatabase(DATA_FOLDER.joinpath("hypothesis")),
         **settings,
     )
     hp_settings.load_profile(name)
@@ -319,10 +320,6 @@ def _recursive_update(original: Dict, new: Dict) -> None:
 
 def _update_argv_from_docopt(args: Dict) -> None:
     CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
-
-
-def _get_data_folder() -> Path:
-    return DATA_FOLDER
 
 
 def _make_data_folders(data_folder: Path) -> None:
