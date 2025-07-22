@@ -95,26 +95,31 @@ class _ProjectBase:
         path = self._path
         if path is not None:
             _install_dependencies(path)
-            allow paths = path.as_posix()
+            allow_paths = path.as_posix()
+            os.chdir(path)
 
         try:
+            solc_config: dict = compiler_config["solc"]
+            vyper_config: dict = compiler_config["vyper"]
+            
             project_evm_version = compiler_config["evm_version"]
             evm_version = {
-                "Solidity": compiler_config["solc"].get("evm_version", project_evm_version),
-                "Vyper": compiler_config["vyper"].get("evm_version", project_evm_version),
+                "Solidity": solc_config.get("evm_version", project_evm_version),
+                "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
+            
             build_json = compiler.compile_and_format(
                 contract_sources,
-                solc_version=compiler_config["solc"].get("version", None),
-                vyper_version=compiler_config["vyper"].get("version", None),
-                optimize=compiler_config["solc"].get("optimize", None),
-                runs=compiler_config["solc"].get("runs", None),
+                solc_version=solc_config.get("version", None),
+                vyper_version=vyper_config.get("version", None),
+                optimize=solc_config.get("optimize", None),
+                runs=solc_config.get("runs", None),
                 evm_version=evm_version,
                 silent=silent,
                 allow_paths=allow_paths,
-                remappings=compiler_config["solc"].get("remappings", []),
-                optimizer=compiler_config["solc"].get("optimizer", None),
-                viaIR=compiler_config["solc"].get("viaIR", None),
+                remappings=solc_config.get("remappings", []),
+                optimizer=solc_config.get("optimizer", None),
+                viaIR=solc_config.get("viaIR", None),
             )
         finally:
             os.chdir(cwd)
