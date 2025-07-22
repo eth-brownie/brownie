@@ -6,7 +6,7 @@ from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
 import semantic_version
 import solcast
 import solcx
-from eth_typing import HexStr
+from eth_typing import ABIElement, HexStr
 from requests.exceptions import ConnectionError
 from solcast.nodes import NodeBase, is_inside_offset
 
@@ -111,7 +111,7 @@ def install_solc(*versions: VersionSpec) -> None:
 
 def get_abi(
     contract_source: str, allow_paths: Optional[str] = None
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> Dict[str, List[ABIElement]]:
     """
     Given a contract source, returns a dict of {name: abi}
 
@@ -581,12 +581,14 @@ def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
         node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
     except IndexError:
         return
-    if node.nodeType == "IndexAccess":
+    node_type: str = node.nodeType
+    if node_type == "IndexAccess":
         pc_map["dev"] = "Index out of range"
-    elif node.nodeType == "BinaryOperation":
-        if node.operator == "/":
+    elif node_type == "BinaryOperation":
+        operator = node.operator
+        if operator == "/":
             pc_map["dev"] = "Division by zero"
-        elif node.operator == "%":
+        elif operator == "%":
             pc_map["dev"] = "Modulus by zero"
 
 

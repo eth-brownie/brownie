@@ -40,7 +40,7 @@ def _expand(value: _T, variables: Mapping = {}) -> _T:
     if not isinstance(value, (str,)):
         return value
     atoms = parse_variables(value)
-    return "".join([str(atom.resolve(variables)) for atom in atoms])  # type: ignore [return-value]
+    return "".join(str(atom.resolve(variables)) for atom in atoms)  # type: ignore [return-value]
 
 
 INT_REGEX: Final = regex_compile(r"^[-+]?[0-9]+$")

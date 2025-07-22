@@ -1383,13 +1383,13 @@ class ContractEvents(_ContractEvents):
 
 class OverloadedMethod:
     def __init__(self, address: ChecksumAddress, name: str, owner: Optional[AccountsType]):
-        self._address = address
-        self._name = name
-        self._owner = owner
-        self.methods: Dict = {}
-        self.natspec: Dict = {}
+        self._address: Final = address
+        self._name: Final = name
+        self._owner: Final = owner
+        self.methods: Final[Dict[Any, Any]] = {}
+        self.natspec: Final[Dict[str, Any]] = {}
 
-    def _add_fn(self, abi: ABIFunction, natspec: Dict) -> None:
+    def _add_fn(self, abi: ABIFunction, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1410,7 +1410,7 @@ class OverloadedMethod:
             )
         return self.methods[keys[0]]
 
-    def __getitem__(self, key: tuple | str) -> Union["ContractCall", "ContractTx"]:
+    def __getitem__(self, key: Tuple[str, ...] | str) -> Union["ContractCall", "ContractTx"]:
         if isinstance(key, str):
             key = tuple(i.strip() for i in key.split(","))
 

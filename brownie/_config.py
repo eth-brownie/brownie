@@ -37,6 +37,7 @@ REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_
 
 NetworkType = Literal["live", "development", None]
 NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
+#TODO: Make this a typed dict
 
 
 class ConfigContainer:
@@ -46,24 +47,25 @@ class ConfigContainer:
             home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
             _recursive_update(base_config, home_config)
 
+        networks: Dict[str, dict] = {}
+        self.networks: Final = networks
+        
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
-
-        self.networks = {}
         for value in network_config["development"]:
             key = value["id"]
-            if key in self.networks:
+            if key in networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
-            self.networks[key] = value
+            networks[key] = value
         for value in [x for i in network_config["live"] for x in i["networks"]]:
             key = value["id"]
-            if key in self.networks:
+            if key in networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
-            self.networks[key] = value
+            networks[key] = value
 
         # make sure chainids are always strings
-        for network, values in self.networks.items():
-            if "chainid" in values:
-                self.networks[network]["chainid"] = str(values["chainid"])
+        for settings in networks.values():
+            if "chainid" in settings:
+                settings["chainid"] = str(settings["chainid"])
 
         self.argv: DefaultDict[str, Optional[str]] = defaultdict(lambda: None)
         self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
@@ -83,20 +85,21 @@ class ConfigContainer:
 
         if (
             key == "development"
-            and isinstance(network["cmd_settings"], dict)
-            and "fork" in network["cmd_settings"]
+            and isinstance(cmd_settings := network["cmd_settings"], dict)
+            and "fork" in cmd_settings
         ):
 
-            fork = network["cmd_settings"]["fork"]
+            fork = cmd_settings["fork"]
             if fork in self.networks:
-                network["cmd_settings"]["fork"] = self.networks[fork]["host"]
-                network["chainid"] = self.networks[fork]["chainid"]
-                if "chain_id" not in network["cmd_settings"]:
-                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chainid"])
-                if "explorer" in self.networks[fork]:
-                    network["explorer"] = self.networks[fork]["explorer"]
+                fork_settings: dict = self.networks[fork]
+                cmd_settings["fork"] = fork_settings["host"]
+                network["chainid"] = fork_settings["chainid"]
+                if "chain_id" not in cmd_settings:
+                    cmd_settings["chain_id"] = int(fork_settings["chainid"])
+                if "explorer" in fork_settings:
+                    network["explorer"] = fork_settings["explorer"]
 
-            network["cmd_settings"]["fork"] = os.path.expandvars(network["cmd_settings"]["fork"])
+            cmd_settings["fork"] = os.path.expandvars(cmd_settings["fork"])
 
         self._active_network = network
         return network
