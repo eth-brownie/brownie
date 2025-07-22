@@ -84,20 +84,21 @@ class ConfigContainer:
 
         if (
             key == "development"
-            and isinstance(network["cmd_settings"], dict)
-            and "fork" in network["cmd_settings"]
+            and isinstance(cmd_settings := network["cmd_settings"], dict)
+            and "fork" in cmd_settings
         ):
 
-            fork = network["cmd_settings"]["fork"]
+            fork = cmd_settings["fork"]
             if fork in self.networks:
-                network["cmd_settings"]["fork"] = self.networks[fork]["host"]
-                network["chainid"] = self.networks[fork]["chainid"]
-                if "chain_id" not in network["cmd_settings"]:
-                    network["cmd_settings"]["chain_id"] = int(self.networks[fork]["chainid"])
-                if "explorer" in self.networks[fork]:
-                    network["explorer"] = self.networks[fork]["explorer"]
+                fork_settings: dict = self.networks[fork]
+                cmd_settings["fork"] = fork_settings["host"]
+                network["chainid"] = fork_settings["chainid"]
+                if "chain_id" not in cmd_settings:
+                    cmd_settings["chain_id"] = int(fork_settings["chainid"])
+                if "explorer" in fork_settings:
+                    network["explorer"] = fork_settings["explorer"]
 
-            network["cmd_settings"]["fork"] = os.path.expandvars(network["cmd_settings"]["fork"])
+            cmd_settings["fork"] = os.path.expandvars(cmd_settings["fork"])
 
         self._active_network = network
         return network
