@@ -188,12 +188,13 @@ def generate_input_json(
 
     input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language
-    input_json["settings"]["evmVersion"] = evm_version
+    settings: dict = input_json["settings"]
+    settings["evmVersion"] = evm_version
     if language == "Solidity":
-        input_json["settings"]["optimizer"] = optimizer
-        input_json["settings"]["remappings"] = _get_solc_remappings(remappings)
+        settings["optimizer"] = optimizer
+        settings["remappings"] = _get_solc_remappings(remappings)
         if viaIR is not None:
-            input_json["settings"]["viaIR"] = viaIR
+            settings["viaIR"] = viaIR
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
