@@ -92,10 +92,10 @@ class _ProjectBase:
 
         allow_paths = None
         cwd = os.getcwd()
-        if self._path is not None:
-            _install_dependencies(self._path)
-            allow_paths = self._path.as_posix()
-            os.chdir(self._path)
+        path = self._path
+        if path is not None:
+            _install_dependencies(path)
+            allow paths = path.as_posix()
 
         try:
             project_evm_version = compiler_config["evm_version"]
@@ -367,7 +367,7 @@ class Project(_ProjectBase):
             if self._build.get_dependents(contract_alias):
                 with path.open() as fp:
                     build_json = json.load(fp)
-                self._build._add_contract(build_json, contract_alias)
+                build._add_contract(build_json, contract_alias)
             else:
                 path.unlink()
 
@@ -380,6 +380,8 @@ class Project(_ProjectBase):
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
         deployment_map = self._load_deployment_map()
+
+        build: dict
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
