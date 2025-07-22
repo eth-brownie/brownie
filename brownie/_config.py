@@ -62,9 +62,9 @@ class ConfigContainer:
             self.networks[key] = value
 
         # make sure chainids are always strings
-        for network, values in self.networks.items():
-            if "chainid" in values:
-                self.networks[network]["chainid"] = str(values["chainid"])
+        for settings in networks.values():
+            if "chainid" in settings:
+                settings["chainid"] = str(settings["chainid"])
 
         self.argv: DefaultDict[str, Optional[str]] = defaultdict(lambda: None)
         self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
