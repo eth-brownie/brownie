@@ -1389,9 +1389,7 @@ class OverloadedMethod:
         self.methods: Final[Dict[Any, Any]] = {}
         self.natspec: Final[Dict[str, Any]] = {}
 
-def _add_fn(self, abi: ABIFunction, natspec: Dict[str, Any]) -> None:
-
-    def _add_fn(self, abi: ABIFunction, natspec: Dict) -> None:
+    def _add_fn(self, abi: ABIFunction, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
