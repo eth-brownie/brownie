@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
 import logging
 from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
@@ -14,6 +15,7 @@ from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
+from brownie.typing import InputJsonSolc
 
 from . import sources
 
@@ -50,8 +52,10 @@ def get_version() -> semantic_version.Version:
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
-) -> Dict:
+    input_json: InputJsonSolc,
+    silent: bool = True,
+    allow_paths: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Compiles contracts from a standard input json.
 
@@ -63,7 +67,7 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    settings: dict = input_json["settings"]
+    settings = input_json["settings"]
     optimizer: dict = settings["optimizer"]
     settings.setdefault("evmVersion", None)
     if settings["evmVersion"] in EVM_EQUIVALENTS:
@@ -454,7 +458,7 @@ def _generate_coverage_data(
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = active_fn_name
             else:
-                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
+                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset) # type: ignore [arg-type]
                 pc_list[-1]["fn"] = active_fn_name
                 stmt_offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
