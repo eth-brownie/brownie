@@ -74,7 +74,7 @@ class Build:
 
     def _generate_revert_map(
         self, 
-        pcMap: Dict[str, Dict[str, Any]] | Dict[int, Dict[str, Any]],
+        pcMap: Dict[int, Dict[str, Any]],
         source_map: Dict[str, str],
         language: Language,
     ) -> None:
