@@ -47,19 +47,20 @@ class ConfigContainer:
             home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
             _recursive_update(base_config, home_config)
 
+        networks: Dict[str, dict] = {}
+        self.networks: Final = networks
+        
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
-
-        self.networks = {}
         for value in network_config["development"]:
             key = value["id"]
-            if key in self.networks:
+            if key in networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
-            self.networks[key] = value
+            networks[key] = value
         for value in [x for i in network_config["live"] for x in i["networks"]]:
             key = value["id"]
-            if key in self.networks:
+            if key in networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
-            self.networks[key] = value
+            networks[key] = value
 
         # make sure chainids are always strings
         for settings in networks.values():
