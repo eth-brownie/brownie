@@ -58,6 +58,7 @@ from brownie.network.state import _add_contract, _remove_contract, _revert_regis
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
+from brownie.typing import ContractName
 from brownie.utils import notify
 
 BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
@@ -318,7 +319,7 @@ class Project(_ProjectBase):
         changed_set: Set = set(map(sources.get_source_path, contracts))
         return dict(zip(changed_set, map(sources.get, changed_set)))
 
-    def _compare_build_json(self, contract_name: str) -> bool:
+    def _compare_build_json(self, contract_name: ContractName) -> bool:
         config = self._compiler_config
         # confirm that this contract was previously compiled
         try:
