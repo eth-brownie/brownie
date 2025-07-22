@@ -126,7 +126,7 @@ class Build:
         if key in self._interfaces:
             del self._interfaces[key]
 
-    def get(self, contract_name: ContractName) -> None:
+    def get(self, contract_name: ContractName) -> Dict:
         """Returns build data for the given contract name."""
         key = self._stem(contract_name)
         if key in self._contracts:
