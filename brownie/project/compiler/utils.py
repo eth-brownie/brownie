@@ -1,20 +1,21 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from semantic_version import Version
 
 from brownie._c_constants import Path
 from brownie._config import _get_data_folder
-from brownie.typing import ContractName
+from brownie.typing import ContractName, Source
 
 
 VersionSpec = Union[str, Version]
 VersionList = List[Version]
 
 
-def expand_source_map(source_map_str: str | dict) -> List[List]:
-    """Expand the compressed sourceMap supplied by solc into a list of lists."""
+def expand_source_map(source_map_str: str | dict) -> List[Source]:
+    """Expand the compressed sourceMap supplied by solc into a list of Tuple[Start, Stop, ContractName, str]."""
 
     if isinstance(source_map_str, dict):
         # NOTE: vyper >= 0.4 gives us a dict that contains the source map
@@ -22,7 +23,7 @@ def expand_source_map(source_map_str: str | dict) -> List[List]:
     if not isinstance(source_map_str, str):
         raise TypeError(source_map_str)
 
-    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
+    source_map = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:
             source_map[i] = source_map[i - 1]
@@ -30,16 +31,16 @@ def expand_source_map(source_map_str: str | dict) -> List[List]:
         for x in range(4):
             if value[x] is None:
                 value[x] = source_map[i - 1][x]
-    return source_map
+    return source_map  # type: ignore [return-value]
 
 
-def _expand_row(row: str) -> List[Optional[Union[str, int]]]:
+def _expand_row(row: str) -> Source | Tuple[None, None, None, None]:
     result: List[Optional[Union[str, int]]] = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
             result[i] = value if i == 3 else int(value)
-    return result
+    return tuple(result)  # type: ignore [return-value]
 
 
 def merge_natspec(

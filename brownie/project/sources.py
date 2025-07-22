@@ -15,6 +15,7 @@ from brownie._c_constants import (
     sha1,
 )
 from brownie.exceptions import NamespaceCollision, PragmaError
+from brownie.typing import Offset
 from brownie.utils import color, dark_white
 
 
@@ -119,7 +120,7 @@ class Sources:
         raise KeyError(contract_name)
 
 
-def is_inside_offset(inner: Tuple[int, int], outer: Tuple[int, int]) -> bool:
+def is_inside_offset(inner: Offset, outer: Offset) -> bool:
     """Checks if the first offset is contained in the second offset
 
     Args:
@@ -131,7 +132,7 @@ def is_inside_offset(inner: Tuple[int, int], outer: Tuple[int, int]) -> bool:
 
 
 def highlight_source(
-    source: str, offset: Tuple[int, int], pad: int = 3
+    source: str, offset: Offset, pad: int = 3
 ) -> Tuple[Optional[str], Optional[Tuple[int, int]]]:
     """Returns a highlighted section of source code.
 
@@ -155,14 +156,11 @@ def highlight_source(
     pad_start = newlines[max(pad_start - (pad + 1), 0)]
     pad_stop = newlines[min(pad_stop + pad, len(newlines) - 1)]
 
-    final = textwrap.indent(
-        f"{dark_white}"
-        + textwrap.dedent(
-            f"{source[pad_start:offset[0]]}{color}"
-            f"{source[offset[0]:offset[1]]}{dark_white}{source[offset[1]:pad_stop]}{color}"
-        ),
-        "    ",
+    dedented = textwrap.dedent(
+        f"{source[pad_start:offset[0]]}{color}"
+        f"{source[offset[0]:offset[1]]}{dark_white}{source[offset[1]:pad_stop]}{color}"
     )
+    final = textwrap.indent(f"{dark_white}{dedented}", "    ")
 
     count = source[pad_start : offset[0]].count("\n")
     final = final.replace("\n ", f"\n{dark_white} ", count)

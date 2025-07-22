@@ -58,7 +58,7 @@ from brownie.network.state import _add_contract, _remove_contract, _revert_regis
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
-from brownie.typing import ContractName
+from brownie.typing import ContractName, Language
 from brownie.utils import notify
 
 BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
@@ -104,7 +104,7 @@ class _ProjectBase:
             vyper_config: dict = compiler_config["vyper"]
             
             project_evm_version = compiler_config["evm_version"]
-            evm_version = {
+            evm_version: Dict[Language, Optional[str]] = {
                 "Solidity": solc_config.get("evm_version", project_evm_version),
                 "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
@@ -316,7 +316,7 @@ class Project(_ProjectBase):
             self._build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set: Set = set(map(sources.get_source_path, contracts))
+        changed_set = set(map(sources.get_source_path, contracts))
         return dict(zip(changed_set, map(sources.get, changed_set)))
 
     def _compare_build_json(self, contract_name: ContractName) -> bool:

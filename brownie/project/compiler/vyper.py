@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Dict, Final, List, Optional, Tuple, Union
+from typing import Any, Dict, Final, List, Optional, Tuple, Union
 
 import semantic_version
 import vvm
@@ -21,7 +21,7 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.project.sources import is_inside_offset
-from brownie.typing import ContractName
+from brownie.typing import ContractName, Offset
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
@@ -267,8 +267,12 @@ def compile_from_input_json(
 
 
 def _get_unique_build_json(
-    output_evm: Dict, path_str: str, contract_name: ContractName, ast_json: Union[Dict, List], offset: Tuple
-) -> Dict:
+    output_evm: Dict,
+    path_str: str,
+    contract_name: ContractName,
+    ast_json: Union[Dict, List],
+    offset: Offset
+) -> Dict[str, Any]:
 
     ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json
     deployed_bytecode: dict = output_evm["deployedBytecode"]
@@ -369,7 +373,7 @@ def _generate_coverage_data(
                     # for JUMPI we need the mapping on the actual opcode
                     pc_list[-1].update(path="0", offset=[0, 0])
             continue
-        offset = (source[0], source[0] + source[1])
+        offset: Offset = (source[0], source[0] + source[1])  # type: ignore [assignment]
         pc_list[-1]["path"] = "0"
         pc_list[-1]["offset"] = offset
 
@@ -438,14 +442,14 @@ def _generate_coverage_data(
     return pc_map, {"0": statement_map}, {"0": branch_map}
 
 
-def _convert_src(src: str) -> Tuple[int, int]:
+def _convert_src(src: str) -> Offset:
     if src is None:
         return -1, -1
     src_int = [int(i) for i in src.split(":")[:2]]
-    return src_int[0], src_int[0] + src_int[1]
+    return src_int[0], src_int[0] + src_int[1]  # type: ignore [return-value]
 
 
-def _find_node_by_offset(ast_json: List[Dict], offset: Tuple[int, int]) -> Optional[Dict]:
+def _find_node_by_offset(ast_json: List[Dict], offset: Offset) -> Optional[Dict]:
     for node in ast_json:
         converted_src = _convert_src(node["src"])
         if is_inside_offset(offset, converted_src):
@@ -482,7 +486,7 @@ def _convert_to_semver(versions: List[PVersion]) -> VersionList:
 
     This function serves as a stopgap.
     """
-    return [
+    return [  # type: ignore [return-value]
         Version(
             major=version.major,
             minor=version.minor,

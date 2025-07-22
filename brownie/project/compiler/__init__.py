@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import json
-from typing import Dict, Final, List, Optional, Union
+from typing import Any, Dict, Final, List, Literal, Optional, Union
 
 import solcast
 from eth_typing import ABIElement, HexStr
@@ -18,7 +18,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import ContractName
+from brownie.typing import ContractName, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -38,7 +38,6 @@ STANDARD_JSON: Final[Dict] = {
     },
 }
 
-Language = str
 EvmVersion = Optional[str]
 EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
 
@@ -112,6 +111,7 @@ def compile_and_format(
         if optimizer is None:
             optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
 
+    language: Language
     for version, path_list in compiler_targets.items():
         compiler_data: Dict = {}
         if path_list[0].endswith(".vy"):
@@ -152,12 +152,12 @@ def generate_input_json(
     optimize: bool = True,
     runs: int = 200,
     evm_version: Optional[str] = None,
-    language: str = "Solidity",
+    language: Language = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
-) -> Dict:
+) -> Dict[ContractName, Dict[str, Any]]:
     """Formats contracts to the standard solc input json.
 
     Args:
@@ -268,8 +268,11 @@ def compile_from_input_json(
 
 
 def generate_build_json(
-    input_json: Dict, output_json: Dict, compiler_data: Optional[Dict] = None, silent: bool = True
-) -> Dict:
+    input_json: Dict,
+    output_json: Dict,
+    compiler_data: Optional[Dict] = None,
+    silent: bool = True,
+) -> Dict[ContractName, Dict]:
     """Formats standard compiler output to the brownie build json.
 
     Args:
@@ -292,7 +295,7 @@ def generate_build_json(
 
     settings: dict = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
-    build_json: Dict = {}
+    build_json: Dict[ContractName, Dict] = {}
 
     if language == "Solidity":
         compiler_data["optimizer"] = settings["optimizer"]
@@ -349,7 +352,7 @@ def generate_build_json(
                     path_str,
                     contract_alias,
                     output_json["sources"][path_str]["ast"],
-                    (0, len(source)),
+                    (0, len(source)),  # type: ignore [arg-type]
                 )
     
             build_json[contract_alias].update(
@@ -400,7 +403,7 @@ def get_abi(
     allow_paths: Optional[str] = None,
     remappings: Optional[list] = None,
     silent: bool = True,
-) -> Dict:
+) -> Dict[ContractName, Dict]:
     """
     Generate ABIs from contract interfaces.
 
@@ -422,8 +425,10 @@ def get_abi(
         Compiled ABIs in the format `{'contractName': [ABI]}`
     """
 
-    final_output = {
-        Path(k).stem: {
+    input_json: Dict[ContractName | Literal["settings"], Dict[str, Any]]
+
+    final_output: Dict[ContractName, Dict] = {
+        Path(k).stem: {  # type: ignore [misc]
             "abi": json.loads(v),
             "contractName": Path(k).stem,
             "type": "interface",
@@ -437,7 +442,7 @@ def get_abi(
 
     for path, source in contract_sources.items():
         if Path(path).suffix == ".vy":
-            input_json = generate_input_json({path: source}, language="Vyper")
+            input_json = generate_input_json({path: source}, language="Vyper")  # type: ignore [assignment]
             input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
             try:
                 output_json = compile_from_input_json(input_json, silent, allow_paths)
@@ -445,7 +450,7 @@ def get_abi(
                 # vyper interfaces do not convert to ABIs
                 # https://github.com/vyperlang/vyper/issues/1944
                 continue
-            name = Path(path).stem
+            name: ContractName = Path(path).stem  # type: ignore [assignment]
             final_output[name] = {
                 "abi": output_json["contracts"][path][name]["abi"],
                 "contractName": name,
@@ -473,7 +478,7 @@ def get_abi(
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
-        source_nodes = solcast.from_standard_output(output_json)
+        source_nodes = _from_standard_output(output_json)
         abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
         for path, name, data in [(k, x, y) for k, v in abi_json.items() for x, y in v.items()]:

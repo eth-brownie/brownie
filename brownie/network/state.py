@@ -30,6 +30,7 @@ from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.project.build import DEPLOYMENT_KEYS
+from brownie.typing import ContractName
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
@@ -591,7 +592,7 @@ def _find_contract(address: Optional[HexAddress]) -> Optional[AnyContract]:
         return None
 
 
-def _get_current_dependencies() -> List:
+def _get_current_dependencies() -> List[ContractName]:
     dependencies = {v._name for v in _contract_map.values()}
     for contract in _contract_map.values():
         dependencies.update(contract._build.get("dependencies", []))
@@ -643,7 +644,10 @@ def _get_deployment(
     return build_json, sources
 
 
-def _add_deployment(contract: "Contract", alias: Optional[str] = None) -> None:
+def _add_deployment(
+    contract: "Contract",
+    alias: Optional[ContractName] = None,
+) -> None:
     if "chainid" not in CONFIG.active_network:
         return
 
@@ -675,8 +679,9 @@ def _add_deployment(contract: "Contract", alias: Optional[str] = None) -> None:
 
 
 def _remove_deployment(
-    address: Optional[HexAddress] = None, alias: Optional[str] = None
-) -> Tuple[Optional[Dict], Optional[Dict]]:
+    address: Optional[HexAddress] = None,
+    alias: Optional[ContractName] = None,
+) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:

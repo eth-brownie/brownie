@@ -14,6 +14,7 @@ from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
+from brownie.typing import Offset, Source
 
 from . import sources
 
@@ -38,7 +39,7 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-StatementNodes = Dict[str, Set[Tuple[int, int]]]
+StatementNodes = Dict[str, Set[Offset]]
 BranchNodes = Dict[str, Set[NodeBase]]
 BranchMap = Dict[str, Dict[str, Dict[int, Tuple[int, int, int]]]]
 
@@ -212,6 +213,8 @@ def find_best_solc_version(
 
     Returns: version string
     """
+    available_versions: VersionList
+    installed_versions: VersionList
 
     available_versions, installed_versions = _get_solc_version_list()
 
@@ -238,7 +241,7 @@ def find_best_solc_version(
 
 def _get_solc_version_list() -> Tuple[VersionList, VersionList]:
     global AVAILABLE_SOLC_VERSIONS
-    installed_versions = solcx.get_installed_solc_versions()
+    installed_versions: VersionList = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:
         try:
             AVAILABLE_SOLC_VERSIONS = solcx.get_installable_solc_versions()
@@ -339,9 +342,9 @@ def _generate_coverage_data(
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
     branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict[str, Dict[Tuple[int, int], int]] = {i: {} for i in source_nodes}
+    branch_active: Dict[str, Dict[Offset, int]] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict[str, Dict[Tuple[int, int], Tuple[int, int]]] = {i: {} for i in source_nodes}
+    branch_set: Dict[str, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
     pc_list: List[dict] = []
@@ -407,7 +410,7 @@ def _generate_coverage_data(
         # set source offset (-1 means none)
         if source[0] == -1:
             continue
-        offset = (source[0], source[0] + source[1])
+        offset: Offset = (source[0], source[0] + source[1])  # type: ignore [assignment]
         pc_list[-1]["offset"] = offset
 
         if pc_list[-1]["op"] == "REVERT" and not optimizer_revert:
@@ -524,7 +527,7 @@ def _generate_coverage_data(
 
 def _find_revert_offset(
     pc_list: List[dict],
-    source_map: Deque[List],
+    source_map: Deque[Source],
     source_node: NodeBase,
     fn_node: NodeBase,
     fn_name: Optional[str],
