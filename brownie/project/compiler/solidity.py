@@ -1,5 +1,5 @@
+
 #!/usr/bin/python3
-# mypy: disable-error-code="index"
 
 import logging
 from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
@@ -7,7 +7,7 @@ from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
 import semantic_version
 import solcast
 import solcx
-from eth_typing import HexStr
+from eth_typing import ABIElement, HexStr
 from requests.exceptions import ConnectionError
 from solcast.nodes import NodeBase, is_inside_offset
 
@@ -15,7 +15,6 @@ from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
-from brownie.typing import InputJsonSolc
 
 from . import sources
 
@@ -52,10 +51,8 @@ def get_version() -> semantic_version.Version:
 
 
 def compile_from_input_json(
-    input_json: InputJsonSolc,
-    silent: bool = True,
-    allow_paths: Optional[str] = None,
-) -> Dict[str, Any]:
+    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+) -> Dict:
     """
     Compiles contracts from a standard input json.
 
@@ -67,7 +64,7 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    settings = input_json["settings"]
+    settings: dict = input_json["settings"]
     optimizer: dict = settings["optimizer"]
     settings.setdefault("evmVersion", None)
     if settings["evmVersion"] in EVM_EQUIVALENTS:
@@ -115,7 +112,7 @@ def install_solc(*versions: VersionSpec) -> None:
 
 def get_abi(
     contract_source: str, allow_paths: Optional[str] = None
-) -> Dict[str, List[Dict[str, Any]]]:
+) -> Dict[str, List[ABIElement]]:
     """
     Given a contract source, returns a dict of {name: abi}
 
@@ -458,7 +455,7 @@ def _generate_coverage_data(
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 pc_list[-1]["fn"] = active_fn_name
             else:
-                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset) # type: ignore [arg-type]
+                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
                 pc_list[-1]["fn"] = active_fn_name
                 stmt_offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
@@ -585,12 +582,14 @@ def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
         node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
     except IndexError:
         return
-    if node.nodeType == "IndexAccess":
+    node_type = node.nodeType
+    if node_type == "IndexAccess":
         pc_map["dev"] = "Index out of range"
-    elif node.nodeType == "BinaryOperation":
-        if node.operator == "/":
+    elif node_type == "BinaryOperation":
+        operator = node.operator
+        if operator == "/":
             pc_map["dev"] = "Division by zero"
-        elif node.operator == "%":
+        elif operator == "%":
             pc_map["dev"] = "Modulus by zero"
 
 
