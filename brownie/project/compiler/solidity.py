@@ -581,7 +581,7 @@ def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
         node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
     except IndexError:
         return
-    node_type = node.nodeType
+    node_type: str = node.nodeType
     if node_type == "IndexAccess":
         pc_map["dev"] = "Index out of range"
     elif node_type == "BinaryOperation":
