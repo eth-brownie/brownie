@@ -37,8 +37,8 @@ REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_
 
 NetworkType = Literal["live", "development", None]
 NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
-
 #TODO: Make this a typed dict
+
 
 class ConfigContainer:
     def __init__(self) -> None:
