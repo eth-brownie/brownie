@@ -43,8 +43,8 @@ class Build:
 
     def __init__(self, sources: Sources) -> None:
         self._sources: Final = sources
-        self._contracts: Final[Dict] = {}
-        self._interfaces: Final[Dict] = {}
+        self._contracts: Final[Dict[ContractName, Dict]] = {}
+        self._interfaces: Final[Dict[ContractName, Dict]] = {}
 
     def _add_contract(
         self,
@@ -71,7 +71,12 @@ class Build:
         contract_name = build_json["contractName"]
         self._interfaces[contract_name] = build_json
 
-    def _generate_revert_map(self, pcMap: Dict, source_map: Dict, language: str) -> None:
+    def _generate_revert_map(
+        self, 
+        pcMap: Dict[str, Dict[str, Any]] | Dict[int, Dcit[str, Any]],
+        source_map: Dict[str, str],
+        language: Language,
+    ) -> None:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
         for pc, data in (
@@ -111,17 +116,17 @@ class Build:
                 continue
             _revert_map[pc] = False
 
-    def _remove_contract(self, contract_name: str) -> None:
+    def _remove_contract(self, contract_name: ContractName) -> None:
         key = self._stem(contract_name)
         if key in self._contracts:
             del self._contracts[key]
 
-    def _remove_interface(self, contract_name: str) -> None:
+    def _remove_interface(self, contract_name: ContractName) -> None:
         key = self._stem(contract_name)
         if key in self._interfaces:
             del self._interfaces[key]
 
-    def get(self, contract_name: str) -> Dict:
+    def get(self, contract_name: ContractName) -> None:
         """Returns build data for the given contract name."""
         key = self._stem(contract_name)
         if key in self._contracts:
@@ -136,18 +141,19 @@ class Build:
             return items
         return [(k, v) for k, v in items if v.get("sourcePath") == path]
 
-    def contains(self, contract_name: str) -> bool:
+    def contains(self, contract_name: ContractName) -> bool:
         """Checks if the contract name exists in the currently loaded build data."""
-        return self._stem(contract_name) in list(self._contracts) + list(self._interfaces)
+        stem = self._stem(contract_name)
+        return stem in self._contracts or stem in self._interfaces
 
-    def get_dependents(self, contract_name: str) -> List:
+    def get_dependents(self, contract_name: ContractName) -> List[ContractName]:
         """Returns a list of contract names that inherit from or link to the given
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file."""
         return [k for k, v in self._contracts.items() if contract_name in v.get("dependencies", [])]
 
-    def _stem(self, contract_name: str) -> str:
-        return contract_name.replace(".json", "")
+    def _stem(self, contract_name: ContractName) -> ContractName:
+        return contract_name.replace(".json", "") # type: ignore [return-value]
 
 
 def _get_dev_revert(pc: int) -> Optional[str]:
