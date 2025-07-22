@@ -3,6 +3,7 @@
 from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
 
 from brownie._c_constants import keymap
+from brownie.typing import ContractName, Language
 
 from .sources import Sources, highlight_source
 
