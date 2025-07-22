@@ -58,7 +58,6 @@ from brownie.network.state import _add_contract, _remove_contract, _revert_regis
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
-from brownie.typing import ContractName
 from brownie.utils import notify
 
 BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
