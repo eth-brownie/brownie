@@ -50,7 +50,7 @@ class Build:
     def _add_contract(
         self,
         build_json: Dict[str, Any],
-        alias: Optional[str] = None,
+        alias: Optional[ContractName] = None,
     ) -> None:
         contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
@@ -74,7 +74,7 @@ class Build:
 
     def _generate_revert_map(
         self, 
-        pcMap: Dict[str, Dict[str, Any]] | Dict[int, Dcit[str, Any]],
+        pcMap: Dict[str, Dict[str, Any]] | Dict[int, Dict[str, Any]],
         source_map: Dict[str, str],
         language: Language,
     ) -> None:
