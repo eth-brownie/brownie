@@ -72,7 +72,7 @@ def set_vyper_version(version: VersionSpec) -> str:
     return str(_active_version)
 
 
-def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, ABIElement]:
+def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
     """
     Given a contract source and name, returns a dict of {name: abi}
 
