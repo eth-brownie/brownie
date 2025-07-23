@@ -72,16 +72,14 @@ class Build:
         pc_map: Dict[int, Dict[str, Any]] = build_json["pcMap"]  # type: ignore [assignment]
         if "0" in pc_map:
             build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
-        self._generate_revert_map(
-            pc_map, build_json["allSourcePaths"], build_json["language"]
-        )
+        self._generate_revert_map(pc_map, build_json["allSourcePaths"], build_json["language"])
 
     def _add_interface(self, build_json: InterfaceBuildJson) -> None:
         contract_name = build_json["contractName"]
         self._interfaces[contract_name] = build_json
 
     def _generate_revert_map(
-        self, 
+        self,
         pcMap: Dict[int, Dict[str, Any]],
         source_map: Dict[str, str],
         language: Language,
@@ -92,9 +90,9 @@ class Build:
             if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
                 if "path" not in data or data["path"] is None:
                     continue
-                
+
                 path_str = source_map[data["path"]]
-    
+
                 if "dev" not in data:
                     if "fn" not in data or "first_revert" in data:
                         _revert_map[pc] = False
