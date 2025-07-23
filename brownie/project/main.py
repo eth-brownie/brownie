@@ -16,6 +16,7 @@ from urllib.parse import quote
 
 import requests
 import yaml
+from eth_typing import HexStr
 from mypy_extensions import mypyc_attr
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
@@ -58,7 +59,12 @@ from brownie.network.state import _add_contract, _remove_contract, _revert_regis
 from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
-from brownie.typing import ContractName, Language
+from brownie.typing import (
+    ContractBuildJson,
+    ContractName,
+    InterfaceBuildJson,
+    Language,
+)
 from brownie.utils import notify
 
 BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
@@ -221,51 +227,55 @@ class Project(_ProjectBase):
 
         contract_list = sources.get_contract_list()
         potential_dependencies = []
+
+        contract_build_json: ContractBuildJson
         for path in list(build_path.glob("contracts/*.json")):
             try:
                 with path.open() as fp:
-                    build_json = json.load(fp)
+                    contract_build_json = json.load(fp)
             except json.JSONDecodeError:
-                build_json = {}
-            if not set(BUILD_KEYS).issubset(build_json):
+                contract_build_json = {}  # type: ignore [assignment]
+            if not set(BUILD_KEYS).issubset(contract_build_json):
                 path.unlink()
                 continue
             if path.stem not in contract_list:
-                potential_dependencies.append((path, build_json))
+                potential_dependencies.append((path, contract_build_json))
                 continue
-            if isinstance(build_json["allSourcePaths"], list):
+            if isinstance(contract_build_json["allSourcePaths"], list):
                 # this handles the format change in v1.7.0, it can be removed in a future release
                 path.unlink()
                 test_path = build_path.joinpath("tests.json")
                 if test_path.exists():
                     test_path.unlink()
                 continue
-            if not project_path.joinpath(build_json["sourcePath"]).exists():
+            if not project_path.joinpath(contract_build_json["sourcePath"]).exists():
                 path.unlink()
                 continue
-            build._add_contract(build_json)
+            build._add_contract(contract_build_json)
 
-        for path, build_json in potential_dependencies:
+        for path, contract_build_json in potential_dependencies:
             dependents = build.get_dependents(path.stem)
             is_dependency = len(set(dependents) & set(contract_list)) > 0
             if is_dependency:
-                build._add_contract(build_json)
+                build._add_contract(contract_build_json)
             else:
                 path.unlink()
 
-        interface_hashes = {}
+        interface_hashes: Dict[str, HexStr] = {}
         interface_list = sources.get_interface_list()
+        
+        interface_build_json: InterfaceBuildJson
         for path in list(build_path.glob("interfaces/*.json")):
             try:
                 with path.open() as fp:
-                    build_json = json.load(fp)
+                    interface_build_json = json.load(fp)
             except json.JSONDecodeError:
-                build_json = {}
-            if not set(INTERFACE_KEYS).issubset(build_json) or path.stem not in interface_list:
+                interface_build_json = {}  # type: ignore [typeddict-item]
+            if not set(INTERFACE_KEYS).issubset(interface_build_json) or path.stem not in interface_list:
                 path.unlink()
                 continue
-            build._add_interface(build_json)
-            interface_hashes[path.stem] = build_json["sha1"]
+            build._add_interface(interface_build_json)
+            interface_hashes[path.stem] = interface_build_json["sha1"]
 
         if compile:
             self._compiler_config = expand_posix_vars(
@@ -299,13 +309,16 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict[str, str]) -> Dict[str, str]:
+    def _get_changed_contracts(self, compiled_hashes: Dict[str, HexStr]) -> Dict[str, str]:
         # get list of changed interfaces and contracts
         sources = self._sources
         new_hashes = sources.get_interface_hashes()
+
         # remove outdated build artifacts
-        for name in (k for k, v in new_hashes.items() if compiled_hashes.get(k) != v):
-            self._build._remove_interface(name)
+        build = self._build
+        for name in new_hashes:
+            if compiled_hashes.get(name) != new_hashes[name]:
+                build._remove_interface(name)
 
         contracts = set(filter(self._compare_build_json, sources.get_contract_list()))
         for dependents in map(self._build.get_dependents, list(contracts)):
@@ -313,7 +326,7 @@ class Project(_ProjectBase):
 
         # remove outdated build artifacts
         for name in contracts:
-            self._build._remove_contract(name)
+            build._remove_contract(name)
 
         # get final list of changed source paths
         changed_set = set(map(sources.get_source_path, contracts))
@@ -324,7 +337,7 @@ class Project(_ProjectBase):
         # confirm that this contract was previously compiled
         try:
             source = self._sources.get(contract_name)
-            build_json = self._build.get(contract_name)
+            build_json: ContractBuildJson = self._build.get(contract_name)  # type: ignore [assignment]
         except KeyError:
             return True
         # compare source hashes

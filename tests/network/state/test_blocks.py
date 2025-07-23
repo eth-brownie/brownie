@@ -31,7 +31,6 @@ def test_timestamp_multiple_blocks(devnetwork, chain):
 def test_getitem_negative_index(devnetwork, accounts, chain, web3):
     block = chain[-1]
     _assert_blocks_equal(block, web3.eth.get_block("latest"))
-    assert block == 
 
     accounts[0].transfer(accounts[1], 1000)
 

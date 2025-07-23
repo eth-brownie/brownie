@@ -1879,6 +1879,13 @@ struct export_table_7d26e585108a186f537a {
     PyObject *(*CPyDef_sources___get_vyper_pragma_spec)(PyObject *cpy_r_source, PyObject *cpy_r_path);
     char (*CPyDef_sources_____top_level__)(void);
     PyTypeObject **CPyType_typing___FormattedEvent;
+    PyTypeObject **CPyType_typing___BytecodeJson;
+    PyTypeObject **CPyType_typing___DeployedBytecodeJson;
+    PyTypeObject **CPyType_typing____BuildJsonBase;
+    PyTypeObject **CPyType_typing___InterfaceBuildJson;
+    PyTypeObject **CPyType_typing____ContractBuildJson;
+    PyTypeObject **CPyType_typing___SolidityBuildJson;
+    PyTypeObject **CPyType_typing___VyperBuildJson;
     char (*CPyDef_typing_____top_level__)(void);
     PyObject **CPyStatic_brownie___utils___color;
     PyObject **CPyStatic_brownie___utils___bytes_to_hexstring;

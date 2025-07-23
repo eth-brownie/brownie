@@ -21,7 +21,7 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.project.sources import is_inside_offset
-from brownie.typing import ContractName, Offset
+from brownie.typing import ContractName, Offset, VyperBuildJson
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
@@ -48,6 +48,7 @@ _get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
 _vvm_set_vyper_version: Final = vvm.set_vyper_version
 _vvm_install_vyper: Final = vvm.install_vyper
 _vvm_compile_standard: Final = vvm.compile_standard
+
 
 def get_version() -> semantic_version.Version:
     return _active_version
@@ -271,8 +272,8 @@ def _get_unique_build_json(
     path_str: str,
     contract_name: ContractName,
     ast_json: Union[Dict, List],
-    offset: Offset
-) -> Dict[str, Any]:
+    offset: Offset,
+) -> VyperBuildJson:
 
     ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json
     deployed_bytecode: dict = output_evm["deployedBytecode"]
@@ -284,10 +285,12 @@ def _get_unique_build_json(
     )
     bytecode_json: dict = output_evm["bytecode"]
     bytecode: HexStr = bytecode_json["object"]
-    return {
+    # This is not a complete VyperBuildJson object but that's okay for now
+    # TODO: make a partial VyperBuildJson subclass for this dtype
+    return {  # type: ignore [typeddict-item]
         "allSourcePaths": {"0": path_str},
         "bytecode": bytecode,
-        "bytecodeSha1": sha1(bytecode.encode()).hexdigest(),
+        "bytecodeSha1": sha1(bytecode.encode()).hexdigest(),  # type: ignore [typeddict-item]
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": _get_dependencies(ast),
         "offset": offset,
@@ -296,7 +299,7 @@ def _get_unique_build_json(
     }
 
 
-def _get_dependencies(ast_json: List[dict]) -> List[str]:
+def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
     return sorted(
         {
             i["name"].split(".")[-1]
@@ -399,16 +402,17 @@ def _generate_coverage_data(
         if node is None:
             continue
 
+        node_ast_type: str = node["ast_type"]
         if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
-            if node["ast_type"] == "FunctionDef":
+            if node_ast_type == "FunctionDef":
                 if (pc_list[-1]["op"] == "REVERT" and pc_list[-7]["op"] == "CALLVALUE") or (
                     pc_list[-1]["op"] == "JUMPI" and pc_list[-3]["op"] == "CALLVALUE"
                 ):
                     pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
-            elif node["ast_type"] == "Subscript":
+            elif node_ast_type == "Subscript":
                 pc_list[-1]["dev"] = "Index out of range"
-            elif node["ast_type"] in ("AugAssign", "BinOp"):
+            elif node_ast_type in ("AugAssign", "BinOp"):
                 if node["op"]["ast_type"] == "Sub":
                     pc_list[-1]["dev"] = "Integer underflow"
                 elif node["op"]["ast_type"] == "Div":
@@ -419,14 +423,14 @@ def _generate_coverage_data(
                     pc_list[-1]["dev"] = "Integer overflow"
             continue
 
-        if node["ast_type"] in ("Assert", "If") or (
-            node["ast_type"] == "Expr"
+        if node_ast_type in ("Assert", "If") or (
+            node_ast_type == "Expr"
             and node["value"].get("func", {}).get("id", None) == "assert_modifiable"
         ):
             # branch coverage
             pc_list[-1]["branch"] = count
             branch_map.setdefault(pc_list[-1]["fn"], {})
-            if node["ast_type"] == "If":
+            if node_ast_type == "If":
                 branch_map[pc_list[-1]["fn"]][count] = _convert_src(node["test"]["src"]) + (False,)
             else:
                 branch_map[pc_list[-1]["fn"]][count] = offset + (True,)
@@ -456,7 +460,9 @@ def _find_node_by_offset(ast_json: List[Dict], offset: Offset) -> Optional[Dict]
             if converted_src == offset:
                 return node
             node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
-            node_list.extend([x for i in node.values() if isinstance(i, list) for x in i])
+            for v in node.values():
+                if isinstance(v, list):
+                    node_list.extend(v)
             if node_list:
                 result = _find_node_by_offset(node_list, offset)
             else:

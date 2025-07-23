@@ -35,7 +35,7 @@ def expand_source_map(source_map_str: str | dict) -> List[Source]:
 
 
 def _expand_row(row: str) -> List[str | int | None]:
-    """Expand a string into a row of params."""
+    """Expand a packed string into a row of params."""
     result: List[str | int | None] = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):

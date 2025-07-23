@@ -30,7 +30,7 @@ from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.project.build import DEPLOYMENT_KEYS
-from brownie.typing import ContractName
+from brownie.typing import ContractBuildJson, ContractName
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
@@ -606,8 +606,9 @@ def _remove_contract(contract: AnyContract) -> None:
 
 
 def _get_deployment(
-    address: Optional[str] = None, alias: Optional[str] = None
-) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    address: Optional[HexAddress] = None,
+    alias: Optional[ContractName] = None,
+) -> Tuple[Optional[ContractBuildJson], Optional[Dict[str, Any]]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -628,8 +629,8 @@ def _get_deployment(
         return None, None
 
     keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
-    build_json = dict(zip(keys, row))
-    path_map: Dict[str, tuple[HexStr, str]] = build_json.pop("paths")
+    build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
+    path_map: Dict[str, tuple[HexStr, str]] = build_json.pop("paths")  # type: ignore [typeddict-item]
     sources: Dict[str, Any] = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
@@ -679,7 +680,7 @@ def _add_deployment(
 def _remove_deployment(
     address: Optional[HexAddress] = None,
     alias: Optional[ContractName] = None,
-) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+) -> Tuple[Optional[ContractBuildJson], Optional[Dict[str, Any]]]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:

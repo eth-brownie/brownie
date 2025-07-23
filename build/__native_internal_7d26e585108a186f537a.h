@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2008];
+extern PyObject *CPyStatics[2022];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -205,6 +205,7 @@ extern PyObject *CPyStatic_sources___globals;
 extern CPyModule *CPyModule_textwrap;
 extern CPyModule *CPyModule_vvm___utils___convert;
 extern PyObject *CPyStatic_typing___globals;
+extern CPyModule *CPyModule_typing_extensions;
 extern PyObject *CPyStatic_brownie___utils___globals;
 extern CPyModule *CPyModule_brownie___utils____color_internal;
 extern CPyModule *CPyModule_brownie___utils____color;
@@ -1446,6 +1447,13 @@ extern PyObject *CPyDef_sources___get_vyper_pragma_spec(PyObject *cpy_r_source, 
 extern PyObject *CPyPy_sources___get_vyper_pragma_spec(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_sources_____top_level__(void);
 extern PyTypeObject *CPyType_typing___FormattedEvent;
+extern PyTypeObject *CPyType_typing___BytecodeJson;
+extern PyTypeObject *CPyType_typing___DeployedBytecodeJson;
+extern PyTypeObject *CPyType_typing____BuildJsonBase;
+extern PyTypeObject *CPyType_typing___InterfaceBuildJson;
+extern PyTypeObject *CPyType_typing____ContractBuildJson;
+extern PyTypeObject *CPyType_typing___SolidityBuildJson;
+extern PyTypeObject *CPyType_typing___VyperBuildJson;
 extern char CPyDef_typing_____top_level__(void);
 extern PyObject *CPyStatic_brownie___utils___color;
 extern PyObject *CPyStatic_brownie___utils___bytes_to_hexstring;

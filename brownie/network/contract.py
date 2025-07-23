@@ -56,7 +56,13 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
-from brownie.typing import AccountsType, ContractName, Language, TransactionReceiptType
+from brownie.typing import (
+    AccountsType,
+    ContractBuildJson,
+    ContractName,
+    Language,
+    TransactionReceiptType,
+)
 from brownie.utils import (
     bright_blue,
     bright_green,
@@ -87,7 +93,7 @@ _unverified_addresses: Final[Set[ChecksumAddress]] = set()
 class _ContractBase:
     _dir_color: Final = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
+    def __init__(self, project: Any, build: ContractBuildJson, sources: Dict) -> None:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
@@ -169,7 +175,7 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}"""
 
-    def __init__(self, project: Any, build: Dict) -> None:
+    def __init__(self, project: Any, build: ContractBuildJson) -> None:
         self.tx = None
         self.bytecode = build["bytecode"]
         self._contracts: List["ProjectContract"] = []
