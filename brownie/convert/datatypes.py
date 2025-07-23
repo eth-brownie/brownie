@@ -311,7 +311,7 @@ def _to_hex(value: Any) -> HexStr:
         if value in ("", "0x"):
             return "0x00"  # type: ignore [return-value]
         if is_hex(value):
-            return add_0x_prefix(value)
+            return add_0x_prefix(value)  # type: ignore [arg-type]
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
