@@ -13,6 +13,7 @@ from typing import (
     Sequence,
     TypeVar,
     Union,
+    final,
 )
 
 try:
@@ -49,6 +50,7 @@ WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, None)
 WeiInputType = str | float | int | bytes | None
 
 
+@final
 class Wei(int):
     """Integer subclass that converts a value to wei and allows comparison against
     similarly formatted values.
@@ -142,6 +144,7 @@ def _return_int(original: Any, value: Any) -> int:
         raise TypeError(f"Cannot convert {type(original).__name__} '{original}' to wei.")
 
 
+@final
 class Fixed(decimal.Decimal):
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
@@ -245,6 +248,7 @@ def _address_compare(a: str, b: Any) -> bool:
     return a.lower() == b.lower()
 
 
+@final
 class HexString(bytes):
     """Bytes subclass for hexstring comparisons. Raises TypeError if compared to
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
@@ -305,6 +309,7 @@ def _to_hex(value: Any) -> HexStr:
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
+@final
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
