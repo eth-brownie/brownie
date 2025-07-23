@@ -115,9 +115,7 @@ class TxHistory(metaclass=_Singleton):
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
-    def filter(
-        self, key: Optional[Callable] = None, **kwargs: Any
-    ) -> List[TransactionReceipt]:
+    def filter(self, key: Optional[Callable] = None, **kwargs: Any) -> List[TransactionReceipt]:
         """
         Return a filtered list of transactions.
 
