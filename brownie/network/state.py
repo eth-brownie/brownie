@@ -581,7 +581,7 @@ def _find_contract(address: Optional[HexAddress]) -> Optional[AnyContract]:
         return _contract_map[address]
     if "chainid" not in CONFIG.active_network:
         return None
-    
+
     from brownie.network.contract import Contract
 
     try:
