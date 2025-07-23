@@ -889,6 +889,7 @@ class Contract(_DeployedContractBase):
             build, sources = _get_deployment(alias=address_or_alias)
             if build is not None:
                 address = build["address"]
+            raise
 
         if build is None or sources is None:
             if (
