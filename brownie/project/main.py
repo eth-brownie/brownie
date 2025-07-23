@@ -978,9 +978,7 @@ def _add_to_sys_path(project_path: pathlib.Path) -> None:
 
 
 def _compare_settings(left: Dict, right: Dict) -> bool:
-    return any(
-        True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)
-    )
+    return any(v and not isinstance(v, dict) and v != right.get(k) for k, v in left.items())
 
 
 def _normalize_solidity_version(version: str) -> str:

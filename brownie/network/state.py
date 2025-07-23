@@ -60,7 +60,7 @@ class TxHistory(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self._list: List[TransactionReceipt] = []
-        self.gas_profile: Final[Dict[str, Dict]] = {}
+        self.gas_profile: Final[Dict[str, Dict[str, int]]] = {}
         _revert_register(self)
 
     def __repr__(self) -> str:
