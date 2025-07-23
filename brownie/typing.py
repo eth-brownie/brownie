@@ -23,6 +23,7 @@ AccountsType = TypeVar("AccountsType", bound="Accounts")
 # Contract
 ContractName = NewType("ContractName", str)
 
+
 # Event
 @final
 class FormattedEvent(TypedDict):
@@ -31,13 +32,15 @@ class FormattedEvent(TypedDict):
     decoded: bool
     address: ChecksumAddress
 
+
 # Transactions
 TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")
 
 # PROJECT
-Start = int  # NewType("Start", int)
-Stop = int  # NewType("Stop", int)
-Offset = Tuple[Start, Stop]  # NewType("Offset", Tuple[Start, Stop])
+Start = int
+Stop = int
+Offset = Tuple[Start, Stop]
+
 
 # Compiler
 Language = Literal["Solidity", "Vyper"]

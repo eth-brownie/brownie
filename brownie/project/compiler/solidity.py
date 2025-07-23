@@ -39,7 +39,9 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
+PcMap = Dict[int, Dict[str, Any]]
 StatementNodes = Dict[str, Set[Offset]]
+StatementMap = Dict[str, Dict[str, Dict[int, Tuple[int, int]]]]
 BranchNodes = Dict[str, Set[NodeBase]]
 BranchMap = Dict[str, Dict[str, Dict[int, Tuple[int, int, int]]]]
 
@@ -324,7 +326,7 @@ def _generate_coverage_data(
     branch_nodes: BranchNodes,
     has_fallback: bool,
     instruction_count: int,
-) -> Tuple[dict, dict, BranchMap]:
+) -> Tuple[PcMap, StatementMap, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
         return {}, {}, {}
@@ -336,7 +338,7 @@ def _generate_coverage_data(
     source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
 
     stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
-    statement_map: Dict[str, dict] = {i: {} for i in source_nodes}
+    statement_map: StatementMap = {i: {} for i in source_nodes}
 
     # possible branch offsets
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
@@ -459,7 +461,7 @@ def _generate_coverage_data(
             else:
                 active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
                 pc_list[-1]["fn"] = active_fn_name
-                stmt_offset = next(
+                stmt_offset: Offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
                 )
                 stmt_nodes[contract_id].discard(stmt_offset)
@@ -521,7 +523,7 @@ def _generate_coverage_data(
                 branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
                 count += 1
 
-    pc_map = {i.pop("pc"): i for i in pc_list}
+    pc_map: PcMap = {i.pop("pc"): i for i in pc_list}
     return pc_map, statement_map, branch_map
 
 
