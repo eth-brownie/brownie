@@ -40,6 +40,9 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
+PathMap = Dict[str, tuple[HexStr, str]]
+Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
+
 AnyContract = Union["Contract", "ProjectContract"]
 
 _contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
@@ -608,7 +611,7 @@ def _remove_contract(contract: AnyContract) -> None:
 def _get_deployment(
     address: Optional[HexAddress] = None,
     alias: Optional[ContractName] = None,
-) -> Tuple[Optional[ContractBuildJson], Optional[Dict[str, Any]]]:
+) -> Deployment | Tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -630,7 +633,7 @@ def _get_deployment(
 
     keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
     build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
-    path_map: Dict[str, tuple[HexStr, str]] = build_json.pop("paths")  # type: ignore [typeddict-item]
+    path_map: Optional[PathMap] = build_json.pop("paths")  # type: ignore [typeddict-item]
     sources: Dict[str, Any] = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
@@ -680,7 +683,7 @@ def _add_deployment(
 def _remove_deployment(
     address: Optional[HexAddress] = None,
     alias: Optional[ContractName] = None,
-) -> Tuple[Optional[ContractBuildJson], Optional[Dict[str, Any]]]:
+) -> Deployment | Tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
