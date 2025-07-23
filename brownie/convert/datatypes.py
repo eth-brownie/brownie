@@ -122,8 +122,8 @@ def _to_wei(value: WeiInputType) -> int:
         return int(hexstr, 16) if hexstr else 0
     if not value or value == "0x":
         return 0
-    if isinstance(value, float) and "e+" in (value := str(value)):
-        num_str, dec = value.split("e+")
+    if isinstance(value, float) and "e+" in (string := str(value)):
+        num_str, dec = string.split("e+")
         num = num_str.split(".") if "." in num_str else [num_str, ""]
         return int(num[0] + num[1][: int(dec)] + "0" * (int(dec) - len(num[1])))
     if not isinstance(value, str):
