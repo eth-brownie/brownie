@@ -51,6 +51,7 @@ WeiInputType = str | float | int | bytes | None
 
 
 @final
+@mypyc_attr(native_class=False)
 class Wei(int):
     """Integer subclass that converts a value to wei and allows comparison against
     similarly formatted values.
@@ -145,6 +146,7 @@ def _return_int(original: Any, value: Any) -> int:
 
 
 @final
+@mypyc_attr(native_class=False)
 class Fixed(decimal.Decimal):
     """
     Decimal subclass that allows comparison against strings, integers and Wei.
@@ -217,6 +219,8 @@ def _to_fixed(value: Any) -> decimal.Decimal:
         raise TypeError(f"Cannot convert {type(value).__name__} '{value}' to decimal.") from e
 
 
+@final
+@mypyc_attr(native_class=False)
 class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
@@ -249,6 +253,7 @@ def _address_compare(a: str, b: Any) -> bool:
 
 
 @final
+@mypyc_attr(native_class=False)
 class HexString(bytes):
     """Bytes subclass for hexstring comparisons. Raises TypeError if compared to
     a non-hexstring. Evaluates True for hexstrings with the same value but differing
@@ -310,6 +315,7 @@ def _to_hex(value: Any) -> HexStr:
 
 
 @final
+@mypyc_attr(native_class=False)
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
@@ -420,9 +426,9 @@ class ReturnValue(tuple):
 def _kwargtuple_compare(a: Any, b: Any) -> bool:
     if not isinstance(a, (tuple, list, ReturnValue)):
         types_ = {type(a), type(b)}
-        if types_.intersection([bool, type(None)]):
+        if types_.intersection((bool, type(None))):
             return a is b
-        if types_.intersection([dict, EthAddress, HexString]):
+        if types_.intersection((dict, EthAddress, HexString)):
             return a == b
         return _convert_str(a) == _convert_str(b)
     if not isinstance(b, (tuple, list, ReturnValue)) or len(b) != len(a):
