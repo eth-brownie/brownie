@@ -368,7 +368,7 @@ class ReturnValue(tuple):
 
     def __getitem__(  # type: ignore [override]
         self,
-        key: str | int | "slice[int, int, int]",
+        key: Union[str, int, "slice[int, int, int]"],
     ) -> Any:
         if type(key) is slice:
             abi = self._abi
