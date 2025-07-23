@@ -109,4 +109,4 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 
 # Compiler
 Language = Literal["Solidity", "Vyper"]
-Source = Tuple[Start, Stop, ContractName, str]  # NewType("Source", Tuple[Start, Stop, ContractName, str])
+Source = Tuple[Start, Stop, ContractName, str]
