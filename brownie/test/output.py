@@ -12,7 +12,9 @@ from brownie.project import get_loaded_projects
 from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
 
 COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
-    (0.8, bright_red), (0.9, bright_yellow), (1.0, bright_green)
+    (0.8, bright_red),
+    (0.9, bright_yellow),
+    (1.0, bright_green),
 ]
 
 
