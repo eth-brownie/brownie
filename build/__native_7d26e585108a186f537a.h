@@ -164,6 +164,16 @@ typedef struct tuple_T2CC {
 } tuple_T2CC;
 #endif
 
+#ifndef MYPYC_DECLARED_tuple_T4IIOO
+#define MYPYC_DECLARED_tuple_T4IIOO
+typedef struct tuple_T4IIOO {
+    CPyTagged f0;
+    CPyTagged f1;
+    PyObject *f2;
+    PyObject *f3;
+} tuple_T4IIOO;
+#endif
+
 #ifndef MYPYC_DECLARED_tuple_T3IIO
 #define MYPYC_DECLARED_tuple_T3IIO
 typedef struct tuple_T3IIO {
@@ -189,15 +199,6 @@ typedef struct tuple_T3IIC {
 } tuple_T3IIC;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T3OOC
-#define MYPYC_DECLARED_tuple_T3OOC
-typedef struct tuple_T3OOC {
-    PyObject *f0;
-    PyObject *f1;
-    char f2;
-} tuple_T3OOC;
-#endif
-
 #ifndef MYPYC_DECLARED_tuple_T4CCCC
 #define MYPYC_DECLARED_tuple_T4CCCC
 typedef struct tuple_T4CCCC {
@@ -206,6 +207,17 @@ typedef struct tuple_T4CCCC {
     char f2;
     char f3;
 } tuple_T4CCCC;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T5OT2IIOOO
+#define MYPYC_DECLARED_tuple_T5OT2IIOOO
+typedef struct tuple_T5OT2IIOOO {
+    PyObject *f0;
+    tuple_T2II f1;
+    PyObject *f2;
+    PyObject *f3;
+    PyObject *f4;
+} tuple_T5OT2IIOOO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T2OC
@@ -1622,7 +1634,7 @@ struct export_table_7d26e585108a186f537a {
     PyObject *(*CPyDef_vyper___find_vyper_versions)(PyObject *cpy_r_contract_sources, char cpy_r_install_needed, char cpy_r_install_latest, char cpy_r_silent);
     PyObject *(*CPyDef_vyper___find_best_vyper_version)(PyObject *cpy_r_contract_sources, char cpy_r_install_needed, char cpy_r_install_latest, char cpy_r_silent);
     PyObject *(*CPyDef_vyper___compile_from_input_json)(PyObject *cpy_r_input_json, char cpy_r_silent, PyObject *cpy_r_allow_paths);
-    PyObject *(*CPyDef_vyper____get_unique_build_json)(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
+    PyObject *(*CPyDef_vyper____get_unique_build_json)(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, tuple_T2II cpy_r_offset);
     PyObject *(*CPyDef_vyper____get_dependencies)(PyObject *cpy_r_ast_json);
     char (*CPyDef_vyper____is_revert_jump)(PyObject *cpy_r_pc_list, CPyTagged cpy_r_revert_pc);
     tuple_T3OOO (*CPyDef_vyper____generate_coverage_data)(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json);

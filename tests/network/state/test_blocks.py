@@ -30,17 +30,18 @@ def test_timestamp_multiple_blocks(devnetwork, chain):
 
 def test_getitem_negative_index(devnetwork, accounts, chain, web3):
     block = chain[-1]
-    assert block == web3.eth.get_block("latest")
+    _assert_blocks_equal(block, web3.eth.get_block("latest"))
+    assert block == 
 
     accounts[0].transfer(accounts[1], 1000)
 
     assert chain[-1] != block
-    assert chain[-1] == web3.eth.get_block("latest")
+    _assert_blocks_equal(chain[-1], web3.eth.get_block("latest"))
 
 
 def test_getitem_positive_index(devnetwork, accounts, chain, web3):
     block = chain[0]
-    assert block == web3.eth.get_block("latest")
+    _assert_blocks_equal(block, web3.eth.get_block("latest"))
 
     accounts[0].transfer(accounts[1], 1000)
 
@@ -106,3 +107,11 @@ def test_mine_multiple_timedelta(devnetwork, chain):
 def test_mine_timestamp_and_timedelta(devnetwork, chain):
     with pytest.raises(ValueError):
         chain.mine(timestamp=12345, timedelta=31337)
+
+
+def _assert_blocks_equal(a, b) -> None:
+    """This helper lets us find the problematic field(s) if the blocks are not equal."""
+    if a != b:
+        assert a.keys() == b.keys(), (a.keys(), b.keys())
+        for key in a:
+            assert a[key] == b[key], (a[key], b[key])

@@ -3,7 +3,7 @@
 from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
 
 from brownie._c_constants import keymap
-from brownie.typing import ContractName, Language
+from brownie.typing import ContractName, Language, Offset
 
 from .sources import Sources, highlight_source
 
@@ -173,7 +173,7 @@ def _get_error_source_from_pc(
     # to revert, returns the highlighted relevent source code and the method name.
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
-    revert: Tuple[str, tuple, str, str, Sources] = _revert_map[pc]  # type: ignore [assignment]
+    revert: Tuple[str, Offset, str, str, Sources] = _revert_map[pc]  # type: ignore [assignment]
     source = revert[4].get(revert[0])  # type: ignore [index]
     highlight, linenos = highlight_source(source, revert[1], pad=pad)
     return highlight, linenos, revert[0], revert[2]  # type: ignore [index]

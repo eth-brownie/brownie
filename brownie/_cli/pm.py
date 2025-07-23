@@ -108,7 +108,4 @@ def _split_id(package_id):
 
 
 def _format_pkg(org, repo, version):
-    return (
-        f"{blue}{org}/{bright_blue}{repo}"
-        f"{blue}@{bright_blue}{version}{color}"
-    )
+    return f"{blue}{org}/{bright_blue}{repo}{blue}@{bright_blue}{version}{color}"

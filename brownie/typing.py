@@ -1,4 +1,13 @@
-from typing import TYPE_CHECKING, List, Literal, NewType, TypedDict, TypeVar, final
+from typing import (
+    TYPE_CHECKING,
+    List,
+    Literal,
+    NewType,
+    Tuple,
+    TypedDict,
+    TypeVar,
+    final,
+)
 
 from eth_event.main import EventData
 from eth_typing import ChecksumAddress
@@ -14,6 +23,7 @@ AccountsType = TypeVar("AccountsType", bound="Accounts")
 # Contract
 ContractName = NewType("ContractName", str)
 
+
 # Event
 @final
 class FormattedEvent(TypedDict):
@@ -22,9 +32,16 @@ class FormattedEvent(TypedDict):
     decoded: bool
     address: ChecksumAddress
 
+
 # Transactions
 TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionReceipt")
 
 # PROJECT
+Start = int
+Stop = int
+Offset = Tuple[Start, Stop]
+
+
 # Compiler
 Language = Literal["Solidity", "Vyper"]
+Source = Tuple[Start, Stop, ContractName, str]  # NewType("Source", Tuple[Start, Stop, ContractName, str])

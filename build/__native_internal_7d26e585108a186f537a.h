@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[1997];
+extern PyObject *CPyStatics[2008];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1068,7 +1068,7 @@ extern PyObject *CPyDef_vyper___find_best_vyper_version(PyObject *cpy_r_contract
 extern PyObject *CPyPy_vyper___find_best_vyper_version(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper___compile_from_input_json(PyObject *cpy_r_input_json, char cpy_r_silent, PyObject *cpy_r_allow_paths);
 extern PyObject *CPyPy_vyper___compile_from_input_json(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_vyper____get_unique_build_json(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
+extern PyObject *CPyDef_vyper____get_unique_build_json(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, tuple_T2II cpy_r_offset);
 extern PyObject *CPyPy_vyper____get_unique_build_json(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper____get_dependencies(PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____get_dependencies(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
