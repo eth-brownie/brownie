@@ -4,7 +4,6 @@ import json
 import tkinter as tk
 from tkinter import ttk
 
-from brownie._c_constants import keymap
 from brownie.project import get_loaded_projects
 
 from .console import Console, ConsoleButton
@@ -71,7 +70,7 @@ class Root(tk.Tk):
         self.main.note.set_active(build_json["sourcePath"])
         pcMap = build_json["pcMap"]
         self.main.oplist.set_opcodes(pcMap)
-        self.pcMap = keymap(str, pcMap)
+        self.pcMap = {str(k): pcMap[k] for k in pcMap}
         for value in (v for v in pcMap.values() if "path" in v):
             value_path = value["path"]
             if value_path not in pathMap:

@@ -24,13 +24,13 @@ from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
-from brownie._c_constants import keymap, sha1
+from brownie._c_constants import sha1
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.project.build import DEPLOYMENT_KEYS
-from brownie.typing import ContractName
+from brownie.typing import ContractBuildJson, ContractName
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
@@ -39,6 +39,9 @@ from .web3 import _resolve_address, web3
 
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
+
+PathMap = Dict[str, tuple[HexStr, str]]
+Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
 
 AnyContract = Union["Contract", "ProjectContract"]
 
@@ -606,8 +609,9 @@ def _remove_contract(contract: AnyContract) -> None:
 
 
 def _get_deployment(
-    address: Optional[str] = None, alias: Optional[str] = None
-) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    address: Optional[HexAddress] = None,
+    alias: Optional[ContractName] = None,
+) -> Deployment | Tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -628,16 +632,16 @@ def _get_deployment(
         return None, None
 
     keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
-    build_json = dict(zip(keys, row))
-    path_map: Dict[str, tuple[HexStr, str]] = build_json.pop("paths")
+    build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
+    path_map: PathMap = build_json.pop("paths")  # type: ignore [typeddict-item]
     sources: Dict[str, Any] = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
-    build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
-    pc_map = build_json["pcMap"]
+    build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
+    pc_map = build_json.get("pcMap")
     if isinstance(pc_map, dict):
-        build_json["pcMap"] = keymap(int, pc_map)
+        build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
 
     return build_json, sources
 
@@ -679,7 +683,7 @@ def _add_deployment(
 def _remove_deployment(
     address: Optional[HexAddress] = None,
     alias: Optional[ContractName] = None,
-) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+) -> Deployment | Tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -693,7 +697,7 @@ def _remove_deployment(
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 
-    build_json, sources = _get_deployment(address, alias)
+    deployment = _get_deployment(address, alias)
     # delete entry from chain{n}
     cur.execute(f"DELETE FROM {name} WHERE {query}")
     # delete all entries from sources matching the contract's source hashes
@@ -705,4 +709,4 @@ def _remove_deployment(
             hash_ = sha1(source.encode()).hexdigest()
             cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
-    return build_json, sources
+    return deployment

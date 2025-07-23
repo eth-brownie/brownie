@@ -13,8 +13,13 @@ from solcast.nodes import NodeBase, is_inside_offset
 from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
-from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
-from brownie.typing import Offset, Source
+from brownie.project.compiler.utils import (
+    VersionList,
+    VersionSpec,
+    _get_alias,
+    expand_source_map,
+)
+from brownie.typing import Offset, SolidityBuildJson, Source
 
 from . import sources
 
@@ -260,21 +265,22 @@ def _get_unique_build_json(
     stmt_nodes: StatementNodes,
     branch_nodes: BranchNodes,
     has_fallback: bool,
-) -> Dict:
+) -> SolidityBuildJson:
     paths = {
         str(i.contract_id): i.parent().absolutePath
         for i in [contract_node] + contract_node.dependencies
     }
 
     bytecode = _format_link_references(output_evm)
-    without_metadata = _remove_metadata(output_evm["deployedBytecode"]["object"])
+    bytecode_json: dict = output_evm["deployedBytecode"]
+    
+    without_metadata = _remove_metadata(bytecode_json["object"])
     instruction_count = len(without_metadata) // 2
 
-    bytecode_params: dict = output_evm["deployedBytecode"]
 
     pc_map, statement_map, branch_map = _generate_coverage_data(
-        bytecode_params["sourceMap"],
-        bytecode_params["opcodes"],
+        bytecode_json["sourceMap"],
+        bytecode_json["opcodes"],
         contract_node,
         stmt_nodes,
         branch_nodes,
@@ -291,16 +297,19 @@ def _get_unique_build_json(
             path_str = node.parent().absolutePath
             dependencies.append(_get_alias(name, path_str))
 
-    return {
+    # This is not a complete SolidityBuildJson object but that's okay for now
+    # TODO: make a partial SolidityBuildJson subclass for this dtype
+    build_json: SolidityBuildJson = {  # type: ignore [typeddict-item]
         "allSourcePaths": paths,
         "bytecode": bytecode,
-        "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),
+        "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),  # type: ignore [typeddict-item]
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": dependencies,
         "offset": contract_node.offset,
         "pcMap": pc_map,
         "type": contract_node.contractKind,
     }
+    return build_json
 
 
 def _format_link_references(evm: Dict) -> HexStr:

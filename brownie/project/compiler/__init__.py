@@ -18,7 +18,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import ContractName, Language
+from brownie.typing import ContractBuildJson, ContractName, InterfaceBuildJson, Language
 from brownie.utils import notify
 
 from . import solidity, vyper
@@ -58,7 +58,7 @@ def compile_and_format(
     remappings: Optional[Union[List[str], str]] = None,
     optimizer: Optional[Dict] = None,
     viaIR: Optional[bool] = None,
-) -> Dict:
+) -> Dict[ContractName, ContractBuildJson]:
     """Compiles contracts and returns build data.
 
     Args:
@@ -87,7 +87,7 @@ def compile_and_format(
     if [i for i in interface_sources if Path(i).suffix not in (".sol", ".vy", ".json")]:
         raise UnsupportedLanguage("Interface suffixes must be one of ('.sol', '.vy', '.json')")
 
-    build_json: Dict = {}
+    build_json: Dict[ContractName, ContractBuildJson] = {}
     compiler_targets = {}
 
     vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
@@ -272,7 +272,7 @@ def generate_build_json(
     output_json: Dict,
     compiler_data: Optional[Dict] = None,
     silent: bool = True,
-) -> Dict[ContractName, Dict]:
+) -> Dict[ContractName, ContractBuildJson]:
     """Formats standard compiler output to the brownie build json.
 
     Args:
@@ -295,7 +295,7 @@ def generate_build_json(
 
     settings: dict = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
-    build_json: Dict[ContractName, Dict] = {}
+    build_json: Dict[ContractName, ContractBuildJson] = {}
 
     if language == "Solidity":
         compiler_data["optimizer"] = settings["optimizer"]
@@ -365,10 +365,10 @@ def generate_build_json(
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
                     "deployedSourceMap": deployed_bytecode["sourceMap"],
-                    "language": language,
+                    "language": language,  # type: ignore [typeddict-item]
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
-                    "sha1": sha1(source.encode()).hexdigest(),
+                    "sha1": sha1(source.encode()).hexdigest(),  # type: ignore [typeddict-item]
                     "source": source,
                     "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                     "sourcePath": path_str,
@@ -405,7 +405,7 @@ def get_abi(
     allow_paths: Optional[str] = None,
     remappings: Optional[list] = None,
     silent: bool = True,
-) -> Dict[ContractName, Dict]:
+) -> Dict[ContractName, InterfaceBuildJson]:
     """
     Generate ABIs from contract interfaces.
 
@@ -429,14 +429,14 @@ def get_abi(
 
     input_json: Dict[ContractName | Literal["settings"], Dict[str, Any]]
 
-    final_output: Dict[ContractName, Dict] = {
+    final_output: Dict[ContractName, InterfaceBuildJson] = {
         Path(k).stem: {  # type: ignore [misc]
             "abi": json.loads(v),
-            "contractName": Path(k).stem,
+            "contractName": Path(k).stem,  # type: ignore [typeddict-item]
             "type": "interface",
             "source": None,
             "offset": None,
-            "sha1": sha1(v.encode()).hexdigest(),
+            "sha1": sha1(v.encode()).hexdigest(),  # type: ignore [typeddict-item]
         }
         for k, v in contract_sources.items()
         if Path(k).suffix == ".json"
@@ -458,8 +458,8 @@ def get_abi(
                 "contractName": name,
                 "type": "interface",
                 "source": source,
-                "offset": [0, len(source)],
-                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
+                "offset": (0, len(source)),
+                "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
             }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
@@ -483,25 +483,25 @@ def get_abi(
         source_nodes = _from_standard_output(output_json)
         abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
-        for path, name, data in [(k, x, y) for k, v in abi_json.items() for x, y in v.items()]:
-            contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
-            dependencies = []
-            for node in [
-                i for i in contract_node.dependencies if i.nodeType == "ContractDefinition"
-            ]:
-                dependency_name = node.name
-                path_str = node.parent().absolutePath
-                dependencies.append(_get_alias(dependency_name, path_str))
-
-            final_output[name] = {
-                "abi": data["abi"],
-                "ast": output_json["sources"][path]["ast"],
-                "contractName": name,
-                "dependencies": dependencies,
-                "type": "interface",
-                "source": contract_sources[path],
-                "offset": contract_node.offset,
-                "sha1": sha1(contract_sources[path].encode()).hexdigest(),
-            }
+        for path, contracts in abi_json.items():
+            for name, data in contracts.items():
+                contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
+                dependencies = []
+                for node in contract_node.dependencies:
+                    if node.nodeType == "ContractDefinition":
+                        dependency_name = node.name
+                        path_str = node.parent().absolutePath
+                        dependencies.append(_get_alias(dependency_name, path_str))
+    
+                final_output[name] = {
+                    "abi": data["abi"],
+                    "ast": output_json["sources"][path]["ast"],
+                    "contractName": name,
+                    "dependencies": dependencies,
+                    "type": "interface",
+                    "source": contract_sources[path],
+                    "offset": contract_node.offset,
+                    "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
+                }
 
     return final_output

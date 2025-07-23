@@ -1109,7 +1109,6 @@ struct export_table_7d26e585108a186f537a {
     PyObject **CPyStatic__c_constants___HexBytes;
     PyObject **CPyStatic__c_constants___NpmSpec;
     PyObject **CPyStatic__c_constants___Version;
-    PyObject **CPyStatic__c_constants___keymap;
     PyObject **CPyStatic__c_constants___mapcat;
     char (*CPyDef__c_constants_____top_level__)(void);
     char (*CPyDef__cli_____top_level__)(void);
@@ -1571,9 +1570,9 @@ struct export_table_7d26e585108a186f537a {
     PyObject *(*CPyDef_state____get_current_dependencies)(void);
     char (*CPyDef_state____add_contract)(PyObject *cpy_r_contract);
     char (*CPyDef_state____remove_contract)(PyObject *cpy_r_contract);
-    tuple_T2OO (*CPyDef_state____get_deployment)(PyObject *cpy_r_address, PyObject *cpy_r_alias);
+    PyObject *(*CPyDef_state____get_deployment)(PyObject *cpy_r_address, PyObject *cpy_r_alias);
     char (*CPyDef_state____add_deployment)(PyObject *cpy_r_contract, PyObject *cpy_r_alias);
-    tuple_T2OO (*CPyDef_state____remove_deployment)(PyObject *cpy_r_address, PyObject *cpy_r_alias);
+    PyObject *(*CPyDef_state____remove_deployment)(PyObject *cpy_r_address, PyObject *cpy_r_alias);
     char (*CPyDef_state_____top_level__)(void);
     char (*CPyDef_project_____top_level__)(void);
     PyObject **CPyStatic_compiler___STANDARD_JSON;
@@ -1879,6 +1878,13 @@ struct export_table_7d26e585108a186f537a {
     PyObject *(*CPyDef_sources___get_vyper_pragma_spec)(PyObject *cpy_r_source, PyObject *cpy_r_path);
     char (*CPyDef_sources_____top_level__)(void);
     PyTypeObject **CPyType_typing___FormattedEvent;
+    PyTypeObject **CPyType_typing___BytecodeJson;
+    PyTypeObject **CPyType_typing___DeployedBytecodeJson;
+    PyTypeObject **CPyType_typing____BuildJsonBase;
+    PyTypeObject **CPyType_typing___InterfaceBuildJson;
+    PyTypeObject **CPyType_typing____ContractBuildJson;
+    PyTypeObject **CPyType_typing___SolidityBuildJson;
+    PyTypeObject **CPyType_typing___VyperBuildJson;
     char (*CPyDef_typing_____top_level__)(void);
     PyObject **CPyStatic_brownie___utils___color;
     PyObject **CPyStatic_brownie___utils___bytes_to_hexstring;

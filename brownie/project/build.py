@@ -2,8 +2,14 @@
 
 from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
 
-from brownie._c_constants import keymap
-from brownie.typing import ContractName, Language, Offset
+from brownie.typing import (
+    BuildJson,
+    ContractBuildJson,
+    ContractName,
+    InterfaceBuildJson,
+    Language,
+    Offset,
+)
 
 from .sources import Sources, highlight_source
 
@@ -44,12 +50,12 @@ class Build:
 
     def __init__(self, sources: Sources) -> None:
         self._sources: Final = sources
-        self._contracts: Final[Dict[ContractName, Dict]] = {}
-        self._interfaces: Final[Dict[ContractName, Dict]] = {}
+        self._contracts: Final[Dict[ContractName, ContractBuildJson]] = {}
+        self._interfaces: Final[Dict[ContractName, InterfaceBuildJson]] = {}
 
     def _add_contract(
         self,
-        build_json: Dict[str, Any],
+        build_json: ContractBuildJson,
         alias: Optional[ContractName] = None,
     ) -> None:
         contract_name = alias or build_json["contractName"]
@@ -62,13 +68,15 @@ class Build:
         if "pcMap" not in build_json:
             # no pcMap means build artifact is for an interface
             return
-        if "0" in build_json["pcMap"]:
-            build_json["pcMap"] = keymap(int, build_json["pcMap"])
+
+        pc_map: Dict[int, Dict[str, Any]] = build_json["pcMap"]  # type: ignore [assignment]
+        if "0" in pc_map:
+            build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
         self._generate_revert_map(
-            build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
+            pc_map, build_json["allSourcePaths"], build_json["language"]
         )
 
-    def _add_interface(self, build_json: Dict[str, Any]) -> None:
+    def _add_interface(self, build_json: InterfaceBuildJson) -> None:
         contract_name = build_json["contractName"]
         self._interfaces[contract_name] = build_json
 
@@ -99,7 +107,7 @@ class Build:
                             data["dev"] = revert_str
                     except (KeyError, ValueError):
                         pass
-    
+
                 msg = "" if data["op"] == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
@@ -108,7 +116,7 @@ class Build:
                     data.get("dev", msg),
                     self._sources,
                 )
-    
+
                 # do not compare the final tuple item in case the same project was loaded twice
                 if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):  # type: ignore [index]
                     _revert_map[pc] = revert
@@ -125,7 +133,7 @@ class Build:
         if key in self._interfaces:
             del self._interfaces[key]
 
-    def get(self, contract_name: ContractName) -> Dict:
+    def get(self, contract_name: ContractName) -> BuildJson:
         """Returns build data for the given contract name."""
         key = self._stem(contract_name)
         if key in self._contracts:
@@ -152,7 +160,7 @@ class Build:
         return [k for k, v in self._contracts.items() if contract_name in v.get("dependencies", [])]
 
     def _stem(self, contract_name: ContractName) -> ContractName:
-        return contract_name.replace(".json", "") # type: ignore [return-value]
+        return contract_name.replace(".json", "")  # type: ignore [return-value]
 
 
 def _get_dev_revert(pc: int) -> Optional[str]:
