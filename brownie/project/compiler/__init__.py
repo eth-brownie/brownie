@@ -474,7 +474,7 @@ def get_abi(
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
         set_solc_version(version)
-        input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)
+        input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)  # type: ignore [assignment]
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
