@@ -24,7 +24,7 @@ from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
-from brownie._c_constants import keymap, sha1
+from brownie._c_constants import sha1
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
@@ -638,7 +638,7 @@ def _get_deployment(
     build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
     pc_map = build_json["pcMap"]
     if isinstance(pc_map, dict):
-        build_json["pcMap"] = keymap(int, pc_map)
+        build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
 
     return build_json, sources
 
