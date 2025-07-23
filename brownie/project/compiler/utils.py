@@ -31,16 +31,17 @@ def expand_source_map(source_map_str: str | dict) -> List[Source]:
         for x in range(4):
             if value[x] is None:
                 value[x] = source_map[i - 1][x]
-    return source_map  # type: ignore [return-value]
+    return [tuple(_list) for _list in source_map]  # type: ignore [arg-type, misc]
 
 
-def _expand_row(row: str) -> Source | Tuple[None, None, None, None]:
-    result: List[Optional[Union[str, int]]] = [None] * 4
+def _expand_row(row: str) -> List[str | int | None]:
+    """Expand a string into a row of params."""
+    result: List[str | int | None] = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
             result[i] = value if i == 3 else int(value)
-    return tuple(result)  # type: ignore [return-value]
+    return result
 
 
 def merge_natspec(
