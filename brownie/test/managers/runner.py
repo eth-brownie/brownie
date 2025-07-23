@@ -84,23 +84,27 @@ class RevertContextManager:
         if exc_type is not VirtualMachineError:
             raise
 
-        if self.dev_revert_msg or self.dev_revert_pattern:
+        message = self.dev_revert_msg
+        pattern = self.dev_revert_pattern
+        if message or pattern:
             actual = exc_value.dev_revert_msg
             if (
                 actual is None
-                or (self.dev_revert_pattern and not regex_fullmatch(self.dev_revert_pattern, actual))
-                or (self.dev_revert_msg and self.dev_revert_msg != actual)
+                or (pattern and not regex_fullmatch(pattern, actual))
+                or (message and message != actual)
             ):
                 raise AssertionError(
                     f"Unexpected dev revert string '{actual}'\n{exc_value.source}"
                 ) from None
 
-        if self.revert_msg or self.revert_pattern:
+        message = self.revert_msg
+        pattern = self.revert_pattern
+        if message or pattern:
             actual = exc_value.revert_msg
             if (
                 actual is None
-                or (self.revert_pattern and not regex_fullmatch(self.revert_pattern, actual))
-                or (self.revert_msg and self.revert_msg != actual)
+                or (pattern and not regex_fullmatch(pattern, actual))
+                or (message and message != actual)
             ):
                 raise AssertionError(
                     f"Unexpected revert string '{actual}'\n{exc_value.source}"
