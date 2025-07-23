@@ -151,9 +151,7 @@ def _add(env, id_, *args):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify(
-        "SUCCESS", f"A new network '{bright_magenta}{new['name']}{color}' has been added"
-    )
+    notify("SUCCESS", f"A new network '{bright_magenta}{new['name']}{color}' has been added")
     _print_verbose_network_description(new, True)
 
 
@@ -190,9 +188,7 @@ def _modify(id_, *args):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify(
-        "SUCCESS", f"Network '{bright_magenta}{target['name']}{color}' has been modified"
-    )
+    notify("SUCCESS", f"Network '{bright_magenta}{target['name']}{color}' has been modified")
     _print_verbose_network_description(target, True)
 
 
