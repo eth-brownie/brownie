@@ -43,7 +43,10 @@ UNITS: Final = {
     "ether": 18,
 }
 
-WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, None)
+WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, None)
+# This is no longer used within the codebase but we leave it in place in case downstream users import it
+
+WeiInputType = str | float | int | bytes | None
 
 
 class Wei(int):
@@ -57,7 +60,7 @@ class Wei(int):
         * bytes: b'\xff\xff'
         * hex strings: "0x330124\" """
 
-    def __new__(cls, value: WeiInputTypes) -> Self:
+    def __new__(cls, value: WeiInputType) -> Self:
         return super().__new__(cls, _to_wei(value))
 
     def __hash__(self) -> int:
@@ -108,23 +111,21 @@ class Wei(int):
             raise TypeError(f'Cannot convert wei to unknown unit: "{unit}". ') from None
 
 
-def _to_wei(value: WeiInputTypes) -> int:
+def _to_wei(value: WeiInputType) -> int:
     original = value
     if isinstance(value, bytes):
-        value = HexBytes(value).hex()
-        if value:
-            return int(value, 16)
+        value = HexBytes(value).hex().removeprefix("0x")
+        return int(value, 16) if value else 0
     if not value or value == "0x":
         return 0
-    if isinstance(value, float) and "e+" in str(value):
-        num_str, dec = str(value).split("e+")
+    if isinstance(value, float) and "e+" in (value := str(value)):
+        num_str, dec = value.split("e+")
         num = num_str.split(".") if "." in num_str else [num_str, ""]
         return int(num[0] + num[1][: int(dec)] + "0" * (int(dec) - len(num[1])))
-    if isinstance(value, str):
-        if value[:2] == "0x":
-            return int(value, 16)
-    else:
+    if not isinstance(value, str):
         return _return_int(original, value)
+    elif value.startswith("0x"):
+        return int(value, 16)
     for unit, decimals in UNITS.items():
         if f" {unit}" not in value:
             continue
@@ -224,7 +225,7 @@ class EthAddress(str):
         try:
             converted_value = cchecksum.to_checksum_address(converted_value)
         except ValueError:
-            raise ValueError(f"'{value}' is not a valid ETH address") from None
+            raise ValueError(f"{value!r} is not a valid ETH address") from None
         return super().__new__(cls, converted_value)  # type: ignore
 
     def __hash__(self) -> int:
@@ -316,29 +317,30 @@ class ReturnValue(tuple):
         abi: Optional[Sequence[ABIComponent]] = None,
     ) -> "ReturnValue":
         values = list(values)
-        for i in range(len(values)):
-            if isinstance(values[i], (tuple, list)) and not isinstance(values[i], ReturnValue):
-                if abi is not None and "components" in abi[i]:
-                    if abi[i]["type"] == "tuple":
+        for i, value in enumerate(values):
+            if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
+                if abi is not None and "components" in (value_abi := abi[i]):
+                    if value_abi["type"] == "tuple":
                         # tuple
-                        values[i] = ReturnValue(values[i], abi[i]["components"])
+                        values[i] = ReturnValue(value, value_abi["components"])
                     else:
                         # array of tuples
-                        inner_abi = abi[i].copy()
+                        inner_abi = value_abi.copy()
+                        length = len(value)
                         inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
-                        final_abi = [deepcopy(inner_abi) for i in range(len(values[i]))]
+                        final_abi = [deepcopy(inner_abi) for i in range(length)]
                         if inner_abi.get("name"):
                             name = inner_abi["name"]
-                            for x in range(len(final_abi)):
+                            for x in range(length):
                                 final_abi[x]["name"] = f"{name}[{x}]"
 
-                        values[i] = ReturnValue(values[i], final_abi)
+                        values[i] = ReturnValue(value, final_abi)
                 else:
                     # array
-                    values[i] = ReturnValue(values[i])
+                    values[i] = ReturnValue(value)
 
-        self = super().__new__(cls, values)  # type: ignore
-        self._abi = abi or []
+        self = super().__new__(cls, values)
+        self._abi = list(abi) if abi else []
         self._dict = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
 
         return self
@@ -352,13 +354,14 @@ class ReturnValue(tuple):
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: str | int | slice[int, int, int]) -> Any:  # type: ignore [override]
         if type(key) is slice:
-            abi = None
-            if self._abi is not None:
-                abi = deepcopy(self._abi)[key]  # type: ignore
+            abi = self._abi
             result = super().__getitem__(key)
-            return ReturnValue(result, abi)
+            if abi is None:
+                return ReturnValue(result)
+            item_abi = deepcopy(abi)[key]
+            return ReturnValue(result, item_abi)
         if isinstance(key, int):
             return super().__getitem__(key)
         return self._dict[key]
@@ -377,7 +380,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():
@@ -387,7 +390,7 @@ class ReturnValue(tuple):
                 response[k] = v
         return response
 
-    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:
+    def index(self, value: Any, start: int = 0, stop: Any = None) -> int:  # type: ignore [override]
         """ReturnValue.index(value, [start, [stop]]) -> integer -- return first index of value.
         Raises ValueError if the value is not present."""
         if stop is None:
@@ -400,18 +403,18 @@ class ReturnValue(tuple):
                 continue
         raise ValueError(f"{value} is not in ReturnValue")
 
-    def items(self) -> ItemsView:
+    def items(self) -> ItemsView[str, Any]:
         """ReturnValue.items() -> a set-like object providing a view on ReturnValue's named items"""
-        return self._dict.items()  # type: ignore
+        return self._dict.items()
 
-    def keys(self) -> KeysView:
+    def keys(self) -> KeysView[str]:
         """ReturnValue.keys() -> a set-like object providing a view on ReturnValue's keys"""
-        return self._dict.keys()  # type: ignore
+        return self._dict.keys()
 
 
 def _kwargtuple_compare(a: Any, b: Any) -> bool:
     if not isinstance(a, (tuple, list, ReturnValue)):
-        types_ = set([type(a), type(b)])
+        types_ = {type(a), type(b)}
         if types_.intersection([bool, type(None)]):
             return a is b
         if types_.intersection([dict, EthAddress, HexString]):
@@ -419,7 +422,7 @@ def _kwargtuple_compare(a: Any, b: Any) -> bool:
         return _convert_str(a) == _convert_str(b)
     if not isinstance(b, (tuple, list, ReturnValue)) or len(b) != len(a):
         return False
-    return next((False for i in range(len(a)) if not _kwargtuple_compare(a[i], b[i])), True)
+    return all(_kwargtuple_compare(ai, bi) for ai, bi in zip(a, b))
 
 
 def _convert_str(value: Any) -> Wei:
