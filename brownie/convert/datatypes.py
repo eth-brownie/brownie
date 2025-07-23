@@ -116,8 +116,8 @@ class Wei(int):
 def _to_wei(value: WeiInputType) -> int:
     original = value
     if isinstance(value, bytes):
-        value = HexBytes(value).hex().removeprefix("0x")
-        return int(value, 16) if value else 0
+        hexstr = HexBytes(value).hex().removeprefix("0x")
+        return int(hexstr, 16) if hexstr else 0
     if not value or value == "0x":
         return 0
     if isinstance(value, float) and "e+" in (value := str(value)):
