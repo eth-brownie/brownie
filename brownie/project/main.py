@@ -229,7 +229,7 @@ class Project(_ProjectBase):
         potential_dependencies = []
 
         contract_build_json: ContractBuildJson
-        for path in list(build_path.glob("contracts/*.json")):
+        for path in build_path.glob("contracts/*.json"):
             try:
                 with path.open() as fp:
                     contract_build_json = json.load(fp)
@@ -263,9 +263,9 @@ class Project(_ProjectBase):
 
         interface_hashes: Dict[str, HexStr] = {}
         interface_list = sources.get_interface_list()
-        
+
         interface_build_json: InterfaceBuildJson
-        for path in list(build_path.glob("interfaces/*.json")):
+        for path in build_path.glob("interfaces/*.json"):
             try:
                 with path.open() as fp:
                     interface_build_json = json.load(fp)
@@ -320,8 +320,11 @@ class Project(_ProjectBase):
             if compiled_hashes.get(name) != new_hashes[name]:
                 build._remove_interface(name)
 
-        contracts = set(filter(self._compare_build_json, sources.get_contract_list()))
-        for dependents in map(self._build.get_dependents, list(contracts)):
+        contracts = set(
+            c for c in sources.get_contract_list() if self._compare_build_json(c)
+        )
+        for contract in list(contracts):
+            dependents = build.get_dependents(contract)
             contracts.update(dependents)
 
         # remove outdated build artifacts
@@ -329,8 +332,8 @@ class Project(_ProjectBase):
             build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set = set(map(sources.get_source_path, contracts))
-        return dict(zip(changed_set, map(sources.get, changed_set)))
+        changed_set = list(set(sources.get_source_path(contract) for contract in contracts))
+        return dict(zip(changed_set, (sources.get(changed) for changed in changed_set)))
 
     def _compare_build_json(self, contract_name: ContractName) -> bool:
         config = self._compiler_config
@@ -344,18 +347,18 @@ class Project(_ProjectBase):
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
+        compiler: dict = build_json["compiler"]
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
             solc_config["remappings"] = None
-            if not _solidity_compiler_equal(solc_config, build_json["compiler"]):
+            if not _solidity_compiler_equal(solc_config, compiler):
                 return True
             # compare solc pragma against compiled version
-            if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+            if Version(compiler["version"]) not in get_pragma_spec(source):
                 return True
         else:
-            vyper_config = config["vyper"].copy()
-            if not _vyper_compiler_equal(vyper_config, build_json["compiler"]):
+            if not _vyper_compiler_equal(config["vyper"], compiler):
                 return True
         return False
 
@@ -371,12 +374,12 @@ class Project(_ProjectBase):
             return
 
         print("Generating interface ABIs...")
-        changed_sources = {i: sources.get(i) for i in changed_paths}
+        solc_config: dict = self._compiler_config["solc"]
         abi_json = compiler.get_abi(
             changed_sources,
-            solc_version=self._compiler_config["solc"].get("version", None),
+            solc_version=solc_config.get("version", None),
             allow_paths=self._path.as_posix(),
-            remappings=self._compiler_config["solc"].get("remappings", []),
+            remappings=solc_config.get("remappings", []),
         )
 
         for name, abi in abi_json.items():
@@ -520,17 +523,14 @@ class Project(_ProjectBase):
 
         # remove objects from namespace
         for dict_ in self._namespaces:
-            for key in [
-                k
-                for k, v in dict_.items()
-                if v == self or (k in self and v == self[k])  # type: ignore
-            ]:
-                del dict_[key]
+            for k, v in dict_.items():
+                if v == self or (k in self and v == self[k]):
+                    del dict_[key]
 
         # remove contracts
-        for contract in [x for v in self._containers.values() for x in v._contracts]:
-            _remove_contract(contract)
         for container in self._containers.values():
+            for contract in container._contracts:
+                _remove_contract(contract)
             container._contracts.clear()
         self._containers.clear()
 
