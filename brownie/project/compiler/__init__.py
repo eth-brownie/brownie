@@ -321,16 +321,16 @@ def generate_build_json(
             contracts_output: dict = output_json["contracts"]
             path_output: dict = contracts_output[path_str]
             contract_output: dict = path_output[contract_name]
-            
+
             natspec = merge_natspec(
                 contract_output.get("devdoc", {}), contract_output.get("userdoc", {})
             )
-            
+
             abi: List[ABIElement] = contract_output["abi"]
             output_evm: dict = contract_output["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
-    
+
             if contract_alias in build_json and not bytecode:
                 continue
 
@@ -492,7 +492,7 @@ def get_abi(
                         dependency_name = node.name
                         path_str = node.parent().absolutePath
                         dependencies.append(_get_alias(dependency_name, path_str))
-    
+
                 final_output[name] = {
                     "abi": data["abi"],
                     "ast": output_json["sources"][path]["ast"],
