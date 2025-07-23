@@ -366,7 +366,10 @@ class ReturnValue(tuple):
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
 
-    def __getitem__(self, key: str | int | slice[int, int, int]) -> Any:  # type: ignore [override]
+    def __getitem__(  # type: ignore [override]
+        self,
+        key: str | int | "slice[int, int, int]",
+    ) -> Any:
         if type(key) is slice:
             abi = self._abi
             result = super().__getitem__(key)
