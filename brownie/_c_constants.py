@@ -60,5 +60,4 @@ NpmSpec: Final = semantic_version.NpmSpec
 Version: Final = semantic_version.Version
 
 # toolz
-keymap: Final = eth_utils.toolz.keymap
 mapcat: Final = eth_utils.toolz.mapcat

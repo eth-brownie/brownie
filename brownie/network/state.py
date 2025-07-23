@@ -633,13 +633,13 @@ def _get_deployment(
 
     keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
     build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
-    path_map: Optional[PathMap] = build_json.pop("paths")  # type: ignore [typeddict-item]
+    path_map: PathMap = build_json.pop("paths")  # type: ignore [typeddict-item]
     sources: Dict[str, Any] = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
-    build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
-    pc_map = build_json["pcMap"]
+    build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
+    pc_map = build_json.get("pcMap")
     if isinstance(pc_map, dict):
         build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
 
@@ -697,7 +697,7 @@ def _remove_deployment(
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 
-    build_json, sources = _get_deployment(address, alias)
+    deployment = _get_deployment(address, alias)
     # delete entry from chain{n}
     cur.execute(f"DELETE FROM {name} WHERE {query}")
     # delete all entries from sources matching the contract's source hashes
@@ -709,4 +709,4 @@ def _remove_deployment(
             hash_ = sha1(source.encode()).hexdigest()
             cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
-    return build_json, sources
+    return deployment

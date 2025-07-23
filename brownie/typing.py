@@ -82,7 +82,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
-    pcMap: Optional[Dict[int, Dict[str, Any]]]
+    pcMap: Dict[int, Dict[str, Any]]
     compiler: NotRequired[Dict[str, Any]]  # TODO define typed dict
     ast: NotRequired[List]
 

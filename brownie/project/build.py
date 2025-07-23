@@ -2,7 +2,6 @@
 
 from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
 
-from brownie._c_constants import keymap
 from brownie.typing import (
     BuildJson,
     ContractBuildJson,
@@ -69,10 +68,12 @@ class Build:
         if "pcMap" not in build_json:
             # no pcMap means build artifact is for an interface
             return
-        if "0" in build_json["pcMap"]:
-            build_json["pcMap"] = keymap(int, build_json["pcMap"])
+
+        pc_map: Dict[int, Dict[str, Any]] = build_json["pcMap"]  # type: ignore [assignment]
+        if "0" in pc_map:
+            build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
         self._generate_revert_map(
-            build_json["pcMap"], build_json["allSourcePaths"], build_json["language"]
+            pc_map, build_json["allSourcePaths"], build_json["language"]
         )
 
     def _add_interface(self, build_json: InterfaceBuildJson) -> None:
