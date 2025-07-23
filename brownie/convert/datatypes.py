@@ -24,6 +24,7 @@ except ImportError:
 import cchecksum
 from eth_typing import ABIComponent, HexStr
 from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
+from mypy_extensions import mypyc_attr
 from typing_extensions import Self
 
 from brownie._c_constants import Decimal, HexBytes, deepcopy, getcontext
