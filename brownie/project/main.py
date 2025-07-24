@@ -254,7 +254,7 @@ class Project(_ProjectBase):
             build._add_contract(contract_build_json)
 
         for path, contract_build_json in potential_dependencies:
-            dependents = build.get_dependents(path.stem)
+            dependents = build.get_dependents(path.stem)  # type: ignore [arg-type]
             is_dependency = len(set(dependents) & set(contract_list)) > 0
             if is_dependency:
                 build._add_contract(contract_build_json)
