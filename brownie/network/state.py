@@ -631,7 +631,7 @@ def _get_deployment(
     if not row:
         return None, None
 
-    keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
+    keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
     build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
     path_map: PathMap = build_json.pop("paths")  # type: ignore [typeddict-item]
     sources: Dict[str, Any] = {
