@@ -56,8 +56,8 @@ BUILD_KEYS: Final = (
 
 _revert_map: Final[Dict[int, Union[tuple, Literal[False]]]] = {}
 
-@final
 
+@final
 class Build:
     """Methods for accessing and manipulating a project's contract build data."""
 
