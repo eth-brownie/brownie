@@ -138,7 +138,7 @@ def find_solc_versions(
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict:[str, List[str]]
+) -> Dict[str, List[str]]:
     """
     Analyzes contract pragmas and determines which solc version(s) to use.
 
