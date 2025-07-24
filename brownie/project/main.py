@@ -375,6 +375,7 @@ class Project(_ProjectBase):
 
         print("Generating interface ABIs...")
         solc_config: dict = self._compiler_config["solc"]
+        changed_sources = {i: sources.get(i) for i in changed_paths}
         abi_json = compiler.get_abi(
             changed_sources,
             solc_version=solc_config.get("version", None),
