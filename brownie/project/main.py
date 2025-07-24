@@ -67,7 +67,7 @@ from brownie.typing import (
 )
 from brownie.utils import notify
 
-BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
+BUILD_FOLDERS: Final = "contracts", "deployments", "interfaces"
 MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
 
 GITIGNORE: Final = """__pycache__
@@ -298,7 +298,7 @@ class Project(_ProjectBase):
         sys.modules["brownie.project"].__dict__[name] = self
         sys.modules["brownie.project"].__all__.append(name)  # type: ignore
         sys.modules["brownie.project"].__console_dir__.append(name)  # type: ignore
-        self._namespaces = [
+        self._namespaces: List[Dict[ContractName, "Project"]] = [
             sys.modules["__main__"].__dict__,
             sys.modules["brownie.project"].__dict__,
         ]
@@ -525,7 +525,7 @@ class Project(_ProjectBase):
         for dict_ in self._namespaces:
             for k, v in dict_.items():
                 if v == self or (k in self and v == self[k]):
-                    del dict_[key]
+                    del dict_[k]
 
         # remove contracts
         for container in self._containers.values():
