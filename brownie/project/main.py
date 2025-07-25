@@ -298,7 +298,7 @@ class Project(_ProjectBase):
         sys.modules["brownie.project"].__dict__[name] = self
         sys.modules["brownie.project"].__all__.append(name)  # type: ignore
         sys.modules["brownie.project"].__console_dir__.append(name)  # type: ignore
-        self._namespaces: List[Dict[ContractName, "Project"]] = [
+        self._namespaces: List[Dict[str, ContractContainer]] = [
             sys.modules["__main__"].__dict__,
             sys.modules["brownie.project"].__dict__,
         ]
