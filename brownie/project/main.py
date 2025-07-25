@@ -487,7 +487,7 @@ class Project(_ProjectBase):
         )
         self._save_deployment_map(deployment_map)
 
-    def _update_and_register(self, dict_: Any) -> None:
+    def _update_and_register(self, dict_: Dict[str, Any]) -> None:
         dict_.update(self)
         if "interface" not in dict_:
             dict_["interface"] = self.interface
