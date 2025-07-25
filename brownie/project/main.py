@@ -294,13 +294,13 @@ class Project(_ProjectBase):
         # add project to namespaces, apply import blackmagic
         name = self._name
         self.__all__ = list(self._containers) + ["interface"]
-        sys.modules[f"brownie.project.{name}"] = self  # type: ignore
+        sys.modules[f"brownie.project.{name}"] = self
         sys.modules["brownie.project"].__dict__[name] = self
-        sys.modules["brownie.project"].__all__.append(name)  # type: ignore
-        sys.modules["brownie.project"].__console_dir__.append(name)  # type: ignore
+        sys.modules["brownie.project"].__all__.append(name)
+        sys.modules["brownie.project"].__console_dir__.append(name)
         self._namespaces: List[Dict[str, ContractContainer]] = [
-            sys.modules["__main__"].__dict__,
-            sys.modules["brownie.project"].__dict__,
+            sys.modules["__main__"].__dict__,  # type: ignore [list-item]
+            sys.modules["brownie.project"].__dict__,  # type: ignore [list-item]
         ]
 
         # register project for revert and reset
