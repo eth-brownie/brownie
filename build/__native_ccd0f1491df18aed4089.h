@@ -371,7 +371,7 @@ typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
     char _prompt_input;
-    PyObject *_exit_on_continue;
+    char _exit_on_continue;
     PyObject *_compile_mode;
     PyObject *_prompt_session;
     PyObject *_console_printer;
@@ -404,7 +404,7 @@ typedef struct {
     PyObject *_self;
     PyObject *_project;
     PyObject *_extra_locals;
-    PyObject *_exit_on_continue;
+    char _exit_on_continue;
     PyObject *_console_settings;
     PyObject *_i;
     PyObject *_locals_dict;
@@ -1192,6 +1192,16 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
+    PyObject *_self;
+    int32_t ___mypyc_next_label__;
+    PyObject *___mypyc_temp__0;
+    CPyTagged ___mypyc_temp__1;
+    PyObject *_i;
+} brownie___project___main_____iter___3__ProjectBase_genObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
     vectorcallfunc vectorcall;
 } brownie___project___main_____len___3__ProjectBase_objObject;
 
@@ -1481,7 +1491,7 @@ struct export_table_ccd0f1491df18aed4089 {
     PyTypeObject **CPyType_console___ConsolePrinter;
     PyObject *(*CPyDef_console___ConsolePrinter)(PyObject *cpy_r_console);
     PyTypeObject **CPyType_console___Console;
-    PyObject *(*CPyDef_console___Console)(PyObject *cpy_r_project, PyObject *cpy_r_extra_locals, PyObject *cpy_r_exit_on_continue);
+    PyObject *(*CPyDef_console___Console)(PyObject *cpy_r_project, PyObject *cpy_r_extra_locals, char cpy_r_exit_on_continue);
     PyTypeObject **CPyType_console___SanitizedFileHistory;
     PyObject *(*CPyDef_console___SanitizedFileHistory)(PyObject *cpy_r_filename, PyObject *cpy_r_local_dict);
     PyTypeObject **CPyType_console___ConsoleCompleter;
@@ -1513,7 +1523,7 @@ struct export_table_ccd0f1491df18aed4089 {
     char (*CPyDef_console___ConsolePrinter_____mypyc_defaults_setup)(PyObject *cpy_r___mypyc_self__);
     PyObject *(*CPyDef_console_____mypyc_lambda__0___3_init___3_Console_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_console_____mypyc_lambda__0___3_init___3_Console_obj_____call__)(PyObject *cpy_r___mypyc_self__);
-    char (*CPyDef_console___Console_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_project, PyObject *cpy_r_extra_locals, PyObject *cpy_r_exit_on_continue);
+    char (*CPyDef_console___Console_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_project, PyObject *cpy_r_extra_locals, char cpy_r_exit_on_continue);
     PyObject *(*CPyDef_console_____mypyc_lambda__1__dir_Console_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     PyObject *(*CPyDef_console_____mypyc_lambda__1__dir_Console_obj_____call__)(PyObject *cpy_r___mypyc_self__, tuple_T2OO cpy_r_k);
     char (*CPyDef_console___Console____dir)(PyObject *cpy_r_self, PyObject *cpy_r_obj);
@@ -2223,6 +2233,8 @@ struct export_table_ccd0f1491df18aed4089 {
     PyObject *(*CPyDef_project___main_____getitem___3__ProjectBase_obj)(void);
     PyTypeObject **CPyType_project___main_____iter___3__ProjectBase_obj;
     PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_obj)(void);
+    PyTypeObject **CPyType_project___main_____iter___3__ProjectBase_gen;
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen)(void);
     PyTypeObject **CPyType_project___main_____len___3__ProjectBase_obj;
     PyObject *(*CPyDef_project___main_____len___3__ProjectBase_obj)(void);
     PyTypeObject **CPyType_project___main_____contains___3__ProjectBase_obj;
@@ -2286,6 +2298,12 @@ struct export_table_ccd0f1491df18aed4089 {
     PyObject *(*CPyDef_project___main_____getitem___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     PyObject *(*CPyDef_project___main_____getitem___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_key);
     PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen_____mypyc_generator_helper__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback, PyObject *cpy_r_arg);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen_____next__)(PyObject *cpy_r___mypyc_self__);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen___send)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_arg);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen_____iter__)(PyObject *cpy_r___mypyc_self__);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen___throw)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback);
+    PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_gen___close)(PyObject *cpy_r___mypyc_self__);
     PyObject *(*CPyDef_project___main_____iter___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
     PyObject *(*CPyDef_project___main_____len___3__ProjectBase_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     CPyTagged (*CPyDef_project___main_____len___3__ProjectBase_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);

@@ -11,12 +11,12 @@ import zipfile
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
-from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple
+from typing import Any, Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
 from urllib.parse import quote
 
 import requests
 import yaml
-from eth_typing import HexStr
+from eth_typing import ChecksumAddress, HexStr
 from mypy_extensions import mypyc_attr
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
@@ -60,6 +60,7 @@ from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
 from brownie.typing import (
+    BuildJson,
     ContractBuildJson,
     ContractName,
     InterfaceBuildJson,
@@ -82,8 +83,9 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
 
-ChainDeployments = Dict[ContractName, List[ContractAddress]]
-DeploymentMap = Dict[int, ChainDeployments]
+NamespaceId = ContractName | Literal["interface"]
+ChainDeployments = Dict[ContractName, List[ChecksumAddress]]
+DeploymentMap = Dict[int | str, ChainDeployments]
 
 _loaded_projects: Final[List["Project"]] = []
 
@@ -164,11 +166,11 @@ class _ProjectBase:
             if data["type"] == "interface":
                 self.interface._add(data["contractName"], data["abi"])
             if data.get("bytecode"):
-                container = ContractContainer(self, data)
+                container = ContractContainer(self, data)  # type: ignore [arg-type]
                 self._containers[key] = container
                 setattr(self, container._name, container)
 
-    def __getitem__(self, key: str) -> ContractContainer:
+    def __getitem__(self, key: ContractName) -> ContractContainer:
         return self._containers[key]
 
     def __iter__(self) -> Iterator[ContractContainer]:
@@ -184,7 +186,7 @@ class _ProjectBase:
     def dict(self) -> Dict[ContractName, ContractContainer]:
         return dict(self._containers)
 
-    def keys(self) -> KeysView[Any]:
+    def keys(self) -> KeysView[ContractName]:
         return self._containers.keys()
 
 
@@ -298,12 +300,12 @@ class Project(_ProjectBase):
 
         # add project to namespaces, apply import blackmagic
         name = self._name
-        self.__all__ = list(self._containers) + ["interface"]
+        self.__all__: List[NamespaceId] = list(self._containers) + ["interface"]
         sys.modules[f"brownie.project.{name}"] = self  # type: ignore [assignment]
         sys.modules["brownie.project"].__dict__[name] = self
         sys.modules["brownie.project"].__all__.append(name)
         sys.modules["brownie.project"].__console_dir__.append(name)
-        self._namespaces: List[Dict[str, ContractContainer]] = [
+        self._namespaces: List[Dict[NamespaceId, ContractContainer | InterfaceContainer]] = [
             sys.modules["__main__"].__dict__,  # type: ignore [list-item]
             sys.modules["brownie.project"].__dict__,  # type: ignore [list-item]
         ]
@@ -487,28 +489,31 @@ class Project(_ProjectBase):
         )
         self._save_deployment_map(deployment_map)
 
-    def _update_and_register(self, dict_: Dict[str, Any]) -> None:
-        dict_.update(self)
+    def _update_and_register(
+        self,
+        dict_: Dict[NamespaceId, ContractContainer | InterfaceContainer],
+    ) -> None:
+        dict_.update(self)  # type: ignore [arg-type]
         if "interface" not in dict_:
             dict_["interface"] = self.interface
         self._namespaces.append(dict_)
 
     def _add_to_main_namespace(self) -> None:
         # temporarily adds project objects to the main namespace
-        brownie: Any = sys.modules["brownie"]
+        brownie: ModuleType = sys.modules["brownie"]
         if "interface" not in brownie.__dict__:
             brownie.__dict__["interface"] = self.interface
-        brownie.__dict__.update(self._containers)
+        brownie.__dict__.update(self._containers)  # type: ignore [arg-type]
         brownie.__all__.extend(self.__all__)
 
     def _remove_from_main_namespace(self) -> None:
         # removes project objects from the main namespace
-        brownie: Any = sys.modules["brownie"]
+        brownie: ModuleType = sys.modules["brownie"]
         if brownie.__dict__.get("interface") == self.interface:
             del brownie.__dict__["interface"]
         for key in self._containers:
             brownie.__dict__.pop(key, None)
-        for key in self.__all__:
+        for key in self.__all__:  # type: ignore [assignment]
             if key in brownie.__all__:
                 brownie.__all__.remove(key)
 
@@ -530,7 +535,7 @@ class Project(_ProjectBase):
         # remove objects from namespace
         for dict_ in self._namespaces:
             for k, v in dict_.copy().items():
-                if v == self or (k in self and v == self[k]):
+                if v == self or (k in self and v == self[k]):  # type: ignore [operator, index]
                     del dict_[k]
 
         # remove contracts

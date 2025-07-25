@@ -1248,7 +1248,7 @@ class ProjectContract(_DeployedContractBase):
     def __init__(
         self,
         project: Any,
-        build: Dict,
+        build: ContractBuildJson,
         address: str,
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,

@@ -150,10 +150,13 @@ class Build:
             return self._contracts[key]
         return self._interfaces[key]
 
-    def items(self, path: Optional[str] = None) -> List[Tuple[ContractName, BuildJson]]:
+    def items(
+        self,
+        path: Optional[str] = None,
+    ) -> List[Tuple[ContractName, BuildJson]]:
         """Provides an list of tuples as (key,value), similar to calling dict.items.
         If a path is given, only contracts derived from that source file are returned."""
-        items = list(self._contracts.items()) + list(self._interfaces.items())
+        items = [*self._contracts.items(), *self._interfaces.items()]
         if path is None:
             return items
         return [(k, v) for k, v in items if v.get("sourcePath") == path]
