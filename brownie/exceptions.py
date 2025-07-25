@@ -137,7 +137,7 @@ class VirtualMachineError(Exception):
         except StopIteration:
             raise ValueError(exc["message"]) from None
         else:
-            data: Dict[str, Any] = exc_data[key]
+            data: Dict[str, Any] = exc_data[txid]
             self.revert_type = data["error"]
 
         self.txid = txid
