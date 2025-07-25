@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2108];
+extern PyObject *CPyStatics[2106];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1368,9 +1368,9 @@ extern PyObject *CPyPy_vyper____get_statement_nodes(PyObject *self, PyObject *co
 extern PyObject *CPyDef_vyper____convert_to_semver(PyObject *cpy_r_versions);
 extern PyObject *CPyPy_vyper____convert_to_semver(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_vyper_____top_level__(void);
-extern PyObject *CPyStatic_build___INTERFACE_KEYS;
-extern PyObject *CPyStatic_build___DEPLOYMENT_KEYS;
-extern PyObject *CPyStatic_build___BUILD_KEYS;
+extern tuple_T4OOOO CPyStatic_build___INTERFACE_KEYS;
+extern tuple_T13OOOOOOOOOOOOO CPyStatic_build___DEPLOYMENT_KEYS;
+extern tuple_T21OOOOOOOOOOOOOOOOOOOOO CPyStatic_build___BUILD_KEYS;
 extern PyObject *CPyStatic_build____revert_map;
 extern PyTypeObject *CPyType_build___Build;
 extern PyObject *CPyDef_build___Build(PyObject *cpy_r_sources);
@@ -1443,7 +1443,7 @@ extern PyObject *CPyPy_flattener___Flattener___make_import_absolute(PyObject *se
 extern PyObject *CPyDef_flattener____wipe(PyObject *cpy_r_src);
 extern PyObject *CPyPy_flattener____wipe(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_flattener_____top_level__(void);
-extern PyObject *CPyStatic_project___main___BUILD_FOLDERS;
+extern tuple_T3OOO CPyStatic_project___main___BUILD_FOLDERS;
 extern PyObject *CPyStatic_project___main____loaded_projects;
 extern PyTypeObject *CPyType_project___main____ProjectBase;
 extern PyTypeObject *CPyType_project___main___Project;

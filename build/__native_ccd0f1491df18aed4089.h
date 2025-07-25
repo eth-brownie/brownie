@@ -164,6 +164,47 @@ typedef struct tuple_T2CC {
 } tuple_T2CC;
 #endif
 
+#ifndef MYPYC_DECLARED_tuple_T13OOOOOOOOOOOOO
+#define MYPYC_DECLARED_tuple_T13OOOOOOOOOOOOO
+typedef struct tuple_T13OOOOOOOOOOOOO {
+    PyObject *f0;
+    PyObject *f1;
+    PyObject *f2;
+    PyObject *f3;
+    PyObject *f4;
+    PyObject *f5;
+    PyObject *f6;
+    PyObject *f7;
+    PyObject *f8;
+    PyObject *f9;
+    PyObject *f10;
+    PyObject *f11;
+    PyObject *f12;
+} tuple_T13OOOOOOOOOOOOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T16OOOOOOOOOOOOOOOO
+#define MYPYC_DECLARED_tuple_T16OOOOOOOOOOOOOOOO
+typedef struct tuple_T16OOOOOOOOOOOOOOOO {
+    PyObject *f0;
+    PyObject *f1;
+    PyObject *f2;
+    PyObject *f3;
+    PyObject *f4;
+    PyObject *f5;
+    PyObject *f6;
+    PyObject *f7;
+    PyObject *f8;
+    PyObject *f9;
+    PyObject *f10;
+    PyObject *f11;
+    PyObject *f12;
+    PyObject *f13;
+    PyObject *f14;
+    PyObject *f15;
+} tuple_T16OOOOOOOOOOOOOOOO;
+#endif
+
 #ifndef MYPYC_DECLARED_tuple_T4IIOO
 #define MYPYC_DECLARED_tuple_T4IIOO
 typedef struct tuple_T4IIOO {
@@ -218,6 +259,47 @@ typedef struct tuple_T5OT2IIOOO {
     PyObject *f3;
     PyObject *f4;
 } tuple_T5OT2IIOOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T8OOOOOOOO
+#define MYPYC_DECLARED_tuple_T8OOOOOOOO
+typedef struct tuple_T8OOOOOOOO {
+    PyObject *f0;
+    PyObject *f1;
+    PyObject *f2;
+    PyObject *f3;
+    PyObject *f4;
+    PyObject *f5;
+    PyObject *f6;
+    PyObject *f7;
+} tuple_T8OOOOOOOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T21OOOOOOOOOOOOOOOOOOOOO
+#define MYPYC_DECLARED_tuple_T21OOOOOOOOOOOOOOOOOOOOO
+typedef struct tuple_T21OOOOOOOOOOOOOOOOOOOOO {
+    PyObject *f0;
+    PyObject *f1;
+    PyObject *f2;
+    PyObject *f3;
+    PyObject *f4;
+    PyObject *f5;
+    PyObject *f6;
+    PyObject *f7;
+    PyObject *f8;
+    PyObject *f9;
+    PyObject *f10;
+    PyObject *f11;
+    PyObject *f12;
+    PyObject *f13;
+    PyObject *f14;
+    PyObject *f15;
+    PyObject *f16;
+    PyObject *f17;
+    PyObject *f18;
+    PyObject *f19;
+    PyObject *f20;
+} tuple_T21OOOOOOOOOOOOOOOOOOOOO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T2OC
@@ -2078,9 +2160,9 @@ struct export_table_ccd0f1491df18aed4089 {
     PyObject *(*CPyDef_vyper____get_statement_nodes)(PyObject *cpy_r_ast_json);
     PyObject *(*CPyDef_vyper____convert_to_semver)(PyObject *cpy_r_versions);
     char (*CPyDef_vyper_____top_level__)(void);
-    PyObject **CPyStatic_build___INTERFACE_KEYS;
-    PyObject **CPyStatic_build___DEPLOYMENT_KEYS;
-    PyObject **CPyStatic_build___BUILD_KEYS;
+    tuple_T4OOOO *CPyStatic_build___INTERFACE_KEYS;
+    tuple_T13OOOOOOOOOOOOO *CPyStatic_build___DEPLOYMENT_KEYS;
+    tuple_T21OOOOOOOOOOOOOOOOOOOOO *CPyStatic_build___BUILD_KEYS;
     PyObject **CPyStatic_build____revert_map;
     PyTypeObject **CPyType_build___Build;
     PyObject *(*CPyDef_build___Build)(PyObject *cpy_r_sources);
@@ -2128,7 +2210,7 @@ struct export_table_ccd0f1491df18aed4089 {
     PyObject *(*CPyDef_flattener___Flattener___make_import_absolute)(PyObject *cpy_r_import_path, PyObject *cpy_r_source_file_dir);
     PyObject *(*CPyDef_flattener____wipe)(PyObject *cpy_r_src);
     char (*CPyDef_flattener_____top_level__)(void);
-    PyObject **CPyStatic_project___main___BUILD_FOLDERS;
+    tuple_T3OOO *CPyStatic_project___main___BUILD_FOLDERS;
     PyObject **CPyStatic_project___main____loaded_projects;
     PyTypeObject **CPyType_project___main____ProjectBase;
     PyTypeObject **CPyType_project___main___Project;
