@@ -93,6 +93,7 @@ class _ProjectBase:
     _build_path: Optional[pathlib.Path]
     _sources: Sources
     _build: Build
+    _containers: Dict[str, ContractContainer]
 
     def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
         compiler_config.setdefault("solc", {})
@@ -154,7 +155,7 @@ class _ProjectBase:
     def _create_containers(self) -> None:
         # create container objects
         self.interface = InterfaceContainer(self)
-        self._containers: Dict = {}
+        self._containers = {}
 
         for key, data in self._build.items():
             if data["type"] == "interface":
@@ -173,7 +174,7 @@ class _ProjectBase:
     def __len__(self) -> int:
         return len(self._containers)
 
-    def __contains__(self, item: ContractContainer) -> bool:
+    def __contains__(self, item: str) -> bool:
         return item in self._containers
 
     def dict(self) -> Dict:
@@ -294,7 +295,7 @@ class Project(_ProjectBase):
         # add project to namespaces, apply import blackmagic
         name = self._name
         self.__all__ = list(self._containers) + ["interface"]
-        sys.modules[f"brownie.project.{name}"] = self
+        sys.modules[f"brownie.project.{name}"] = self  # type: ignore [assignment]
         sys.modules["brownie.project"].__dict__[name] = self
         sys.modules["brownie.project"].__all__.append(name)
         sys.modules["brownie.project"].__console_dir__.append(name)
