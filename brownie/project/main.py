@@ -525,7 +525,7 @@ class Project(_ProjectBase):
 
         # remove objects from namespace
         for dict_ in self._namespaces:
-            for k, v in dict_.items():
+            for k, v in dict_.copy().items():
                 if v == self or (k in self and v == self[k]):
                     del dict_[k]
 
