@@ -82,6 +82,9 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
 
+ChainDeployments = Dict[ContractName, List[ContractAddress]]
+DeploymentMap = Dict[int, ChainDeployments]
+
 _loaded_projects: Final[List["Project"]] = []
 
 
@@ -93,7 +96,7 @@ class _ProjectBase:
     _build_path: Optional[pathlib.Path]
     _sources: Sources
     _build: Build
-    _containers: Dict[str, ContractContainer]
+    _containers: Dict[ContractName, ContractContainer]
 
     def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
         compiler_config.setdefault("solc", {})
@@ -169,15 +172,16 @@ class _ProjectBase:
         return self._containers[key]
 
     def __iter__(self) -> Iterator[ContractContainer]:
-        return iter(self._containers[i] for i in sorted(self._containers))
+        for i in sorted(self._containers):
+            yield self._containers[i]
 
     def __len__(self) -> int:
         return len(self._containers)
 
-    def __contains__(self, item: str) -> bool:
+    def __contains__(self, item: ContractName) -> bool:
         return item in self._containers
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[ContractName, ContractContainer]:
         return dict(self._containers)
 
     def keys(self) -> KeysView[Any]:
@@ -412,7 +416,7 @@ class Project(_ProjectBase):
         deployments.sort(key=lambda k: k.stat().st_mtime)
         deployment_map = self._load_deployment_map()
 
-        build: dict
+        build: BuildJson
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
@@ -440,15 +444,15 @@ class Project(_ProjectBase):
 
         self._save_deployment_map(deployment_map)
 
-    def _load_deployment_map(self) -> Dict:
-        deployment_map: Dict = {}
+    def _load_deployment_map(self) -> DeploymentMap:
+        deployment_map = {}
         map_path = self._build_path.joinpath("deployments/map.json")
         if map_path.exists():
             with map_path.open("r") as fp:
                 deployment_map = json.load(fp)
         return deployment_map
 
-    def _save_deployment_map(self, deployment_map: Dict) -> None:
+    def _save_deployment_map(self, deployment_map: DeploymentMap) -> None:
         with self._build_path.joinpath("deployments/map.json").open("w") as fp:
             json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
