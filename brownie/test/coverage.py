@@ -33,9 +33,7 @@ def get_coverage_eval() -> Dict[str, Dict]:
     return {**_cached_coverage_eval, **_coverage_eval}
 
 
-def get_merged_coverage_eval(
-    cov_eval: Optional[Dict[str, CoverageEval]] = None
-) -> CoverageEval:
+def get_merged_coverage_eval(cov_eval: Optional[Dict[str, CoverageEval]] = None) -> CoverageEval:
     """Merges and returns all active coverage data as a single dict.
 
     Returns: coverage eval dict.

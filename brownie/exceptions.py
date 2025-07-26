@@ -3,7 +3,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Dict, Final, List, Optional, Type, final
+from typing import Any, Dict, Final, List, Optional, Type, final
 
 import eth_abi
 import psutil
@@ -133,10 +133,12 @@ class VirtualMachineError(Exception):
             return
 
         try:
-            txid, data = next((k, v) for k, v in exc_data.items() if k.startswith("0x"))
-            self.revert_type = data["error"]
+            txid = next(key for key in exc_data if key.startswith("0x"))
         except StopIteration:
             raise ValueError(exc["message"]) from None
+        else:
+            data: Dict[str, Any] = exc_data[txid]
+            self.revert_type = data["error"]
 
         self.txid = txid
         self.source = ""

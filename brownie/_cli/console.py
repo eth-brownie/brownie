@@ -27,6 +27,7 @@ import brownie
 from brownie import network, project
 from brownie._c_constants import import_module
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
+from brownie.project.main import Project
 from brownie.utils import bright_blue, bright_cyan, color
 from brownie.utils.docopt import docopt
 
@@ -129,7 +130,12 @@ class Console(code.InteractiveConsole):
     # replaced with `prompt_toolkit.input.defaults.create_pipe_input`
     prompt_input = None
 
-    def __init__(self, project=None, extra_locals=None, exit_on_continue=False):
+    def __init__(
+        self,
+        project: Optional[Project] = None,
+        extra_locals: Optional[Dict[str, Any]] = None,
+        exit_on_continue: bool = False,
+    ):
         """
         Launch the Brownie console.
 
@@ -143,7 +149,7 @@ class Console(code.InteractiveConsole):
             If True, the `continue` command causes the console to
             raise a SystemExit with error message "continue".
         """
-        console_settings = CONFIG.settings["console"]
+        console_settings: Dict[str, Any] = CONFIG.settings["console"]
 
         locals_dict = {i: getattr(brownie, i) for i in brownie.__all__}
         locals_dict.update(
@@ -156,7 +162,7 @@ class Console(code.InteractiveConsole):
             locals_dict["continue"] = True
 
         if project:
-            project._update_and_register(locals_dict)
+            project._update_and_register(locals_dict)  # type: ignore [arg-type]
 
         # only make GUI available if Tkinter is installed
         try:

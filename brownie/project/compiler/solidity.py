@@ -138,7 +138,7 @@ def find_solc_versions(
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict:
+) -> Dict[str, List[str]]:
     """
     Analyzes contract pragmas and determines which solc version(s) to use.
 
@@ -193,7 +193,7 @@ def find_solc_versions(
         )
 
     # organize source paths by latest available solc version
-    compiler_versions: Dict = {}
+    compiler_versions: Dict[str, List[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)

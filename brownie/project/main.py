@@ -11,12 +11,12 @@ import zipfile
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
-from typing import Any, Dict, Final, Iterator, KeysView, List, Optional, Set, Tuple
+from typing import Any, Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
 from urllib.parse import quote
 
 import requests
 import yaml
-from eth_typing import HexStr
+from eth_typing import ChecksumAddress, HexStr
 from mypy_extensions import mypyc_attr
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
@@ -60,6 +60,7 @@ from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
 from brownie.typing import (
+    BuildJson,
     ContractBuildJson,
     ContractName,
     InterfaceBuildJson,
@@ -67,7 +68,7 @@ from brownie.typing import (
 )
 from brownie.utils import notify
 
-BUILD_FOLDERS: Final = ["contracts", "deployments", "interfaces"]
+BUILD_FOLDERS: Final = "contracts", "deployments", "interfaces"
 MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
 
 GITIGNORE: Final = """__pycache__
@@ -82,6 +83,10 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
 
+NamespaceId = ContractName | Literal["interface"]
+ChainDeployments = Dict[ContractName, List[ChecksumAddress]]
+DeploymentMap = Dict[int | str, ChainDeployments]
+
 _loaded_projects: Final[List["Project"]] = []
 
 
@@ -93,6 +98,7 @@ class _ProjectBase:
     _build_path: Optional[pathlib.Path]
     _sources: Sources
     _build: Build
+    _containers: Dict[ContractName, ContractContainer]
 
     def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
         compiler_config.setdefault("solc", {})
@@ -154,32 +160,33 @@ class _ProjectBase:
     def _create_containers(self) -> None:
         # create container objects
         self.interface = InterfaceContainer(self)
-        self._containers: Dict = {}
+        self._containers = {}
 
         for key, data in self._build.items():
             if data["type"] == "interface":
                 self.interface._add(data["contractName"], data["abi"])
             if data.get("bytecode"):
-                container = ContractContainer(self, data)
+                container = ContractContainer(self, data)  # type: ignore [arg-type]
                 self._containers[key] = container
                 setattr(self, container._name, container)
 
-    def __getitem__(self, key: str) -> ContractContainer:
+    def __getitem__(self, key: ContractName) -> ContractContainer:
         return self._containers[key]
 
     def __iter__(self) -> Iterator[ContractContainer]:
-        return iter(self._containers[i] for i in sorted(self._containers))
+        for i in sorted(self._containers):
+            yield self._containers[i]
 
     def __len__(self) -> int:
         return len(self._containers)
 
-    def __contains__(self, item: ContractContainer) -> bool:
+    def __contains__(self, item: ContractName) -> bool:
         return item in self._containers
 
-    def dict(self) -> Dict:
+    def dict(self) -> Dict[ContractName, ContractContainer]:
         return dict(self._containers)
 
-    def keys(self) -> KeysView[Any]:
+    def keys(self) -> KeysView[ContractName]:
         return self._containers.keys()
 
 
@@ -229,7 +236,7 @@ class Project(_ProjectBase):
         potential_dependencies = []
 
         contract_build_json: ContractBuildJson
-        for path in list(build_path.glob("contracts/*.json")):
+        for path in build_path.glob("contracts/*.json"):
             try:
                 with path.open() as fp:
                     contract_build_json = json.load(fp)
@@ -254,7 +261,7 @@ class Project(_ProjectBase):
             build._add_contract(contract_build_json)
 
         for path, contract_build_json in potential_dependencies:
-            dependents = build.get_dependents(path.stem)
+            dependents = build.get_dependents(path.stem)  # type: ignore [arg-type]
             is_dependency = len(set(dependents) & set(contract_list)) > 0
             if is_dependency:
                 build._add_contract(contract_build_json)
@@ -263,9 +270,9 @@ class Project(_ProjectBase):
 
         interface_hashes: Dict[str, HexStr] = {}
         interface_list = sources.get_interface_list()
-        
+
         interface_build_json: InterfaceBuildJson
-        for path in list(build_path.glob("interfaces/*.json")):
+        for path in build_path.glob("interfaces/*.json"):
             try:
                 with path.open() as fp:
                     interface_build_json = json.load(fp)
@@ -293,14 +300,14 @@ class Project(_ProjectBase):
 
         # add project to namespaces, apply import blackmagic
         name = self._name
-        self.__all__ = list(self._containers) + ["interface"]
-        sys.modules[f"brownie.project.{name}"] = self  # type: ignore
+        self.__all__: List[NamespaceId] = list(self._containers) + ["interface"]
+        sys.modules[f"brownie.project.{name}"] = self  # type: ignore [assignment]
         sys.modules["brownie.project"].__dict__[name] = self
-        sys.modules["brownie.project"].__all__.append(name)  # type: ignore
-        sys.modules["brownie.project"].__console_dir__.append(name)  # type: ignore
-        self._namespaces = [
-            sys.modules["__main__"].__dict__,
-            sys.modules["brownie.project"].__dict__,
+        sys.modules["brownie.project"].__all__.append(name)
+        sys.modules["brownie.project"].__console_dir__.append(name)
+        self._namespaces: List[Dict[NamespaceId, ContractContainer | InterfaceContainer]] = [
+            sys.modules["__main__"].__dict__,  # type: ignore [list-item]
+            sys.modules["brownie.project"].__dict__,  # type: ignore [list-item]
         ]
 
         # register project for revert and reset
@@ -320,8 +327,11 @@ class Project(_ProjectBase):
             if compiled_hashes.get(name) != new_hashes[name]:
                 build._remove_interface(name)
 
-        contracts = set(filter(self._compare_build_json, sources.get_contract_list()))
-        for dependents in map(self._build.get_dependents, list(contracts)):
+        contracts = set(
+            c for c in sources.get_contract_list() if self._compare_build_json(c)
+        )
+        for contract in list(contracts):
+            dependents = build.get_dependents(contract)
             contracts.update(dependents)
 
         # remove outdated build artifacts
@@ -329,8 +339,8 @@ class Project(_ProjectBase):
             build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set = set(map(sources.get_source_path, contracts))
-        return dict(zip(changed_set, map(sources.get, changed_set)))
+        changed_set = list(set(sources.get_source_path(contract) for contract in contracts))
+        return dict(zip(changed_set, (sources.get(changed) for changed in changed_set)))
 
     def _compare_build_json(self, contract_name: ContractName) -> bool:
         config = self._compiler_config
@@ -344,18 +354,18 @@ class Project(_ProjectBase):
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
+        compiler: dict = build_json["compiler"]
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
             solc_config["remappings"] = None
-            if not _solidity_compiler_equal(solc_config, build_json["compiler"]):
+            if not _solidity_compiler_equal(solc_config, compiler):
                 return True
             # compare solc pragma against compiled version
-            if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+            if Version(compiler["version"]) not in get_pragma_spec(source):
                 return True
         else:
-            vyper_config = config["vyper"].copy()
-            if not _vyper_compiler_equal(vyper_config, build_json["compiler"]):
+            if not _vyper_compiler_equal(config["vyper"], compiler):
                 return True
         return False
 
@@ -371,12 +381,13 @@ class Project(_ProjectBase):
             return
 
         print("Generating interface ABIs...")
+        solc_config: dict = self._compiler_config["solc"]
         changed_sources = {i: sources.get(i) for i in changed_paths}
         abi_json = compiler.get_abi(
             changed_sources,
-            solc_version=self._compiler_config["solc"].get("version", None),
+            solc_version=solc_config.get("version", None),
             allow_paths=self._path.as_posix(),
-            remappings=self._compiler_config["solc"].get("remappings", []),
+            remappings=solc_config.get("remappings", []),
         )
 
         for name, abi in abi_json.items():
@@ -407,7 +418,7 @@ class Project(_ProjectBase):
         deployments.sort(key=lambda k: k.stat().st_mtime)
         deployment_map = self._load_deployment_map()
 
-        build: dict
+        build: BuildJson
         for build_json in deployments:
             with build_json.open() as fp:
                 build = json.load(fp)
@@ -435,15 +446,15 @@ class Project(_ProjectBase):
 
         self._save_deployment_map(deployment_map)
 
-    def _load_deployment_map(self) -> Dict:
-        deployment_map: Dict = {}
+    def _load_deployment_map(self) -> DeploymentMap:
+        deployment_map = {}
         map_path = self._build_path.joinpath("deployments/map.json")
         if map_path.exists():
             with map_path.open("r") as fp:
                 deployment_map = json.load(fp)
         return deployment_map
 
-    def _save_deployment_map(self, deployment_map: Dict) -> None:
+    def _save_deployment_map(self, deployment_map: DeploymentMap) -> None:
         with self._build_path.joinpath("deployments/map.json").open("w") as fp:
             json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
@@ -478,28 +489,31 @@ class Project(_ProjectBase):
         )
         self._save_deployment_map(deployment_map)
 
-    def _update_and_register(self, dict_: Any) -> None:
-        dict_.update(self)
+    def _update_and_register(
+        self,
+        dict_: Dict[NamespaceId, ContractContainer | InterfaceContainer],
+    ) -> None:
+        dict_.update(self)  # type: ignore [arg-type]
         if "interface" not in dict_:
             dict_["interface"] = self.interface
         self._namespaces.append(dict_)
 
     def _add_to_main_namespace(self) -> None:
         # temporarily adds project objects to the main namespace
-        brownie: Any = sys.modules["brownie"]
+        brownie: ModuleType = sys.modules["brownie"]
         if "interface" not in brownie.__dict__:
             brownie.__dict__["interface"] = self.interface
-        brownie.__dict__.update(self._containers)
+        brownie.__dict__.update(self._containers)  # type: ignore [arg-type]
         brownie.__all__.extend(self.__all__)
 
     def _remove_from_main_namespace(self) -> None:
         # removes project objects from the main namespace
-        brownie: Any = sys.modules["brownie"]
+        brownie: ModuleType = sys.modules["brownie"]
         if brownie.__dict__.get("interface") == self.interface:
             del brownie.__dict__["interface"]
         for key in self._containers:
             brownie.__dict__.pop(key, None)
-        for key in self.__all__:
+        for key in self.__all__:  # type: ignore [assignment]
             if key in brownie.__all__:
                 brownie.__all__.remove(key)
 
@@ -520,17 +534,14 @@ class Project(_ProjectBase):
 
         # remove objects from namespace
         for dict_ in self._namespaces:
-            for key in [
-                k
-                for k, v in dict_.items()
-                if v == self or (k in self and v == self[k])  # type: ignore
-            ]:
-                del dict_[key]
+            for k, v in dict_.copy().items():
+                if v == self or (k in self and v == self[k]):  # type: ignore [operator, index]
+                    del dict_[k]
 
         # remove contracts
-        for contract in [x for v in self._containers.values() for x in v._contracts]:
-            _remove_contract(contract)
         for container in self._containers.values():
+            for contract in container._contracts:
+                _remove_contract(contract)
             container._contracts.clear()
         self._containers.clear()
 

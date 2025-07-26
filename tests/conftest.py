@@ -263,7 +263,7 @@ def devnetwork(network, rpc, chain, network_name):
             if network_name not in e.args[0]:
                 _disconnect_network()
                 network.connect(network_name)
-    
+
         yield network
         if rpc.is_active():
             chain.reset()

@@ -1,6 +1,17 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
-from typing import Any, Dict, Final, ItemsView, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Final,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    final,
+)
 
 from brownie.typing import (
     BuildJson,
@@ -13,9 +24,9 @@ from brownie.typing import (
 
 from .sources import Sources, highlight_source
 
-INTERFACE_KEYS: Final = ["abi", "contractName", "sha1", "type"]
+INTERFACE_KEYS: Final = "abi", "contractName", "sha1", "type"
 
-DEPLOYMENT_KEYS: Final = [
+DEPLOYMENT_KEYS: Final = (
     "abi",
     "ast",
     "bytecode",
@@ -29,9 +40,9 @@ DEPLOYMENT_KEYS: Final = [
     "pcMap",
     "sourceMap",
     "type",
-]
+)
 
-BUILD_KEYS: Final = [
+BUILD_KEYS: Final = (
     "allSourcePaths",
     "bytecodeSha1",
     "coverageMap",
@@ -40,11 +51,12 @@ BUILD_KEYS: Final = [
     "sha1",
     "source",
     "sourcePath",
-] + DEPLOYMENT_KEYS
+) + DEPLOYMENT_KEYS
 
 _revert_map: Final[Dict[int, Union[tuple, Literal[False]]]] = {}
 
 
+@final
 class Build:
     """Methods for accessing and manipulating a project's contract build data."""
 
@@ -116,7 +128,7 @@ class Build:
                 )
 
                 # do not compare the final tuple item in case the same project was loaded twice
-                if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):  # type: ignore [index]
+                if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):
                     _revert_map[pc] = revert
                     continue
                 _revert_map[pc] = False
@@ -138,10 +150,13 @@ class Build:
             return self._contracts[key]
         return self._interfaces[key]
 
-    def items(self, path: Optional[str] = None) -> Union[ItemsView, List]:
+    def items(
+        self,
+        path: Optional[str] = None,
+    ) -> List[Tuple[ContractName, BuildJson]]:
         """Provides an list of tuples as (key,value), similar to calling dict.items.
         If a path is given, only contracts derived from that source file are returned."""
-        items = list(self._contracts.items()) + list(self._interfaces.items())
+        items = [*self._contracts.items(), *self._interfaces.items()]
         if path is None:
             return items
         return [(k, v) for k, v in items if v.get("sourcePath") == path]
