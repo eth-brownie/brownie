@@ -22,8 +22,8 @@ except ImportError:
     DecimalOverrideException = BaseException  # regular catch blocks shouldn't catch
 
 import cchecksum
+import faster_eth_utils
 from eth_typing import ABIComponent, HexStr
-from faster_eth_utils import add_0x_prefix, is_hex, to_bytes
 from mypy_extensions import mypyc_attr
 from typing_extensions import Self
 
@@ -49,6 +49,13 @@ WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, None)
 # This is no longer used within the codebase but we leave it in place in case downstream users import it
 
 WeiInputType = str | float | int | bytes | None
+
+
+to_checksum_address: Final = cchecksum.to_checksum_address
+
+add_0x_prefix: Final = faster_eth_utils.add_0x_prefix
+is_hex: Final = faster_eth_utils.is_hex
+to_bytes: Final = faster_eth_utils.to_bytes
 
 
 @final
@@ -231,7 +238,7 @@ class EthAddress(str):
             converted_value = bytes_to_hexstring(value)
         converted_value = add_0x_prefix(str(converted_value))  # type: ignore [arg-type]
         try:
-            converted_value = cchecksum.to_checksum_address(converted_value)
+            converted_value = to_checksum_address(converted_value)
         except ValueError:
             raise ValueError(f"{value!r} is not a valid ETH address") from None
         return super().__new__(cls, converted_value)  # type: ignore
