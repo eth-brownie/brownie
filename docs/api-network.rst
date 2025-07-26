@@ -1097,7 +1097,7 @@ ContractEvents Classmethods
 .. py:classmethod:: ContractEvents.listen(event_name, timeout=0)
 
     Creates a listening Coroutine object ending whenever an event matching 'event_name' occurs.
-    If timeout is superior to zero and no event matching 'event_name' has occured, the Coroutine ends when the timeout is reached.
+    If timeout is superior to zero and no event matching 'event_name' has occurred, the Coroutine ends when the timeout is reached.
 
     * ``event_name``: Name of the event to be listened to.
     * ``timeout``: Timeout value in seconds. Defaults to 0.
@@ -1358,7 +1358,7 @@ OverloadedMethod
         >>> erc223.transfer
         <OverloadedMethod object 'ERC223Token.transfer'>
 
-    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-seperated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
+    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-separated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
 
     .. code-block:: python
 
@@ -1368,7 +1368,7 @@ OverloadedMethod
         >>> erc223.transfer['address', 'uint256', 'uint256']
         <ContractTx object 'transfer(address,uint256,uint256)'>
 
-    When a contract only contains one method with the given name and number of arguements, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
+    When a contract only contains one method with the given name and number of arguments, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
 
     .. code-block:: python
 
@@ -1722,7 +1722,7 @@ Gas Strategies
 
 .. py:class:: brownie.network.gas.strategies.GasNowStrategy(speed="fast")
 
-    Gas strategy for determing a price using the `GasNow <https://www.gasnow.org/>`_ API.
+    Gas strategy for determining a price using the `GasNow <https://www.gasnow.org/>`_ API.
 
     * ``speed``: The gas price to use based on the API call. Options are rapid, fast, standard and slow.
 
@@ -1797,7 +1797,7 @@ Simple Strategies
 
     Abstract base class for simple gas strategies.
 
-    Simple gas strategies are called once to provide a dynamically genreated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
+    Simple gas strategies are called once to provide a dynamically generated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
 
 Simple Strategy Abstract Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1929,7 +1929,7 @@ Multicall Methods
 
 .. py:classmethod:: Multicall.flush
 
-    Flushes the current queue of pending calls, especially useful for preventing ``OOG`` errors from occuring when querying large amounts of data.
+    Flushes the current queue of pending calls, especially useful for preventing ``OOG`` errors from occurring when querying large amounts of data.
 
     >>> results = []
     >>> long_list_of_addresses = [...]
@@ -2340,7 +2340,7 @@ Rpc Methods
 
 .. py:classmethod:: Rpc.launch(cmd)
 
-    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string requiried to run it.
+    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string required to run it.
 
     If the process cannot load successfully, raises ``brownie.RPCProcessError``.
 
@@ -2610,7 +2610,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.modified_state
 
-    Boolean indicating if this transaction resuled in any state changes on the blockchain.
+    Boolean indicating if this transaction resulted in any state changes on the blockchain.
 
     .. code-block:: python
 
@@ -2682,7 +2682,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.subcalls
 
-    A list of dictionaries providing information about subcalls that occured during the transaction.
+    A list of dictionaries providing information about subcalls that occurred during the transaction.
 
     The following fields are always included:
 
@@ -2885,7 +2885,7 @@ TransactionReceipt Methods
 
 .. py:classmethod:: TransactionReceipt.call_trace(expand=False)
 
-    Display the complete sequence of contracts and functions called while execiting this transaction.
+    Display the complete sequence of contracts and functions called while executing this transaction.
 
     Each line is formatted as:
 
@@ -2960,7 +2960,7 @@ TransactionReceipt Methods
 
     Displays the source code that caused the first revert in the transaction, if any.
 
-    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+    * ``pad``: Number of unrelated lines of code to include before and after the relevant source
 
 
     .. code-block:: python
@@ -2986,7 +2986,7 @@ TransactionReceipt Methods
     Displays the associated source code for a given stack trace step.
 
     * ``idx``: Stack trace step index
-    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+    * ``pad``: Number of unrelated lines of code to include before and after the relevant source
 
     .. code-block:: python
 
