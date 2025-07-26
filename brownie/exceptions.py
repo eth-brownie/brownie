@@ -168,11 +168,11 @@ class VirtualMachineError(Exception):
             msg = f"{msg}\n{self.source}"
         return str(msg)
 
-    def _with_attr(self, **kwargs) -> "VirtualMachineError":
+    def with_attrs(self, **kwargs) -> "VirtualMachineError":
         for key, value in kwargs.items():
             setattr(self, key, value)
         if self.revert_msg == "Failed assertion":
-            self.revert_msg = self.dev_revert_msg or self.revert_msg  # type: ignore
+            self.revert_msg = self.dev_revert_msg or self.revert_msg
         return self
 
 
