@@ -37,7 +37,7 @@ REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_
 
 NetworkType = Literal["live", "development", None]
 NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
-#TODO: Make this a typed dict
+# TODO: Make this a typed dict
 
 
 class ConfigContainer:
@@ -49,7 +49,7 @@ class ConfigContainer:
 
         networks: Dict[str, dict] = {}
         self.networks: Final = networks
-        
+
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
         for value in network_config["development"]:
             key = value["id"]

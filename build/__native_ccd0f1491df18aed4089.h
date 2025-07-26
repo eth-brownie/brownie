@@ -1602,6 +1602,10 @@ struct export_table_ccd0f1491df18aed4089 {
     char (*CPyDef__expansion_____top_level__)(void);
     char (*CPyDef_convert_____top_level__)(void);
     PyObject **CPyStatic_datatypes___UNITS;
+    PyObject **CPyStatic_datatypes___to_checksum_address;
+    PyObject **CPyStatic_datatypes___add_0x_prefix;
+    PyObject **CPyStatic_datatypes___is_hex;
+    PyObject **CPyStatic_datatypes___to_bytes;
     PyTypeObject **CPyType_datatypes___Wei;
     PyTypeObject **CPyType_datatypes___Fixed;
     PyTypeObject **CPyType_datatypes___EthAddress;

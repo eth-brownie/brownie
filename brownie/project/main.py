@@ -1,17 +1,17 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="union-attr"
 
-import json
 import os
 import pathlib
 import shutil
 import sys
 import warnings
 import zipfile
+from json import JSONDecodeError
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
-from typing import Any, Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
+from typing import Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
 from urllib.parse import quote
 
 import requests
@@ -26,6 +26,8 @@ from brownie._c_constants import (
     Path,
     Version,
     import_module,
+    json_dump,
+    json_load,
     mapcat,
     regex_match,
     sha1,
@@ -61,10 +63,13 @@ from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
 from brownie.typing import (
     BuildJson,
+    CompilerConfig,
     ContractBuildJson,
     ContractName,
     InterfaceBuildJson,
     Language,
+    SolcConfig,
+    VyperConfig,
 )
 from brownie.utils import notify
 
@@ -100,7 +105,7 @@ class _ProjectBase:
     _build: Build
     _containers: Dict[ContractName, ContractContainer]
 
-    def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
+    def _compile(self, contract_sources: Dict, compiler_config: CompilerConfig, silent: bool) -> None:
         compiler_config.setdefault("solc", {})
 
         allow_paths = None
@@ -112,15 +117,15 @@ class _ProjectBase:
             os.chdir(path)
 
         try:
-            solc_config: dict = compiler_config["solc"]
-            vyper_config: dict = compiler_config["vyper"]
-            
+            solc_config = compiler_config["solc"]
+            vyper_config = compiler_config["vyper"]
+
             project_evm_version = compiler_config["evm_version"]
             evm_version: Dict[Language, Optional[str]] = {
                 "Solidity": solc_config.get("evm_version", project_evm_version),
                 "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
-            
+
             build_json = compiler.compile_and_format(
                 contract_sources,
                 solc_version=solc_config.get("version", None),
@@ -151,7 +156,7 @@ class _ProjectBase:
                     for parent in list(path.parents)[::-1]:
                         parent.mkdir(exist_ok=True)
                 with path.open("w") as fp:
-                    json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
+                    json_dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
             if alias == data["contractName"]:
                 # only add artifacts from the core project for now
@@ -204,6 +209,8 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
+    _compiler_config: CompilerConfig
+
     def __init__(self, name: str, project_path: pathlib.Path, compile: bool = True) -> None:
         self._path = project_path
         self._envvars: Final = _load_project_envvars(project_path)
@@ -227,7 +234,7 @@ class Project(_ProjectBase):
         project_path: pathlib.Path = self._path  # type: ignore [assignment]
         contract_sources = _load_sources(project_path, self._structure["contracts"], False)
         interface_sources = _load_sources(project_path, self._structure["interfaces"], True)
-        
+
         sources = self._sources = Sources(contract_sources, interface_sources)
         build = self._build = Build(sources)
         build_path = self._build_path
@@ -239,8 +246,8 @@ class Project(_ProjectBase):
         for path in build_path.glob("contracts/*.json"):
             try:
                 with path.open() as fp:
-                    contract_build_json = json.load(fp)
-            except json.JSONDecodeError:
+                    contract_build_json = json_load(fp)
+            except JSONDecodeError:
                 contract_build_json = {}  # type: ignore [assignment]
             if not set(BUILD_KEYS).issubset(contract_build_json):
                 path.unlink()
@@ -275,23 +282,26 @@ class Project(_ProjectBase):
         for path in build_path.glob("interfaces/*.json"):
             try:
                 with path.open() as fp:
-                    interface_build_json = json.load(fp)
-            except json.JSONDecodeError:
+                    interface_build_json = json_load(fp)
+            except JSONDecodeError:
                 interface_build_json = {}  # type: ignore [typeddict-item]
-            if not set(INTERFACE_KEYS).issubset(interface_build_json) or path.stem not in interface_list:
+            if (
+                not set(INTERFACE_KEYS).issubset(interface_build_json)
+                or path.stem not in interface_list
+            ):
                 path.unlink()
                 continue
             build._add_interface(interface_build_json)
             interface_hashes[path.stem] = interface_build_json["sha1"]
 
         if compile:
-            self._compiler_config = expand_posix_vars(
+            self._compiler_config = config = expand_posix_vars(
                 _load_project_compiler_config(project_path), self._envvars
             )
 
             # compile updated sources, update build
             changed = self._get_changed_contracts(interface_hashes)
-            self._compile(changed, self._compiler_config, False)
+            self._compile(changed, config, False)
             self._compile_interfaces(interface_hashes)
         self._load_dependency_artifacts()
 
@@ -327,9 +337,7 @@ class Project(_ProjectBase):
             if compiled_hashes.get(name) != new_hashes[name]:
                 build._remove_interface(name)
 
-        contracts = set(
-            c for c in sources.get_contract_list() if self._compare_build_json(c)
-        )
+        contracts = {c for c in sources.get_contract_list() if self._compare_build_json(c)}
         for contract in list(contracts):
             dependents = build.get_dependents(contract)
             contracts.update(dependents)
@@ -339,7 +347,7 @@ class Project(_ProjectBase):
             build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set = list(set(sources.get_source_path(contract) for contract in contracts))
+        changed_set = list({sources.get_source_path(contract) for contract in contracts})
         return dict(zip(changed_set, (sources.get(changed) for changed in changed_set)))
 
     def _compare_build_json(self, contract_name: ContractName) -> bool:
@@ -354,7 +362,7 @@ class Project(_ProjectBase):
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
-        compiler: dict = build_json["compiler"]
+        compiler = build_json["compiler"]
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
@@ -381,7 +389,7 @@ class Project(_ProjectBase):
             return
 
         print("Generating interface ABIs...")
-        solc_config: dict = self._compiler_config["solc"]
+        solc_config = self._compiler_config["solc"]
         changed_sources = {i: sources.get(i) for i in changed_paths}
         abi_json = compiler.get_abi(
             changed_sources,
@@ -393,7 +401,7 @@ class Project(_ProjectBase):
         for name, abi in abi_json.items():
 
             with self._build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
-                json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
+                json_dump(abi, fp, sort_keys=True, indent=2, default=sorted)
             self._build._add_interface(abi)
 
     def _load_dependency_artifacts(self) -> None:
@@ -403,7 +411,7 @@ class Project(_ProjectBase):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
             if build.get_dependents(contract_alias):
                 with path.open() as fp:
-                    build_json = json.load(fp)
+                    build_json = json_load(fp)
                 build._add_contract(build_json, contract_alias)
             else:
                 path.unlink()
@@ -421,7 +429,7 @@ class Project(_ProjectBase):
         build: BuildJson
         for build_json in deployments:
             with build_json.open() as fp:
-                build = json.load(fp)
+                build = json_load(fp)
 
             contract_name = build["contractName"]
             if contract_name not in self._containers:
@@ -451,12 +459,12 @@ class Project(_ProjectBase):
         map_path = self._build_path.joinpath("deployments/map.json")
         if map_path.exists():
             with map_path.open("r") as fp:
-                deployment_map = json.load(fp)
+                deployment_map = json_load(fp)
         return deployment_map
 
     def _save_deployment_map(self, deployment_map: DeploymentMap) -> None:
         with self._build_path.joinpath("deployments/map.json").open("w") as fp:
-            json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
+            json_dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
@@ -569,7 +577,7 @@ class Project(_ProjectBase):
                     deployment.unlink()
                 else:
                     with deployment.open("r") as fp:
-                        deployment_artifact: dict = json.load(fp)
+                        deployment_artifact: dict = json_load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
                     if block_height > height:
                         deployment.unlink()
@@ -598,7 +606,7 @@ class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
-    def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
+    def __init__(self, name: str, contract_sources: Dict, compiler_config: CompilerConfig) -> None:
         self._path = None
         self._build_path = None
         self._name: Final = name
@@ -707,7 +715,7 @@ def compile_source(
     Compile the given source code string and return a TempProject container with
     the ContractContainer instances.
     """
-    compiler_config: Dict = {"evm_version": evm_version, "solc": {}, "vyper": {}}
+    compiler_config: CompilerConfig = {"evm_version": evm_version, "solc": {}, "vyper": {}}
 
     # if no compiler version was given, first try to find a Solidity pragma
     if solc_version is None and vyper_version is None:
@@ -722,8 +730,8 @@ def compile_source(
         # if no vyper compiler version is given, try to compile using solidity
         compiler_config["solc"] = {
             "version": solc_version or str(compiler.solidity.get_version().truncate()),
-            "optimize": optimize,
-            "runs": runs,
+            "optimize": bool(optimize),
+            "runs": runs or 0,
         }
         try:
             return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
@@ -996,7 +1004,7 @@ def _normalize_solidity_version(version: str) -> str:
     return version.split("+")[0]
 
 
-def _solidity_compiler_equal(config: dict, build: dict) -> bool:
+def _solidity_compiler_equal(config: SolcConfig, build: CompilerConfig) -> bool:
     return (
         config["version"] is None
         or _normalize_solidity_version(config["version"])
@@ -1004,7 +1012,7 @@ def _solidity_compiler_equal(config: dict, build: dict) -> bool:
     ) and config["optimizer"] == build["optimizer"]
 
 
-def _vyper_compiler_equal(config: dict, build: dict) -> bool:
+def _vyper_compiler_equal(config: VyperConfig, build: CompilerConfig) -> bool:
     return config["version"] is None or config["version"] == build["version"]
 
 

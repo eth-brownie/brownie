@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2133];
+extern PyObject *CPyStatics[2131];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -113,8 +113,8 @@ extern CPyModule *CPyModule_brownie___convert___main;
 extern PyObject *CPyStatic_datatypes___globals;
 extern CPyModule *CPyModule_vyper___exceptions;
 extern CPyModule *CPyModule_cchecksum;
-extern CPyModule *CPyModule_eth_typing;
 extern CPyModule *CPyModule_faster_eth_utils;
+extern CPyModule *CPyModule_eth_typing;
 extern CPyModule *CPyModule_mypy_extensions;
 extern CPyModule *CPyModule_typing_extensions;
 extern PyObject *CPyStatic_convert___main___globals;
@@ -483,6 +483,10 @@ extern PyObject *CPyPy__expansion____str_to_python_value(PyObject *self, PyObjec
 extern char CPyDef__expansion_____top_level__(void);
 extern char CPyDef_convert_____top_level__(void);
 extern PyObject *CPyStatic_datatypes___UNITS;
+extern PyObject *CPyStatic_datatypes___to_checksum_address;
+extern PyObject *CPyStatic_datatypes___add_0x_prefix;
+extern PyObject *CPyStatic_datatypes___is_hex;
+extern PyObject *CPyStatic_datatypes___to_bytes;
 extern PyTypeObject *CPyType_datatypes___Wei;
 extern PyTypeObject *CPyType_datatypes___Fixed;
 extern PyTypeObject *CPyType_datatypes___EthAddress;

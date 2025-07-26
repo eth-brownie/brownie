@@ -19,7 +19,6 @@ PRAGMA_PATTERN: Final = regex_compile(r"^pragma.*;$", re.MULTILINE)
 LICENSE_PATTERN: Final = regex_compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
 
 
-
 @final
 class Flattener:
     """Brownie's Robust Solidity Flattener."""

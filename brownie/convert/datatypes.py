@@ -142,7 +142,7 @@ def _to_wei(value: WeiInputType) -> int:
             continue
         num_str = value.split(" ")[0]
         num = num_str.split(".") if "." in num_str else [num_str, ""]
-        return int(num[0] + num[1][: decimals] + "0" * (decimals - len(num[1])))
+        return int(num[0] + num[1][:decimals] + "0" * (decimals - len(num[1])))
     return _return_int(original, value)
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Any, Dict, Final, List, Optional, Tuple, Union
+from typing import Dict, Final, List, Optional, Tuple, Union
 
 import semantic_version
 import vvm
@@ -21,7 +21,7 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.project.sources import is_inside_offset
-from brownie.typing import ContractName, Offset, VyperBuildJson
+from brownie.typing import ContractName, InputJsonVyper, Offset, VyperBuildJson
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
@@ -78,7 +78,7 @@ def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List
 
     This function is deprecated in favor of `brownie.project.compiler.get_abi`
     """
-    input_json = {
+    input_json: InputJsonVyper = {  # type: ignore [typeddict-item]
         "language": "Vyper",
         "sources": {name: {"content": contract_source}},
         "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
@@ -231,7 +231,7 @@ def find_best_vyper_version(
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJsonVyper, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.

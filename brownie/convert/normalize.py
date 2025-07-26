@@ -14,7 +14,7 @@ from .utils import get_type_strings
 
 AnyListOrTuple = List[Any] | Tuple[Any, ...]
 
-# Internal C constants 
+# Internal C constants
 
 _TupleType: Final = TupleType
 
