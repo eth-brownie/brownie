@@ -83,7 +83,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
     pcMap: Dict[int, Dict[str, Any]]
-    compiler: NotRequired[Dict[str, Any]]  # TODO define typed dict
+    compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
 
 
@@ -109,4 +109,86 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 
 # Compiler
 Language = Literal["Solidity", "Vyper"]
+EvmVersion = str
 Source = Tuple[Start, Stop, ContractName, str]
+
+
+class ContractSource(TypedDict):
+    content: str
+
+class InterfaceSource(TypedDict):
+    abi: List[ABIElement]
+
+SourcesDict = Dict[str, ContractSource | InterfaceSource]
+
+
+@final
+class OptimizerSettings(TypedDict):
+    enabled: bool
+    runs: int
+
+
+@final
+class SolcConfig(TypedDict):
+    version: NotRequired[str]
+    evm_version: NotRequired[EvmVersion]
+    optimize: NotRequired[bool]
+    runs: NotRequired[int]
+    remappings: NotRequired[List[str] | None]
+    optimizer: NotRequired[OptimizerSettings]
+    viaIR: NotRequired[bool]
+
+
+@final
+class VyperConfig(TypedDict):
+    version: NotRequired[str]
+    evm_version: NotRequired[EvmVersion]
+
+
+@final
+class CompilerConfig(TypedDict):
+    evm_version: EvmVersion | None
+    solc: NotRequired[SolcConfig]
+    vyper: VyperConfig
+    version: NotRequired[str]
+    optimizer: NotRequired[OptimizerSettings]
+
+
+OutputSelection = Dict[str, Dict[str, List[str]]]
+
+
+class _CompilerSettings(TypedDict):
+    outputSelection: OutputSelection
+
+
+@final
+class SettingsSolc(_CompilerSettings):
+    evmVersion: NotRequired[Optional[EvmVersion]]
+    remappings: List[str]
+    optimizer: NotRequired[OptimizerSettings]
+    viaIR: NotRequired[bool]
+
+
+@final
+class SettingsVyper(_CompilerSettings):
+    evmVersion: NotRequired[EvmVersion]
+
+
+class _InputJsonBase(TypedDict):
+    sources: SourcesDict
+    # if I add a stub like this does it type check properly for members and fallbacks?
+    def __getitem__(self, ContractName) -> Dict[str, Any]: ...  # type: ignore [misc]
+
+
+@final
+class InputJsonSolc(_InputJsonBase, total=False):
+    language: Literal["Solidity", None]
+    settings: SettingsSolc
+
+@final
+class InputJsonVyper(_InputJsonBase, total=False):
+    language: Literal["Vyper"]
+    settings: SettingsVyper
+    interfaces: SourcesDict
+
+InputJson = InputJsonSolc | InputJsonVyper
