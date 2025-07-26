@@ -43,6 +43,7 @@ import_module: Final = importlib.import_module
 # json
 json_dump: Final = json.dump
 json_dumps: Final = json.dumps
+json_load: Final = json.load
 json_loads: Final = json.loads
 
 # pathlib
