@@ -1,12 +1,12 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index,typeddict-unknown-key"
 
-import json
 from typing import Any, Dict, Final, List, Literal, Optional, Union
 
 import solcast
 from eth_typing import ABIElement, HexStr
 
-from brownie._c_constants import Path, Version, deepcopy, sha1
+from brownie._c_constants import Path, Version, deepcopy, json_loads, sha1
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
@@ -18,12 +18,22 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
 )
 from brownie.project.compiler.utils import _get_alias, merge_natspec
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
-from brownie.typing import ContractBuildJson, ContractName, InterfaceBuildJson, Language
+from brownie.typing import (
+    CompilerConfig,
+    ContractBuildJson,
+    ContractName,
+    EvmVersion,
+    InputJson,
+    InterfaceBuildJson,
+    Language,
+    OptimizerSettings,
+    SourcesDict,
+)
 from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Final[Dict] = {
+STANDARD_JSON: Final[InputJson] = {
     "language": None,
     "sources": {},
     "settings": {
@@ -38,8 +48,8 @@ STANDARD_JSON: Final[Dict] = {
     },
 }
 
-EvmVersion = Optional[str]
-EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion]]
+EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
+
 
 # C constants
 _from_standard_output: Final = solcast.from_standard_output
@@ -56,7 +66,7 @@ def compile_and_format(
     allow_paths: Optional[str] = None,
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[Union[List[str], str]] = None,
-    optimizer: Optional[Dict] = None,
+    optimizer: Optional[OptimizerSettings] = None,
     viaIR: Optional[bool] = None,
 ) -> Dict[ContractName, ContractBuildJson]:
     """Compiles contracts and returns build data.
@@ -109,11 +119,15 @@ def compile_and_format(
             compiler_targets[solc_version] = list(solc_sources)
 
         if optimizer is None:
-            optimizer = {"enabled": optimize, "runs": runs if optimize else 0}
+            if optimize:
+                optimizer = {"enabled": True, "runs": runs or 0}
+            else:
+                optimizer = {"enabled": False, "runs": 0}
 
     language: Language
+    compiler_data: CompilerConfig
     for version, path_list in compiler_targets.items():
-        compiler_data: Dict = {}
+        compiler_data = {}  # type: ignore [typeddict-item]
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
@@ -155,9 +169,9 @@ def generate_input_json(
     language: Language = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[Union[List[str], str]] = None,
-    optimizer: Optional[Dict] = None,
+    optimizer: Optional[OptimizerSettings] = None,
     viaIR: Optional[bool] = None,
-) -> Dict[ContractName, Dict[str, Any]]:
+) -> InputJson:
     """Formats contracts to the standard solc input json.
 
     Args:
@@ -187,8 +201,8 @@ def generate_input_json(
         )
 
     input_json = deepcopy(STANDARD_JSON)
-    input_json["language"] = language
-    settings: dict = input_json["settings"]
+    input_json["language"] = language  # type: ignore [arg-type]
+    settings = input_json["settings"]
     settings["evmVersion"] = evm_version
     if language == "Solidity":
         settings["optimizer"] = optimizer
@@ -201,7 +215,7 @@ def generate_input_json(
         if language == "Solidity":
             input_json["sources"].update(_sources_dict(interface_sources, language))
         else:
-            input_json["interfaces"] = _sources_dict(interface_sources, language)
+            input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [typeddict-unknown-key]
 
     return input_json
 
@@ -243,7 +257,7 @@ def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJson, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.
@@ -256,21 +270,21 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    language: Language = input_json["language"]
+    language: Language = input_json["language"]  # type: ignore [assignment]
     if language == "Vyper":
-        return vyper.compile_from_input_json(input_json, silent, allow_paths)
+        return vyper.compile_from_input_json(input_json, silent, allow_paths)  # type: ignore [arg-type]
 
     if language == "Solidity":
-        allow_paths = _get_allow_paths(allow_paths, input_json["settings"]["remappings"])
-        return solidity.compile_from_input_json(input_json, silent, allow_paths)
+        allow_paths = _get_allow_paths(allow_paths, input_json["settings"]["remappings"])  # type: ignore [typeddict-item]
+        return solidity.compile_from_input_json(input_json, silent, allow_paths)  # type: ignore [arg-type]
 
     raise UnsupportedLanguage(language)
 
 
 def generate_build_json(
-    input_json: Dict,
+    input_json: InputJson,
     output_json: Dict,
-    compiler_data: Optional[Dict] = None,
+    compiler_data: Optional[CompilerConfig] = None,
     silent: bool = True,
 ) -> Dict[ContractName, ContractBuildJson]:
     """Formats standard compiler output to the brownie build json.
@@ -283,25 +297,24 @@ def generate_build_json(
 
     Returns: build json dict"""
 
-    language: Language = input_json["language"]
+    language = input_json["language"]
     if language not in ("Solidity", "Vyper"):
         raise UnsupportedLanguage(language)
 
     if not silent:
         print("Generating build data...")
 
-    if compiler_data is None:
-        compiler_data = {}
+    compiler_data = compiler_data or {}  # type: ignore [assignment]
 
-    settings: dict = input_json["settings"]
+    settings = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
     build_json: Dict[ContractName, ContractBuildJson] = {}
 
     if language == "Solidity":
-        compiler_data["optimizer"] = settings["optimizer"]
+        compiler_data["optimizer"] = settings["optimizer"]  # type: ignore [typeddict-item]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
-    sources: dict = input_json["sources"]
+    sources = input_json["sources"]
     contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
 
     for path_str, path_contracts in contracts.items():
@@ -309,7 +322,7 @@ def generate_build_json(
             contract_alias = contract_name
 
             if path_str in input_json["sources"]:
-                source = input_json["sources"][path_str]["content"]
+                source = input_json["sources"][path_str]["content"]  # type: ignore [typeddict-item]
             else:
                 with Path(path_str).open(encoding="utf-8") as fp:
                     source = fp.read()
@@ -361,7 +374,7 @@ def generate_build_json(
                 {
                     "abi": abi,
                     "ast": output_json["sources"][path_str]["ast"],
-                    "compiler": compiler_data,
+                    "compiler": compiler_data,  # type: ignore [typeddict-item]
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
                     "deployedSourceMap": deployed_bytecode["sourceMap"],
@@ -387,12 +400,12 @@ def generate_build_json(
     return build_json
 
 
-def _sources_dict(original: Dict, language: str) -> Dict:
-    result: Dict = {}
+def _sources_dict(original: Dict[str, Any], language: Language) -> SourcesDict:
+    result: SourcesDict = {}
     for key, value in original.items():
         if Path(key).suffix == ".json":
             if isinstance(value, str):
-                value = json.loads(value)
+                value = json_loads(value)
             result[key] = {"abi": value}
         else:
             result[key] = {"content": value}
@@ -403,7 +416,7 @@ def get_abi(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
     allow_paths: Optional[str] = None,
-    remappings: Optional[list] = None,
+    remappings: Optional[List[str]] = None,
     silent: bool = True,
 ) -> Dict[ContractName, InterfaceBuildJson]:
     """
@@ -427,11 +440,9 @@ def get_abi(
         Compiled ABIs in the format `{'contractName': [ABI]}`
     """
 
-    input_json: Dict[ContractName | Literal["settings"], Dict[str, Any]]
-
     final_output: Dict[ContractName, InterfaceBuildJson] = {
         Path(k).stem: {  # type: ignore [misc]
-            "abi": json.loads(v),
+            "abi": json_loads(v),
             "contractName": Path(k).stem,  # type: ignore [typeddict-item]
             "type": "interface",
             "source": None,

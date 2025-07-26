@@ -2,7 +2,6 @@
 
 import asyncio
 import io
-import json
 import os
 import time
 import warnings
@@ -10,6 +9,7 @@ from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Coroutine,
@@ -35,7 +35,15 @@ from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
-from brownie._c_constants import HexBytes, Version, regex_findall
+from brownie._c_constants import (
+    HexBytes,
+    Version,
+    json_dump,
+    json_dumps,
+    json_load,
+    json_loads,
+    regex_findall,
+)
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
@@ -85,6 +93,9 @@ from .state import (
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
+if TYPE_CHECKING:
+    from brownie.project.main import Project, TempProject
+
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
 
 _unverified_addresses: Final[Set[ChecksumAddress]] = set()
@@ -93,7 +104,12 @@ _unverified_addresses: Final[Set[ChecksumAddress]] = set()
 class _ContractBase:
     _dir_color: Final = "bright magenta"
 
-    def __init__(self, project: Any, build: ContractBuildJson, sources: Dict) -> None:
+    def __init__(
+        self,
+        project: Optional[Union["Project", "TempProject"]],
+        build: ContractBuildJson,
+        sources: Dict[str, Any],
+    ) -> None:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
@@ -177,10 +193,10 @@ class ContractContainer(_ContractBase):
 
     def __init__(self, project: Any, build: ContractBuildJson) -> None:
         self.tx = None
-        self.bytecode = build["bytecode"]
-        self._contracts: List["ProjectContract"] = []
+        self.bytecode: Final = build["bytecode"]
+        self._contracts: Final[List["ProjectContract"]] = []
         super().__init__(project, build, project._sources)
-        self.deploy = ContractConstructor(self, self._name)
+        self.deploy: Final = ContractConstructor(self, self._name)
         _revert_register(self)
 
         # messes with tests if it is created on init
@@ -422,7 +438,7 @@ class ContractContainer(_ContractBase):
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": io.StringIO(json.dumps(self._flattener.standard_input_json)),
+            "sourceCode": io.StringIO(json_dumps(self._flattener.standard_input_json)),
             "codeformat": "solidity-standard-json-input",
             "contractname": f"{self._flattener.contract_file}:{self._flattener.contract_name}",
             "compilerversion": f"v{contract_info['compiler_version']}",
@@ -498,16 +514,17 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(self, parent: "ContractContainer", name: ContractName) -> None:
-        self._parent = parent
+        self._parent: Final = parent
         try:
-            self.abi = next(i for i in parent.abi if i["type"] == "constructor")
-            self.abi["name"] = "constructor"
+            abi = next(i for i in parent.abi if i["type"] == "constructor")
+            abi["name"] = "constructor"
         except Exception:
-            self.abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
-        self._name = name
+            abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
+        self.abi: Final = abi
+        self._name: Final = name
 
     @property
     def payable(self) -> bool:
@@ -616,7 +633,7 @@ class InterfaceContainer:
         # overwritten if a project contains an interface with the same name
         for path in BROWNIE_FOLDER.glob("data/interfaces/*.json"):
             with path.open() as fp:
-                abi = json.load(fp)
+                abi = json_load(fp)
             self._add(path.stem, abi)
 
     def _add(self, name: ContractName, abi: List[ABIElement]) -> None:
@@ -630,9 +647,9 @@ class InterfaceConstructor:
     """
 
     def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
-        self._name = name
-        self.abi = abi
-        self.selectors = {
+        self._name: Final = name
+        self.abi: Final = abi
+        self.selectors: Final = {
             build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
         }
 
@@ -710,10 +727,10 @@ class _DeployedContractBase(_ContractBase):
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner: Final = owner
         self.tx: Final = tx
-        self.address: Final= address
+        self.address: Final = address
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
-        
+
         fn_abis = [abi for abi in self.abi if abi["type"] == "function"]
         fn_names = [abi["name"] for abi in fn_abis]
 
@@ -836,7 +853,7 @@ class _DeployedContractBase(_ContractBase):
             self._project._add_to_deployment_map(self)
             if not path.exists():
                 with path.open("w") as fp:
-                    json.dump(deployment_build, fp)
+                    json_dump(deployment_build, fp)
 
     def _delete_deployment(self) -> None:
         if path := self._deployment_path():
@@ -996,7 +1013,7 @@ class Contract(_DeployedContractBase):
         is_verified = bool(data["result"][0].get("SourceCode"))
 
         if is_verified:
-            abi = json.loads(data["result"][0]["ABI"])
+            abi = json_loads(data["result"][0]["ABI"])
             name = data["result"][0]["ContractName"]
         else:
             # if the source is not available, try to fetch only the ABI
@@ -1005,7 +1022,7 @@ class Contract(_DeployedContractBase):
             except ValueError as exc:
                 _unverified_addresses.add(address)
                 raise exc
-            abi = json.loads(data_abi["result"].strip())
+            abi = json_loads(data_abi["result"].strip())
             name = "UnknownContractName"
             if not silent:
                 warnings.warn(
@@ -1097,7 +1114,7 @@ class Contract(_DeployedContractBase):
         try:
             if source_str.startswith("{{"):
                 # source was verified using compiler standard JSON
-                input_json = json.loads(source_str[1:-1])
+                input_json = json_loads(source_str[1:-1])
                 sources = {k: v["content"] for k, v in input_json["sources"].items()}
                 evm_version = input_json["settings"].get("evmVersion", evm_version)
                 remappings = input_json["settings"].get("remappings", [])
@@ -1113,7 +1130,7 @@ class Contract(_DeployedContractBase):
             else:
                 if source_str.startswith("{"):
                     # source was submitted as multiple files
-                    sources = {k: v["content"] for k, v in json.loads(source_str).items()}
+                    sources = {k: v["content"] for k, v in json_loads(source_str).items()}
                 else:
                     # source was submitted as a single file
                     if compiler_str.startswith("vyper"):
@@ -1249,7 +1266,7 @@ class ProjectContract(_DeployedContractBase):
         self,
         project: Any,
         build: ContractBuildJson,
-        address: str,
+        address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
@@ -1392,7 +1409,7 @@ class OverloadedMethod:
         self._address: Final = address
         self._name: Final = name
         self._owner: Final = owner
-        self.methods: Final[Dict[Any, Any]] = {}
+        self.methods: Final[Dict[Any, ContractCall | ContractTx]] = {}
         self.natspec: Final[Dict[str, Any]] = {}
 
     def _add_fn(self, abi: ABIFunction, natspec: Dict[str, Any]) -> None:
@@ -1520,13 +1537,12 @@ class OverloadedMethod:
         Decoded values
         """
         selector = hexbytes_to_hexstring(HexBytes(hexstr)[:4])
-
-        fn = next((i for i in self.methods.values() if i == selector), None)
-        if fn is None:
-            raise ValueError(
-                "Data cannot be decoded using any input signatures of functions of this name"
-            )
-        return fn.decode_input(hexstr)
+        for fn in self.methods.values():
+            if fn == selector:
+                return fn.decode_input(hexstr)
+        raise ValueError(
+            "Data cannot be decoded using any input signatures of functions of this name"
+        )
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1921,13 +1937,13 @@ def _get_method_object(
 def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     abi_inputs = abi["inputs"]
     types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in abi_inputs], types_list)
-    return ", ".join(
-        f"{i[1]}{bright_blue}{f' {i[0]}' if i[0] else ''}{color}" for i in params
-    )
+    params = zip((i["name"] for i in abi_inputs), types_list)
+    return ", ".join(f"{i[1]}{bright_blue}{f' {i[0]}' if i[0] else ''}{color}" for i in params)
 
 
-def _verify_deployed_code(address: ChecksumAddress, expected_bytecode: HexStr, language: Language) -> bool:
+def _verify_deployed_code(
+    address: ChecksumAddress, expected_bytecode: HexStr, language: Language
+) -> bool:
     # removeprefix is used for compatability with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")

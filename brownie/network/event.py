@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="union-attr"
 
-import json
 import time
 import warnings
 from collections import OrderedDict
+from json.decoder import JSONDecodeError
 from pathlib import Path
 from threading import Lock, Thread
 from typing import (
@@ -35,6 +35,7 @@ from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
+from brownie._c_constants import json_dump, json_load
 from brownie._config import _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
@@ -533,7 +534,7 @@ def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
     if updated_topics != _topics:
         _topics.update(updated_topics)
         with __get_path().open("w") as fp:
-            json.dump(updated_topics, fp, sort_keys=True, indent=2)
+            json_dump(updated_topics, fp, sort_keys=True, indent=2)
 
     return {v["name"]: k for k, v in topic_map.items()}
 
@@ -631,8 +632,8 @@ event_watcher: Final = EventWatcher()
 
 try:
     with __get_path().open() as fp:
-        __topics = json.load(fp)
-except (FileNotFoundError, json.decoder.JSONDecodeError):
+        __topics = json_load(fp)
+except (FileNotFoundError, JSONDecodeError):
     __topics = None
 
 # general event topic ABIs for decoding events on unknown contracts

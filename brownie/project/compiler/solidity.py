@@ -19,7 +19,7 @@ from brownie.project.compiler.utils import (
     _get_alias,
     expand_source_map,
 )
-from brownie.typing import Offset, SolidityBuildJson, Source
+from brownie.typing import InputJsonSolc, Offset, SolidityBuildJson, Source
 
 from . import sources
 
@@ -58,7 +58,7 @@ def get_version() -> semantic_version.Version:
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
+    input_json: InputJsonSolc, silent: bool = True, allow_paths: Optional[str] = None
 ) -> Dict:
     """
     Compiles contracts from a standard input json.
@@ -71,15 +71,15 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    settings: dict = input_json["settings"]
-    optimizer: dict = settings["optimizer"]
+    settings = input_json["settings"]
     settings.setdefault("evmVersion", None)
     if settings["evmVersion"] in EVM_EQUIVALENTS:
         settings["evmVersion"] = EVM_EQUIVALENTS[settings["evmVersion"]]
 
     if not silent:
         print(f"Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
-
+        
+        optimizer = settings["optimizer"]
         opt = f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
         print(f"  Optimizer: {opt}")
 
@@ -117,9 +117,7 @@ def install_solc(*versions: VersionSpec) -> None:
         solcx.install_solc(version, show_progress=False)
 
 
-def get_abi(
-    contract_source: str, allow_paths: Optional[str] = None
-) -> Dict[str, List[ABIElement]]:
+def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict[str, List[ABIElement]]:
     """
     Given a contract source, returns a dict of {name: abi}
 
@@ -273,10 +271,9 @@ def _get_unique_build_json(
 
     bytecode = _format_link_references(output_evm)
     bytecode_json: dict = output_evm["deployedBytecode"]
-    
+
     without_metadata = _remove_metadata(bytecode_json["object"])
     instruction_count = len(without_metadata) // 2
-
 
     pc_map, statement_map, branch_map = _generate_coverage_data(
         bytecode_json["sourceMap"],

@@ -1,5 +1,4 @@
 import hexbytes
-import json
 import threading
 import time
 from collections import OrderedDict
@@ -7,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from web3 import Web3
 
-from brownie._c_constants import HexBytes
+from brownie._c_constants import HexBytes, json_dumps
 from brownie._config import CONFIG, _get_data_folder
 from brownie.network.middlewares import BrownieMiddlewareABC
 from brownie.utils.sql import Cursor
@@ -221,7 +220,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             return make_request(method, params)
 
         # try to return a cached value
-        param_str = json.dumps(params, separators=(",", ""), default=str)
+        param_str = json_dumps(params, separators=(",", ""), default=str)
 
         # check if the value is available within the long-term cache
         if method in LONGTERM_CACHE:
@@ -258,7 +257,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             result = response["result"]
             if LONGTERM_CACHE[method](self.w3, result):
                 if isinstance(result, (dict, list, tuple)):
-                    result = json.dumps(response, separators=(",", ""), default=str)
+                    result = json_dumps(response, separators=(",", ""), default=str)
                 self.cur.insert(self.table_key, method, param_str, result)
 
         return response

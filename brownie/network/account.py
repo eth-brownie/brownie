@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import sys
 import threading
 import time
@@ -23,7 +22,7 @@ from faster_eth_utils.applicators import apply_formatters_to_dict
 from web3 import HTTPProvider, IPCProvider
 from web3.exceptions import InvalidTransaction, TransactionNotFound
 
-from brownie._c_constants import HexBytes, deque
+from brownie._c_constants import HexBytes, deque, json_dump, json_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
@@ -232,7 +231,7 @@ class Accounts(metaclass=_Singleton):
                     raise FileNotFoundError(f"Cannot find {json_file}")
 
         with json_file.open() as fp:
-            encrypted = json.load(fp)
+            encrypted = json_load(fp)
 
         prompt = f'Enter password for "{json_file.stem}": '
         while True:
@@ -934,7 +933,7 @@ class LocalAccount(_PrivateKeyAccount):
         encrypted = web3.eth.account.encrypt(self.private_key, password)
         encrypted["address"] = encrypted["address"].lower()
         with json_file.open("w") as fp:
-            json.dump(encrypted, fp)
+            json_dump(encrypted, fp)
         return str(json_file)
 
     def sign_defunct_message(self, message: str) -> SignedMessage:
