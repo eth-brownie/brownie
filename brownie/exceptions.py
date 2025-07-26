@@ -11,7 +11,7 @@ import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 
 import brownie
-from brownie._c_constants import HexBytes
+from brownie._c_constants import HexBytes, json_dump, json_load
 from brownie._config import _get_data_folder
 from brownie.convert.utils import build_function_selector, get_type_strings
 
@@ -304,7 +304,7 @@ def parse_errors_from_abi(abi: List[ABIElement]):
 
     if updated:
         with __get_path().open("w") as fp:
-            json.dump(_errors, fp, sort_keys=True, indent=2)
+            json_dump(_errors, fp, sort_keys=True, indent=2)
 
 
 _errors: Dict[HexStr, ABIError] = {
@@ -314,7 +314,7 @@ _errors: Dict[HexStr, ABIError] = {
 
 try:
     with __get_path().open() as fp:
-        _errors.update(json.load(fp))
+        _errors.update(json_load(fp))
 except (FileNotFoundError, json.decoder.JSONDecodeError):
     pass
 

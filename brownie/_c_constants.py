@@ -13,6 +13,7 @@ import copy
 import decimal
 import hashlib
 import importlib
+import json
 import pathlib
 import re
 from typing import Final
@@ -38,6 +39,11 @@ sha1: Final = hashlib.sha1
 
 # importlib
 import_module: Final = importlib.import_module
+
+# json
+json_dump: Final = json.dump
+json_dumps: Final = json.dumps
+json_loads: Final = json.loads
 
 # pathlib
 Path: Final = pathlib.Path

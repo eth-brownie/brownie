@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import json
+from json.decoder import JSONDecodeError
 from operator import attrgetter
 from pathlib import Path
 
@@ -8,7 +8,7 @@ import hypothesis
 from eth_utils.toolz import compose, concat
 
 import brownie
-from brownie._c_constants import sha1
+from brownie._c_constants import json_load, sha1
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
@@ -48,8 +48,8 @@ class PytestBrownieBase:
         self.conf_hashes = dict(zip(map(key_func, glob), map(_get_ast_hash, glob)))
         try:
             with self.project._build_path.joinpath("tests.json").open() as fp:
-                hashes = json.load(fp)
-        except (FileNotFoundError, json.decoder.JSONDecodeError):
+                hashes = json_load(fp)
+        except (FileNotFoundError, JSONDecodeError):
             hashes = {"tests": {}, "contracts": {}, "tx": {}}
 
         self.tests = {

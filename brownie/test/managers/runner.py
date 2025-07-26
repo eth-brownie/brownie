@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import builtins
-import json
 import sys
 import warnings
 from pathlib import Path
@@ -11,7 +10,7 @@ from _pytest._io import TerminalWriter
 from eth_utils.toolz import keyfilter
 
 import brownie
-from brownie._c_constants import regex_compile, regex_fullmatch
+from brownie._c_constants import json_dump, regex_compile, regex_fullmatch
 from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
@@ -506,7 +505,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
-            json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+            json_dump(report, fp, indent=2, sort_keys=True, default=sorted)
 
     def pytest_terminal_summary(self, terminalreporter):
         """

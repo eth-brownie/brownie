@@ -5,7 +5,7 @@ import warnings
 from pathlib import Path
 from typing import Final
 
-from brownie._config import CONFIG
+from brownie._config import CONFIG, json_dump, json_dumps, json_loads
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
@@ -25,12 +25,12 @@ def _save_coverage_report(build, coverage_eval, report_path):
         "coverage": _get_totals(build, coverage_eval),
         "sha1": {},  # TODO
     }
-    report = json.loads(json.dumps(report, default=sorted))
+    report = json_loads(json_dumps(report, default=sorted))
     report_path = Path(report_path).absolute()
     if report_path.is_dir():
         report_path = report_path.joinpath("coverage.json")
     with report_path.open("w") as fp:
-        json.dump(report, fp, sort_keys=True, indent=2)
+        json_dump(report, fp, sort_keys=True, indent=2)
     print(f"\nCoverage report saved at {report_path}")
     print("View the report using the Brownie GUI")
     return report_path

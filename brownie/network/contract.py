@@ -2,7 +2,6 @@
 
 import asyncio
 import io
-import json
 import os
 import time
 import warnings
@@ -35,7 +34,15 @@ from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
-from brownie._c_constants import HexBytes, Version, regex_findall
+from brownie._c_constants import (
+    HexBytes,
+    Version,
+    json_dump,
+    json_dumps,
+    json_load,
+    json_loads,
+    regex_findall,
+)
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
@@ -422,7 +429,7 @@ class ContractContainer(_ContractBase):
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": io.StringIO(json.dumps(self._flattener.standard_input_json)),
+            "sourceCode": io.StringIO(json_dumps(self._flattener.standard_input_json)),
             "codeformat": "solidity-standard-json-input",
             "contractname": f"{self._flattener.contract_file}:{self._flattener.contract_name}",
             "compilerversion": f"v{contract_info['compiler_version']}",
@@ -616,7 +623,7 @@ class InterfaceContainer:
         # overwritten if a project contains an interface with the same name
         for path in BROWNIE_FOLDER.glob("data/interfaces/*.json"):
             with path.open() as fp:
-                abi = json.load(fp)
+                abi = json_load(fp)
             self._add(path.stem, abi)
 
     def _add(self, name: ContractName, abi: List[ABIElement]) -> None:
@@ -836,7 +843,7 @@ class _DeployedContractBase(_ContractBase):
             self._project._add_to_deployment_map(self)
             if not path.exists():
                 with path.open("w") as fp:
-                    json.dump(deployment_build, fp)
+                    json_dump(deployment_build, fp)
 
     def _delete_deployment(self) -> None:
         if path := self._deployment_path():
@@ -996,7 +1003,7 @@ class Contract(_DeployedContractBase):
         is_verified = bool(data["result"][0].get("SourceCode"))
 
         if is_verified:
-            abi = json.loads(data["result"][0]["ABI"])
+            abi = json_loads(data["result"][0]["ABI"])
             name = data["result"][0]["ContractName"]
         else:
             # if the source is not available, try to fetch only the ABI
@@ -1005,7 +1012,7 @@ class Contract(_DeployedContractBase):
             except ValueError as exc:
                 _unverified_addresses.add(address)
                 raise exc
-            abi = json.loads(data_abi["result"].strip())
+            abi = json_loads(data_abi["result"].strip())
             name = "UnknownContractName"
             if not silent:
                 warnings.warn(
@@ -1097,7 +1104,7 @@ class Contract(_DeployedContractBase):
         try:
             if source_str.startswith("{{"):
                 # source was verified using compiler standard JSON
-                input_json = json.loads(source_str[1:-1])
+                input_json = json_loads(source_str[1:-1])
                 sources = {k: v["content"] for k, v in input_json["sources"].items()}
                 evm_version = input_json["settings"].get("evmVersion", evm_version)
                 remappings = input_json["settings"].get("remappings", [])
@@ -1113,7 +1120,7 @@ class Contract(_DeployedContractBase):
             else:
                 if source_str.startswith("{"):
                     # source was submitted as multiple files
-                    sources = {k: v["content"] for k, v in json.loads(source_str).items()}
+                    sources = {k: v["content"] for k, v in json_loads(source_str).items()}
                 else:
                     # source was submitted as a single file
                     if compiler_str.startswith("vyper"):

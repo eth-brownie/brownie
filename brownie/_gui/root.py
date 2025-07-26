@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import json
 import tkinter as tk
 from tkinter import ttk
 
+from brownie._c_constants import json_load
 from brownie.project import get_loaded_projects
 
 from .console import Console, ConsoleButton
@@ -38,7 +38,7 @@ class Root(tk.Tk):
         for path in self.active_project._path.glob("reports/*.json"):
             try:
                 with path.open() as fp:
-                    self.reports[path.stem] = json.load(fp)
+                    self.reports[path.stem] = json_load(fp)
             except Exception:
                 continue
 
