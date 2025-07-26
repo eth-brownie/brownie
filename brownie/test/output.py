@@ -5,7 +5,8 @@ import warnings
 from pathlib import Path
 from typing import Final
 
-from brownie._config import CONFIG, json_dump, json_dumps, json_loads
+from brownie._c_constants import json_dump, json_dumps, json_loads
+from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
