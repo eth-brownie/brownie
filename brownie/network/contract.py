@@ -106,7 +106,7 @@ class _ContractBase:
 
     def __init__(
         self,
-        project: Optional[Project | TempProject],
+        project: Optional["Project" | "TempProject"],
         build: ContractBuildJson,
         sources: Dict[str, Any],
     ) -> None:
