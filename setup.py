@@ -40,6 +40,7 @@ else:
                 "brownie/network/__init__.py",
                 "brownie/network/alert.py",
                 "brownie/network/event.py",
+                "brownie/network/middlewares",
                 "brownie/network/state.py",
                 "brownie/project",
                 "brownie/test/coverage.py",

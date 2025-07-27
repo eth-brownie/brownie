@@ -5,6 +5,7 @@ from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional
 
 from web3 import Web3
+from web3.types import LogReceipt
 
 from brownie._c_constants import HexBytes, json_dumps
 from brownie._config import CONFIG, _get_data_folder
@@ -158,6 +159,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.is_killed = False
         self.event.set()
 
+        new_blocks: List[LogReceipt]
         while not self.is_killed:
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
@@ -179,17 +181,26 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     if block_filter is None:
                         return
                     self.block_filter = block_filter
-                    continue
 
-                if new_blocks:
-                    self.block_cache[new_blocks[-1]] = {}
-                    self.last_block = new_blocks[-1]
-                    self.last_block_seen = time.time()
-                    if len(self.block_cache) > 5:
-                        old_key = list(self.block_cache)[0]
-                        del self.block_cache[old_key]
+                    # continue in try: except: block is not supported by mypyc
+                    # as of jul 23 2025 so we use this workaround instead.
+                    should_skip = True
+                else:
+                    should_skip = False
+                    if new_blocks:
+                        self.block_cache[new_blocks[-1]] = {}
+                        self.last_block = new_blocks[-1]
+                        self.last_block_seen = time.time()
+                        if len(self.block_cache) > 5:
+                            old_key = list(self.block_cache)[0]
+                            del self.block_cache[old_key]
 
-            if new_blocks and self.time_since < 15:
+            # continue in try: except: block is not supported by mypyc
+            # as of jul 23 2025 so we use this workaround instead.
+            if should_skip:
+                pass
+
+            elif new_blocks and self.time_since < 15:
                 # if this update found a new block and we've been querying
                 # frequently, we can wait a few seconds before the next update
                 time.sleep(5)
