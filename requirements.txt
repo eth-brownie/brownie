@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.5.1
+bitarray==3.5.2
     # via eth-account
 black==25.1.0
     # via -r requirements.in
@@ -122,7 +122,7 @@ immutables==0.21
     # via vyper
 iniconfig==2.1.0
     # via pytest
-jsonschema==4.24.0
+jsonschema==4.25.0
     # via web3
 jsonschema-specifications==2025.4.1
     # via jsonschema
