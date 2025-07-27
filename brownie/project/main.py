@@ -105,7 +105,9 @@ class _ProjectBase:
     _build: Build
     _containers: Dict[ContractName, ContractContainer]
 
-    def _compile(self, contract_sources: Dict, compiler_config: CompilerConfig, silent: bool) -> None:
+    def _compile(
+        self, contract_sources: Dict, compiler_config: CompilerConfig, silent: bool
+    ) -> None:
         compiler_config.setdefault("solc", {})
 
         allow_paths = None
