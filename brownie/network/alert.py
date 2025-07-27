@@ -2,14 +2,24 @@
 
 import time
 from threading import Thread
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, Final, List, Set, Tuple, Union
+
+from mypy_extensions import mypyc_attr
 
 from brownie.utils import bright_red, color
 
-__console_dir__ = ["Alert", "new", "show", "stop_all"]
-_instances = set()
+__console_dir__: Final = ["Alert", "new", "show", "stop_all"]
+_instances: Final[Set["Alert"]] = set()
+
+# Internal C Constants
+
+_Thread: Final = Thread
+
+_sleep: Final = time.sleep
+_time: Final = time.time
 
 
+@mypyc_attr(allow_interpreted_subclasses=True)
 class Alert:
     """Setup notifications and callbacks based on state changes to the blockchain.
     The alert is immediatly active as soon as the class is insantiated."""
@@ -25,7 +35,6 @@ class Alert:
         repeat: bool = False,
     ) -> None:
         """Creates a new Alert.
-
         Args:
             fn: Callable to monitor for changes.
             args: Positional args when checking the callable.
@@ -47,15 +56,15 @@ class Alert:
             raise TypeError("You can only set an alert on a callable object")
         if isinstance(repeat, int) and repeat < 0:
             raise ValueError("repeat must be True, False or a positive integer")
-        self._kill = False
+        self._kill: Final = False
         start_value = fn(*args, **kwargs)
-        self._thread = Thread(
+        self._thread: Final = _Thread(
             target=self._loop,
             daemon=True,
             args=(fn, args, kwargs, start_value, delay, msg, callback, repeat),
         )
         self._thread.start()
-        self.start_time = time.time()
+        self.start_time: Final = _time()
         _instances.add(self)
 
     def _loop(
@@ -72,9 +81,9 @@ class Alert:
         try:
             sleep = min(delay, 0.05)
             while repeat is not None:
-                next_ = time.time() + delay
-                while next_ > time.time() and not self._kill:
-                    time.sleep(sleep)
+                next_ = _time() + delay
+                while next_ > _time() and not self._kill:
+                    _sleep(sleep)
                 if self._kill:
                     break
                 value = fn(*args, **kwargs)
@@ -99,19 +108,21 @@ class Alert:
 
     def wait(self, timeout: int = None) -> None:
         """Waits for the alert to fire.
-
         Args:
             timeout: Number of seconds to wait. If None, will wait indefinitely."""
         self._thread.join(timeout)
 
     def stop(self, wait: bool = True) -> None:
         """Stops the alert.
-
         Args:
             wait: If True, waits for the alert to terminate after stopping it."""
         self._kill = True
         if wait:
             self.wait()
+    
+    def __get_start_time(self) -> float:
+        """Internal helper for use as a sort key."""
+        return self.start_time
 
 
 def new(
@@ -129,7 +140,7 @@ def new(
 
 def show() -> List:
     """Returns a list of all currently active Alert instances."""
-    return sorted(_instances, key=lambda k: k.start_time)
+    return sorted(_instances, key=Alert.__get_start_time)
 
 
 def stop_all() -> None:
