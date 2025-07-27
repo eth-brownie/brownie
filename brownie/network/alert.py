@@ -19,7 +19,8 @@ _sleep: Final = time.sleep
 _time: Final = time.time
 
 
-@mypyc_attr(allow_interpreted_subclasses=True)
+@mypyc_attr(native_class=False)
+# TODO: remove this decorator once the compiler bug preventing compilation is fixed
 class Alert:
     """Setup notifications and callbacks based on state changes to the blockchain.
     The alert is immediatly active as soon as the class is insantiated."""
