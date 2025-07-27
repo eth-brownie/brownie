@@ -45,10 +45,10 @@ UNITS: Final = {
     "ether": 18,
 }
 
-WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, None)
+WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, decimal.Decimal, None)
 # This is no longer used within the codebase but we leave it in place in case downstream users import it
 
-WeiInputType = str | float | int | bytes | None
+WeiInputType = str | float | int | bytes | decimal.Decimal | None
 
 
 to_checksum_address: Final = cchecksum.to_checksum_address
