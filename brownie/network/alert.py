@@ -121,7 +121,7 @@ class Alert:
         if wait:
             self.wait()
     
-    def __get_start_time(self) -> float:
+    def _get_start_time(self) -> float:
         """Internal helper for use as a sort key."""
         return self.start_time
 
@@ -141,7 +141,7 @@ def new(
 
 def show() -> List[Alert]:
     """Returns a list of all currently active Alert instances."""
-    return sorted(_instances, key=Alert.__get_start_time)
+    return sorted(_instances, key=Alert._get_start_time)
 
 
 def stop_all() -> None:
