@@ -34,7 +34,18 @@ from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
-from brownie.utils import bright_blue, bright_cyan, bright_magenta, bright_red, bright_yellow, bytes_to_hexstring, color, dark_white, red, hexbytes_to_hexstring
+from brownie.utils import (
+    bright_blue,
+    bright_cyan,
+    bright_magenta,
+    bright_red,
+    bright_yellow,
+    bytes_to_hexstring,
+    color,
+    dark_white,
+    red,
+    hexbytes_to_hexstring,
+)
 from brownie.utils.output import build_tree
 
 from . import state
@@ -1316,7 +1327,7 @@ def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, f
     return (
         f"{dark_white}Trace step {bright_blue}{idx}{dark_white}, "
         f"program counter {bright_blue}{pc}{dark_white}:\n  {dark_white}"
-        f"File {bright_magenta}\"{path}\"{dark_white}, line{ln}"
+        f'File {bright_magenta}"{path}"{dark_white}, line{ln}'
         f"{dark_white}, in {bright_cyan}{fn_name}{dark_white}:{source}"
     )
 
