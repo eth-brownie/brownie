@@ -44,6 +44,7 @@ else:
                 "brownie/network/state.py",
                 "brownie/project",
                 "brownie/test/coverage.py",
+                "brownie/test/output.py",
                 "brownie/typing.py",
                 "brownie/utils/__init__.py",
                 "brownie/utils/_color.py",
