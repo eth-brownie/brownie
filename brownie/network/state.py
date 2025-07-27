@@ -337,7 +337,9 @@ class Chain(metaclass=_Singleton):
         _notify_registry()
         return id_
 
-    def _add_to_undo_buffer(self, tx: TransactionReceipt, fn: Any, args: Tuple, kwargs: Dict) -> None:
+    def _add_to_undo_buffer(
+        self, tx: TransactionReceipt, fn: Any, args: Tuple, kwargs: Dict
+    ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
             self._undo_buffer.append((self._current_id, fn, args, kwargs))

@@ -120,7 +120,7 @@ class Alert:
         self._kill = True
         if wait:
             self.wait()
-    
+
     def _get_start_time(self) -> float:
         """Internal helper for use as a sort key."""
         return self.start_time

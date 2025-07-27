@@ -146,9 +146,10 @@ def highlight_source(
         int: Line number that highlight begins on"""
 
     newlines = [i for i in range(len(source)) if source[i] == "\n"]
+    start_offset, stop_offset = offset
     try:
-        pad_start = newlines.index(next(i for i in newlines if i >= offset[0]))
-        pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
+        pad_start = newlines.index(next(i for i in newlines if i >= start_offset))
+        pad_stop = newlines.index(next(i for i in newlines if i >= stop_offset))
     except StopIteration:
         return None, None
 
@@ -157,20 +158,20 @@ def highlight_source(
     pad_stop = newlines[min(pad_stop + pad, len(newlines) - 1)]
 
     dedented = textwrap.dedent(
-        f"{source[pad_start:offset[0]]}{color}"
-        f"{source[offset[0]:offset[1]]}{dark_white}{source[offset[1]:pad_stop]}{color}"
+        f"{source[pad_start:start_offset]}{color}"
+        f"{source[start_offset:stop_offset]}{dark_white}{source[stop_offset:pad_stop]}{color}"
     )
     final = textwrap.indent(f"{dark_white}{dedented}", "    ")
 
-    count = source[pad_start : offset[0]].count("\n")
+    count = source[pad_start:start_offset].count("\n")
     final = final.replace("\n ", f"\n{dark_white} ", count)
-    count = source[offset[0] : offset[1]].count("\n")
+    count = source[start_offset:stop_offset].count("\n")
     final = final.replace("\n ", f"\n{color} ", count)
-    count = source[offset[1] : pad_stop].count("\n")
+    count = source[stop_offset:pad_stop].count("\n")
     final = final.replace("\n ", f"\n{dark_white} ", count)
 
     # prepend with a newline if the offset starts on the first line
-    if offset[0] < newlines[1]:
+    if start_offset < newlines[1]:
         final = f"\n{final}"
 
     return final, ln
