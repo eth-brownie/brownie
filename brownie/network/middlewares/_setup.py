@@ -1,13 +1,17 @@
-"""This helper file exists so we can use `__file__`, which does not exist when a file is compiled with mypyc."""
+"""
+This helper file exists so we can use `__file__`, which does not exist when a file is compiled with mypyc.
+"""
+
 from typing import List
 
 from brownie._c_constants import Path, import_module
 from brownie.network.middlewares import BrownieMiddlewareABC
 
+
 def load_middlewares() -> List[BrownieMiddlewareABC]:
     """
     Load middleware classes from all modules within `brownie/networks/middlewares/`.
-    
+
     To be included the module name must not begin with `_` and the middleware
     must subclass :class:`~BrownieMiddlewareABC`.
     """
