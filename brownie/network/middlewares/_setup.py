@@ -4,7 +4,7 @@ from typing import List
 from brownie._c_constants import Path, import_module
 from brownie.network.middlewares import BrownieMiddlewareABC
 
-def setup_middlewares() -> List[BrownieMiddlewareABC]:
+def load_middlewares() -> List[BrownieMiddlewareABC]:
     """
     Load middleware classes from all modules within `brownie/networks/middlewares/`.
     
