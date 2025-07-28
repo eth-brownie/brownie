@@ -30,7 +30,7 @@ class Sources:
         self._interfaces: Final[Dict[ContractName, str]] = {}
 
         contracts: Dict[ContractName, Tuple[str, str]] = {}
-        collisions: Dict[ContractName, Set[str] = {}
+        collisions: Dict[ContractName, Set[str]] = {}
         contract_names: List[Tuple[ContractName, str]]
         for path, source in contract_sources.items():
             self._contract_sources[path] = source
