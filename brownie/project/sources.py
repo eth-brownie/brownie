@@ -93,7 +93,7 @@ class Sources:
             self._contract_sources[key] = source
             return source
 
-    def get_path_list(self) -> List[ContractName]:
+    def get_path_list(self) -> List[str]:
         """Returns a sorted list of source code file paths for the active project."""
         return sorted(self._contract_sources.keys())
 
@@ -112,7 +112,7 @@ class Sources:
             for k, v in self._interfaces.items()
         }
 
-    def get_interface_sources(self) -> Dict[str, Dict]:
+    def get_interface_sources(self) -> Dict[str, str]:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
