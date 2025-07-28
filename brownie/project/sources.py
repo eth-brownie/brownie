@@ -4,6 +4,7 @@ import textwrap
 from typing import Dict, Final, List, Optional, Tuple, final
 
 import semantic_version
+from eth_typing import HexStr
 from vvm.utils.convert import to_vyper_version
 
 from brownie._c_constants import (
