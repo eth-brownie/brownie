@@ -671,22 +671,26 @@ def _add_deployment(
         f"(address UNIQUE, alias UNIQUE, paths, {', '.join(DEPLOYMENT_KEYS)})"
     )
 
-    if "compiler" not in contract._build:
+    contract_build = contract._build
+    if "compiler" not in contract_build:
         # do not replace full contract artifacts with ABI-only ones
         row = cur.fetchone(f"SELECT compiler FROM {name} WHERE address=?", (address,))
         if row and row[0]:
             return
 
     all_sources = {}
-    for key, path in contract._build.get("allSourcePaths", {}).items():
-        source = contract._sources.get(path)
-        if source is None:
-            source = Path(path).read_text()
-        hash_ = sha1(source.encode()).hexdigest()
-        cur.insert("sources", hash_, source)
-        all_sources[key] = [hash_, path]
+    source_paths: dict = contract_build.get("allSourcePaths", {})
+    if source_paths:
+        contract_sources: dict = contract._sources
+        for key, path in source_paths.items():
+            source = contract_sources.get(path)
+            if source is None:
+                source = Path(path).read_text()
+            hash_ = sha1(source.encode()).hexdigest()
+            cur.insert("sources", hash_, source)
+            all_sources[key] = [hash_, path]
 
-    values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
+    values = (contract_build.get(i) for i in DEPLOYMENT_KEYS)
     cur.insert(name, address, alias, all_sources, *values)
 
 

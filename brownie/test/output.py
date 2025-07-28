@@ -90,7 +90,7 @@ def _build_gas_profile_output() -> List[str]:
         contract, function = full_name.split(".", 1)
 
         try:
-            if project._sources.get_source_path(contract) in exclude_paths:  # type: ignore [union-attr]
+            if project._sources.get_source_path(contract) in exclude_paths:  # type: ignore [union-attr, arg-type]
                 continue
         except (AttributeError, KeyError):
             # filters contracts that are not part of the project

@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
 import textwrap
-from typing import Dict, Final, List, Optional, Tuple
+from typing import Dict, Final, List, Optional, Set, Tuple, final
 
 import semantic_version
+from eth_typing import HexStr
 from vvm.utils.convert import to_vyper_version
 
 from brownie._c_constants import (
@@ -15,25 +16,27 @@ from brownie._c_constants import (
     sha1,
 )
 from brownie.exceptions import NamespaceCollision, PragmaError
-from brownie.typing import Offset
+from brownie.typing import ContractName, Offset
 from brownie.utils import color, dark_white
 
 
+@final
 class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
-        self._contract_sources: Final[Dict] = {}
-        self._contracts: Dict = {}
-        self._interface_sources: Final[Dict] = {}
-        self._interfaces: Final[Dict] = {}
+    def __init__(self, contract_sources: Dict[str, str], interface_sources: Dict[str, str]) -> None:
+        self._contract_sources: Final[Dict[str, str]] = {}
+        self._contracts: Final[Dict[ContractName, str]] = {}
+        self._interface_sources: Final[Dict[str, str]] = {}
+        self._interfaces: Final[Dict[ContractName, str]] = {}
 
-        contracts: Dict = {}
-        collisions: Dict = {}
+        contracts: Dict[ContractName, Tuple[str, str]] = {}
+        collisions: Dict[ContractName, Set[str]] = {}
+        contract_names: List[Tuple[ContractName, str]]
         for path, source in contract_sources.items():
             self._contract_sources[path] = source
             if Path(path).suffix != ".sol":
-                contract_names = [(Path(path).stem, "contract")]
+                contract_names = [(Path(path).stem, "contract")]  # type: ignore [list-item]
             else:
                 contract_names = get_contract_names(source)
             for name, type_ in contract_names:
@@ -45,13 +48,15 @@ class Sources:
                         collisions.setdefault(name, set()).update([path, contracts[name][0]])
                 contracts[name] = (path, type_)
 
-        self._contracts = {k: v[0] for k, v in contracts.items()}
+        for k, v in contracts.items():
+            self._contracts[k] = v[0]
 
+        interface_names: List[Tuple[ContractName, str]]
         for path, source in interface_sources.items():
             self._interface_sources[path] = source
 
             if Path(path).suffix != ".sol":
-                interface_names = [(Path(path).stem, "interface")]
+                interface_names = [(Path(path).stem, "interface")]  # type: ignore [list-item]
             else:
                 interface_names = get_contract_names(source)
             for name, type_ in interface_names:
@@ -65,7 +70,7 @@ class Sources:
                 + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
             )
 
-    def get(self, key: str) -> str:
+    def get(self, key: ContractName | str) -> str:
         """
         Return the source code file for the given name.
 
@@ -76,7 +81,7 @@ class Sources:
         key = str(key)
 
         if key in self._contracts:
-            return self._contract_sources[self._contracts[key]]
+            return self._contract_sources[self._contracts[key]]  # type: ignore [index]
         if key in self._contract_sources:
             return self._contract_sources[key]
         if key in self._interface_sources:
@@ -88,30 +93,30 @@ class Sources:
             self._contract_sources[key] = source
             return source
 
-    def get_path_list(self) -> List:
+    def get_path_list(self) -> List[str]:
         """Returns a sorted list of source code file paths for the active project."""
         return sorted(self._contract_sources.keys())
 
-    def get_contract_list(self) -> List:
+    def get_contract_list(self) -> List[ContractName]:
         """Returns a sorted list of contract names for the active project."""
         return sorted(self._contracts.keys())
 
-    def get_interface_list(self) -> List:
+    def get_interface_list(self) -> List[ContractName]:
         """Returns a sorted list of interface names for the active project."""
         return sorted(self._interfaces.keys())
 
-    def get_interface_hashes(self) -> Dict:
+    def get_interface_hashes(self) -> Dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
         return {
-            k: sha1(self._interface_sources[v].encode()).hexdigest()
+            k: sha1(self._interface_sources[v].encode()).hexdigest()  # type: ignore [misc]
             for k, v in self._interfaces.items()
         }
 
-    def get_interface_sources(self) -> Dict:
+    def get_interface_sources(self) -> Dict[str, str]:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
-    def get_source_path(self, contract_name: str, is_interface: bool = False) -> str:
+    def get_source_path(self, contract_name: ContractName, is_interface: bool = False) -> str:
         """Returns the path to the source file where a contract is located."""
         if contract_name in self._contracts and not is_interface:
             return self._contracts[contract_name]
@@ -177,7 +182,7 @@ def highlight_source(
     return final, ln
 
 
-def get_contract_names(full_source: str) -> List[Tuple[str, str]]:
+def get_contract_names(full_source: str) -> List[Tuple[ContractName, str]]:
     """
     Get contract names from Solidity source code.
 

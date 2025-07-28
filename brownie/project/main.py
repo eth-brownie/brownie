@@ -66,6 +66,7 @@ from brownie.typing import (
     CompilerConfig,
     ContractBuildJson,
     ContractName,
+    EvmVersion,
     InterfaceBuildJson,
     Language,
     SolcConfig,
@@ -234,15 +235,18 @@ class Project(_ProjectBase):
             return None
 
         project_path: pathlib.Path = self._path  # type: ignore [assignment]
-        contract_sources = _load_sources(project_path, self._structure["contracts"], False)
-        interface_sources = _load_sources(project_path, self._structure["interfaces"], True)
-
-        sources = self._sources = Sources(contract_sources, interface_sources)
-        build = self._build = Build(sources)
-        build_path = self._build_path
+        structure = self._structure
+        contract_sources = _load_sources(project_path, structure["contracts"], False)
+        interface_sources = _load_sources(project_path, structure["interfaces"], True)
+        sources = Sources(contract_sources, interface_sources)
+        self._sources = sources
+        
+        build = Build(self._sources)
+        self._build = build
 
         contract_list = sources.get_contract_list()
-        potential_dependencies = []
+        potential_dependencies: List[Tuple[pathlib.Path, ContractBuildJson]] = []
+        build_path = self._build_path
 
         contract_build_json: ContractBuildJson
         for path in build_path.glob("contracts/*.json"):
@@ -400,15 +404,16 @@ class Project(_ProjectBase):
             remappings=solc_config.get("remappings", []),
         )
 
+        build = self._build
+        build_path = self._build_path
         for name, abi in abi_json.items():
-
-            with self._build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
+            with build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
                 json_dump(abi, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add_interface(abi)
+            build._add_interface(abi)
 
     def _load_dependency_artifacts(self) -> None:
-        dep_build_path = self._build_path.joinpath("contracts/dependencies/")
         build = self._build
+        dep_build_path = self._build_path.joinpath("contracts/dependencies/")
         for path in list(dep_build_path.glob("**/*.json")):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
             if build.get_dependents(contract_alias):
