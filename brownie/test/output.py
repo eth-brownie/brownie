@@ -1,16 +1,19 @@
 #!/usr/bin/python3
 
-import json
+import pathlib
 import warnings
-from pathlib import Path
-from typing import Final
+from typing import Any, Dict, Final, List, Optional, Set, Tuple
 
-from brownie._c_constants import json_dump, json_dumps, json_loads
+from brownie._c_constants import Path, json_dump, json_dumps, json_loads
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
+from brownie.project.build import Build
+from brownie.typing import ContractName
 from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
+
+from .coverage import CoverageEval
 
 COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
     (0.8, bright_red),
@@ -19,7 +22,9 @@ COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
 ]
 
 
-def _save_coverage_report(build, coverage_eval, report_path):
+def _save_coverage_report(
+    build: Build, coverage_eval: CoverageEval, report_path: pathlib.Path
+) -> pathlib.Path:
     # Saves a test coverage report for viewing in the GUI
     report = {
         "highlights": _get_highlights(build, coverage_eval),
@@ -37,8 +42,10 @@ def _save_coverage_report(build, coverage_eval, report_path):
     return report_path
 
 
-def _load_report_exclude_data(settings):
-    exclude_paths = []
+def _load_report_exclude_data(
+    settings: Dict[str, Any]
+) -> Tuple[List[str], List[Any]]:
+    exclude_paths: List[str] = []
     if settings["exclude_paths"]:
         exclude = settings["exclude_paths"]
         if not isinstance(exclude, list):
@@ -47,7 +54,7 @@ def _load_report_exclude_data(settings):
             glob_path = Path(glob_str)
             base_path = glob_path.root if glob_path.is_absolute() else Path(".")
             try:
-                exclude_paths.extend(map(Path.as_posix, base_path.glob(glob_str)))
+                exclude_paths.extend(map(Path.as_posix, base_path.glob(glob_str)))  # type: ignore [union-attr]
             except Exception:
                 warnings.warn(
                     "Invalid glob pattern in config exclude settings: '{glob_str}'",
@@ -63,7 +70,7 @@ def _load_report_exclude_data(settings):
     return exclude_paths, exclude_contracts
 
 
-def _build_gas_profile_output():
+def _build_gas_profile_output() -> List[str]:
     # Formats gas profile report that may be printed to the console
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
     try:
@@ -73,17 +80,17 @@ def _build_gas_profile_output():
 
     gas = TxHistory().gas_profile
     sorted_gas = sorted(gas.items())
-    grouped_by_contract = {}
-    padding = {}
+    grouped_by_contract: Dict[str, Dict[str, Dict[str, int | str]]] = {}
+    padding: Dict[str, int] = {}
 
     lines = [""]
 
     only_include_project = CONFIG.settings["reports"]["only_include_project"]
-    for full_name, values in sorted_gas:
+    for full_name, gas_values in sorted_gas:
         contract, function = full_name.split(".", 1)
 
         try:
-            if project._sources.get_source_path(contract) in exclude_paths:
+            if project._sources.get_source_path(contract) in exclude_paths:  # type: ignore [union-attr]
                 continue
         except (AttributeError, KeyError):
             # filters contracts that are not part of the project
@@ -94,14 +101,14 @@ def _build_gas_profile_output():
 
         # calculate padding to get table-like formatting
         padding["fn"] = max(padding.get("fn", 0), len(str(function)))
-        for k, v in values.items():
+        for k, v in gas_values.items():
             padding[k] = max(padding.get(k, 0), len(str(v)))
 
         # group functions with payload by contract name
         if contract in grouped_by_contract:
-            grouped_by_contract[contract][function] = values
+            grouped_by_contract[contract][function] = gas_values  # type: ignore [assignment]
         else:
-            grouped_by_contract[contract] = {function: values}
+            grouped_by_contract[contract] = {function: gas_values}  # type: ignore [dict-item]
 
     for contract, functions in grouped_by_contract.items():
         lines.append(f"{bright_magenta}{contract}{color} <Contract>")
@@ -112,28 +119,28 @@ def _build_gas_profile_output():
             prefix = "\u2514\u2500" if ix == len(functions) - 1 else "\u251c\u2500"
             fn_name = fn_name.ljust(padding["fn"])
             values["avg"] = int(values["avg"])
-            values = {k: str(v).rjust(padding[k]) for k, v in values.items()}
+            padded = {k: str(v).rjust(padding[k]) for k, v in values.items()}
             lines.append(
-                f"   {prefix} {fn_name} -  avg: {values['avg']}  avg (confirmed):"
-                f" {values['avg_success']}  low: {values['low']}  high: {values['high']}"
+                f"   {prefix} {fn_name} -  avg: {padded['avg']}  avg (confirmed):"
+                f" {padded['avg_success']}  low: {padded['low']}  high: {padded['high']}"
             )
 
     return lines + [""]
 
 
-def _build_coverage_output(coverage_eval):
+def _build_coverage_output(coverage_eval: CoverageEval) -> List[str]:
     # Formats a coverage evaluation report that may be printed to the console
 
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
-    all_totals = (
-        (i, _get_totals(i._build, coverage_eval, exclude_contracts)) for i in get_loaded_projects()
-    )
-    all_totals = [i for i in all_totals if i[1]]
+
+    projects = get_loaded_projects()
+    all_totals = (_get_totals(project._build, coverage_eval, exclude_contracts) for project in projects)
+    filtered = [(project, total) for project, total in zip(projects, all_totals) if total]
     lines = []
 
-    for project, totals in all_totals:
+    for project, totals in filtered:
 
-        if len(all_totals) > 1:
+        if len(filtered) > 1:
             lines.append(f"\n======== {bright_magenta}{project._name}{color} ========")
 
         for contract_name in sorted(totals):
@@ -175,54 +182,68 @@ def _pct(statement, branch):
     return pct
 
 
-def _get_totals(build, coverage_eval, exclude_contracts=None):
+def _get_totals(
+    build: Build,
+    coverage_eval: CoverageEval,
+    exclude_contracts: Optional[List[str]] = None,
+) -> Dict[ContractName, Dict[str, Dict[str, Dict[str, Any]]]]:
     # Returns a modified coverage eval dict showing counts and totals for each function.
 
     if exclude_contracts is None:
         exclude_contracts = []
-    coverage_eval = _split_by_fn(build, coverage_eval)
-    results = {
-        i: {
+    split_by_fn = _split_by_fn(build, coverage_eval)
+    results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
+        i: {  # ty
             "statements": {},
             "totals": {"statements": 0, "branches": [0, 0]},
             "branches": {"true": {}, "false": {}},
         }
-        for i in coverage_eval
+        for i in split_by_fn
     }
-    for contract_name in coverage_eval:
+    for contract_name in split_by_fn:
         if contract_name in exclude_contracts:
             del results[contract_name]
             continue
         try:
-            coverage_map = build.get(contract_name)["coverageMap"]
+            coverage_map = build.get(contract_name)["coverageMap"]  # type: ignore [typeddict-item]
         except KeyError:
             del results[contract_name]
             continue
 
         r = results[contract_name]
         r["statements"], r["totals"]["statements"] = _statement_totals(
-            coverage_eval[contract_name], coverage_map["statements"], exclude_contracts
+            split_by_fn[contract_name], coverage_map["statements"], exclude_contracts
         )
         r["branches"], r["totals"]["branches"] = _branch_totals(
-            coverage_eval[contract_name], coverage_map["branches"], exclude_contracts
+            split_by_fn[contract_name], coverage_map["branches"], exclude_contracts
         )
 
     return results
 
 
-def _split_by_fn(build, coverage_eval):
+def _split_by_fn(
+    build: Build,
+    coverage_eval: Dict[ContractName, Dict[str, Dict[int, Set[int]]]],
+) -> Dict[ContractName, Dict[str, Dict[str, Any]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
-    results = {i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval}
+    results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
+        i: {"statements": {}, "branches": {"true": {}, "false": {}}}
+        for i in coverage_eval
+    }
     for name in coverage_eval:
         try:
-            map_ = build.get(name)["coverageMap"]
+            map_ = build.get(name)["coverageMap"]  # type: ignore [typeddict-item]
             results[name] = {k: _split(v, map_, k) for k, v in coverage_eval[name].items()}
         except KeyError:
             del results[name]
     return results
 
 
-def _split(coverage_eval, coverage_map, key):
+def _split(
+    coverage_eval: Dict[int, Set[int]],
+    coverage_map: Dict[str, Dict[str, Dict[str, Dict[int, Any]]]],
+    key: str,
+):
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
     return {
@@ -235,8 +256,12 @@ def _split(coverage_eval, coverage_map, key):
     }
 
 
-def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
-    result = {}
+def _statement_totals(
+    coverage_eval: Dict[str, Dict[str, Dict[int, Set]]],
+    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
+    exclude_contracts,
+) -> Tuple[Dict[str, Tuple[int, int]], Tuple[int, int]]:
+    result: Dict[str, Tuple[int, int]] = {}
     count, total = 0, 0
     for path, fns in coverage_eval.items():
         coverage_eval_for_path = coverage_eval[path]
@@ -252,8 +277,12 @@ def _statement_totals(coverage_eval, coverage_map, exclude_contracts):
     return result, (count, total)
 
 
-def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
-    result = {}
+def _branch_totals(
+    coverage_eval: Dict[str, Dict[str, Dict[int, Set]]],
+    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
+    exclude_contracts: List[str],
+) -> Tuple[Dict[str, Tuple[int, int, int]], Tuple[int, int, int]]:
+    result: Dict[str, Tuple[int, int, int]] = {}
     final = [0, 0, 0]
     for path, fns in coverage_map.items():
         for fn in fns:
@@ -269,12 +298,12 @@ def _branch_totals(coverage_eval, coverage_map, exclude_contracts):
             result[fn] = (true, false, total)
             for i in range(3):
                 final[i] += result[fn][i]
-    return result, final
+    return result, tuple(final)  # type: ignore [return-value]
 
 
-def _get_highlights(build, coverage_eval):
+def _get_highlights(build, coverage_eval) -> Dict[str, Dict[str, Dict[str, list]]]:
     # Returns a highlight map formatted for display in the GUI.
-    results = {"statements": {}, "branches": {}}
+    results: Dict[str, Dict[str, Dict[str, list]]] = {"statements": {}, "branches": {}}
     for name, eval_ in coverage_eval.items():
         try:
             coverage_map = build.get(name)["coverageMap"]
@@ -287,8 +316,11 @@ def _get_highlights(build, coverage_eval):
     return results
 
 
-def _statement_highlights(coverage_eval, coverage_map):
-    results = {i: [] for i in coverage_map}
+def _statement_highlights(
+    coverage_eval: Dict[str, Dict[int, set]],
+    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
+) -> Dict[str, List]:
+    results: Dict[str, List] = {i: [] for i in coverage_map}
     for path, fns in coverage_map.items():
         for fn in fns:
             results[path].extend(
@@ -298,14 +330,21 @@ def _statement_highlights(coverage_eval, coverage_map):
     return results
 
 
-def _statement_color(i, coverage_eval, path):
-    if path not in coverage_eval or int(i) not in coverage_eval[path][0]:
-        return "red"
-    return "green"
+def _statement_color(
+    i: int,
+    coverage_eval: Dict[str, Dict[int, set]],
+    path: str,
+) -> str:
+    if path in coverage_eval and int(i) in coverage_eval[path][0]:
+        return "green"
+    return "red"
 
 
-def _branch_highlights(coverage_eval, coverage_map):
-    results = {i: [] for i in coverage_map}
+def _branch_highlights(
+    coverage_eval: Dict[str, Dict[int, Set]],
+    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
+) -> Dict[str, List]:
+    results: Dict[str, List] = {i: [] for i in coverage_map}
     for path, fns in coverage_map.items():
         for fn in fns:
             results[path].extend(
@@ -315,7 +354,12 @@ def _branch_highlights(coverage_eval, coverage_map):
     return results
 
 
-def _branch_color(i, coverage_eval, path, jump):
+def _branch_color(
+    i: int,
+    coverage_eval: Dict[str, Dict[int, Set]],
+    path: str,
+    jump: None,
+) -> str:
     if path not in coverage_eval:
         return "red"
     coverage_eval_for_path = coverage_eval[path]

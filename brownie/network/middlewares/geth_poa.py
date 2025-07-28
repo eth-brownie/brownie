@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, final
 
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
@@ -7,6 +7,7 @@ from web3.middleware import geth_poa_middleware
 from brownie.network.middlewares import BrownieMiddlewareABC
 
 
+@final
 class GethPOAMiddleware(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:

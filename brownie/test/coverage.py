@@ -1,13 +1,13 @@
 #!/usr/bin/python3
 
-from typing import Dict, Final, List, Optional, Set
+from typing import Dict, Final, List, NewType, Optional, Set
 
 from eth_typing import HexStr
 
 from brownie._c_constants import deepcopy
 from brownie.typing import ContractName
 
-CoverageEval = Dict[ContractName, Dict[str, Dict[int, Set]]]
+CoverageEval = NewType("CoverageEval", Dict[ContractName, Dict[str, Dict[int, Set]]])
 
 # Coverage evaluation is stored on a per-tx basis. We use a special "coverage hash"
 # with additional inforarmation included to ensure no two transactions will produce

@@ -1,11 +1,9 @@
 import functools
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Final, List, Optional
 
 from web3 import Web3
-
-from brownie._c_constants import import_module
 
 
 class BrownieMiddlewareABC(ABC):
@@ -23,7 +21,7 @@ class BrownieMiddlewareABC(ABC):
         Subclasses may optionally include this method. It is called only once,
         when the middleware is being added.
         """
-        self.w3 = w3
+        self.w3: Final = w3
 
     @classmethod
     @abstractmethod
@@ -98,17 +96,7 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
     return middleware_layers
 
 
-_middlewares: List = []
+# this must go down here to prevent a circ import issue
+from brownie.network.middlewares._setup import load_middlewares
 
-for path in Path(__file__).parent.glob("[!_]*.py"):
-    # load middleware classes from all modules within `brownie/networks/middlewares/`
-    # to be included the module name must not begin with `_` and the middleware
-    # must subclass `BrownieMiddlewareABC`
-    module = import_module(f"{__package__}.{path.stem}")
-    _middlewares.extend(
-        obj
-        for obj in module.__dict__.values()
-        if isinstance(obj, type)
-        and obj.__module__ == module.__name__
-        and BrownieMiddlewareABC in obj.mro()
-    )
+_middlewares: Final = load_middlewares()
