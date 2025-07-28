@@ -34,10 +34,10 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         if (
             method == "eth_call"
             and "error" in result
-            and error.get("message", "").startswith("VM Exception")
+            and result["error"].get("message", "").startswith("VM Exception")
         ):
             # "VM Exception while processing transaction: {reason} {message}"
-            msg: str = error["message"]
+            msg: str = result["error"]["message"]
             msg = msg.split(": ", maxsplit=1)[-1]
             if msg.startswith("revert"):
                 data = {"error": "revert", "reason": error["data"]}
