@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import textwrap
-from typing import Dict, Final, List, Optional, Tuple
+from typing import Dict, Final, List, Optional, Tuple, final
 
 import semantic_version
 from vvm.utils.convert import to_vyper_version
@@ -15,25 +15,27 @@ from brownie._c_constants import (
     sha1,
 )
 from brownie.exceptions import NamespaceCollision, PragmaError
-from brownie.typing import Offset
+from brownie.typing import ContractName, Offset
 from brownie.utils import color, dark_white
 
 
+@final
 class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
-        self._contract_sources: Final[Dict] = {}
-        self._contracts: Dict = {}
-        self._interface_sources: Final[Dict] = {}
-        self._interfaces: Final[Dict] = {}
+    def __init__(self, contract_sources: Dict[str, Dict], interface_sources: Dict[str, Dict]) -> None:
+        self._contract_sources: Final[Dict[str, Dict]] = {}
+        self._contracts: Final[Dict[ContractName, Tuple[str, str]]] = {}
+        self._interface_sources: Final[Dict[str, Dict]] = {}
+        self._interfaces: Final[Dict[ContractName, str]] = {}
 
         contracts: Dict = {}
         collisions: Dict = {}
+        contract_names: List[Tuple[ContractName, str]]
         for path, source in contract_sources.items():
             self._contract_sources[path] = source
             if Path(path).suffix != ".sol":
-                contract_names = [(Path(path).stem, "contract")]
+                contract_names = [(Path(path).stem, "contract")]  # type: ignore [list-item]
             else:
                 contract_names = get_contract_names(source)
             for name, type_ in contract_names:
@@ -45,13 +47,15 @@ class Sources:
                         collisions.setdefault(name, set()).update([path, contracts[name][0]])
                 contracts[name] = (path, type_)
 
-        self._contracts = {k: v[0] for k, v in contracts.items()}
+        for k, v in contracts.items():
+            self._contracts[k] = v[0]
 
+        interface_names: List[Tuple[ContractName, str]]
         for path, source in interface_sources.items():
             self._interface_sources[path] = source
 
             if Path(path).suffix != ".sol":
-                interface_names = [(Path(path).stem, "interface")]
+                interface_names = [(Path(path).stem, "interface")]  # type: ignore [list-item]
             else:
                 interface_names = get_contract_names(source)
             for name, type_ in interface_names:
@@ -88,26 +92,26 @@ class Sources:
             self._contract_sources[key] = source
             return source
 
-    def get_path_list(self) -> List:
+    def get_path_list(self) -> List[ContractName]:
         """Returns a sorted list of source code file paths for the active project."""
         return sorted(self._contract_sources.keys())
 
-    def get_contract_list(self) -> List:
+    def get_contract_list(self) -> List[ContractName]:
         """Returns a sorted list of contract names for the active project."""
         return sorted(self._contracts.keys())
 
-    def get_interface_list(self) -> List:
+    def get_interface_list(self) -> List[ContractName]:
         """Returns a sorted list of interface names for the active project."""
         return sorted(self._interfaces.keys())
 
-    def get_interface_hashes(self) -> Dict:
+    def get_interface_hashes(self) -> Dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
         return {
             k: sha1(self._interface_sources[v].encode()).hexdigest()
             for k, v in self._interfaces.items()
         }
 
-    def get_interface_sources(self) -> Dict:
+    def get_interface_sources(self) -> Dict[str, Dict]:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
@@ -177,7 +181,7 @@ def highlight_source(
     return final, ln
 
 
-def get_contract_names(full_source: str) -> List[Tuple[str, str]]:
+def get_contract_names(full_source: str) -> List[Tuple[ContractName, str]]:
     """
     Get contract names from Solidity source code.
 
