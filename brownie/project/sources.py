@@ -81,7 +81,7 @@ class Sources:
         key = str(key)
 
         if key in self._contracts:
-            return self._contract_sources[self._contracts[key]]
+            return self._contract_sources[self._contracts[key]]  # type: ignore [index]
         if key in self._contract_sources:
             return self._contract_sources[key]
         if key in self._interface_sources:
