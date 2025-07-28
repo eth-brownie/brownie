@@ -41,6 +41,7 @@ else:
                 "brownie/network/alert.py",
                 "brownie/network/event.py",
                 "brownie/network/middlewares/__init__.py",
+                "brownie/network/middlewares/caching.py",
                 "brownie/network/middlewares/catch_tx_revert.py",
                 "brownie/network/middlewares/ganache7.py",
                 "brownie/network/middlewares/geth_poa.py",
