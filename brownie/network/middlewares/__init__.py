@@ -1,7 +1,7 @@
 import functools
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Final, List, Optional
 
 from web3 import Web3
 
@@ -21,7 +21,7 @@ class BrownieMiddlewareABC(ABC):
         Subclasses may optionally include this method. It is called only once,
         when the middleware is being added.
         """
-        self.w3 = w3
+        self.w3: Final = w3
 
     @classmethod
     @abstractmethod
