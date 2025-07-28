@@ -108,7 +108,7 @@ class Sources:
     def get_interface_hashes(self) -> Dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
         return {
-            k: sha1(self._interface_sources[v].encode()).hexdigest()
+            k: sha1(self._interface_sources[v].encode()).hexdigest()  # type: ignore [misc]
             for k, v in self._interfaces.items()
         }
 
