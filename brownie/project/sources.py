@@ -29,8 +29,8 @@ class Sources:
         self._interface_sources: Final[Dict[str, Dict]] = {}
         self._interfaces: Final[Dict[ContractName, str]] = {}
 
-        contracts: Dict = {}
-        collisions: Dict = {}
+        contracts: Dict[ContractName, Tuple[str, str]] = {}
+        collisions: Dict[ContractName, Set[str] = {}
         contract_names: List[Tuple[ContractName, str]]
         for path, source in contract_sources.items():
             self._contract_sources[path] = source
@@ -115,7 +115,7 @@ class Sources:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
-    def get_source_path(self, contract_name: str, is_interface: bool = False) -> str:
+    def get_source_path(self, contract_name: ContractName, is_interface: bool = False) -> str:
         """Returns the path to the source file where a contract is located."""
         if contract_name in self._contracts and not is_interface:
             return self._contracts[contract_name]
