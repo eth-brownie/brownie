@@ -2,20 +2,18 @@
 
 import pathlib
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Final, List, Optional, Set, Tuple
+from typing import Any, Dict, Final, List, Optional, Set, Tuple
 
 from brownie._c_constants import Path, json_dump, json_dumps, json_loads
 from brownie._config import CONFIG
 from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
+from brownie.project.build import Build
 from brownie.typing import ContractName
 from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
 
 from .coverage import CoverageEval
-
-if TYPE_CHECKING:
-    from brownie.project.build import Build
 
 COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
     (0.8, bright_red),
@@ -25,7 +23,7 @@ COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
 
 
 def _save_coverage_report(
-    build: "Build", coverage_eval: CoverageEval, report_path: pathlib.Path
+    build: Build, coverage_eval: CoverageEval, report_path: pathlib.Path
 ) -> pathlib.Path:
     # Saves a test coverage report for viewing in the GUI
     report = {
@@ -185,7 +183,7 @@ def _pct(statement, branch):
 
 
 def _get_totals(
-    build: "Build",
+    build: Build,
     coverage_eval: CoverageEval,
     exclude_contracts: Optional[List[str]] = None,
 ) -> Dict[ContractName, Dict[str, Dict[str, Dict[str, Any]]]]:
@@ -224,7 +222,7 @@ def _get_totals(
 
 
 def _split_by_fn(
-    build: "Build",
+    build: Build,
     coverage_eval: Dict[ContractName, Dict[str, Dict[int, Set[int]]]],
 ) -> Dict[ContractName, Dict[str, Dict[str, Any]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
