@@ -21,7 +21,7 @@ class BrownieMiddlewareABC(ABC):
         Subclasses may optionally include this method. It is called only once,
         when the middleware is being added.
         """
-        self.w3: Final = w3
+        self.w3 = w3
 
     @classmethod
     @abstractmethod
