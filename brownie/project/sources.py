@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import textwrap
-from typing import Dict, Final, List, Optional, Tuple, final
+from typing import Dict, Final, List, Optional, Set, Tuple, final
 
 import semantic_version
 from eth_typing import HexStr
@@ -70,7 +70,7 @@ class Sources:
                 + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
             )
 
-    def get(self, key: str) -> str:
+    def get(self, key: ContractName | str) -> str:
         """
         Return the source code file for the given name.
 
