@@ -1850,7 +1850,7 @@ Multicall
 
     Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standard Brownie call API.
 
-    The only syntatic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
+    The only syntactic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
 
     Features:
 
