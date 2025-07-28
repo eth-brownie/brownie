@@ -31,18 +31,16 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
             data["program_counter"] = data.pop("programCounter")
             error["data"] = {data.pop("hash"): data}
 
-        if (
-            method == "eth_call"
-            and "error" in result
-            and result["error"].get("message", "").startswith("VM Exception")
-        ):
-            # "VM Exception while processing transaction: {reason} {message}"
-            msg: str = result["error"]["message"]
-            msg = msg.split(": ", maxsplit=1)[-1]
-            if msg.startswith("revert"):
-                data = {"error": "revert", "reason": error["data"]}
-            else:
-                data = {"error": msg, "reason": None}
-            error["data"] = {"0x": data}
+        if method == "eth_call" and "error" in result:
+            error = result["error"]
+            if error.get("message", "").startswith("VM Exception"):
+                # "VM Exception while processing transaction: {reason} {message}"
+                msg: str = error["message"]
+                msg = msg.split(": ", maxsplit=1)[-1]
+                if msg.startswith("revert"):
+                    data = {"error": "revert", "reason": error["data"]}
+                else:
+                    data = {"error": msg, "reason": None}
+                error["data"] = {"0x": data}
 
         return result
