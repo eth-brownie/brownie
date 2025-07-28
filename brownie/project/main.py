@@ -408,7 +408,7 @@ class Project(_ProjectBase):
         build_path = self._build_path
         for name, abi in abi_json.items():
             with build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
-                json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
+                json_dump(abi, fp, sort_keys=True, indent=2, default=sorted)
             build._add_interface(abi)
 
     def _load_dependency_artifacts(self) -> None:
