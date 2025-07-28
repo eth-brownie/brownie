@@ -21,6 +21,7 @@ from typing import (
 )
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
+from web3.datastructures import AttributeDict
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
@@ -235,7 +236,7 @@ class Chain(metaclass=_Singleton):
         """
         return web3.eth.block_number + 1
 
-    def __getitem__(self, block_number: BlockNumber) -> BlockData:
+    def __getitem__(self, block_number: BlockNumber) -> BlockData | AttributeDict:
         """
         Return information about a block by block number.
 
@@ -255,16 +256,21 @@ class Chain(metaclass=_Singleton):
             raise TypeError("Block height must be given as an integer")
         if block_number < 0:
             block_number = web3.eth.block_number + 1 + block_number
-        block = web3.eth.get_block(block_number)
+        block: BlockData | AttributeDict = web3.eth.get_block(block_number)
         if block["timestamp"] > self._block_gas_time:
             self._block_gas_limit = block["gasLimit"]
             self._block_gas_time = block["timestamp"]
         return block
 
-    def __iter__(self) -> Iterator[BlockData]:
-        return iter(web3.eth.get_block(i) for i in range(web3.eth.block_number + 1))
+    def __iter__(self) -> Iterator[BlockData | AttributeDict]:
+        get_block = web3.eth.get_block
+        for i in range(web3.eth.block_number + 1):
+            block: BlockData | AttributeDict = get_block(i)
+            yield block
 
-    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator[BlockData]:
+    def new_blocks(
+        self, height_buffer: int = 0, poll_interval: int = 5
+    ) -> Iterator[BlockData | AttributeDict]:
         """
         Generator for iterating over new blocks.
 
@@ -284,10 +290,12 @@ class Chain(metaclass=_Singleton):
         last_height = 0
         last_poll = 0.0
 
+        get_block = web3.eth.get_block
+        block: BlockData | AttributeDict
         while True:
             if last_poll + poll_interval < time.time() or last_height != web3.eth.block_number:
                 last_height = web3.eth.block_number
-                block = web3.eth.get_block(last_height - height_buffer)
+                block = get_block(last_height - height_buffer)
                 last_poll = time.time()
 
                 if block != last_block:
@@ -309,15 +317,15 @@ class Chain(metaclass=_Singleton):
     @property
     def block_gas_limit(self) -> Wei:
         if time.time() > self._block_gas_time + 3600:
-            block = web3.eth.get_block("latest")
+            block: BlockData | AttributeDict = web3.eth.get_block("latest")
             self._block_gas_limit = block["gasLimit"]
             self._block_gas_time = block["timestamp"]
         return Wei(self._block_gas_limit)
 
     @property
     def base_fee(self) -> Wei:
-        block = web3.eth.get_block("latest")
-        return Wei(block.baseFeePerGas)
+        block: BlockData | AttributeDict = web3.eth.get_block("latest")
+        return Wei(block["baseFeePerGas"])
 
     @property
     def priority_fee(self) -> Wei:
