@@ -24,10 +24,10 @@ from brownie.utils import color, dark_white
 class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, contract_sources: Dict[str, Dict], interface_sources: Dict[str, Dict]) -> None:
-        self._contract_sources: Final[Dict[str, Dict]] = {}
+    def __init__(self, contract_sources: Dict[str, str], interface_sources: Dict[str, str]) -> None:
+        self._contract_sources: Final[Dict[str, str]] = {}
         self._contracts: Final[Dict[ContractName, Tuple[str, str]]] = {}
-        self._interface_sources: Final[Dict[str, Dict]] = {}
+        self._interface_sources: Final[Dict[str, str]] = {}
         self._interfaces: Final[Dict[ContractName, str]] = {}
 
         contracts: Dict[ContractName, Tuple[str, str]] = {}
