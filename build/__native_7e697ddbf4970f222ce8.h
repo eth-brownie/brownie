@@ -2146,6 +2146,7 @@ struct export_table_7e697ddbf4970f222ce8 {
     char (*CPyDef_middlewares___BrownieMiddlewareABC___uninstall)(PyObject *cpy_r_self);
     PyObject *(*CPyDef_middlewares___get_middlewares)(PyObject *cpy_r_web3, PyObject *cpy_r_network_type);
     char (*CPyDef_middlewares_____top_level__)(void);
+    PyObject **CPyStatic_caching___LONGTERM_CACHE;
     PyTypeObject **CPyType_caching___RequestCachingMiddleware;
     PyObject *(*CPyDef_caching___RequestCachingMiddleware)(PyObject *cpy_r_w3);
     PyTypeObject **CPyType_caching_____mypyc_lambda__0_obj;

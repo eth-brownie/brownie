@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2300];
+extern PyObject *CPyStatics[2299];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1058,6 +1058,7 @@ extern PyObject *CPyPy_middlewares___BrownieMiddlewareABC___uninstall(PyObject *
 extern PyObject *CPyDef_middlewares___get_middlewares(PyObject *cpy_r_web3, PyObject *cpy_r_network_type);
 extern PyObject *CPyPy_middlewares___get_middlewares(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_middlewares_____top_level__(void);
+extern PyObject *CPyStatic_caching___LONGTERM_CACHE;
 extern PyTypeObject *CPyType_caching___RequestCachingMiddleware;
 extern PyObject *CPyDef_caching___RequestCachingMiddleware(PyObject *cpy_r_w3);
 extern PyTypeObject *CPyType_caching_____mypyc_lambda__0_obj;

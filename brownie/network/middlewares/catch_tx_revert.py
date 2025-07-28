@@ -1,10 +1,11 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, final
 
 from web3 import Web3
 
 from brownie.network.middlewares import BrownieMiddlewareABC
 
 
+@final
 class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
     """
     Middleware to handle reverting transactions, bypasses web3 error formatting.

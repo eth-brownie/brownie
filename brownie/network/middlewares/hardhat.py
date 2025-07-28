@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, final
 
 from web3 import Web3
 
@@ -6,6 +6,7 @@ from brownie._c_constants import regex_findall
 from brownie.network.middlewares import BrownieMiddlewareABC
 
 
+@final
 class HardhatMiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
@@ -22,7 +23,8 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
             method in {"eth_call", "eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
         ):
-            message = result["error"]["message"]
+            error: dict = result["error"]
+            message: str = error["message"]
             if message.startswith("Error: VM Exception") or message.startswith(
                 "Error: Transaction reverted"
             ):
@@ -31,9 +33,9 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     # but we still mimick it here for the sake of consistency
                     txid = "0x"
                 else:
-                    txid = result["error"]["data"]["txHash"]
+                    txid = error["data"]["txHash"]
                 data: Dict = {}
-                result["error"]["data"] = {txid: data}
+                error["data"] = {txid: data}
                 message = message.split(": ", maxsplit=1)[-1]
                 if message == "Transaction reverted without a reason":
                     data.update({"error": "revert", "reason": None})

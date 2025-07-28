@@ -2,7 +2,7 @@ import hexbytes
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Final, List, Optional, final
 
 from web3 import Web3
 from web3.types import LogReceipt
@@ -14,19 +14,19 @@ from brownie.utils.sql import Cursor
 
 # calls to the following RPC endpoints are stored in a persistent cache
 # if the returned data evaluates true when passed into the lambda
-LONGTERM_CACHE = {
+LONGTERM_CACHE: Final = {
     "eth_getCode": lambda w3, data: is_cacheable_bytecode(w3, data),
 }
 
 
-def _strip_push_data(bytecode: hexbytes.HexBytes) -> hexbytes.HexBytes:
+def _strip_push_data(bytecode: bytes) -> bytes:
     idx = 0
     while idx < len(bytecode):
         # if instruction is between PUSH1 and PUSH32
         if 0x60 <= bytecode[idx] <= 0x7F:
             offset = idx + 1
             length = bytecode[idx] - 0x5F
-            bytecode = HexBytes(bytecode[:offset] + bytecode[offset + length :])
+            bytecode = bytecode[:offset] + bytecode[offset + length :]
         idx += 1
     return bytecode
 
@@ -54,8 +54,8 @@ def is_cacheable_bytecode(web3: Web3, bytecode: hexbytes.HexBytes) -> bool:
         # do not cache empty code, something might be deployed there later!
         return False
 
-    bytecode = HexBytes(bytecode)
-    opcodes = _strip_push_data(bytecode)
+    bytecode_bytes = bytes(HexBytes(bytecode))
+    opcodes = _strip_push_data(bytecode_bytes)
     if 0xFF in opcodes:
         # cannot cache if the code contains a SELFDESTRUCT instruction
         return False
@@ -63,17 +63,18 @@ def is_cacheable_bytecode(web3: Web3, bytecode: hexbytes.HexBytes) -> bool:
         # cannot cache if the code performs a DELEGATECALL to a not-fixed address
         if idx < 2:
             return False
-        if opcodes[idx - 2 : idx] != HexBytes("0x735A"):
+        if opcodes[idx - 2 : idx] != b"sZ":  # b"sZ" == bytes(HexBytes("0x735A"))
             # if the instruction not is immediately preceded by PUSH20 GAS
             # the target was not hardcoded and we cannot cache
             return False
 
     # check if the target code of each delegatecall is also cachable
     # if yes then we can cache this contract as well
-    push20_indexes = [
-        i for i in range(len(bytecode) - 22) if bytecode[i] == 0x73 and bytecode[i + 22] == 0xF4
-    ]
-    for address in [bytecode[i + 1 : i + 21] for i in push20_indexes]:
+    push20_indexes = (
+        i for i in range(len(bytecode_bytes) - 22)
+        if bytecode_bytes[i] == 0x73 and bytecode_bytes[i + 22] == 0xF4
+    )
+    for address in (bytecode_bytes[i + 1 : i + 21] for i in push20_indexes):
         if not int(address.hex(), 16):
             # if the delegatecall targets 0x00 this is a factory pattern, we can ignore
             continue
@@ -94,20 +95,21 @@ def _new_filter(w3: Web3) -> Any:
         return None
 
 
+@final
 class RequestCachingMiddleware(BrownieMiddlewareABC):
     """
     Web3 middleware for request caching.
     """
 
     def __init__(self, w3: Web3) -> None:
-        self.w3 = w3
+        super().__init__(w3)
 
-        self.table_key = f"chain{CONFIG.active_network['chainid']}"
-        self.cur = Cursor(_get_data_folder().joinpath("cache.db"))
+        self.table_key: Final = f"chain{CONFIG.active_network['chainid']}"
+        self.cur: Final = Cursor(_get_data_folder().joinpath("cache.db"))
         self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
-        self.lock = threading.Lock()
-        self.event = threading.Event()
+        self.lock: Final = threading.Lock()
+        self.event: Final = threading.Event()
         self.start_block_filter_loop()
 
     def start_block_filter_loop(self):
