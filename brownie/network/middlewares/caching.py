@@ -71,7 +71,8 @@ def is_cacheable_bytecode(web3: Web3, bytecode: hexbytes.HexBytes) -> bool:
     # check if the target code of each delegatecall is also cachable
     # if yes then we can cache this contract as well
     push20_indexes = (
-        i for i in range(len(bytecode_bytes) - 22)
+        i
+        for i in range(len(bytecode_bytes) - 22)
         if bytecode_bytes[i] == 0x73 and bytecode_bytes[i + 22] == 0xF4
     )
     for address in (bytecode_bytes[i + 1 : i + 21] for i in push20_indexes):
