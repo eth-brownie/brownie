@@ -1121,6 +1121,18 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
+    PyObject *_self;
+    int32_t ___mypyc_next_label__;
+    PyObject *_get_block;
+    PyObject *___mypyc_temp__0;
+    CPyTagged ___mypyc_temp__1;
+    CPyTagged _i;
+    PyObject *_block;
+} brownie___network___state_____iter___3_Chain_genObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
     vectorcallfunc vectorcall;
 } brownie___network___state___new_blocks_Chain_objObject;
 
@@ -1135,6 +1147,7 @@ typedef struct {
     PyObject *_last_block;
     CPyTagged _last_height;
     double _last_poll;
+    PyObject *_get_block;
     PyObject *_block;
 } brownie___network___state___new_blocks_Chain_genObject;
 
@@ -2238,6 +2251,8 @@ struct export_table_7e697ddbf4970f222ce8 {
     PyObject *(*CPyDef_state_____getitem___3_Chain_obj)(void);
     PyTypeObject **CPyType_state_____iter___3_Chain_obj;
     PyObject *(*CPyDef_state_____iter___3_Chain_obj)(void);
+    PyTypeObject **CPyType_state_____iter___3_Chain_gen;
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen)(void);
     PyTypeObject **CPyType_state___new_blocks_Chain_obj;
     PyObject *(*CPyDef_state___new_blocks_Chain_obj)(void);
     PyTypeObject **CPyType_state___new_blocks_Chain_gen;
@@ -2325,6 +2340,12 @@ struct export_table_7e697ddbf4970f222ce8 {
     PyObject *(*CPyDef_state_____getitem___3_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     PyObject *(*CPyDef_state_____getitem___3_Chain_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_block_number);
     PyObject *(*CPyDef_state_____iter___3_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen_____mypyc_generator_helper__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback, PyObject *cpy_r_arg);
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen_____next__)(PyObject *cpy_r___mypyc_self__);
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen___send)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_arg);
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen_____iter__)(PyObject *cpy_r___mypyc_self__);
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen___throw)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback);
+    PyObject *(*CPyDef_state_____iter___3_Chain_gen___close)(PyObject *cpy_r___mypyc_self__);
     PyObject *(*CPyDef_state_____iter___3_Chain_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
     PyObject *(*CPyDef_state___new_blocks_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     PyObject *(*CPyDef_state___new_blocks_Chain_gen_____mypyc_generator_helper__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback, PyObject *cpy_r_arg);
