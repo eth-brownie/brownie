@@ -42,9 +42,7 @@ def _save_coverage_report(
     return report_path
 
 
-def _load_report_exclude_data(
-    settings: Dict[str, Any]
-) -> Tuple[List[str], List[Any]]:
+def _load_report_exclude_data(settings: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
     exclude_paths: List[str] = []
     if settings["exclude_paths"]:
         exclude = settings["exclude_paths"]
@@ -134,7 +132,9 @@ def _build_coverage_output(coverage_eval: CoverageEval) -> List[str]:
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
 
     projects = get_loaded_projects()
-    all_totals = (_get_totals(project._build, coverage_eval, exclude_contracts) for project in projects)
+    all_totals = (
+        _get_totals(project._build, coverage_eval, exclude_contracts) for project in projects
+    )
     filtered = [(project, total) for project, total in zip(projects, all_totals) if total]
     lines = []
 
@@ -227,8 +227,7 @@ def _split_by_fn(
 ) -> Dict[ContractName, Dict[str, Dict[str, Any]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
     results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
-        i: {"statements": {}, "branches": {"true": {}, "false": {}}}
-        for i in coverage_eval
+        i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval
     }
     for name in coverage_eval:
         try:
