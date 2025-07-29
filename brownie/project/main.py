@@ -240,7 +240,7 @@ class Project(_ProjectBase):
         interface_sources = _load_sources(project_path, structure["interfaces"], True)
         sources = Sources(contract_sources, interface_sources)
         self._sources = sources
-        
+
         build = Build(self._sources)
         self._build = build
 
