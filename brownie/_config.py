@@ -67,7 +67,7 @@ class ConfigContainer:
             if "chainid" in settings:
                 settings["chainid"] = str(settings["chainid"])
 
-        self.argv: Final[DefaultDict[str, Optional[str]]] = defaultdict(_None_factory)
+        self.argv: Final[DefaultDict[str, Any]] = defaultdict(_None_factory)
         self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
         self._active_network: Optional[NetworkConfig] = None
 
