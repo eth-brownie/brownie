@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import copy
 import json
 import os
 import pathlib
@@ -15,14 +14,14 @@ from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
-from brownie._c_constants import Path, defaultdict, json_loads, regex_sub
+from brownie._c_constants import Path, deepcopy, defaultdict, json_loads, regex_sub
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
 __version__: Final = "1.22.0"
 
-BROWNIE_FOLDER: Final = Path(str(resources.files("brownie").joinpath("_config.py")))
-DATA_FOLDER: Final = Path(os.path.expanduser('~')).joinpath(".brownie")
+BROWNIE_FOLDER: Final = Path(os.fspath(resources.files("brownie")))
+DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = ("accounts", "packages")
 
@@ -80,7 +79,7 @@ class ConfigContainer:
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = NetworkConfig(copy.deepcopy(self.networks[id_]))  # type: ignore [index]
+        network = NetworkConfig(deepcopy(self.networks[id_]))  # type: ignore [index]
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
