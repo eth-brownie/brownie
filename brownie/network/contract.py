@@ -100,6 +100,7 @@ if TYPE_CHECKING:
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
 
 FunctionName = NewType("FunctionName", str)
+Selector = NewType("Selector", HexStr)
 
 _unverified_addresses: Final[Set[ChecksumAddress]] = set()
 
@@ -119,13 +120,13 @@ class _ContractBase:
 
         abi = self.abi
         self.topics: Final = _get_topics(abi)
-        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
             build_function_selector(i): FunctionName(i["name"])
             for i in abi
             if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures: Final[Dict[FunctionName, HexStr]] = {
+        self.signatures: Final[Dict[FunctionName, Selector]] = {
             v: k for k, v in self.selectors.items()
         }
         parse_errors_from_abi(abi)
@@ -657,7 +658,7 @@ class InterfaceConstructor:
     def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
         self._name: Final = name
         self.abi: Final = abi
-        self.selectors: Final[Dict[HexStr, FunctionName]] = {
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
             build_function_selector(i): FunctionName(i["name"])
             for i in abi
             if i["type"] == "function"
