@@ -116,17 +116,19 @@ class _ContractBase:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
-        self.topics: Final = _get_topics(self.abi)
+        
+        abi = self.abi
+        self.topics: Final = _get_topics(abi)
         self.selectors: Final[Dict[HexStr, FunctionName]] = {
             build_function_selector(i): FunctionName(i["name"])
-            for i in self.abi
+            for i in abi
             if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
         self.signatures: Final[Dict[FunctionName, HexStr]] = {
             v: k for k, v in self.selectors.items()
         }
-        parse_errors_from_abi(self.abi)
+        parse_errors_from_abi(abi)
 
     @property
     def abi(self) -> List[ABIElement]:
@@ -525,9 +527,10 @@ class ContractConstructor:
         self._parent: Final = parent
         try:
             abi = next(i for i in parent.abi if i["type"] == "constructor")
-            abi["name"] = "constructor"
         except Exception:
             abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
+        else:
+            abi["name"] = "constructor"
         self.abi: Final = abi
         self._name: Final = name
 
@@ -656,7 +659,7 @@ class InterfaceConstructor:
         self.abi: Final = abi
         self.selectors: Final[Dict[HexStr, FunctionName]] = {
             build_function_selector(i): FunctionName(i["name"])
-            for i in self.abi
+            for i in abi
             if i["type"] == "function"
         }
 
@@ -2095,15 +2098,15 @@ def _contract_method_autosuggest(
     args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
 ) -> List[str]:
     types_list = get_type_strings(args, _fixed168x10)
-    params = zip([i["name"] for i in args], types_list)
-
-    suggestions = (f" {i[1]}{f' {i[0]}' if i[0] else ''}" for i in params)
+    names = (i["name"] for i in args)
+    suggestions = [f" {typ}{f' {name}' if name else ''}" for name, typ in zip(names, types_list)]
     if not is_transaction:
-        return list(suggestions)
-    elif is_payable:
-        return [*suggestions, " {'from': Account", " 'value': Wei}"]
+        return suggestions
+    if is_payable:
+        suggestions.append(" {'from': Account", " 'value': Wei}")
     else:
-        return [*suggestions, " {'from': Account}"]
+        suggestions.append(" {'from': Account}")
+    return suggestions
 
 
 def _comment_slicer(match: Match) -> str:
