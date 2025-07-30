@@ -6,6 +6,7 @@ import pathlib
 import shutil
 import sys
 import warnings
+from importlib import resources
 from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional, final
 
 import yaml
@@ -20,7 +21,7 @@ from brownie._singleton import _Singleton
 
 __version__: Final = "1.22.0"
 
-BROWNIE_FOLDER: Final = Path(__file__).parent
+BROWNIE_FOLDER: Final = Path(str(resources.files("brownie")))
 DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = ("accounts", "packages")
