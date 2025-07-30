@@ -19,7 +19,14 @@ from brownie.project.compiler.utils import (
     _get_alias,
     expand_source_map,
 )
-from brownie.typing import InputJsonSolc, Offset, SolidityBuildJson, Source
+from brownie.typing import (
+    BytecodeJson,
+    DeployedBytecodeJson,
+    InputJsonSolc,
+    Offset,
+    SolidityBuildJson,
+    Source,
+)
 
 from . import sources
 
@@ -78,7 +85,7 @@ def compile_from_input_json(
 
     if not silent:
         print(f"Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
-        
+
         optimizer = settings["optimizer"]
         opt = f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
         print(f"  Optimizer: {opt}")
@@ -270,7 +277,7 @@ def _get_unique_build_json(
     }
 
     bytecode = _format_link_references(output_evm)
-    bytecode_json: dict = output_evm["deployedBytecode"]
+    bytecode_json: DeployedBytecodeJson = output_evm["deployedBytecode"]
 
     without_metadata = _remove_metadata(bytecode_json["object"])
     instruction_count = len(without_metadata) // 2
@@ -311,12 +318,12 @@ def _get_unique_build_json(
 
 def _format_link_references(evm: Dict) -> HexStr:
     # Standardizes formatting for unlinked libraries within bytecode
-    bytecode_dct: dict = evm["bytecode"]
-    bytecode = bytecode_dct["object"]
-    link_refs: Dict[str, dict] = bytecode_dct.get("linkReferences", {})
+    bytecode_json: BytecodeJson = evm["bytecode"]
+    bytecode = bytecode_json["object"]
+    link_refs: Dict[str, dict] = bytecode_json.get("linkReferences", {})
     references = ((k, x) for v in link_refs.values() for k, x in v.items())
     for n, loc in ((i[0], x["start"] * 2) for i in references for x in i[1]):
-        bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
+        bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"  # type: ignore [assignment]
     return bytecode
 
 

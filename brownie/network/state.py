@@ -291,11 +291,10 @@ class Chain(metaclass=_Singleton):
         last_poll = 0.0
 
         get_block = web3.eth.get_block
-        block: BlockData | AttributeDict
         while True:
             if last_poll + poll_interval < time.time() or last_height != web3.eth.block_number:
                 last_height = web3.eth.block_number
-                block = get_block(last_height - height_buffer)
+                block: BlockData | AttributeDict = get_block(last_height - height_buffer)
                 last_poll = time.time()
 
                 if block != last_block:
