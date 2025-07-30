@@ -67,19 +67,19 @@ class ConfigContainer:
             if "chainid" in settings:
                 settings["chainid"] = str(settings["chainid"])
 
-        self.argv: DefaultDict[str, Optional[str]] = defaultdict(__None_factory)
+        self.argv: Final[DefaultDict[str, Optional[str]]] = defaultdict(__None_factory)
         self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
-        self._active_network = None
+        self._active_network: Optional[NetworkConfig] = None
 
         self.settings._lock()
         _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
 
-    def set_active_network(self, id_: str = None) -> NetworkConfig:
+    def set_active_network(self, id_: Optional[str] = None) -> NetworkConfig:
         """Modifies the 'active_network' configuration settings"""
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = NetworkConfig(copy.deepcopy(self.networks[id_]))
+        network = NetworkConfig(copy.deepcopy(self.networks[id_]))  # type: ignore [index]
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
@@ -120,7 +120,7 @@ class ConfigContainer:
         return "development" if "cmd" in self._active_network else "live"
 
     @property
-    def mode(self):
+    def mode(self) -> Optional[str]:
         return self.argv["cli"]
 
 
@@ -145,7 +145,7 @@ class ConfigDict(Dict[str, Any]):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg: Dict[str, Any]) -> None:
+    def update(self, arg: Dict[str, Any]) -> None:  # type: ignore [override]
         for k, v in arg.items():
             self.__setitem__(k, v)
 
@@ -297,7 +297,7 @@ def _load_project_dependencies(project_path: pathlib.Path) -> List[str]:
 def _modify_hypothesis_settings(settings, name, parent=None):
     settings = settings.copy()
     if parent is None:
-        parent = hp_settings._current_profile
+        parent = hp_settings._current_profile  # type: ignore [attr-defined]
 
     if "phases" in settings:
         try:
@@ -308,7 +308,7 @@ def _modify_hypothesis_settings(settings, name, parent=None):
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),
-        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),  # type: ignore [arg-type]
         **settings,
     )
     hp_settings.load_profile(name)
