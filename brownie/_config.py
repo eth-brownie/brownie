@@ -349,6 +349,7 @@ def _make_data_folders(data_folder: pathlib.Path) -> None:
 def _None_factory() -> None:
     return None
 
+
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 
 # create data folders
