@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import warnings
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from brownie import project
 from brownie._config import CONFIG
@@ -14,8 +14,8 @@ from .rpc import Rpc
 from .state import Chain, _notify_registry
 from .web3 import web3
 
-chain = Chain()
-rpc = Rpc()
+chain: Final = Chain()
+rpc: Final = Rpc()
 
 
 def connect(network: Optional[str] = None, launch_rpc: bool = True) -> None:
