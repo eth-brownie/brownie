@@ -6,7 +6,6 @@ import pathlib
 import shutil
 import sys
 import warnings
-from itertools import groupby
 from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional
 
 import yaml
@@ -40,6 +39,7 @@ NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
 # TODO: Make this a typed dict
 
 
+@final
 class ConfigContainer:
     def __init__(self) -> None:
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
@@ -67,8 +67,8 @@ class ConfigContainer:
             if "chainid" in settings:
                 settings["chainid"] = str(settings["chainid"])
 
-        self.argv: DefaultDict[str, Optional[str]] = defaultdict(lambda: None)
-        self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
+        self.argv: DefaultDict[str, Optional[str]] = defaultdict(__None_factory)
+        self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
         self._active_network = None
 
         self.settings._lock()
@@ -124,6 +124,12 @@ class ConfigContainer:
         return self.argv["cli"]
 
 
+@final
+class Config(ConfigContainer, metaclass=_Singleton):
+    pass
+
+
+@final
 class ConfigDict(Dict[str, Any]):
     """Dict subclass that prevents adding new keys when locked"""
 
@@ -145,18 +151,16 @@ class ConfigDict(Dict[str, Any]):
 
     def _lock(self) -> None:
         """Locks the dict so that new keys cannot be added"""
-        for obj_type, objs in groupby(self.values(), type):
-            if obj_type is ConfigDict:
-                for v in objs:
-                    v._lock()
+        for obj in self.values():
+            if type(obj) is ConfigDict:
+                obj._lock()
         self._locked = True
 
     def _unlock(self) -> None:
         """Unlocks the dict so that new keys can be added"""
-        for obj_type, objs in groupby(self.values(), type):
-            if obj_type is ConfigDict:
-                for v in objs:
-                    v._unlock()
+        for obj in self.values():
+            if type(obj) is ConfigDict:
+                obj._unlock()
         self._locked = False
 
     def _copy(self) -> Dict[str, Any]:
@@ -235,11 +239,12 @@ def _load_project_config(project_path: pathlib.Path) -> None:
                 else:
                     CONFIG.networks[network]["cmd_settings"] = values["cmd_settings"]
 
-    CONFIG.settings._unlock()
-    _recursive_update(CONFIG.settings, config_data)
-    _recursive_update(CONFIG.settings, expand_posix_vars(CONFIG.settings, config_vars))
+    settings = CONFIG.settings
+    settings._unlock()
+    _recursive_update(settings, config_data)
+    _recursive_update(settings, expand_posix_vars(settings, config_vars))
 
-    CONFIG.settings._lock()
+    settings._lock()
     if "hypothesis" in config_data:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
 
@@ -257,8 +262,9 @@ def _load_project_compiler_config(project_path: Optional[pathlib.Path]) -> Dict:
 
 def _load_project_envvars(project_path: pathlib.Path) -> Dict:
     config_vars = dict(os.environ)
-    if CONFIG.settings.get("dotenv"):
-        dotenv_path = CONFIG.settings["dotenv"]
+    settings = CONFIG.settings
+    if settings.get("dotenv"):
+        dotenv_path = settings["dotenv"]
         if not isinstance(dotenv_path, str):
             raise ValueError(f"Invalid value passed to dotenv: {dotenv_path}")
         env_path = project_path.joinpath(dotenv_path)
@@ -346,9 +352,8 @@ def _make_data_folders(data_folder: pathlib.Path) -> None:
         )
 
 
-class Config(ConfigContainer, metaclass=_Singleton):
-    pass
-
+def __None_factory() -> None:
+    return None
 
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 
