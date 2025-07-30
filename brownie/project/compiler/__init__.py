@@ -520,9 +520,9 @@ def get_abi(
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
-        output_sources: dict = output_json["sources"]
         source_nodes = _from_standard_output(output_json)
         abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        output_sources: dict = output_json["sources"]
 
         for path, path_data in abi_json.items():
             path_source: str = contract_sources[path]
