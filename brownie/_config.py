@@ -20,7 +20,7 @@ from brownie._singleton import _Singleton
 
 __version__: Final = "1.22.0"
 
-BROWNIE_FOLDER: Final = Path(sys.modules["brownie"].__file__)  # type: ignore [arg-type]
+BROWNIE_FOLDER: Final = Path(sys.modules["brownie"].__file__).parent  # type: ignore [arg-type]
 DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = "accounts", "packages"
