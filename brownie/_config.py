@@ -6,7 +6,7 @@ import pathlib
 import shutil
 import sys
 import warnings
-from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional
+from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional, final
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
