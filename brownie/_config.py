@@ -125,11 +125,6 @@ class ConfigContainer:
 
 
 @final
-class Config(ConfigContainer, metaclass=_Singleton):
-    pass
-
-
-@final
 class ConfigDict(Dict[str, Any]):
     """Dict subclass that prevents adding new keys when locked"""
 
@@ -360,4 +355,4 @@ warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG: Final = Config()
+CONFIG: Final[ConfigContainer] = _Singleton("Config", (ConfigContainer,), {})()
