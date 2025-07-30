@@ -232,11 +232,15 @@ def _to_fixed(value: Any) -> decimal.Decimal:
 class EthAddress(str):
     """String subclass that raises TypeError when compared to a non-address."""
 
-    def __new__(cls, value: Union[bytes, str]) -> Self:
-        converted_value = value
-        if isinstance(value, bytes):
+    def __new__(cls, value: Any) -> Self:
+        converted_value: HexStr
+        if isinstance(value, str):
+            converted_value = value  # type: ignore [assignment]
+        elif isinstance(value, bytes):
             converted_value = bytes_to_hexstring(value)
-        converted_value = add_0x_prefix(str(converted_value))  # type: ignore [arg-type]
+        else:
+            converted_value = str(value)  # type: ignore [assignment]
+        converted_value = add_0x_prefix(converted_value)
         try:
             converted_value = to_checksum_address(converted_value)
         except ValueError:
