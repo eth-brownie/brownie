@@ -2,7 +2,8 @@
 requires = [
     "setuptools", 
     "wheel", 
-    "mypy[mypyc]==1.17.0",
+    # "mypy[mypyc]==1.17.0",
+    "mypy[mypyc] @ git+https://github.com/BobTheBuidler/mypy@patch-4",
     "types-pyyaml",
     "types-requests",
 ]
