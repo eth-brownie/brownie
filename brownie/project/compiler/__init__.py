@@ -509,14 +509,14 @@ def get_abi(
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         source_nodes = _from_standard_output(output_json)
-        abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
-        for path, contracts in abi_json.items():
-            for name, data in contracts.items():
+        for path, path_data in abi_json.items():
+            for name, data in path_data.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
                 for node in contract_node.dependencies:
-                    if node.nodeType == "ContractDefinition":
+                    if i.nodeType == "ContractDefinition":
                         dependency_name = node.name
                         path_str = node.parent().absolutePath
                         dependencies.append(_get_alias(dependency_name, path_str))
