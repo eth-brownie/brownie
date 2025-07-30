@@ -343,8 +343,7 @@ class ReturnValue(tuple):
         for i, value in enumerate(values):
             if isinstance(value, (tuple, list)) and not isinstance(value, ReturnValue):
                 if abi is not None and "components" in (value_abi := abi[i]):
-                    value_type: str = value_abi["type"]
-                    if value_type == "tuple":
+                    if value_abi["type"] == "tuple":
                         # tuple
                         values[i] = ReturnValue(value, value_abi["components"])
                     else:
