@@ -38,8 +38,7 @@ NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
 # TODO: Make this a typed dict
 
 
-@final
-class ConfigContainer:
+class Config(metaclass=_Singleton):
     def __init__(self) -> None:
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
         if Path.home().joinpath("brownie-config.yaml").exists():
@@ -55,11 +54,13 @@ class ConfigContainer:
             if key in networks:
                 raise ValueError(f"Multiple networks using ID '{key}'")
             networks[key] = value
-        for value in [x for i in network_config["live"] for x in i["networks"]]:
-            key = value["id"]
-            if key in networks:
-                raise ValueError(f"Multiple networks using ID '{key}'")
-            networks[key] = value
+        
+        for chain in network_config["live"]:
+            for network in chain:
+                key = network["id"]
+                if key in networks:
+                    raise ValueError(f"Multiple networks using ID '{key}'")
+                networks[key] = value
 
         # make sure chainids are always strings
         for settings in networks.values():
@@ -67,7 +68,7 @@ class ConfigContainer:
                 settings["chainid"] = str(settings["chainid"])
 
         self.argv: Final[DefaultDict[str, Any]] = defaultdict(_None_factory)
-        self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
+        self.settings: Final[ConfigDict] = _Singleton("settings", (ConfigDict,), {})(base_config)
         self._active_network: Optional[NetworkConfig] = None
 
         self.settings._lock()
@@ -123,8 +124,7 @@ class ConfigContainer:
         return self.argv["cli"]
 
 
-@final
-class ConfigDict(Dict[str, Any]):
+class ConfigDict(Dict[str, Any], metaclass=_Singleton):
     """Dict subclass that prevents adding new keys when locked"""
 
     def __init__(self, values: Dict[str, Any] = {}) -> None:
@@ -354,4 +354,4 @@ warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG: Final[ConfigContainer] = _Singleton("Config", (ConfigContainer,), {})()
+CONFIG: Final = Config()
