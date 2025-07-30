@@ -2101,12 +2101,11 @@ def _contract_method_autosuggest(
     types_list = get_type_strings(args, _fixed168x10)
     names = (i["name"] for i in args)
     suggestions = [f" {typ}{f' {name}' if name else ''}" for name, typ in zip(names, types_list)]
-    if not is_transaction:
-        return suggestions
-    if is_payable:
-        suggestions.append(" {'from': Account", " 'value': Wei}")
-    else:
-        suggestions.append(" {'from': Account}")
+    if is_transaction:
+        if is_payable:
+            suggestions.append(" {'from': Account", " 'value': Wei}")
+        else:
+            suggestions.append(" {'from': Account}")
     return suggestions
 
 
