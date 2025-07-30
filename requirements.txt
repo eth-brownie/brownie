@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.14
+aiohttp==3.12.15
     # via web3
 aiosignal==1.4.0
     # via aiohttp
@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.5.2
+bitarray==3.6.0
     # via eth-account
 black==25.1.0
     # via -r requirements.in
@@ -205,7 +205,7 @@ referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2024.11.6
+regex==2025.7.29
     # via parsimonious
 requests==2.32.4
     # via
