@@ -21,7 +21,7 @@ from brownie._singleton import _Singleton
 
 __version__: Final = "1.22.0"
 
-BROWNIE_FOLDER: Final = Path(str(resources.files("brownie")))
+BROWNIE_FOLDER: Final = Path(str(resources.files("brownie").joinpath("_config.py")))
 DATA_FOLDER: Final = Path(os.path.expanduser('~')).joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = ("accounts", "packages")
