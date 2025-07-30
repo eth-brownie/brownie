@@ -1,13 +1,11 @@
 #!/usr/bin/python3
-import copy
 import json
 import os
 import pathlib
 import shutil
 import sys
 import warnings
-from itertools import groupby
-from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional
+from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional, final
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -15,16 +13,16 @@ from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 
-from brownie._c_constants import Path, defaultdict, json_loads, regex_sub
+from brownie._c_constants import Path, deepcopy, defaultdict, json_loads, regex_sub
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
 __version__: Final = "1.22.0"
 
-BROWNIE_FOLDER: Final = Path(__file__).parent
+BROWNIE_FOLDER: Final = Path(sys.modules["brownie"].__file__).parent  # type: ignore [arg-type]
 DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
-DATA_SUBFOLDERS: Final = ("accounts", "packages")
+DATA_SUBFOLDERS: Final = "accounts", "packages"
 
 EVM_EQUIVALENTS: Final = {"atlantis": "byzantium", "agharta": "petersburg"}
 
@@ -40,6 +38,7 @@ NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
 # TODO: Make this a typed dict
 
 
+@final
 class ConfigContainer:
     def __init__(self) -> None:
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
@@ -67,19 +66,19 @@ class ConfigContainer:
             if "chainid" in settings:
                 settings["chainid"] = str(settings["chainid"])
 
-        self.argv: DefaultDict[str, Optional[str]] = defaultdict(lambda: None)
-        self.settings = _Singleton("settings", (ConfigDict,), {})(base_config)
-        self._active_network = None
+        self.argv: Final[DefaultDict[str, Any]] = defaultdict(_None_factory)
+        self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
+        self._active_network: Optional[NetworkConfig] = None
 
         self.settings._lock()
         _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
 
-    def set_active_network(self, id_: str = None) -> NetworkConfig:
+    def set_active_network(self, id_: Optional[str] = None) -> NetworkConfig:
         """Modifies the 'active_network' configuration settings"""
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = NetworkConfig(copy.deepcopy(self.networks[id_]))
+        network = NetworkConfig(deepcopy(self.networks[id_]))  # type: ignore [index]
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
@@ -120,10 +119,11 @@ class ConfigContainer:
         return "development" if "cmd" in self._active_network else "live"
 
     @property
-    def mode(self):
+    def mode(self) -> Optional[str]:
         return self.argv["cli"]
 
 
+@final
 class ConfigDict(Dict[str, Any]):
     """Dict subclass that prevents adding new keys when locked"""
 
@@ -139,24 +139,22 @@ class ConfigDict(Dict[str, Any]):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg: Dict[str, Any]) -> None:
+    def update(self, arg: Dict[str, Any]) -> None:  # type: ignore [override]
         for k, v in arg.items():
             self.__setitem__(k, v)
 
     def _lock(self) -> None:
         """Locks the dict so that new keys cannot be added"""
-        for obj_type, objs in groupby(self.values(), type):
-            if obj_type is ConfigDict:
-                for v in objs:
-                    v._lock()
+        for obj in self.values():
+            if type(obj) is ConfigDict:
+                obj._lock()
         self._locked = True
 
     def _unlock(self) -> None:
         """Unlocks the dict so that new keys can be added"""
-        for obj_type, objs in groupby(self.values(), type):
-            if obj_type is ConfigDict:
-                for v in objs:
-                    v._unlock()
+        for obj in self.values():
+            if type(obj) is ConfigDict:
+                obj._unlock()
         self._locked = False
 
     def _copy(self) -> Dict[str, Any]:
@@ -235,11 +233,12 @@ def _load_project_config(project_path: pathlib.Path) -> None:
                 else:
                     CONFIG.networks[network]["cmd_settings"] = values["cmd_settings"]
 
-    CONFIG.settings._unlock()
-    _recursive_update(CONFIG.settings, config_data)
-    _recursive_update(CONFIG.settings, expand_posix_vars(CONFIG.settings, config_vars))
+    settings = CONFIG.settings
+    settings._unlock()
+    _recursive_update(settings, config_data)
+    _recursive_update(settings, expand_posix_vars(settings, config_vars))
 
-    CONFIG.settings._lock()
+    settings._lock()
     if "hypothesis" in config_data:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
 
@@ -257,8 +256,9 @@ def _load_project_compiler_config(project_path: Optional[pathlib.Path]) -> Dict:
 
 def _load_project_envvars(project_path: pathlib.Path) -> Dict:
     config_vars = dict(os.environ)
-    if CONFIG.settings.get("dotenv"):
-        dotenv_path = CONFIG.settings["dotenv"]
+    settings = CONFIG.settings
+    if settings.get("dotenv"):
+        dotenv_path = settings["dotenv"]
         if not isinstance(dotenv_path, str):
             raise ValueError(f"Invalid value passed to dotenv: {dotenv_path}")
         env_path = project_path.joinpath(dotenv_path)
@@ -291,7 +291,7 @@ def _load_project_dependencies(project_path: pathlib.Path) -> List[str]:
 def _modify_hypothesis_settings(settings, name, parent=None):
     settings = settings.copy()
     if parent is None:
-        parent = hp_settings._current_profile
+        parent = hp_settings._current_profile  # type: ignore [attr-defined]
 
     if "phases" in settings:
         try:
@@ -302,7 +302,7 @@ def _modify_hypothesis_settings(settings, name, parent=None):
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),
-        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),
+        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),  # type: ignore [arg-type]
         **settings,
     )
     hp_settings.load_profile(name)
@@ -345,6 +345,9 @@ def _make_data_folders(data_folder: pathlib.Path) -> None:
             data_folder.joinpath("providers-config.yaml"),
         )
 
+
+def _None_factory() -> None:
+    return None
 
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 
