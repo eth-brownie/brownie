@@ -358,17 +358,22 @@ def generate_build_json(
                     branch_nodes,
                     next((True for i in abi if i["type"] == "fallback"), False),
                 )
+                output_evm: dict = ["evm"]
+                deployed_bytecode: dict = output_evm["deployedBytecode"]
+                if contract_alias in build_json and not deployedBytecode["object"]:
+                    continue
 
-            else:
-                if contract_name == "<stdin>":
-                    contract_name = contract_alias = "Vyper"
-                build_json[contract_alias] = vyper._get_unique_build_json(
-                    output_evm,
-                    path_str,
-                    contract_alias,
-                    sources[path_str]["ast"],
-                    (0, len(source)),
-                )
+                if language == "Solidity":
+                    contract_node = next(
+                        i[contract_name] for i in source_nodes if i.absolutePath == path_str
+                    )
+                    build_json[contract_alias] = solidity._get_unique_build_json(
+                        output_evm,
+                        contract_node,
+                        statement_nodes,
+                        branch_nodes,
+                        next((True for i in abi if i["type"] == "fallback"), False),
+                    )
 
             build_json[contract_alias].update(
                 {
@@ -387,18 +392,24 @@ def generate_build_json(
                     "sourcePath": path_str,
                 }
             )
-            size = len(deployedBytecode["object"].removeprefix("0x")) / 2  # type: ignore
+            size = len(deployed_bytecode["object"].removeprefix("0x")) / 2  # type: ignore
             if size > 24577:
                 notify(
                     "WARNING",
                     f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
                 )
-                size = len(bytecode.removeprefix("0x")) / 2
+                size = len(deployedBytecode["object"].removeprefix("0x")) / 2  # type: ignore
                 if size > 24577:
                     notify(
                         "WARNING",
                         f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
                     )
+                    size = len(bytecode.removeprefix("0x")) / 2
+                    if size > 24577:
+                        notify(
+                            "WARNING",
+                            f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
+                        )
 
     if not silent:
         print("")
