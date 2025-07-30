@@ -4,11 +4,11 @@ PyMODINIT_FUNC
 PyInit_network(void)
 {
     PyObject *tmp;
-    if (!(tmp = PyImport_ImportModule("7e697ddbf4970f222ce8__mypyc"))) return NULL;
+    if (!(tmp = PyImport_ImportModule("b231d8a45f8022bf8159__mypyc"))) return NULL;
     PyObject *capsule = PyObject_GetAttrString(tmp, "init_brownie___network");
     Py_DECREF(tmp);
     if (capsule == NULL) return NULL;
-    void *init_func = PyCapsule_GetPointer(capsule, "7e697ddbf4970f222ce8__mypyc.init_brownie___network");
+    void *init_func = PyCapsule_GetPointer(capsule, "b231d8a45f8022bf8159__mypyc.init_brownie___network");
     Py_DECREF(capsule);
     if (!init_func) {
         return NULL;
