@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from tying import Final
+from typing import Final
 
 OUTCOMES: Final = (
     (".", "passed"),
