@@ -24,6 +24,7 @@ from brownie.typing import (
     ContractName,
     EvmVersion,
     InputJson,
+    InputJsonSolc,
     InterfaceBuildJson,
     Language,
     OptimizerSettings,
@@ -33,7 +34,7 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Final[InputJson] = {
+STANDARD_JSON: Final[InputJsonSolc] = {
     "language": None,
     "sources": {},
     "settings": {
