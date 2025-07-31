@@ -20,6 +20,7 @@ from brownie.typing import (
     InterfaceBuildJson,
     Language,
     Offset,
+    ProgramCounter,
 )
 
 from .sources import Sources, highlight_source
@@ -81,7 +82,7 @@ class Build:
             # no pcMap means build artifact is for an interface
             return
 
-        pc_map: Dict[int | str, Dict[str, Any]] = build_json["pcMap"] # type: ignore [assignment]
+        pc_map: Dict[int | str, ProgramCounter] = build_json["pcMap"]  # type: ignore [assignment]
         if "0" in pc_map:
             build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
         self._generate_revert_map(pc_map, build_json["allSourcePaths"], build_json["language"])
