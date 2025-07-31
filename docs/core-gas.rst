@@ -115,7 +115,7 @@ Available Gas Strategies
 
 .. py:class:: brownie.network.gas.strategies.GasNowStrategy(speed="fast")
 
-    Simple gas strategy for determing a price using the `GasNow <https://www.gasnow.org/>`_ API.
+    Simple gas strategy for determining a price using the `GasNow <https://www.gasnow.org/>`_ API.
 
     * ``speed``: The gas price to use based on the API call. Options are rapid, fast, standard and slow.
 
