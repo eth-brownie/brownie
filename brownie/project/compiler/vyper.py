@@ -91,7 +91,7 @@ class SourceJson(TypedDict):
 
 
 Sources = Dict[ContractName, SourceJson]
-    
+
 
 def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
     """
@@ -322,9 +322,11 @@ def _get_unique_build_json(
 
 class AstObject(TypedDict):
     """A dictionary representing on object on the AST."""
+
     name: str
     module: str
     type: str
+
 
 AstJson = List[AstObject]
 
@@ -392,11 +394,7 @@ def _generate_coverage_data(
 
         # set source offset (-1 means none)
         if source[0] == -1:
-            if (
-                len(pc_list) > 6
-                and pc_list[-7]["op"] == "CALLVALUE"
-                and op == "REVERT"
-            ) or (
+            if (len(pc_list) > 6 and pc_list[-7]["op"] == "CALLVALUE" and op == "REVERT") or (
                 len(pc_list) > 2
                 and pc_list[-3]["op"] == "CALLVALUE"
                 and _is_revert_jump(pc_list[-2:], revert_pc)

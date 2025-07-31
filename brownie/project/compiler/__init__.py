@@ -102,7 +102,9 @@ def compile_and_format(
     build_json: Dict[ContractName, ContractBuildJson] = {}
     compiler_targets = {}
 
-    vyper_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".vy"}
+    vyper_sources = {
+        key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".vy"
+    }
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
         if vyper_version is None:
@@ -111,8 +113,10 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-    
-    solc_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"}
+
+    solc_sources = {
+        key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"
+    }
     if solc_sources:
         if solc_version is None:
             compiler_targets.update(
@@ -135,7 +139,11 @@ def compile_and_format(
             set_vyper_version(version)
             language = "Vyper"
             compiler_data = {"version": str(vyper.get_version())}  # type: ignore [typeddict-item]
-            interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
+            interfaces = {
+                key: interface_sources[key]
+                for key in interface_sources
+                if Path(key).suffix != ".sol"
+            }
         else:
             set_solc_version(version)
             language = "Solidity"
@@ -143,7 +151,8 @@ def compile_and_format(
             interfaces = {
                 k: v
                 for k in interface_sources
-                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
+                if Path(k).suffix == ".sol"
+                and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
             }
 
         to_compile = {key: contract_sources[key] for key in contract_sources if key in path_list}
