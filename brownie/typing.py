@@ -190,6 +190,7 @@ class _InputJsonBase(TypedDict):
 class InputJsonSolc(_InputJsonBase, total=False):
     language: Literal["Solidity", None]
     settings: SettingsSolc
+    interfaces: str
 
 
 @final
