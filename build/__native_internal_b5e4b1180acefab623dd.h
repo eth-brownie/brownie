@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2415];
+extern PyObject *CPyStatics[2416];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -2121,6 +2121,7 @@ extern PyTypeObject *CPyType_typing___SettingsVyper;
 extern PyTypeObject *CPyType_typing____InputJsonBase;
 extern PyTypeObject *CPyType_typing___InputJsonSolc;
 extern PyTypeObject *CPyType_typing___InputJsonVyper;
+extern PyTypeObject *CPyType_typing___VyperAstNode;
 extern char CPyDef_typing_____top_level__(void);
 extern PyObject *CPyStatic_brownie___utils___color;
 extern PyObject *CPyStatic_brownie___utils___bytes_to_hexstring;
