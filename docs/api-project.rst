@@ -127,7 +127,7 @@ Module Methods
     * ``project_path``: Path to the project. If ``None``, attempts to find one using ``check_for_project('.')``.
     * ``name``: Name to assign to the project. If None, the name is generated from the name of the project folder.
 
-    Returns a :func:`Project <brownie.project.main.Project>` object. The same object is also available from within the ``project`` module namespce.
+    Returns a :func:`Project <brownie.project.main.Project>` object. The same object is also available from within the ``project`` module namespace.
 
     .. code-block:: python
 
