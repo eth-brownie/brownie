@@ -387,7 +387,7 @@ def _generate_coverage_data(
     while source_map:
         # format of source_map is [start, stop, contract_id, jump code]
         source = source_map.popleft()
-        this: ProgramCounter = {"op": opcodes.popleft(), "pc": pc}
+        this: ProgramCounter = {"op": opcodes.popleft(), "pc": pc}  # type: ignore [typeddict-item]
         pc_list.append(this)
 
         if (
