@@ -117,7 +117,7 @@ class Build:
                             data["dev"] = revert_str
                     except (KeyError, ValueError):
                         pass
-    
+
                 msg = "" if data["op"] == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
