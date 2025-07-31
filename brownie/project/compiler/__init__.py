@@ -53,8 +53,8 @@ EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
 
 # C constants
 _from_standard_output: Final = solcast.from_standard_output
-
-
+    
+    
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
@@ -100,7 +100,7 @@ def compile_and_format(
     build_json: Dict[ContractName, ContractBuildJson] = {}
     compiler_targets = {}
 
-    vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
+    vyper_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".vy"}
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
         if vyper_version is None:
@@ -109,7 +109,8 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
+    
+    solc_sources = {key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"}
     if solc_sources:
         if solc_version is None:
             compiler_targets.update(
@@ -131,12 +132,12 @@ def compile_and_format(
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
-            compiler_data["version"] = str(vyper.get_version())
+            compiler_data = {"version": str(vyper.get_version())}
             interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data["version"] = str(solidity.get_version())
+            compiler_data = {"version": str(solidity.get_version())}
             interfaces = {
                 k: v
                 for k in interface_sources
