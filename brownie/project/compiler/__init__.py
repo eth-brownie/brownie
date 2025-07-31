@@ -233,6 +233,7 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     for path in packages.iterdir():
         pathname = path.name
         key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
+        
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
@@ -318,29 +319,29 @@ def generate_build_json(
     contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
 
     for path_str, path_contracts in contracts.items():
-        for contract_name in path_contracts:
-            contract_alias = contract_name
-
-            if path_str in input_json["sources"]:
-                source = input_json["sources"][path_str]["content"]  # type: ignore [typeddict-item]
-            else:
-                with Path(path_str).open(encoding="utf-8") as fp:
-                    source = fp.read()
-                contract_alias = _get_alias(contract_name, path_str)
-
+        if path_str in sources:
+            source: str = sources[path_str]["content"]
+            get_alias = False
+        else:
+            with Path(path_str).open(encoding="utf-8") as fp:
+                source = fp.read()
+            get_alias = True
+    
+        for contract_name, contract in path_contracts.items():
+            contract_alias = _get_alias(contract_name, path_str) if get_alias else contract_name
+    
             if not silent:
                 print(f" - {contract_alias}")
 
-            contracts_output: dict = output_json["contracts"]
-            path_output: dict = contracts_output[path_str]
-            contract_output: dict = path_output[contract_name]
-
+            contract: dict = contracts[path_str][contract_name]
+            abi: List[ABIElement] = contract["abi"]
             natspec = merge_natspec(
-                contract_output.get("devdoc", {}), contract_output.get("userdoc", {})
+                contract.get("devdoc", {}),
+                contract.get("userdoc", {}),
             )
 
-            abi: List[ABIElement] = contract_output["abi"]
-            output_evm: dict = contract_output["evm"]
+            abi: List[ABIElement] = contract["abi"]
+            output_evm: dict = contract["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
 
@@ -358,22 +359,22 @@ def generate_build_json(
                     branch_nodes,
                     any(i["type"] == "fallback" for i in abi),
                 )
-
+    
             else:
                 if contract_name == "<stdin>":
-                    contract_name = contract_alias = "Vyper"  # type: ignore [assignment]
+                    contract_name = contract_alias = "Vyper"
                 build_json[contract_alias] = vyper._get_unique_build_json(
                     output_evm,
                     path_str,
                     contract_alias,
-                    output_json["sources"][path_str]["ast"],
-                    (0, len(source)),  # type: ignore [arg-type]
+                    sources[path_str]["ast"],
+                    (0, len(source)),
                 )
-
+    
             build_json[contract_alias].update(
                 {
                     "abi": abi,
-                    "ast": output_json["sources"][path_str]["ast"],
+                    "ast": sources[path_str]["ast"],
                     "compiler": compiler_data,  # type: ignore [typeddict-item]
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
@@ -456,7 +457,14 @@ def get_abi(
     for path, source in contract_sources.items():
         if Path(path).suffix == ".vy":
             input_json = generate_input_json({path: source}, language="Vyper")  # type: ignore [assignment]
-            input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
+            
+            # this helper is for mypyc compiler
+            dict_helper: dict = input_json["settings"]
+            dict_helper = dict_helper["outputSelection"]
+
+            output_selection = dict_helper
+            output_selection["*"] = {"*": ["abi"]}
+            
             try:
                 output_json = compile_from_input_json(input_json, silent, allow_paths)
             except Exception:
@@ -464,8 +472,13 @@ def get_abi(
                 # https://github.com/vyperlang/vyper/issues/1944
                 continue
             name: ContractName = Path(path).stem  # type: ignore [assignment]
+            
+            dict_helper = output_json["contracts"]
+            dict_helper = dict_helper[path]
+            dict_helper = dict_helper[name]
+            
             final_output[name] = {
-                "abi": output_json["contracts"][path][name]["abi"],
+                "abi": dict_helper["abi"],
                 "contractName": name,
                 "type": "interface",
                 "source": source,
@@ -492,10 +505,13 @@ def get_abi(
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         source_nodes = _from_standard_output(output_json)
-        abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        output_sources: dict = output_json["sources"]
 
-        for path, contracts in abi_json.items():
-            for name, data in contracts.items():
+        for path, path_data in abi_json.items():
+            path_source: str = contract_sources[path]
+            ast = output_sources[path]["ast"]
+            for name, data in path_data.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
                 for node in contract_node.dependencies:
@@ -506,13 +522,13 @@ def get_abi(
 
                 final_output[name] = {
                     "abi": data["abi"],
-                    "ast": output_json["sources"][path]["ast"],
+                    "ast": ast,
                     "contractName": name,
                     "dependencies": dependencies,
                     "type": "interface",
-                    "source": contract_sources[path],
+                    "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
+                    "sha1": sha1(path_source.encode()).hexdigest(),  # type: ignore [typeddict-item]
                 }
 
     return final_output
