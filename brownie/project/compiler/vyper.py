@@ -396,7 +396,7 @@ def _generate_coverage_data(
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         op = opcodes.popleft()
-        this = {"op": op, "pc": pc}
+        this: ProgramCounter = {"op": op, "pc": pc}  # type: ignore [assignment]
         pc_list.append(this)
 
         if source[3] != "-":
