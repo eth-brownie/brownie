@@ -326,6 +326,8 @@ class AstObject(TypedDict):
     name: str
     module: str
     type: str
+    ast_type: str
+    src: str
 
 
 AstJson = List[AstObject]
