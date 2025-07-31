@@ -406,7 +406,7 @@ def _generate_coverage_data(
                 # hackiness to prevent the source highlight from showing the entire contract
                 if op == "REVERT":
                     # for REVERT, apply to the previous opcode
-                    pc_list[-2].update(path="0", offset=(0, 0))
+                    pc_list[-2].update(path="0", offset=(0, 0))  # type: ignore [call-arg]
                 else:
                     # for JUMPI we need the mapping on the actual opcode
                     this.update(path="0", offset=(0, 0))  # type: ignore [call-arg]
