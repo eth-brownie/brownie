@@ -29,7 +29,6 @@ from brownie.typing import (
     Offset,
     PcList,
     ProgramCounter,
-    StatementMap,
     VyperAstJson,
     VyperAstNode,
     VyperBuildJson,
