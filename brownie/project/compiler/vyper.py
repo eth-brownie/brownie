@@ -347,6 +347,7 @@ def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
 
 
 class ProgramCounter(TypedDict):
+    path: str
     op: str
     value: str
     count: int
