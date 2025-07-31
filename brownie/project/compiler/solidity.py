@@ -526,7 +526,7 @@ def _generate_coverage_data(
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
             if not any("offset" in x and x["offset"] == offset for x in pc_list):
-                pc_list[values[0]].update(offset=offset, jump_revert=True)
+                pc_list[values[0]].update(offset=offset, jump_revert=True)  # type: ignore [call-arg]
                 del values[0]
 
     # set branch index markers and build final branch map
