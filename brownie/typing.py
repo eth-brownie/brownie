@@ -199,3 +199,19 @@ class InputJsonVyper(_InputJsonBase, total=False):
 
 
 InputJson = InputJsonSolc | InputJsonVyper
+
+
+class VyperAstNode(TypedDict):
+    """A dictionary representing on object on the AST."""
+
+    name: str
+    module: str
+    type: str
+    ast_type: str
+    src: str
+    op: "AstNode"
+    value: Dict
+    test: Dict
+
+
+VyperAstJson = List[VyperAstNode]
