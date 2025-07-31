@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index,typeddict-unknown-key"
 
-from typing import Any, Dict, Final, List, Literal, Optional, Union
+from typing import Any, Dict, Final, List, Optional, Union
 
 import solcast
 from eth_typing import ABIElement, HexStr
@@ -24,6 +24,7 @@ from brownie.typing import (
     ContractName,
     EvmVersion,
     InputJson,
+    InputJsonSolc,
     InterfaceBuildJson,
     Language,
     OptimizerSettings,
@@ -33,7 +34,8 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Final[InputJson] = {
+
+STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,
     "sources": {},
     "settings": {
@@ -48,8 +50,8 @@ STANDARD_JSON: Final[InputJson] = {
     },
 }
 
-EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
-
+EvmVersionJson = Dict[Language, EvmVersion | None]
+EvmVersionSpec = Union[EvmVersion, EvmVersionJson]
 
 # C constants
 _from_standard_output: Final = solcast.from_standard_output
@@ -100,7 +102,9 @@ def compile_and_format(
     build_json: Dict[ContractName, ContractBuildJson] = {}
     compiler_targets = {}
 
-    vyper_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".vy"}
+    vyper_sources = {
+        key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".vy"
+    }
     if vyper_sources:
         # TODO add `vyper_version` input arg to manually specify, support in config file
         if vyper_version is None:
@@ -109,7 +113,10 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-    solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
+
+    solc_sources = {
+        key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"
+    }
     if solc_sources:
         if solc_version is None:
             compiler_targets.update(
@@ -131,19 +138,24 @@ def compile_and_format(
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
-            compiler_data["version"] = str(vyper.get_version())
-            interfaces = {k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"}
+            compiler_data = {"version": str(vyper.get_version())}  # type: ignore [typeddict-item]
+            interfaces = {
+                key: interface_sources[key]
+                for key in interface_sources
+                if Path(key).suffix != ".sol"
+            }
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data["version"] = str(solidity.get_version())
+            compiler_data = {"version": str(solidity.get_version())}  # type: ignore [typeddict-item]
             interfaces = {
                 k: v
-                for k, v in interface_sources.items()
-                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
+                for k in interface_sources
+                if Path(k).suffix == ".sol"
+                and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
             }
 
-        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+        to_compile = {key: contract_sources[key] for key in contract_sources if key in path_list}
 
         input_json = generate_input_json(
             to_compile,
@@ -205,17 +217,17 @@ def generate_input_json(
     settings = input_json["settings"]
     settings["evmVersion"] = evm_version
     if language == "Solidity":
-        settings["optimizer"] = optimizer
-        settings["remappings"] = _get_solc_remappings(remappings)
+        settings["optimizer"] = optimizer  # type: ignore [typeddict-unknown-key]
+        settings["remappings"] = _get_solc_remappings(remappings)  # type: ignore [typeddict-unknown-key]
         if viaIR is not None:
-            settings["viaIR"] = viaIR
+            settings["viaIR"] = viaIR  # type: ignore [typeddict-unknown-key]
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
         if language == "Solidity":
             input_json["sources"].update(_sources_dict(interface_sources, language))
         else:
-            input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [typeddict-unknown-key]
+            input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [arg-type]
 
     return input_json
 
@@ -311,7 +323,7 @@ def generate_build_json(
     build_json: Dict[ContractName, ContractBuildJson] = {}
 
     if language == "Solidity":
-        compiler_data["optimizer"] = settings["optimizer"]  # type: ignore [typeddict-item]
+        compiler_data["optimizer"] = settings["optimizer"]  # type: ignore [typeddict-item, index]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     sources = input_json["sources"]
