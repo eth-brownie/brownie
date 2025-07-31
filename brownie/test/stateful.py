@@ -82,12 +82,12 @@ def _generate_state_machine(rules_object: type) -> type:
                     varnames[i].append(fn.__defaults__[i])
     
             if _attr_filter(attr, "initialize"):
-                wrapped = sf.initialize(**{key[0]: strategies[key[-1]] for key in varnames})
+                wrapped = sf.initialize(**{key[0]: strategies[key[-1]] for key in varnames})  # type: ignore [call-overload]
                 setattr(machine, attr, wrapped(fn))
             elif _attr_filter(attr, "invariant"):
                 setattr(machine, attr, sf.invariant()(fn))
             elif _attr_filter(attr, "rule"):
-                wrapped = sf.rule(**{key[0]: strategies[key[-1]] for key in varnames})
+                wrapped = sf.rule(**{key[0]: strategies[key[-1]] for key in varnames})  # type: ignore [call-overload]
                 setattr(machine, attr, wrapped(fn))
 
     return machine
