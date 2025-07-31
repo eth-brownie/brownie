@@ -585,7 +585,7 @@ def _find_revert_offset(
         and next_offset != fn_node.offset
         and is_inside_offset(next_offset, fn_node.offset)
     ):
-        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)
+        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)  # type: ignore [call-arg]
         return
 
     # if any of the previous conditions are not satisfied, this is the final revert
@@ -594,7 +594,7 @@ def _find_revert_offset(
         expr = fn_node[-1].expression
 
         if expr.nodeType == "FunctionCall" and expr.get("expression.name") in ("revert", "require"):
-            pc_list[-1].update(
+            pc_list[-1].update(  # type: ignore [call-arg]
                 path=str(source_node.contract_id), fn=fn_name, offset=expr.expression.offset
             )
 
