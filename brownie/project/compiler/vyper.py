@@ -339,23 +339,6 @@ def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
     )
 
 
-Count = int
-
-class ProgramCounter(TypedDict):
-    count: Count
-    fn: str
-    op: str
-    path: str
-    pc: int
-    value: str
-    branch: NotRequired[Count]
-    dev: NotRequired[str]
-    offset: NotRequired[List[int]]
-    optimizer_revert: NotRequired[Literal[True]]
-    statement: NotRequired[Count]
-
-PcList = List[ProgramCounter]
-
 def _is_revert_jump(pc_list: PcList, revert_pc: int) -> bool:
     return pc_list[-1]["op"] == "JUMPI" and int(pc_list[-2].get("value", "0"), 16) == revert_pc
 
