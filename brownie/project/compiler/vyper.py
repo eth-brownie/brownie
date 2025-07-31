@@ -25,7 +25,6 @@ from brownie.project.sources import is_inside_offset
 from brownie.typing import (
     ContractName,
     InputJsonVyper,
-    Language,
     Offset,
     PcList,
     ProgramCounter,
