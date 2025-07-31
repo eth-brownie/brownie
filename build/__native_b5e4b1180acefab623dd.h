@@ -528,16 +528,43 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    PyObject *_networks;
-    PyObject *_argv;
-    PyObject *_settings;
-    PyObject *__active_network;
-} brownie____config___ConfigContainerObject;
+} brownie____config___ConfigDictObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-} brownie____config___ConfigDictObject;
+    vectorcallfunc vectorcall;
+} brownie____config_____init___3_ConfigContainer_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____config___set_active_network_ConfigContainer_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____config___clear_active_ConfigContainer_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____config___active_network_ConfigContainer_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____config___network_type_ConfigContainer_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____config___mode_ConfigContainer_objObject;
 
 typedef struct {
     PyObject_HEAD
@@ -1865,14 +1892,32 @@ struct export_table_b5e4b1180acefab623dd {
     PyObject **CPyStatic__config___brownie____config___ConfigDict_____init_____values;
     PyObject **CPyStatic__config___CONFIG;
     PyTypeObject **CPyType__config___ConfigContainer;
-    PyObject *(*CPyDef__config___ConfigContainer)(void);
+    PyTypeObject **CPyType__config___Config;
     PyTypeObject **CPyType__config___ConfigDict;
-    char (*CPyDef__config___ConfigContainer_____init__)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef__config___ConfigContainer___set_active_network)(PyObject *cpy_r_self, PyObject *cpy_r_id_);
-    char (*CPyDef__config___ConfigContainer___clear_active)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef__config___ConfigContainer___active_network)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef__config___ConfigContainer___network_type)(PyObject *cpy_r_self);
-    PyObject *(*CPyDef__config___ConfigContainer___mode)(PyObject *cpy_r_self);
+    PyTypeObject **CPyType__config_____init___3_ConfigContainer_obj;
+    PyObject *(*CPyDef__config_____init___3_ConfigContainer_obj)(void);
+    PyTypeObject **CPyType__config___set_active_network_ConfigContainer_obj;
+    PyObject *(*CPyDef__config___set_active_network_ConfigContainer_obj)(void);
+    PyTypeObject **CPyType__config___clear_active_ConfigContainer_obj;
+    PyObject *(*CPyDef__config___clear_active_ConfigContainer_obj)(void);
+    PyTypeObject **CPyType__config___active_network_ConfigContainer_obj;
+    PyObject *(*CPyDef__config___active_network_ConfigContainer_obj)(void);
+    PyTypeObject **CPyType__config___network_type_ConfigContainer_obj;
+    PyObject *(*CPyDef__config___network_type_ConfigContainer_obj)(void);
+    PyTypeObject **CPyType__config___mode_ConfigContainer_obj;
+    PyObject *(*CPyDef__config___mode_ConfigContainer_obj)(void);
+    PyObject *(*CPyDef__config_____init___3_ConfigContainer_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef__config_____init___3_ConfigContainer_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef__config___set_active_network_ConfigContainer_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef__config___set_active_network_ConfigContainer_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_id_);
+    PyObject *(*CPyDef__config___clear_active_ConfigContainer_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef__config___clear_active_ConfigContainer_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef__config___active_network_ConfigContainer_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef__config___active_network_ConfigContainer_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef__config___network_type_ConfigContainer_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef__config___network_type_ConfigContainer_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef__config___mode_ConfigContainer_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    PyObject *(*CPyDef__config___mode_ConfigContainer_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
     char (*CPyDef__config___ConfigDict_____init__)(PyObject *cpy_r_self, PyObject *cpy_r_values);
     char (*CPyDef__config___ConfigDict_____setitem__)(PyObject *cpy_r_self, PyObject *cpy_r_key, PyObject *cpy_r_value);
     char (*CPyDef__config___ConfigDict___update)(PyObject *cpy_r_self, PyObject *cpy_r_arg);
