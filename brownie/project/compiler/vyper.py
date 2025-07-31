@@ -409,7 +409,7 @@ def _generate_coverage_data(
                     pc_list[-2].update(path="0", offset=(0, 0))
                 else:
                     # for JUMPI we need the mapping on the actual opcode
-                    this.update(path="0", offset=(0, 0))
+                    this.update(path="0", offset=(0, 0))  # type: ignore [call-arg]
             continue
         offset: Offset = (source[0], source[0] + source[1])  # type: ignore [assignment]
         this["path"] = "0"
