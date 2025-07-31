@@ -215,7 +215,7 @@ class ProgramCounter(TypedDict):
     value: str
     branch: NotRequired[Count]
     dev: NotRequired[str]
-    offset: NotRequired[List[int]]
+    offset: NotRequired[Offset]
     optimizer_revert: NotRequired[Literal[True]]
     statement: NotRequired[Count]
 
