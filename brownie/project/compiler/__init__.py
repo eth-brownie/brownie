@@ -51,8 +51,8 @@ STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     },
 }
 
-EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
-
+EvmVersionJson = Dict[Language, EvmVersion | None]
+EvmVersionSpec = Union[EvmVersion, EvmVersionJson]
 
 # C constants
 _from_standard_output: Final = solcast.from_standard_output
