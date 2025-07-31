@@ -237,7 +237,7 @@ Each step in the trace includes the following data:
 Call Traces
 -----------
 
-When dealing with complex transactions the trace can be thousands of steps long - it can be challenging to know where to begin examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occured in the transaction:
+When dealing with complex transactions the trace can be thousands of steps long - it can be challenging to know where to begin examining it. Brownie provides the :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` method to view a complete map of every jump that occurred in the transaction:
 
 .. code-block:: python
 
@@ -264,7 +264,7 @@ Each line shows the following information:
 
     ContractName.functionName (external call opcode) start:stop [internal / total gas used]
 
-Where ``start`` and ``stop`` are the indexes of :func:`TransactionReceipt.trace <TransactionReceipt.trace>` where the function was entered and exited. :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` provides an initial high level overview of the transaction execution path, which helps you to examine the individual trace steps in a more targetted manner and determine where things went wrong in a complex transaction.
+Where ``start`` and ``stop`` are the indexes of :func:`TransactionReceipt.trace <TransactionReceipt.trace>` where the function was entered and exited. :func:`TransactionReceipt.call_trace <TransactionReceipt.call_trace>` provides an initial high level overview of the transaction execution path, which helps you to examine the individual trace steps in a more targeted manner and determine where things went wrong in a complex transaction.
 
 Functions that terminated with ``REVERT`` or ``INVALID`` opcodes are highlighted in red.
 
