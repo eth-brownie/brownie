@@ -648,7 +648,7 @@ def _get_deployment(
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
-    pc_map: Dict[int | str, Dict[str, Any]] = build_json.get("pcMap")
+    pc_map: Dict[int | str, Dict[str, Any]] = build_json.get("pcMap")  # type: ignore [assignment]
     if isinstance(pc_map, dict):
         build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
 
