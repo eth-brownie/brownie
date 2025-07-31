@@ -10,6 +10,7 @@ import vyper
 from eth_typing import ABIElement, HexStr
 from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
+from typing_extensions import NotRequired
 from vyper.cli import vyper_json
 from vyper.exceptions import VyperException
 
