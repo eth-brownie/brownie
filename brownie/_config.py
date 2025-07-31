@@ -39,7 +39,6 @@ NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
 # TODO: Make this a typed dict
 
 
-@final
 @mypyc_attr(native_class=False)
 class ConfigContainer:
     def __init__(self) -> None:
@@ -125,6 +124,7 @@ class ConfigContainer:
         return self.argv["cli"]
 
 
+@final
 class Config(ConfigContainer, metaclass=_Singleton):
     ...
 
