@@ -85,7 +85,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
-    pcMap: Dict[int, Dict[str, Any]]
+    pcMap: Dict[int, "ProgramCounter"]
     compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
 
