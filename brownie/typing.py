@@ -190,14 +190,14 @@ class _InputJsonBase(TypedDict):
 class InputJsonSolc(_InputJsonBase, total=False):
     language: Literal["Solidity", None]
     settings: SettingsSolc
-    interfaces: str
+    interfaces: Dict[str, InterfaceSource]
 
 
 @final
 class InputJsonVyper(_InputJsonBase, total=False):
     language: Literal["Vyper"]
     settings: SettingsVyper
-    interfaces: SourcesDict
+    interfaces: Dict[str, InterfaceSource]
 
 
 InputJson = InputJsonSolc | InputJsonVyper
