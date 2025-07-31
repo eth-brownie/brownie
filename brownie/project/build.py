@@ -93,7 +93,7 @@ class Build:
 
     def _generate_revert_map(
         self,
-        pcMap: Dict[int | str, Dict[str, Any]],
+        pcMap: Dict[int | str, ProgramCounter],
         source_map: Dict[str, str],
         language: Language,
     ) -> None:
