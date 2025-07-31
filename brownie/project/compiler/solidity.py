@@ -546,7 +546,7 @@ def _generate_coverage_data(
 
 
 def _find_revert_offset(
-    pc_list: List[dict],
+    pc_list: PcList,
     source_map: Deque[Source],
     source_node: NodeBase,
     fn_node: NodeBase,
@@ -598,7 +598,7 @@ def _find_revert_offset(
             )
 
 
-def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
+def _set_invalid_error_string(source_node: NodeBase, pc_map: ProgramCounter) -> None:
     # set custom error string for INVALID opcodes
     try:
         node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
@@ -608,7 +608,7 @@ def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
     if node_type == "IndexAccess":
         pc_map["dev"] = "Index out of range"
     elif node_type == "BinaryOperation":
-        operator = node.operator
+        operator: str = node.operator
         if operator == "/":
             pc_map["dev"] = "Division by zero"
         elif operator == "%":
