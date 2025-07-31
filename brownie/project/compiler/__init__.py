@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index,typeddict-unknown-key"
 
-from typing import Any, Dict, Final, List, Literal, Optional, Union
+from typing import Any, Dict, Final, List, Optional, Union
 
 import solcast
 from eth_typing import ABIElement, HexStr
@@ -33,6 +33,8 @@ from brownie.typing import (
 from brownie.utils import notify
 
 from . import solidity, vyper
+
+_T = TypeVar("_T")
 
 STANDARD_JSON: Final[InputJsonSolc] = {
     "language": None,
