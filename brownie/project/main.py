@@ -118,14 +118,12 @@ class _ProjectBase:
             _install_dependencies(path)
             allow_paths = path.as_posix()
             os.chdir(path)
-            
+
         try:
             solc_config = compiler_config["solc"]
             vyper_config = compiler_config["vyper"]
 
             project_evm_version = compiler_config["evm_version"]
-            solc_config = compiler_config["solc"]
-            vyper_config = compiler_config["vyper"]
             evm_version: Dict[Language, Optional[str]] = {
                 "Solidity": solc_config.get("evm_version", project_evm_version),
                 "Vyper": vyper_config.get("evm_version", project_evm_version),
