@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Dict, Final, List, Optional, Tuple, Union
+from typing import Dict, Final, List, Literal, Optional, Set, Tuple, Union
 
 import semantic_version
 import vvm
@@ -21,7 +21,14 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.project.sources import is_inside_offset
-from brownie.typing import ContractName, InputJsonVyper, Offset, VyperBuildJson
+from brownie.typing import (
+    ContractName,
+    InputJsonVyper,
+    Offset,
+    VyperAstJson,
+    VyperAstNode,
+    VyperBuildJson,
+)
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
@@ -42,6 +49,9 @@ EVM_VERSION_MAPPING: Final = [
     ("berlin", Version("0.2.12")),
     ("istanbul", Version("0.1.0-beta.16")),
 ]
+
+BranchMap = Dict[str, Dict[int, Tuple[int, int, bool]]]
+StatementMap = Dict[str, Dict[int, Offset]]
 
 _get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
 _get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
@@ -124,7 +134,7 @@ def find_vyper_versions(
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict:
+) -> Dict[str, List[str]]:
     """
     Analyzes contract pragmas and determines which vyper version(s) to use.
 
@@ -141,9 +151,9 @@ def find_vyper_versions(
 
     available_versions, installed_versions = _get_vyper_version_list()
 
-    pragma_specs: Dict = {}
-    to_install = set()
-    new_versions = set()
+    pragma_specs: Dict[str, semantic_version.NpmSpec] = {}
+    to_install: Set[str] = set()
+    new_versions: Set[str] = set()
 
     for path, source in contract_sources.items():
         pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
@@ -178,7 +188,7 @@ def find_vyper_versions(
         )
 
     # organize source paths by latest available vyper version
-    compiler_versions: Dict = {}
+    compiler_versions: Dict[str, List[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
@@ -315,8 +325,11 @@ def _is_revert_jump(pc_list: List[dict], revert_pc: int) -> bool:
 
 
 def _generate_coverage_data(
-    source_map_str: str, opcodes_str: str, contract_name: ContractName, ast_json: List[dict]
-) -> Tuple[Dict, Dict, Dict[str, Dict]]:
+    source_map_str: str,
+    opcodes_str: str,
+    contract_name: ContractName,
+    ast_json: VyperAstJson,
+) -> Tuple[Dict[int, Dict], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]]:
     if not opcodes_str:
         return {}, {}, {}
 
@@ -327,8 +340,8 @@ def _generate_coverage_data(
     fn_offsets = {i["name"]: _convert_src(i["src"]) for i in fn_nodes}
     stmt_nodes = {_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes)}
 
-    statement_map: Dict = {}
-    branch_map: Dict[str, Dict] = {}
+    statement_map: StatementMap = {}
+    branch_map: BranchMap = {}
 
     pc_list: List = []
     count, pc = 0, 0
@@ -402,7 +415,7 @@ def _generate_coverage_data(
         if node is None:
             continue
 
-        node_ast_type: str = node["ast_type"]
+        node_ast_type = node["ast_type"]
         if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
             if node_ast_type == "FunctionDef":
@@ -413,11 +426,13 @@ def _generate_coverage_data(
             elif node_ast_type == "Subscript":
                 pc_list[-1]["dev"] = "Index out of range"
             elif node_ast_type in ("AugAssign", "BinOp"):
-                if node["op"]["ast_type"] == "Sub":
+                node_op: VyperAstNode = node["op"]
+                node_op_ast_type = node_op["ast_type"]
+                if node_op_ast_type == "Sub":
                     pc_list[-1]["dev"] = "Integer underflow"
-                elif node["op"]["ast_type"] == "Div":
+                elif node_op_ast_type == "Div":
                     pc_list[-1]["dev"] = "Division by zero"
-                elif node["op"]["ast_type"] == "Mod":
+                elif node_op_ast_type == "Mod":
                     pc_list[-1]["dev"] = "Modulo by zero"
                 else:
                     pc_list[-1]["dev"] = "Integer overflow"
@@ -425,7 +440,7 @@ def _generate_coverage_data(
 
         if node_ast_type in ("Assert", "If") or (
             node_ast_type == "Expr"
-            and node["value"].get("func", {}).get("id", None) == "assert_modifiable"
+            and node["value"].get("func", {}).get("id") == "assert_modifiable"
         ):
             # branch coverage
             pc_list[-1]["branch"] = count
@@ -436,8 +451,9 @@ def _generate_coverage_data(
                 branch_map[pc_list[-1]["fn"]][count] = offset + (True,)
             count += 1
 
-    pc_list[0]["path"] = "0"
-    pc_list[0]["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
+    first = pc_list[0]
+    first["path"] = "0"
+    first["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
     if revert_pc != -1:
         pc_list[-1]["optimizer_revert"] = True
 
@@ -453,13 +469,15 @@ def _convert_src(src: str) -> Offset:
     return src_int[0], src_int[0] + src_int[1]  # type: ignore [return-value]
 
 
-def _find_node_by_offset(ast_json: List[Dict], offset: Offset) -> Optional[Dict]:
+def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> Optional[VyperAstNode]:
     for node in ast_json:
         converted_src = _convert_src(node["src"])
         if is_inside_offset(offset, converted_src):
             if converted_src == offset:
                 return node
-            node_list = [i for i in node.values() if isinstance(i, dict) and "ast_type" in i]
+            node_list: VyperAstJson = [
+                i for i in node.values() if isinstance(i, dict) and "ast_type" in i  # type: ignore [misc]
+            ]
             for v in node.values():
                 if isinstance(v, list):
                     node_list.extend(v)
@@ -472,7 +490,7 @@ def _find_node_by_offset(ast_json: List[Dict], offset: Offset) -> Optional[Dict]
     return None
 
 
-def _get_statement_nodes(ast_json: List[Dict]) -> List[Dict]:
+def _get_statement_nodes(ast_json: VyperAstJson) -> VyperAstJson:
     stmt_nodes = []
     for node in ast_json:
         if children := [x for v in node.values() if isinstance(v, list) for x in v]:
