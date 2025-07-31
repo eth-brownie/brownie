@@ -101,7 +101,7 @@ class Color:
                 text += "{" + self.pretty_dict(v, _indent)
                 continue
             if isinstance(v, (list, tuple, set)):
-                text += str(v)[0] + self.pretty_sequence(v, _indent)
+                text += str(v)[0] + self.pretty_sequence(v, _indent)  # type: ignore [arg-type]
                 continue
             text += self._write(v)
         _indent -= 4
