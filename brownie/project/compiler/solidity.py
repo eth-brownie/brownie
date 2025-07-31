@@ -66,8 +66,10 @@ def get_version() -> semantic_version.Version:
 
 
 def compile_from_input_json(
-    input_json: InputJsonSolc, silent: bool = True, allow_paths: Optional[str] = None
-) -> Dict:
+    input_json: InputJsonSolc,
+    silent: bool = True,
+    allow_paths: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Compiles contracts from a standard input json.
 
