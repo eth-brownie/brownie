@@ -124,7 +124,7 @@ def find_vyper_versions(
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict:
+) -> Dict[str, List[str]]:
     """
     Analyzes contract pragmas and determines which vyper version(s) to use.
 
@@ -141,9 +141,9 @@ def find_vyper_versions(
 
     available_versions, installed_versions = _get_vyper_version_list()
 
-    pragma_specs: Dict = {}
-    to_install = set()
-    new_versions = set()
+    pragma_specs: Dict[str, semantic_version.NpmSpec] = {}
+    to_install: Set[str] = set()
+    new_versions: Set[str] = set()
 
     for path, source in contract_sources.items():
         pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
@@ -178,7 +178,7 @@ def find_vyper_versions(
         )
 
     # organize source paths by latest available vyper version
-    compiler_versions: Dict = {}
+    compiler_versions: Dict[str, List[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
