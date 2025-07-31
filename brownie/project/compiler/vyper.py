@@ -349,6 +349,7 @@ def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
 class ProgramCounter(TypedDict):
     path: str
     op: str
+    pc: int
     value: str
     count: int
     fn: str
@@ -397,7 +398,7 @@ def _generate_coverage_data(
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
         op = opcodes.popleft()
-        this: ProgramCounter = {"op": op, "pc": pc}  # type: ignore [assignment]
+        this: ProgramCounter = {"op": op, "pc": pc}  # type: ignore [typeddict-item]
         pc_list.append(this)
 
         if source[3] != "-":
