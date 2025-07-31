@@ -209,7 +209,7 @@ class VyperAstNode(TypedDict):
     type: str
     ast_type: str
     src: str
-    op: "AstNode"
+    op: "VyperAstNode"
     value: Dict
     test: Dict
 
