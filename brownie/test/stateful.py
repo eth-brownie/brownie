@@ -8,6 +8,7 @@ from typing import Any, ClassVar, Dict, Final, Optional, final
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
 from hypothesis.strategies import SearchStrategy
+from mypy_extensions import mypyc_attr
 
 import brownie
 from brownie._c_constants import deque
@@ -19,6 +20,7 @@ marker: Final = deque("-/|\\-/|\\")
 
 
 @final
+@mypyc_attr(native_class=False)
 class _BrownieStateMachine:
 
     _failed: ClassVar[bool] = False

@@ -1610,7 +1610,20 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-} brownie___test___stateful____BrownieStateMachineObject;
+    vectorcallfunc vectorcall;
+} brownie___test___stateful_____init___3__BrownieStateMachine_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___test___stateful___execute_step__BrownieStateMachine_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___test___stateful___check_invariants__BrownieStateMachine_objObject;
 
 typedef struct {
     PyObject_HEAD
@@ -2845,14 +2858,22 @@ struct export_table_b5e4b1180acefab623dd {
     char (*CPyDef_test___output_____top_level__)(void);
     PyObject **CPyStatic_stateful___marker;
     PyTypeObject **CPyType_stateful____BrownieStateMachine;
-    PyObject *(*CPyDef_stateful____BrownieStateMachine)(void);
+    PyTypeObject **CPyType_stateful_____init___3__BrownieStateMachine_obj;
+    PyObject *(*CPyDef_stateful_____init___3__BrownieStateMachine_obj)(void);
+    PyTypeObject **CPyType_stateful___execute_step__BrownieStateMachine_obj;
+    PyObject *(*CPyDef_stateful___execute_step__BrownieStateMachine_obj)(void);
+    PyTypeObject **CPyType_stateful___check_invariants__BrownieStateMachine_obj;
+    PyObject *(*CPyDef_stateful___check_invariants__BrownieStateMachine_obj)(void);
     PyTypeObject **CPyType_stateful___state_machine_env;
     PyObject *(*CPyDef_stateful___state_machine_env)(void);
     PyTypeObject **CPyType_stateful_____mypyc_lambda__0_state_machine_obj;
     PyObject *(*CPyDef_stateful_____mypyc_lambda__0_state_machine_obj)(void);
-    char (*CPyDef_stateful____BrownieStateMachine_____init__)(PyObject *cpy_r_self);
-    char (*CPyDef_stateful____BrownieStateMachine___execute_step)(PyObject *cpy_r_self, PyObject *cpy_r_step);
-    char (*CPyDef_stateful____BrownieStateMachine___check_invariants)(PyObject *cpy_r_self, PyObject *cpy_r_settings);
+    PyObject *(*CPyDef_stateful_____init___3__BrownieStateMachine_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_stateful_____init___3__BrownieStateMachine_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_stateful___execute_step__BrownieStateMachine_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_stateful___execute_step__BrownieStateMachine_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_step);
+    PyObject *(*CPyDef_stateful___check_invariants__BrownieStateMachine_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+    char (*CPyDef_stateful___check_invariants__BrownieStateMachine_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_settings);
     char (*CPyDef_stateful____member_filter)(tuple_T2OO cpy_r_member);
     char (*CPyDef_stateful____attr_filter)(PyObject *cpy_r_attr, PyObject *cpy_r_pattern);
     PyObject *(*CPyDef_stateful____generate_state_machine)(PyObject *cpy_r_rules_object);
