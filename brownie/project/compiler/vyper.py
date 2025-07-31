@@ -333,7 +333,9 @@ def _generate_coverage_data(
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,
-) -> Tuple[Dict[int, ProgramCounter], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]]:
+) -> Tuple[
+    Dict[int, ProgramCounter], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]
+]:
     if not opcodes_str:
         return {}, {}, {}
 
