@@ -41,7 +41,7 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
-PathMap = Dict[str, tuple[HexStr, str]]
+PathMap = Dict[str, List[str]]
 Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
 
 AnyContract = Union["Contract", "ProjectContract"]
