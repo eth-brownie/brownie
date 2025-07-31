@@ -560,7 +560,7 @@ def _find_revert_offset(
         # is not the last instruction
         if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
             # reference to CALLVALUE 8 instructions previous is a nonpayable function check
-            pc_list[-1].update(
+            pc_list[-1].update(  # type: ignore [call-arg]
                 dev="Cannot send ether to nonpayable function",
                 fn=pc_list[-8].get("fn", "<unknown>"),
                 offset=pc_list[-8].get("offset"),
