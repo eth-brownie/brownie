@@ -46,11 +46,6 @@ Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
 
 AnyContract = Union["Contract", "ProjectContract"]
 
-# C Constants
-_Path: Final = Path
-
-_sha1: Final = sha1
-
 _contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
 _revert_refs: Final[List[weakref.ReferenceType]] = []
 
@@ -689,8 +684,8 @@ def _add_deployment(
         for key, path in source_paths.items():
             source = contract_sources.get(path)
             if source is None:
-                source = _Path(path).read_text()
-            hash_ = _sha1(source.encode()).hexdigest()
+                source = Path(path).read_text()
+            hash_ = sha1(source.encode()).hexdigest()
             cur.insert("sources", hash_, source)
             all_sources[key] = [hash_, path]
 
@@ -723,8 +718,8 @@ def _remove_deployment(
         for key, path in contract._build.get("allSourcePaths", {}).items():
             source = contract._sources.get(path)
             if source is None:
-                source = _Path(path).read_text()
-            hash_ = _sha1(source.encode()).hexdigest()
+                source = Path(path).read_text()
+            hash_ = sha1(source.encode()).hexdigest()
             cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
     return deployment
