@@ -475,8 +475,8 @@ def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> Optional[Vyp
         if is_inside_offset(offset, converted_src):
             if converted_src == offset:
                 return node
-            node_list: VyperAstJson = [  # type: ignore [misc]
-                i for i in node.values() if isinstance(i, dict) and "ast_type" in i
+            node_list: VyperAstJson = [
+                i for i in node.values() if isinstance(i, dict) and "ast_type" in i  # type: ignore [misc]
             ]
             for v in node.values():
                 if isinstance(v, list):
