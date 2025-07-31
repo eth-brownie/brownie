@@ -25,6 +25,7 @@ from brownie.typing import (
     DeployedBytecodeJson,
     InputJsonSolc,
     Offset,
+    PcList,
     SolidityBuildJson,
     Source,
 )
@@ -365,7 +366,7 @@ def _generate_coverage_data(
     branch_set: Dict[str, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
-    pc_list: List[dict] = []
+    pc_list: PcList = []
     revert_map: Dict[Tuple[str, int], List[int]] = {}
     fallback_hexstr: str = "unassigned"
 
