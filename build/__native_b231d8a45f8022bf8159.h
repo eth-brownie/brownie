@@ -2825,6 +2825,7 @@ struct export_table_b231d8a45f8022bf8159 {
     PyTypeObject **CPyType_typing____InputJsonBase;
     PyTypeObject **CPyType_typing___InputJsonSolc;
     PyTypeObject **CPyType_typing___InputJsonVyper;
+    PyTypeObject **CPyType_typing___VyperAstNode;
     char (*CPyDef_typing_____top_level__)(void);
     PyObject **CPyStatic_brownie___utils___color;
     PyObject **CPyStatic_brownie___utils___bytes_to_hexstring;
