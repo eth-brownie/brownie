@@ -211,8 +211,8 @@ class ProgramCounter(TypedDict):
     fn: str
     op: str
     path: str
-    pc: int
     value: str
+    pc: NotRequired[int]
     branch: NotRequired[Count]
     jump: NotRequired[str]
     dev: NotRequired[str]
