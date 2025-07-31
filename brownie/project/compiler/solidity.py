@@ -26,6 +26,7 @@ from brownie.typing import (
     InputJsonSolc,
     Offset,
     PcList,
+    ProgramCounter,
     SolidityBuildJson,
     Source,
 )
@@ -53,7 +54,7 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-PcMap = Dict[int, Dict[str, Any]]
+PcMap = Dict[int, ProgramCounter]
 StatementNodes = Dict[str, Set[Offset]]
 StatementMap = Dict[str, Dict[str, Dict[int, Tuple[int, int]]]]
 BranchNodes = Dict[str, Set[NodeBase]]
