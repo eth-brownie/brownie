@@ -205,7 +205,7 @@ referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2025.7.29
+regex==2025.7.33
     # via parsimonious
 requests==2.32.4
     # via
