@@ -132,18 +132,18 @@ def compile_and_format(
             set_vyper_version(version)
             language = "Vyper"
             compiler_data["version"] = str(vyper.get_version())
-            interfaces = {k: v for k, v in interface_sources.items() if Path(k).suffix != ".sol"}
+            interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
             compiler_data["version"] = str(solidity.get_version())
             interfaces = {
                 k: v
-                for k, v in interface_sources.items()
-                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v, k)
+                for k in interface_sources
+                if Path(k).suffix == ".sol" and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
             }
 
-        to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
+        to_compile = {key: contract_sources[key] for key in contract_sources if key in path_list}
 
         input_json = generate_input_json(
             to_compile,
