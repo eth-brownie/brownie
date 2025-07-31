@@ -760,8 +760,6 @@ def compile_source(
     try:
         return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
     except Exception as exc:
-        # temp for debugging, remove before merging
-        raise
         if solc_version is None and vyper_version is None:
             raise PragmaError(
                 "No compiler version specified, no pragma statement in the source, "
