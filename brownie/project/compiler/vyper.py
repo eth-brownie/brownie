@@ -342,16 +342,20 @@ def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
     )
 
 
+Count = int
+
 class ProgramCounter(TypedDict):
-    path: str
+    count: Count
+    fn: str
     op: str
+    path: str
     pc: int
     value: str
-    count: int
-    fn: str
-    offset: NotRequired[List[int]]
+    branch: NotRequired[Count]
     dev: NotRequired[str]
+    offset: NotRequired[List[int]]
     optimizer_revert: NotRequired[Literal[True]]
+    statement: NotRequired[Count]
 
 PcList = List[ProgramCounter]
 
