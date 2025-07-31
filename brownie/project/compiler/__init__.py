@@ -53,8 +53,8 @@ EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
 
 # C constants
 _from_standard_output: Final = solcast.from_standard_output
-    
-    
+
+
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
