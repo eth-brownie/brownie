@@ -368,7 +368,7 @@ def _generate_coverage_data(
 
     count, pc = 0, 0
     pc_list: PcList = []
-    revert_map: Dict[Tuple[str, int], List[int]] = {}
+    revert_map: Dict[Tuple[str, Offset], List[int]] = {}
     fallback_hexstr: str = "unassigned"
 
     optimizer_revert = get_version() < Version("0.8.0")
@@ -476,7 +476,7 @@ def _generate_coverage_data(
         try:
             # set fn name and statement coverage marker
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                this["fn"] = active_fn_name
+                this["fn"] = active_fn_name  # type: ignore [typeddict-item]
             else:
                 active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)  # type: ignore [arg-type]
                 this["fn"] = active_fn_name
