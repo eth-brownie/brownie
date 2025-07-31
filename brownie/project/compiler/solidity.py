@@ -387,29 +387,30 @@ def _generate_coverage_data(
     while source_map:
         # format of source_map is [start, stop, contract_id, jump code]
         source = source_map.popleft()
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        this: ProgramCounter = {"op": opcodes.popleft(), "pc": pc}
+        pc_list.append(this)
 
         if (
             has_fallback is False
             and fallback_hexstr == "unassigned"
-            and pc_list[-1]["op"] == "REVERT"
+            and this["op"] == "REVERT"
             and [i["op"] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
             fallback_hexstr = f"0x{hex(pc - 4).upper()[2:]}"
-            pc_list[-1]["first_revert"] = True
+            this["first_revert"] = True
 
         if source[3] != "-":
-            pc_list[-1]["jump"] = source[3]
+            this["jump"] = source[3]
 
         pc += 1
-        if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
-            pc_list[-1]["value"] = opcodes.popleft()
-            pc += int(pc_list[-1]["op"][4:])
+        if this["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
+            this["value"] = opcodes.popleft()
+            pc += int(this["op"][4:])
 
         # for REVERT opcodes without an source offset, try to infer one
-        if (source[2] == -1 or source == first_source) and pc_list[-1]["op"] == "REVERT":
+        if (source[2] == -1 or source == first_source) and this["op"] == "REVERT":
             _find_revert_offset(
                 pc_list, source_map, active_source_node, active_fn_node, active_fn_name
             )
@@ -425,15 +426,15 @@ def _generate_coverage_data(
             continue
 
         active_source_node = source_nodes[contract_id]
-        pc_list[-1]["path"] = contract_id
+        this["path"] = contract_id
 
         # set source offset (-1 means none)
         if source[0] == -1:
             continue
         offset: Offset = (source[0], source[0] + source[1])  # type: ignore [assignment]
-        pc_list[-1]["offset"] = offset
+        this["offset"] = offset
 
-        if pc_list[-1]["op"] == "REVERT" and not optimizer_revert:
+        if this["op"] == "REVERT" and not optimizer_revert:
             # In Solidity >=0.8.0, an optimization is applied to reverts with an error string
             # such that all reverts appear to happen at the same point in the source code.
             # We mark this REVERT as the "optimizer revert" so that when it's encountered in
@@ -450,14 +451,14 @@ def _generate_coverage_data(
                 args = len(fn_node[0].arguments)
                 if args == 2 or (fn_node[0].expression.name == "revert" and args):
                     optimizer_revert = True
-                    pc_list[-1]["optimizer_revert"] = True
+                    this["optimizer_revert"] = True
 
         # add error messages for INVALID opcodes
-        if pc_list[-1]["op"] == "INVALID":
-            _set_invalid_error_string(active_source_node, pc_list[-1])
+        if this["op"] == "INVALID":
+            _set_invalid_error_string(active_source_node, this)
 
         # for JUMPI instructions, set active branch markers
-        if branch_active[contract_id] and pc_list[-1]["op"] == "JUMPI":
+        if branch_active[contract_id] and this["op"] == "JUMPI":
             for offset in branch_active[contract_id]:
                 # ( program counter index, JUMPI index)
                 branch_set[contract_id][offset] = (
@@ -475,32 +476,32 @@ def _generate_coverage_data(
         try:
             # set fn name and statement coverage marker
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                pc_list[-1]["fn"] = active_fn_name
+                this["fn"] = active_fn_name
             else:
                 active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)  # type: ignore [arg-type]
-                pc_list[-1]["fn"] = active_fn_name
+                this["fn"] = active_fn_name
                 stmt_offset: Offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
                 )
                 stmt_nodes[contract_id].discard(stmt_offset)
                 statement_map[contract_id].setdefault(active_fn_name, {})[count] = stmt_offset
-                pc_list[-1]["statement"] = count
+                this["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
             pass
 
-        if pc_list[-1].get("value", None) == fallback_hexstr and opcodes[0] in ("JUMP", "JUMPI"):
+        if this.get("value", None) == fallback_hexstr and opcodes[0] in ("JUMP", "JUMPI"):
             # track all jumps to the initial revert
-            key = (pc_list[-1]["path"], pc_list[-1]["offset"])
+            key = (this["path"], this["offset"])
             revert_map.setdefault(key, []).append(len(pc_list))
 
     while opcodes[0] not in ("INVALID", "STOP") and pc < instruction_count:
         # necessary because sometimes solidity returns an incomplete source map
         pc_list.append({"op": opcodes.popleft(), "pc": pc})
         pc += 1
-        if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
-            pc_list[-1]["value"] = opcodes.popleft()
-            pc += int(pc_list[-1]["op"][4:])
+        if this["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
+            this["value"] = opcodes.popleft()
+            pc += int(this["op"][4:])
 
     # compare revert and require statements against the map of revert jumps
     for (contract_id, fn_offset), values in revert_map.items():
