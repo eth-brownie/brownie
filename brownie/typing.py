@@ -218,6 +218,7 @@ class ProgramCounter(TypedDict):
     offset: NotRequired[Offset]
     optimizer_revert: NotRequired[Literal[True]]
     first_revert: NotRequired[Literal[True]]
+    jump_revert: NotRequired[Literal[True]]
     statement: NotRequired[Count]
 
 
