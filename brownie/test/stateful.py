@@ -13,7 +13,7 @@ import brownie
 from brownie._c_constants import deque
 from brownie.utils import red, yellow
 
-sf.__tracebackhide__ = True
+sf.__tracebackhide__ = True  # type: ignore [attr-defined]
 
 marker: Final = deque("-/|\\-/|\\")
 
@@ -26,7 +26,7 @@ class _BrownieStateMachine:
 
     def __init__(self) -> None:
         brownie.chain.revert()
-        sf.RuleBasedStateMachine.__init__(self)
+        sf.RuleBasedStateMachine.__init__(self)  # type: ignore [arg-type]
 
         # pytest capturemanager plugin, added when accessed via the state_manager fixture
         if capman := self._capman:
