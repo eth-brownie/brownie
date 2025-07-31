@@ -314,22 +314,6 @@ def _get_unique_build_json(
     }
 
 
-class AstNode(TypedDict):
-    """A dictionary representing on object on the AST."""
-
-    name: str
-    module: str
-    type: str
-    ast_type: str
-    src: str
-    op: "AstNode"
-    value: Dict
-    test: Dict
-
-
-AstJson = List[AstNode]
-
-
 def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
     return sorted(
         {
