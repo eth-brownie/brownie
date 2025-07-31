@@ -203,6 +203,26 @@ class InputJsonVyper(_InputJsonBase, total=False):
 InputJson = InputJsonSolc | InputJsonVyper
 
 
+Count = int
+
+
+class ProgramCounter(TypedDict):
+    count: Count
+    fn: str
+    op: str
+    path: str
+    pc: int
+    value: str
+    branch: NotRequired[Count]
+    dev: NotRequired[str]
+    offset: NotRequired[List[int]]
+    optimizer_revert: NotRequired[Literal[True]]
+    statement: NotRequired[Count]
+
+
+PcList = List[ProgramCounter]
+
+
 class VyperAstNode(TypedDict):
     """A dictionary representing on object on the AST."""
 
