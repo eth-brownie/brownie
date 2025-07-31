@@ -497,7 +497,8 @@ def _generate_coverage_data(
 
     while opcodes[0] not in ("INVALID", "STOP") and pc < instruction_count:
         # necessary because sometimes solidity returns an incomplete source map
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        this = {"op": opcodes.popleft(), "pc": pc}  # type: ignore [typeddict-item]
+        pc_list.append(this)
         pc += 1
         if this["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
             this["value"] = opcodes.popleft()
