@@ -29,6 +29,7 @@ from brownie.typing import (
     Offset,
     PcList,
     ProgramCounter,
+    StatementMap,
     VyperAstJson,
     VyperAstNode,
     VyperBuildJson,
@@ -55,7 +56,6 @@ EVM_VERSION_MAPPING: Final = [
 ]
 
 BranchMap = Dict[str, Dict[int, Tuple[int, int, bool]]]
-StatementMap = Dict[str, Dict[int, Offset]]
 
 _get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
 _get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
@@ -84,13 +84,6 @@ def set_vyper_version(version: VersionSpec) -> str:
             _vvm_set_vyper_version(version_str, silent=True)
     _active_version = version
     return str(_active_version)
-
-
-class SourceJson(TypedDict):
-    content: str
-
-
-Sources = Dict[ContractName, SourceJson]
 
 
 def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
