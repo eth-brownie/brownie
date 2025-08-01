@@ -3,7 +3,7 @@
 import builtins
 import sys
 import warnings
-from typing import Dict, Final, final
+from typing import Dict, Final, Optional, final
 
 import pytest
 from _pytest._io import TerminalWriter
