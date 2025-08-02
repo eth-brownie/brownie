@@ -14,6 +14,7 @@ from typing import (
 
 from eth_event.main import EventData
 from eth_typing import ABIElement, ChecksumAddress, HexStr
+from eth_typing import ABIConstructor as _ABIConstructor
 from typing_extensions import NotRequired
 
 if TYPE_CHECKING:
@@ -27,6 +28,10 @@ AccountsType = TypeVar("AccountsType", bound="Accounts")
 
 # Contract
 ContractName = NewType("ContractName", str)
+
+
+class ABIConstructorWithName(_ABIConstructor):
+    name: Literal["constructor"]
 
 
 # Event
@@ -84,12 +89,11 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
-    pcMap: Dict[int, Dict[str, Any]]
+    pcMap: NotRequired[Dict[int, Dict[str, Any]]]
     compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
 
 
-@final
 class SolidityBuildJson(_ContractBuildJson):
     type: str
     language: Literal["Solidity"]
@@ -99,7 +103,6 @@ class SolidityBuildJson(_ContractBuildJson):
     coverageMap: Dict[str, Dict]  # TODO define typed dict
 
 
-@final
 class VyperBuildJson(_ContractBuildJson):
     type: Literal["contract"]
     language: Literal["Vyper"]
@@ -107,6 +110,21 @@ class VyperBuildJson(_ContractBuildJson):
 
 ContractBuildJson = SolidityBuildJson | VyperBuildJson
 BuildJson = ContractBuildJson | InterfaceBuildJson
+
+
+@final
+class SolidityDeploymentJson(SolidityBuildJson):
+    address: ChecksumAddress
+    alias: NotRequired[ContractName | None]
+
+
+@final
+class VyperDeploymentJson(VyperBuildJson):
+    address: ChecksumAddress
+    alias: NotRequired[ContractName | None]
+
+
+ContractDeploymentJson = SolidityDeploymentJson | VyperDeploymentJson
 
 
 # Compiler
