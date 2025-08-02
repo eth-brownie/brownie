@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2423];
+extern PyObject *CPyStatics[2425];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1140,6 +1140,7 @@ extern PyObject *CPyPy_event____decode_ds_note(PyObject *self, PyObject *const *
 extern PyObject *CPyDef_event____decode_trace(PyObject *cpy_r_trace, PyObject *cpy_r_initial_address);
 extern PyObject *CPyPy_event____decode_trace(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_event_____top_level__(void);
+extern PyObject *CPyStatic_middlewares___partial;
 extern PyObject *CPyStatic_middlewares____middlewares;
 extern PyTypeObject *CPyType_middlewares___BrownieMiddlewareABC;
 extern PyObject *CPyDef_middlewares___BrownieMiddlewareABC(PyObject *cpy_r_w3);

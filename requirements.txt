@@ -37,7 +37,7 @@ charset-normalizer==3.4.2
     # via requests
 ckzg==2.1.1
     # via eth-account
-click==8.2.1
+click==8.2.2
     # via black
 cytoolz==1.0.1
     # via

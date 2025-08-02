@@ -2293,6 +2293,7 @@ struct export_table_b5e4b1180acefab623dd {
     PyObject *(*CPyDef_event____decode_ds_note)(PyObject *cpy_r_log, PyObject *cpy_r_contract);
     PyObject *(*CPyDef_event____decode_trace)(PyObject *cpy_r_trace, PyObject *cpy_r_initial_address);
     char (*CPyDef_event_____top_level__)(void);
+    PyObject **CPyStatic_middlewares___partial;
     PyObject **CPyStatic_middlewares____middlewares;
     PyTypeObject **CPyType_middlewares___BrownieMiddlewareABC;
     PyObject *(*CPyDef_middlewares___BrownieMiddlewareABC)(PyObject *cpy_r_w3);
