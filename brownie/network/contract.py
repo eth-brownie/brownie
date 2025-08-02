@@ -128,7 +128,7 @@ class _ContractBase:
         self,
         project: Optional[Union["Project", "TempProject"]],
         build: ContractDeploymentJson,
-        sources: Sources,
+        sources: Dict[str, Any] | Sources,
     ) -> None:
         self._project = project
         self._build: Final = build.copy()
