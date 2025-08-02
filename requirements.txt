@@ -37,7 +37,7 @@ charset-normalizer==3.4.2
     # via requests
 ckzg==2.1.1
     # via eth-account
-click==8.2.1
+click==8.2.2
     # via black
 cytoolz==1.0.1
     # via
@@ -205,7 +205,7 @@ referencing==0.36.2
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2025.7.29
+regex==2025.7.34
     # via parsimonious
 requests==2.32.4
     # via

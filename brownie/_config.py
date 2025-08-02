@@ -12,6 +12,7 @@ from dotenv import dotenv_values, load_dotenv
 from hypothesis import Phase
 from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
+from mypy_extensions import mypyc_attr
 
 from brownie._c_constants import Path, deepcopy, defaultdict, json_loads, regex_sub
 from brownie._expansion import expand_posix_vars
@@ -38,7 +39,7 @@ NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
 # TODO: Make this a typed dict
 
 
-@final
+@mypyc_attr(native_class=False)
 class ConfigContainer:
     def __init__(self) -> None:
         base_config = _load_config(BROWNIE_FOLDER.joinpath("data/default-config.yaml"))
@@ -121,6 +122,10 @@ class ConfigContainer:
     @property
     def mode(self) -> Optional[str]:
         return self.argv["cli"]
+
+
+@final
+class Config(ConfigContainer, metaclass=_Singleton): ...
 
 
 @final
@@ -355,4 +360,4 @@ warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 # create data folders
 _make_data_folders(DATA_FOLDER)
 
-CONFIG: Final[ConfigContainer] = _Singleton("Config", (ConfigContainer,), {})()
+CONFIG: Final = Config()

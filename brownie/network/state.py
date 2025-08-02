@@ -41,7 +41,7 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
-PathMap = Dict[str, tuple[HexStr, str]]
+PathMap = Dict[str, List[str]]
 Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
 
 AnyContract = Union["Contract", "ProjectContract"]
@@ -648,7 +648,7 @@ def _get_deployment(
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
-    pc_map = build_json.get("pcMap")
+    pc_map: Optional[Dict[int | str, Dict[str, Any]]] = build_json.get("pcMap")  # type: ignore [assignment]
     if isinstance(pc_map, dict):
         build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
 

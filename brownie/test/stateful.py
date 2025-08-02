@@ -73,7 +73,9 @@ def _generate_state_machine(rules_object: type) -> type:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
     machine = type("BrownieStateMachine", bases, {})
-    strategies: Dict[str, SearchStrategy] = {k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)}
+    strategies: Dict[str, SearchStrategy] = {
+        k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)
+    }
 
     for member in getmembers(machine):
         if _member_filter(member):
@@ -82,7 +84,7 @@ def _generate_state_machine(rules_object: type) -> type:
             if fn.__defaults__:
                 for i in range(-1, -1 - len(fn.__defaults__), -1):
                     varnames[i].append(fn.__defaults__[i])
-    
+
             if _attr_filter(attr, "initialize"):
                 wrapped = sf.initialize(**{key[0]: strategies[key[-1]] for key in varnames})  # type: ignore [call-overload]
                 setattr(machine, attr, wrapped(fn))
