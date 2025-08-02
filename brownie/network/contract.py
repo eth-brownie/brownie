@@ -81,10 +81,10 @@ from brownie.typing import (
     ABIConstructorWithName,
     AccountsType,
     ContractBuildJson,
+    ContractDeploymentJson,
     ContractName,
     Language,
     OptimizerSettings,
-    TransactionReceiptType,
 )
 from brownie.utils import (
     bright_blue,
@@ -110,6 +110,7 @@ from .state import (
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 if TYPE_CHECKING:
+    from brownie.network.transaction import TransactionReceipt
     from brownie.project.main import Project, TempProject
 
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
@@ -123,7 +124,7 @@ class _ContractBase:
     def __init__(
         self,
         project: Optional[Union["Project", "TempProject"]],
-        build: ContractBuildJson,
+        build: ContractDeploymentJson,
         sources: Dict[str, Any],
     ) -> None:
         self._project = project
@@ -270,7 +271,7 @@ class ContractContainer(_ContractBase):
         self,
         address: HexAddress,
         owner: Optional[AccountsType] = None,
-        tx: Optional[TransactionReceiptType] = None,
+        tx: Optional[TransactionReceipt] = None,
         persist: bool = True,
     ) -> "ProjectContract":
         """Returns a contract address.
@@ -304,7 +305,7 @@ class ContractContainer(_ContractBase):
 
         return contract
 
-    def _add_from_tx(self, tx: TransactionReceiptType) -> None:
+    def _add_from_tx(self, tx: TransactionReceipt) -> None:
         tx._confirmed.wait()
         if tx.status and tx.contract_address is not None:
             try:
@@ -538,7 +539,7 @@ class ContractConstructor:
             abi = next(i for i in parent.abi if i["type"] == "constructor")
             abi["name"] = "constructor"  # type: ignore [typeddict-unknown-key]
         except Exception:
-            abi: ABIConstructorWithName = {"inputs": [], "name": "constructor", "type": "constructor"}
+            abi: ABIConstructorWithName = {"inputs": [], "name": "constructor", "type": "constructor"}  # type: ignore [no-redef]
         self.abi: Final = abi
         self._name: Final = name
 
@@ -555,7 +556,7 @@ class ContractConstructor:
 
     def __call__(
         self, *args: Any, publish_source: bool = False, silent: bool = False
-    ) -> Union["Contract", TransactionReceiptType]:
+    ) -> Union["Contract", TransactionReceipt]:
         """Deploys a contract.
 
         Args:
@@ -736,7 +737,7 @@ class _DeployedContractBase(_ContractBase):
         self,
         address: HexAddress,
         owner: Optional[AccountsType] = None,
-        tx: Optional[TransactionReceiptType] = None,
+        tx: Optional[TransactionReceipt] = None,
     ) -> None:
         address = _resolve_address(address)
         self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
@@ -1175,7 +1176,7 @@ class Contract(_DeployedContractBase):
             return cls.from_abi(name, address, abi, owner)
 
         if as_proxy_for is not None:
-            build_json.update(abi=abi, natspec=implementation_contract._build.get("natspec"))
+            build_json.update(abi=abi, natspec=implementation_contract._build.get("natspec"))  # type: ignore [call-arg]
 
         if not _verify_deployed_code(
             address, build_json["deployedBytecode"], build_json["language"]
@@ -1286,7 +1287,7 @@ class ProjectContract(_DeployedContractBase):
         build: ContractBuildJson,
         address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
-        tx: Optional[TransactionReceiptType] = None,
+        tx: Optional[TransactionReceipt] = None,
     ) -> None:
         _ContractBase.__init__(self, project, build, project._sources)
         _DeployedContractBase.__init__(self, address, owner, tx)
@@ -1514,7 +1515,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         return fn.call(*args, block_identifier=block_identifier, override=override)
 
-    def transact(self, *args: Any) -> TransactionReceiptType:
+    def transact(self, *args: Any) -> TransactionReceipt:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1697,7 +1698,7 @@ class _ContractMethod:
         except Exception:
             raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
+    def transact(self, *args: Any, silent: bool = False) -> TransactionReceipt:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1835,7 +1836,7 @@ class ContractTx(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
+    def __call__(self, *args: Any, silent: bool = False) -> TransactionReceipt:
         """
         Broadcast a transaction that calls this contract method.
 
