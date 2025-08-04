@@ -1,6 +1,7 @@
-from typing import Callable, Dict, List, Optional, final
+from typing import Any, Callable, Optional, Sequence, final
 
 from web3 import Web3
+from web3.types import RPCEndpoint, RPCResponse
 
 from brownie.network.middlewares import BrownieMiddlewareABC
 
@@ -19,7 +20,12 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
         return -1
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable[..., RPCResponse],
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> RPCResponse:
         """Raise a ValueError when RPC.eth_call or RPC.eth_estimateGas errors."""
         result = make_request(method, params)
         if method in {"eth_call", "eth_estimateGas"} and "error" in result:
