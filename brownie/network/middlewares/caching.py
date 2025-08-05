@@ -2,10 +2,10 @@ import hexbytes
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Final, List, Optional, final
+from typing import Any, Callable, Dict, Final, List, Optional, Sequence, final
 
 from web3 import Web3
-from web3.types import LogReceipt
+from web3.types import LogReceipt, RPCEndpoint
 
 from brownie._c_constants import HexBytes, json_dumps
 from brownie._config import CONFIG, _get_data_folder
@@ -214,7 +214,12 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 # if it's been more than 15 seconds, only wait 1 second
                 time.sleep(1)
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         if method in (
             # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",

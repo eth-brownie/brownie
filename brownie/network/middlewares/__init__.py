@@ -1,9 +1,12 @@
 import functools
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Callable, Dict, Final, List, Optional
+from typing import Any, Callable, Dict, Final, List, Optional, Sequence, Type
 
 from web3 import Web3
+from web3.types import RPCEndpoint
+
+
+partial: Final = functools.partial
 
 
 class BrownieMiddlewareABC(ABC):
@@ -40,10 +43,15 @@ class BrownieMiddlewareABC(ABC):
 
         Subclasses should NOT include this method.
         """
-        return functools.partial(self.process_request, make_request)
+        return partial(self.process_request, make_request)
 
     @abstractmethod
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         """
         Process an RPC request.
 
@@ -87,7 +95,7 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
     network_type : str
         One of "live" or "development".
     """
-    middleware_layers: Dict[int, List] = {}
+    middleware_layers: Dict[int, List[Type[BrownieMiddlewareABC]]] = {}
     for obj in _middlewares:
         layer = obj.get_layer(web3, network_type)
         if layer is not None:
