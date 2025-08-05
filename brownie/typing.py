@@ -9,6 +9,7 @@ from typing import (
     Tuple,
     TypedDict,
     TypeVar,
+    Union,
     final,
 )
 
