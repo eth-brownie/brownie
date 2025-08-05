@@ -34,6 +34,8 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
+_T = TypeVar("_T")
+
 STANDARD_JSON: Final[InputJsonSolc] = {
     "language": None,
     "sources": {},
