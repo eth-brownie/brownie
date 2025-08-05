@@ -56,6 +56,7 @@ EVM_VERSION_MAPPING: Final = [
 ]
 
 BranchMap = Dict[str, Dict[int, Tuple[int, int, bool]]]
+StatementMap = Dict[str, Dict[int, Offset]]
 
 _get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
 _get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
