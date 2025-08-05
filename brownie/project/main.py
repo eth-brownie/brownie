@@ -215,12 +215,12 @@ class Project(_ProjectBase):
     _compiler_config: CompilerConfig
 
     def __init__(self, name: str, project_path: pathlib.Path, compile: bool = True) -> None:
-        self._path: Final = project_path
+        self._path = project_path
         self._envvars: Final = _load_project_envvars(project_path)
         self._structure: Final = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
-        self._build_path: Final = project_path.joinpath(self._structure["build"])
+        self._build_path = project_path.joinpath(self._structure["build"])
 
         self._name: Final = name
         self._active: bool = False
@@ -614,11 +614,11 @@ class TempProject(_ProjectBase):
     compiled via project.compile_source"""
 
     def __init__(self, name: str, contract_sources: Dict, compiler_config: CompilerConfig) -> None:
-        self._path: Final = None
-        self._build_path: Final = None
+        self._path = None
+        self._build_path = None
         self._name: Final = name
-        self._sources: Final = Sources(contract_sources, {})
-        self._build: Final = Build(self._sources)
+        self._sources = Sources(contract_sources, {})
+        self._build = Build(self._sources)
         self._compile(contract_sources, compiler_config, True)
         self._create_containers()
 
