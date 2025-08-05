@@ -113,7 +113,6 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 Language = Literal["Solidity", "Vyper"]
 EvmVersion = str
 Source = Tuple[Start, Stop, ContractName, str]
-StatementMap = Dict[str, Dict[int, Offset]]
 
 
 class ContractSource(TypedDict):
