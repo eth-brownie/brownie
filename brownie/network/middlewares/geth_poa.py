@@ -1,8 +1,9 @@
-from typing import Callable, Dict, List, Optional, final
+from typing import Any, Callable, Dict, List, Optional, Sequence, final
 
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
 from web3.middleware import geth_poa_middleware
+from web3.types import RPCEndpoint
 
 from brownie.network.middlewares import BrownieMiddlewareABC
 
@@ -23,6 +24,11 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
         except ExtraDataLengthError:
             return -1
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         middleware_fn = geth_poa_middleware(make_request, self.w3)
         return middleware_fn(method, params)
