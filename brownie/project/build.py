@@ -119,7 +119,7 @@ class Build:
                     continue
 
                 path_str = source_map[data["path"]]
-    
+
                 if "dev" not in data:
                     if "fn" not in data or "first_revert" in data:
                         _revert_map[pc] = False
