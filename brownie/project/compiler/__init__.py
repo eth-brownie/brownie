@@ -139,12 +139,12 @@ def compile_and_format(
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
-            compiler_data = {"version": str(vyper.get_version())}
+            compiler_data = {"version": str(vyper.get_version())}  # type: ignore [typeddict-item]
             interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data = {"version": str(solidity.get_version())}
+            compiler_data = {"version": str(solidity.get_version())}  # type: ignore [typeddict-item]
             interfaces = {
                 k: v
                 for k in interface_sources
