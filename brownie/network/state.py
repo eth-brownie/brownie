@@ -639,7 +639,7 @@ def _get_deployment(
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
     try:
-        row = _fetchone(f"SELECT * FROM {name} WHERE {query}")
+        row = cur.fetchone(f"SELECT * FROM {name} WHERE {query}")
     except OperationalError:
         row = None
     if not row:
@@ -649,7 +649,7 @@ def _get_deployment(
     build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
     path_map: PathMap = build_json.pop("paths")  # type: ignore [typeddict-item]
     sources: Dict[str, Any] = {
-        i[1]: _fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
+        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
@@ -670,7 +670,7 @@ def _add_deployment(
     address = _resolve_address(contract.address)
     name = f"chain{CONFIG.active_network['chainid']}"
 
-    _execute(
+    cur.execute(
         f"CREATE TABLE IF NOT EXISTS {name} "
         f"(address UNIQUE, alias UNIQUE, paths, {', '.join(DEPLOYMENT_KEYS)})"
     )
@@ -678,7 +678,7 @@ def _add_deployment(
     contract_build = contract._build
     if "compiler" not in contract_build:
         # do not replace full contract artifacts with ABI-only ones
-        row = _fetchone(f"SELECT compiler FROM {name} WHERE address=?", (address,))
+        row = cur.fetchone(f"SELECT compiler FROM {name} WHERE address=?", (address,))
         if row and row[0]:
             return
 
@@ -691,11 +691,11 @@ def _add_deployment(
             if source is None:
                 source = _Path(path).read_text()
             hash_ = _sha1(source.encode()).hexdigest()
-            _insert("sources", hash_, source)
+            cur.insert("sources", hash_, source)
             all_sources[key] = [hash_, path]
 
     values = (contract_build.get(i) for i in DEPLOYMENT_KEYS)
-    _insert(name, address, alias, all_sources, *values)
+    cur.insert(name, address, alias, all_sources, *values)
 
 
 def _remove_deployment(
@@ -717,7 +717,7 @@ def _remove_deployment(
 
     deployment = _get_deployment(address, alias)
     # delete entry from chain{n}
-    _execute(f"DELETE FROM {name} WHERE {query}")
+    cur.execute(f"DELETE FROM {name} WHERE {query}")
     # delete all entries from sources matching the contract's source hashes
     if contract := _find_contract(address):
         for key, path in contract._build.get("allSourcePaths", {}).items():
@@ -725,6 +725,6 @@ def _remove_deployment(
             if source is None:
                 source = _Path(path).read_text()
             hash_ = _sha1(source.encode()).hexdigest()
-            _execute(f"DELETE FROM sources WHERE hash='{hash_}'")
+            cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
     return deployment
