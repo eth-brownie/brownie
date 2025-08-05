@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, Final, List, Optional, Sequence, Type
 
 from web3 import Web3
-from web3.types import RPCEndpoint, RPCResponse
+from web3.types import RPCEndpoint
 
 
 partial: Final = functools.partial
@@ -46,7 +46,12 @@ class BrownieMiddlewareABC(ABC):
         return partial(self.process_request, make_request)
 
     @abstractmethod
-    def process_request(self, make_request: Callable, method: RPCEndpoint, params: Sequence[Any]) -> RPCResponse:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         """
         Process an RPC request.
 
