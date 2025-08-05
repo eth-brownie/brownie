@@ -475,7 +475,7 @@ def get_abi(
             name: ContractName = Path(path).stem  # type: ignore [assignment]
             final_output[name] = {
                 "abi": output_json["contracts"][path][name]["abi"],
-                "contractName": name,
+                "contractName": name,  # type: ignore [typeddict-item]
                 "type": "interface",
                 "source": source,
                 "offset": (0, len(source)),
