@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# mypy: disable-error-code="index"
 
 import logging
 from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
