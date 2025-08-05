@@ -180,7 +180,8 @@ class SettingsVyper(_CompilerSettings):
 
 
 class _InputJsonBase(TypedDict):
-    sources: SourcesDict
+    sources: SourcesDict  # NOTE: should this be contract sources?
+    interfaces: InterfaceSources
 
     # if I add a stub like this does it type check properly for members and fallbacks?
     def __getitem__(self, ContractName) -> Dict[str, Any]: ...  # type: ignore [misc]
@@ -190,14 +191,12 @@ class _InputJsonBase(TypedDict):
 class InputJsonSolc(_InputJsonBase, total=False):
     language: Literal["Solidity", None]
     settings: SettingsSolc
-    interfaces: InterfaceSources
 
 
 @final
 class InputJsonVyper(_InputJsonBase, total=False):
     language: Literal["Vyper"]
     settings: SettingsVyper
-    interfaces: InterfaceSources
 
 
 InputJson = InputJsonSolc | InputJsonVyper
