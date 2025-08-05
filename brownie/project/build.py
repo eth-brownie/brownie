@@ -9,6 +9,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    TypedDict,
     Union,
     final,
 )
@@ -22,6 +23,8 @@ from brownie.typing import (
     Offset,
     ProgramCounter,
 )
+
+from brownie.typing import Language
 
 from .sources import Sources, highlight_source
 
@@ -57,6 +60,14 @@ BUILD_KEYS: Final = (
 _revert_map: Final[Dict[int | str, tuple | Literal[False]]] = {}
 
 
+class _BuildJSON(TypedDict, total=False):
+    contractName: ContractName
+    type: Literal["interface"]
+    sourcePath: str
+    pcMap: Dict[str | int, Any]
+    language: Language
+    allSourcePaths: Dict[str, Any]
+    
 @final
 class Build:
     """Methods for accessing and manipulating a project's contract build data."""
