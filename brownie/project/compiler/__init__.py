@@ -113,7 +113,7 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-            
+
     solc_sources = {
         key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"
     }
@@ -139,7 +139,11 @@ def compile_and_format(
             set_vyper_version(version)
             language = "Vyper"
             compiler_data = {"version": str(vyper.get_version())}  # type: ignore [typeddict-item]
-            interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
+            interfaces = {
+                key: interface_sources[key]
+                for key in interface_sources
+                if Path(key).suffix != ".sol"
+            }
         else:
             set_solc_version(version)
             language = "Solidity"

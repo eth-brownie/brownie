@@ -91,7 +91,7 @@ class SourceJson(TypedDict):
 
 
 Sources = Dict[ContractName, SourceJson]
-    
+
 
 def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
     """
@@ -322,9 +322,11 @@ def _get_unique_build_json(
 
 class AstObject(TypedDict):
     """A dictionary representing on object on the AST."""
+
     name: str
     module: str
     type: str
+
 
 AstJson = List[AstObject]
 
