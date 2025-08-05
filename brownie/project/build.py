@@ -9,7 +9,6 @@ from typing import (
     Literal,
     Optional,
     Tuple,
-    TypedDict,
     Union,
     final,
 )
