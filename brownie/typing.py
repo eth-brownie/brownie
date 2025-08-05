@@ -166,8 +166,6 @@ class _CompilerSettings(TypedDict):
     outputSelection: OutputSelection
 
 
-OutputSelection = Dict[str, Dict[str, List[str]]]
-
 @final
 class SettingsSolc(_CompilerSettings):
     evmVersion: NotRequired[Optional[EvmVersion]]
