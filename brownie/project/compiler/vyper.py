@@ -92,13 +92,9 @@ class SourceJSON(TypedDict):
 
 Sources = Dict[ContractName, SourceJSON]
 
-class SettingsJSON(TypedDict):
-    outputSelection: Dict[str, Dict[str, List[str]]]
-
 class InputJSON(TypedDict, total=False):
     language: Language
     sources: Sources
-    settings: SettingsJSON
     
 
 def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
