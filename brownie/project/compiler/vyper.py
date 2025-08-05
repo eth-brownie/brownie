@@ -484,7 +484,7 @@ def _generate_coverage_data(
     if revert_pc != -1:
         this["optimizer_revert"] = True
 
-    pc_map = {i.pop("pc"): i for i in pc_list}  # type: ignore [misc]
+    pc_map = {i.pop("pc"): i for i in pc_list}
 
     return pc_map, {"0": statement_map}, {"0": branch_map}
 
