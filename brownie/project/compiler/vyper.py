@@ -87,14 +87,11 @@ def set_vyper_version(version: VersionSpec) -> str:
     return str(_active_version)
 
 
-class SourceJSON(TypedDict):
+class SourceJson(TypedDict):
     content: str
 
-Sources = Dict[ContractName, SourceJSON]
 
-class InputJSON(TypedDict, total=False):
-    language: Language
-    sources: Sources
+Sources = Dict[ContractName, SourceJson]
     
 
 def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
