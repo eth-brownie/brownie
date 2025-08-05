@@ -320,7 +320,7 @@ def generate_build_json(
     build_json: Dict[ContractName, ContractBuildJson] = {}
 
     if language == "Solidity":
-        compiler_data["optimizer"] = settings["optimizer"]  # type: ignore [typeddict-item]
+        compiler_data["optimizer"] = settings["optimizer"]  # type: ignore [typeddict-item, index]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     sources = input_json["sources"]
