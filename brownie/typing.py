@@ -84,7 +84,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
-    pcMap: Dict[int, Dict[str, Any]]
+    pcMap: Dict[int, "ProgramCounter"]
     compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
 
@@ -199,6 +199,29 @@ class InputJsonVyper(_InputJsonBase, total=False):
 
 
 InputJson = InputJsonSolc | InputJsonVyper
+
+
+Count = int
+
+
+class ProgramCounter(TypedDict):
+    count: Count
+    fn: str
+    op: str
+    path: str
+    value: str
+    pc: NotRequired[int]
+    branch: NotRequired[Count]
+    jump: NotRequired[str]
+    dev: NotRequired[str]
+    offset: NotRequired[Offset]
+    optimizer_revert: NotRequired[Literal[True]]
+    first_revert: NotRequired[Literal[True]]
+    jump_revert: NotRequired[Literal[True]]
+    statement: NotRequired[Count]
+
+
+PcList = List[ProgramCounter]
 
 
 class VyperAstNode(TypedDict):
