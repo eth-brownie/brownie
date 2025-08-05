@@ -24,7 +24,7 @@ from brownie.typing import (
     ProgramCounter,
 )
 
-from brownie.typing import Language
+from brownie.typing import ContractName, Language
 
 from .sources import Sources, highlight_source
 
@@ -120,38 +120,29 @@ class Build:
             if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
                 if "path" not in data or data["path"] is None:
                     continue
+                try:
+                    revert_str = self._sources.get(path_str)[data["offset"][1] :]
+                    revert_str = revert_str[: revert_str.index("\n")]
+                    revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
+                    if revert_str.startswith("dev:"):
+                        data["dev"] = revert_str
+                except (KeyError, ValueError):
+                    pass
 
-                path_str = source_map[data["path"]]
+            msg = "" if data["op"] == "REVERT" else "invalid opcode"
+            revert = (
+                path_str,
+                tuple(data["offset"]),
+                data.get("fn", "<None>"),
+                data.get("dev", msg),
+                self._sources,
+            )
 
-                if "dev" not in data:
-                    if "fn" not in data or "first_revert" in data:
-                        _revert_map[pc] = False
-                        continue
-                    try:
-                        revert_str = self._sources.get(path_str)[data["offset"][1] :]
-                        revert_str = revert_str[: revert_str.index("\n")]
-                        revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
-                        if revert_str.startswith("dev:"):
-                            data["dev"] = revert_str
-                    except (KeyError, ValueError):
-                        pass
-
-                msg = "" if data["op"] == "REVERT" else "invalid opcode"
-                revert = (
-                    path_str,
-                    tuple(data["offset"]),
-                    data.get("fn", "<None>"),
-                    data.get("dev", msg),
-                    self._sources,
-                )
-
-                # do not compare the final tuple item in case the same project was loaded twice
-                if pc not in _revert_map or (
-                    _revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]
-                ):
-                    _revert_map[pc] = revert
-                    continue
-                _revert_map[pc] = False
+            # do not compare the final tuple item in case the same project was loaded twice
+            if pc not in _revert_map or (_revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]):  # type: ignore [index]
+                _revert_map[pc] = revert
+                continue
+            _revert_map[pc] = False
 
     def _remove_contract(self, contract_name: ContractName) -> None:
         key = self._stem(contract_name)
