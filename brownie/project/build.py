@@ -26,8 +26,6 @@ from brownie.typing import (
     ProgramCounter,
 )
 
-from brownie.typing import ContractName, Language
-
 from .sources import Sources, highlight_source
 
 INTERFACE_KEYS: Final = "abi", "contractName", "sha1", "type"
