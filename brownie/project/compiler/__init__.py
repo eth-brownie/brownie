@@ -34,7 +34,6 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-_V = TypeVar("_V")
 
 STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,
