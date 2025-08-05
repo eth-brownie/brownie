@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
 import logging
 from typing import Dict, Final, List, Literal, Optional, Set, Tuple, Union
@@ -361,58 +362,58 @@ def _generate_coverage_data(
     while opcodes and source_map:
 
         # format of source is [start, stop, contract_id, jump code]
-        source = source_map.popleft()
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})  # type: ignore [typeddict-item]
+        start, stop, _, jump_code = source_map.popleft()
 
-        if source[3] != "-":
-            pc_list[-1]["jump"] = source[3]
+        op = opcodes.popleft()
+        this: ProgramCounter = {"op": op, "pc": pc}  # type: ignore [typeddict-item]
+        pc_list.append(this)
+
+        if jump_code != "-":
+            this["jump"] = jump_code
 
         pc += 1
         if opcodes and opcodes[0][:2] == "0x":
-            pc_list[-1]["value"] = opcodes.popleft()
-            pc += int(pc_list[-1]["op"][4:])
+            this["value"] = opcodes.popleft()
+            pc += int(op[4:])
 
         # set source offset (-1 means none)
-        if source[0] == -1:
-            if (
-                len(pc_list) > 6
-                and pc_list[-7]["op"] == "CALLVALUE"
-                and pc_list[-1]["op"] == "REVERT"
-            ) or (
+        if start == -1:
+            if (len(pc_list) > 6 and pc_list[-7]["op"] == "CALLVALUE" and op == "REVERT") or (
                 len(pc_list) > 2
                 and pc_list[-3]["op"] == "CALLVALUE"
                 and _is_revert_jump(pc_list[-2:], revert_pc)
             ):
                 # special case - initial nonpayable check on vyper >=0.2.5
-                pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+                this["dev"] = "Cannot send ether to nonpayable function"
                 # hackiness to prevent the source highlight from showing the entire contract
-                if pc_list[-1]["op"] == "REVERT":
+                if op == "REVERT":
                     # for REVERT, apply to the previous opcode
                     pc_list[-2].update(path="0", offset=(0, 0))  # type: ignore [call-arg]
                 else:
                     # for JUMPI we need the mapping on the actual opcode
-                    pc_list[-1].update(path="0", offset=(0, 0))  # type: ignore [call-arg]
+                    this.update(path="0", offset=(0, 0))  # type: ignore [call-arg]
             continue
-        offset: Offset = (source[0], source[0] + source[1])  # type: ignore [assignment]
-        pc_list[-1]["path"] = "0"
-        pc_list[-1]["offset"] = offset
+
+        offset: Offset = (start, start + stop)  # type: ignore [assignment]
+        this["path"] = "0"
+        this["offset"] = offset
 
         try:
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                pc_list[-1]["fn"] = pc_list[-2]["fn"]
+                this["fn"] = pc_list[-2]["fn"]
             else:
                 # statement coverage
                 fn = next(k for k, v in fn_offsets.items() if is_inside_offset(offset, v))
-                pc_list[-1]["fn"] = f"{contract_name}.{fn}"
+                this["fn"] = f"{contract_name}.{fn}"
                 stmt_offset = next(i for i in stmt_nodes if is_inside_offset(offset, i))
                 stmt_nodes.remove(stmt_offset)
-                statement_map.setdefault(pc_list[-1]["fn"], {})[count] = stmt_offset
-                pc_list[-1]["statement"] = count
+                statement_map.setdefault(this["fn"], {})[count] = stmt_offset
+                this["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
             pass
 
-        if pc_list[-1]["op"] not in ("JUMPI", "REVERT"):
+        if op not in ("JUMPI", "REVERT"):
             continue
 
         node = _find_node_by_offset(ast_json, offset)
@@ -420,26 +421,26 @@ def _generate_coverage_data(
             continue
 
         node_ast_type = node["ast_type"]
-        if pc_list[-1]["op"] == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
+        if op == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
             # custom revert error strings
             if node_ast_type == "FunctionDef":
-                if (pc_list[-1]["op"] == "REVERT" and pc_list[-7]["op"] == "CALLVALUE") or (
-                    pc_list[-1]["op"] == "JUMPI" and pc_list[-3]["op"] == "CALLVALUE"
+                if (op == "REVERT" and pc_list[-7]["op"] == "CALLVALUE") or (
+                    op == "JUMPI" and pc_list[-3]["op"] == "CALLVALUE"
                 ):
-                    pc_list[-1]["dev"] = "Cannot send ether to nonpayable function"
+                    this["dev"] = "Cannot send ether to nonpayable function"
             elif node_ast_type == "Subscript":
-                pc_list[-1]["dev"] = "Index out of range"
+                this["dev"] = "Index out of range"
             elif node_ast_type in ("AugAssign", "BinOp"):
                 node_op: VyperAstNode = node["op"]
                 node_op_ast_type = node_op["ast_type"]
                 if node_op_ast_type == "Sub":
-                    pc_list[-1]["dev"] = "Integer underflow"
+                    this["dev"] = "Integer underflow"
                 elif node_op_ast_type == "Div":
-                    pc_list[-1]["dev"] = "Division by zero"
+                    this["dev"] = "Division by zero"
                 elif node_op_ast_type == "Mod":
-                    pc_list[-1]["dev"] = "Modulo by zero"
+                    this["dev"] = "Modulo by zero"
                 else:
-                    pc_list[-1]["dev"] = "Integer overflow"
+                    this["dev"] = "Integer overflow"
             continue
 
         if node_ast_type in ("Assert", "If") or (
@@ -447,19 +448,20 @@ def _generate_coverage_data(
             and node["value"].get("func", {}).get("id") == "assert_modifiable"
         ):
             # branch coverage
-            pc_list[-1]["branch"] = count
-            branch_map.setdefault(pc_list[-1]["fn"], {})
+            this["branch"] = count
+            this_fn = this["fn"]
+            branch_map.setdefault(this_fn, {})
             if node_ast_type == "If":
-                branch_map[pc_list[-1]["fn"]][count] = _convert_src(node["test"]["src"]) + (False,)
+                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)
             else:
-                branch_map[pc_list[-1]["fn"]][count] = offset + (True,)
+                branch_map[this_fn][count] = offset + (True,)
             count += 1
 
     first = pc_list[0]
     first["path"] = "0"
     first["offset"] = (0, _convert_src(ast_json[-1]["src"])[1])
     if revert_pc != -1:
-        pc_list[-1]["optimizer_revert"] = True
+        this["optimizer_revert"] = True
 
     pc_map = {i.pop("pc"): i for i in pc_list}
 
