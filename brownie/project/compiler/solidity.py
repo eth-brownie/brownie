@@ -24,6 +24,8 @@ from brownie.typing import (
     DeployedBytecodeJson,
     InputJsonSolc,
     Offset,
+    PcList,
+    ProgramCounter,
     SolidityBuildJson,
     Source,
 )
@@ -51,7 +53,7 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-PcMap = Dict[int, Dict[str, Any]]
+PcMap = Dict[int, ProgramCounter]
 StatementNodes = Dict[str, Set[Offset]]
 StatementMap = Dict[str, Dict[str, Dict[int, Tuple[int, int]]]]
 BranchNodes = Dict[str, Set[NodeBase]]
@@ -362,8 +364,8 @@ def _generate_coverage_data(
     branch_set: Dict[str, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
-    pc_list: List[dict] = []
-    revert_map: Dict[Tuple[str, int], List[int]] = {}
+    pc_list: PcList = []
+    revert_map: Dict[Tuple[str, Offset], List[int]] = {}
     fallback_hexstr: str = "unassigned"
 
     optimizer_revert = get_version() < Version("0.8.0")
@@ -382,7 +384,7 @@ def _generate_coverage_data(
     while source_map:
         # format of source_map is [start, stop, contract_id, jump code]
         source = source_map.popleft()
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        pc_list.append({"op": opcodes.popleft(), "pc": pc})  # type: ignore [typeddict-item]
 
         if (
             has_fallback is False
@@ -470,7 +472,7 @@ def _generate_coverage_data(
         try:
             # set fn name and statement coverage marker
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                pc_list[-1]["fn"] = active_fn_name
+                pc_list[-1]["fn"] = active_fn_name  # type: ignore [typeddict-item]
             else:
                 active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
                 pc_list[-1]["fn"] = active_fn_name
@@ -491,7 +493,7 @@ def _generate_coverage_data(
 
     while opcodes[0] not in ("INVALID", "STOP") and pc < instruction_count:
         # necessary because sometimes solidity returns an incomplete source map
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        pc_list.append({"op": opcodes.popleft(), "pc": pc})  # type: ignore [typeddict-item]
         pc += 1
         if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
             pc_list[-1]["value"] = opcodes.popleft()
@@ -519,7 +521,7 @@ def _generate_coverage_data(
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
             if not any("offset" in x and x["offset"] == offset for x in pc_list):
-                pc_list[values[0]].update(offset=offset, jump_revert=True)
+                pc_list[values[0]].update(offset=offset, jump_revert=True) # type: ignore [call-arg]
                 del values[0]
 
     # set branch index markers and build final branch map
@@ -541,7 +543,7 @@ def _generate_coverage_data(
 
 
 def _find_revert_offset(
-    pc_list: List[dict],
+    pc_list: PcList,
     source_map: Deque[Source],
     source_node: NodeBase,
     fn_node: NodeBase,
@@ -553,7 +555,7 @@ def _find_revert_offset(
         # is not the last instruction
         if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
             # reference to CALLVALUE 8 instructions previous is a nonpayable function check
-            pc_list[-1].update(
+            pc_list[-1].update( # type: ignore [call-arg]
                 dev="Cannot send ether to nonpayable function",
                 fn=pc_list[-8].get("fn", "<unknown>"),
                 offset=pc_list[-8].get("offset"),
@@ -579,7 +581,7 @@ def _find_revert_offset(
         and next_offset != fn_node.offset
         and is_inside_offset(next_offset, fn_node.offset)
     ):
-        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)
+        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset) # type: ignore [call-arg]
         return
 
     # if any of the previous conditions are not satisfied, this is the final revert
@@ -588,12 +590,12 @@ def _find_revert_offset(
         expr = fn_node[-1].expression
 
         if expr.nodeType == "FunctionCall" and expr.get("expression.name") in ("revert", "require"):
-            pc_list[-1].update(
+            pc_list[-1].update( # type: ignore [call-arg]
                 path=str(source_node.contract_id), fn=fn_name, offset=expr.expression.offset
             )
 
 
-def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
+def _set_invalid_error_string(source_node: NodeBase, pc_map: ProgramCounter) -> None:
     # set custom error string for INVALID opcodes
     try:
         node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]

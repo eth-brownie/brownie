@@ -25,6 +25,8 @@ from brownie.typing import (
     ContractName,
     InputJsonVyper,
     Offset,
+    PcList,
+    ProgramCounter,
     VyperAstJson,
     VyperAstNode,
     VyperBuildJson,
@@ -320,7 +322,7 @@ def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
     )
 
 
-def _is_revert_jump(pc_list: List[dict], revert_pc: int) -> bool:
+def _is_revert_jump(pc_list: PcList, revert_pc: int) -> bool:
     return pc_list[-1]["op"] == "JUMPI" and int(pc_list[-2].get("value", "0"), 16) == revert_pc
 
 
@@ -329,7 +331,9 @@ def _generate_coverage_data(
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,
-) -> Tuple[Dict[int, Dict], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]]:
+) -> Tuple[
+    Dict[int, ProgramCounter], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]
+]:
     if not opcodes_str:
         return {}, {}, {}
 
@@ -343,7 +347,7 @@ def _generate_coverage_data(
     statement_map: StatementMap = {}
     branch_map: BranchMap = {}
 
-    pc_list: List = []
+    pc_list: PcList = []
     count, pc = 0, 0
 
     revert_pc = -1
@@ -358,7 +362,7 @@ def _generate_coverage_data(
 
         # format of source is [start, stop, contract_id, jump code]
         source = source_map.popleft()
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        pc_list.append({"op": opcodes.popleft(), "pc": pc})  # type: ignore [typeddict-item]
 
         if source[3] != "-":
             pc_list[-1]["jump"] = source[3]
@@ -384,10 +388,10 @@ def _generate_coverage_data(
                 # hackiness to prevent the source highlight from showing the entire contract
                 if pc_list[-1]["op"] == "REVERT":
                     # for REVERT, apply to the previous opcode
-                    pc_list[-2].update(path="0", offset=[0, 0])
+                    pc_list[-2].update(path="0", offset=(0, 0))  # type: ignore [call-arg]
                 else:
                     # for JUMPI we need the mapping on the actual opcode
-                    pc_list[-1].update(path="0", offset=[0, 0])
+                    pc_list[-1].update(path="0", offset=(0, 0))  # type: ignore [call-arg]
             continue
         offset: Offset = (source[0], source[0] + source[1])  # type: ignore [assignment]
         pc_list[-1]["path"] = "0"
@@ -453,7 +457,7 @@ def _generate_coverage_data(
 
     first = pc_list[0]
     first["path"] = "0"
-    first["offset"] = [0, _convert_src(ast_json[-1]["src"])[1]]
+    first["offset"] = (0, _convert_src(ast_json[-1]["src"])[1])
     if revert_pc != -1:
         pc_list[-1]["optimizer_revert"] = True
 
