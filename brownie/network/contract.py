@@ -1934,11 +1934,16 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner, natspec)
 
 
+_fixed168x10: Final = {"fixed168x10": "decimal"}
+
+
 def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     abi_inputs = abi["inputs"]
-    types_list = get_type_strings(abi_inputs, {"fixed168x10": "decimal"})
-    params = zip((i["name"] for i in abi_inputs), types_list)
-    return ", ".join(f"{i[1]}{bright_blue}{f' {i[0]}' if i[0] else ''}{color}" for i in params)
+    types_list = get_type_strings(abi_inputs, _fixed168x10)
+    return ", ".join(
+        f"{types}{bright_blue}{f' {name}' if name else ''}{color}"
+        for name, types in zip((i["name"] for i in abi_inputs), types_list)
+    )
 
 
 def _verify_deployed_code(
@@ -2082,16 +2087,15 @@ _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 def _contract_method_autosuggest(
     args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
 ) -> List[str]:
-    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in args], types_list)
-
-    suggestions = (f" {i[1]}{f' {i[0]}' if i[0] else ''}" for i in params)
-    if not is_transaction:
-        return list(suggestions)
-    elif is_payable:
-        return [*suggestions, " {'from': Account", " 'value': Wei}"]
-    else:
-        return [*suggestions, " {'from': Account}"]
+    types_list = get_type_strings(args, _fixed168x10)
+    names = (i["name"] for i in args)
+    suggestions = [f" {typ}{f' {name}' if name else ''}" for name, typ in zip(names, types_list)]
+    if is_transaction:
+        if is_payable:
+            suggestions.append(" {'from': Account", " 'value': Wei}")
+        else:
+            suggestions.append(" {'from': Account}")
+    return suggestions
 
 
 def _comment_slicer(match: Match) -> str:

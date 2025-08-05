@@ -24,7 +24,9 @@ from warnings import warn
 import black
 import requests
 from eth_abi import decode
+from eth_typing import BlockNumber, ChecksumAddress
 from web3.exceptions import TransactionNotFound
+from web3.types import TxReceipt
 
 from brownie._c_constants import HexBytes, deque, regex_compile, sha1
 from brownie._config import CONFIG
@@ -34,6 +36,7 @@ from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
+from brownie.typing import ContractName
 from brownie.utils import (
     bright_blue,
     bright_cyan,
@@ -143,13 +146,13 @@ class TransactionReceipt:
         modified_state: Boolean, did this contract write to storage?"""
 
     # these are defined as class attributes to expose them in console completion hints
-    block_number = None
-    contract_address: Optional[str] = None
-    contract_name = None
-    fn_name = None
-    gas_used = None
+    block_number: Optional[BlockNumber] = None
+    contract_address: Optional[ChecksumAddress] = None
+    contract_name: Optional[ContractName] = None
+    fn_name: Optional[str] = None
+    gas_used: Optional[int] = None
     logs: Optional[List] = None
-    nonce = None
+    nonce: Optional[int] = None
     sender = None
     txid: str
     txindex = None
@@ -601,7 +604,7 @@ class TransactionReceipt:
             # can at least return a receipt
             pass
 
-    def _set_from_receipt(self, receipt: Dict) -> None:
+    def _set_from_receipt(self, receipt: TxReceipt) -> None:
         """Sets object attributes based on the transaction reciept."""
         self.block_number = receipt["blockNumber"]
         self.txindex = receipt["transactionIndex"]
