@@ -53,11 +53,12 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-PcMap = Dict[int, ProgramCounter]
+Count = int
+PcMap = Dict[Count, ProgramCounter]
 StatementNodes = Dict[str, Set[Offset]]
-StatementMap = Dict[str, Dict[str, Dict[int, Tuple[int, int]]]]
+StatementMap = Dict[str, Dict[str, Dict[Count, Tuple[int, int]]]]
 BranchNodes = Dict[str, Set[NodeBase]]
-BranchMap = Dict[str, Dict[str, Dict[int, Tuple[int, int, int]]]]
+BranchMap = Dict[str, Dict[str, Dict[Count, Tuple[int, int, int]]]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
