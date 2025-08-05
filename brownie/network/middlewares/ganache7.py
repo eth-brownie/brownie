@@ -1,6 +1,7 @@
-from typing import Callable, Dict, List, Optional, final
+from typing import Any, Callable, Dict, List, Optional, Sequence, final
 
 from web3 import Web3
+from web3.types import RPCEndpoint
 
 from brownie.network.middlewares import BrownieMiddlewareABC
 
@@ -11,7 +12,12 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
         return -100 if w3.client_version.lower().startswith("ganache/v7") else None
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         result = make_request(method, params)
 
         # reformat failed eth_call / eth_sendTransaction output to mimick that of Ganache 6.x
