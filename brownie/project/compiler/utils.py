@@ -23,7 +23,7 @@ def expand_source_map(source_map_str: str | dict) -> List[Source]:
     if not isinstance(source_map_str, str):
         raise TypeError(source_map_str)
 
-    source_map = [_expand_row(i) if i else None for i in source_map_str.split(";")]
+    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:
             source_map[i] = source_map[i - 1]
