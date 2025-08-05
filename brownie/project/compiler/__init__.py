@@ -53,8 +53,8 @@ EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
 
 # C constants
 _from_standard_output: Final = solcast.from_standard_output
-
-
+    
+    
 def compile_and_format(
     contract_sources: Dict[str, str],
     solc_version: Optional[str] = None,
@@ -136,16 +136,12 @@ def compile_and_format(
         if path_list[0].endswith(".vy"):
             set_vyper_version(version)
             language = "Vyper"
-            compiler_data["version"] = str(vyper.get_version())
-            interfaces = {
-                key: interface_sources[key]
-                for key in interface_sources
-                if Path(key).suffix != ".sol"
-            }
+            compiler_data = {"version": str(vyper.get_version())}
+            interfaces = {key: interface_sources[key] for key in interface_sources if Path(key).suffix != ".sol"}
         else:
             set_solc_version(version)
             language = "Solidity"
-            compiler_data["version"] = str(solidity.get_version())
+            compiler_data = {"version": str(solidity.get_version())}
             interfaces = {
                 k: v
                 for k in interface_sources
