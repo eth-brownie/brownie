@@ -124,6 +124,7 @@ class InterfaceSource(TypedDict):
 
 
 SourcesDict = Dict[str, ContractSource | InterfaceSource]
+InterfaceSources = Dict[str, InterfaceSource]
 
 
 @final
@@ -179,7 +180,8 @@ class SettingsVyper(_CompilerSettings):
 
 
 class _InputJsonBase(TypedDict):
-    sources: SourcesDict
+    sources: SourcesDict  # NOTE: should this be contract sources?
+    interfaces: InterfaceSources
 
     # if I add a stub like this does it type check properly for members and fallbacks?
     def __getitem__(self, ContractName) -> Dict[str, Any]: ...  # type: ignore [misc]
@@ -195,7 +197,6 @@ class InputJsonSolc(_InputJsonBase, total=False):
 class InputJsonVyper(_InputJsonBase, total=False):
     language: Literal["Vyper"]
     settings: SettingsVyper
-    interfaces: SourcesDict
 
 
 InputJson = InputJsonSolc | InputJsonVyper
