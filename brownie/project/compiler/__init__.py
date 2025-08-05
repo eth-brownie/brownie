@@ -33,7 +33,7 @@ from brownie.utils import notify
 
 from . import solidity, vyper
 
-STANDARD_JSON: Final[InputJson] = {
+STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,
     "sources": {},
     "settings": {
@@ -225,7 +225,7 @@ def generate_input_json(
         if language == "Solidity":
             input_json["sources"].update(_sources_dict(interface_sources, language))
         else:
-            input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [typeddict-unknown-key]
+            input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [arg-type]
 
     return input_json
 
