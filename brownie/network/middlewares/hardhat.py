@@ -1,6 +1,7 @@
-from typing import Callable, Dict, List, Optional, final
+from typing import Any, Callable, Dict, List, Optional, Sequence, final
 
 from web3 import Web3
+from web3.types import RPCEndpoint
 
 from brownie._c_constants import regex_findall
 from brownie.network.middlewares import BrownieMiddlewareABC
@@ -15,7 +16,12 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         else:
             return None
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         result = make_request(method, params)
 
         # modify Hardhat transaction error to mimick the format that Ganache uses
