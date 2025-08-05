@@ -36,7 +36,7 @@ from . import solidity, vyper
 
 _V = TypeVar("_V")
 
-STANDARD_JSON: Final[InputJson] = {
+STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,
     "sources": {},
     "settings": {
