@@ -117,6 +117,7 @@ class Build:
             if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
                 if "path" not in data or data["path"] is None:
                     continue
+
                 path_str = source_map[data["path"]]
     
                 if "dev" not in data:
