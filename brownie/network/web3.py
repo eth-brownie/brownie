@@ -90,17 +90,19 @@ class Web3(_Web3):
 
         # middlewares with a layer below zero are injected
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
-        for layer, obj in [(k, x) for k in to_inject for x in middleware_layers[k]]:
-            middleware = obj(self)
-            self.middleware_onion.inject(middleware, layer=0)
-            self._custom_middleware.add(middleware)
+        for layer in to_inject:
+            for obj in middleware_layers[layer]:
+                middleware = obj(self)
+                self.middleware_onion.inject(middleware, layer=0)
+                self._custom_middleware.add(middleware)
 
         # middlewares with a layer of zero or greater are added
         to_add = sorted(i for i in middleware_layers if i >= 0)
-        for layer, obj in [(k, x) for k in to_add for x in middleware_layers[k]]:
-            middleware = obj(self)
-            self.middleware_onion.add(middleware)
-            self._custom_middleware.add(middleware)
+        for layer in to_add:
+            for obj in middleware_layers[layer]:
+                middleware = obj(self)
+                self.middleware_onion.add(middleware)
+                self._custom_middleware.add(middleware)
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
