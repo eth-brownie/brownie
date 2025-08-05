@@ -13,8 +13,6 @@ from typing import (
     final,
 )
 
-from eth_typing import HexStr
-
 from brownie.typing import (
     BuildJson,
     ContractBuildJson,
