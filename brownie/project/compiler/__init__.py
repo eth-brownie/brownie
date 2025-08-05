@@ -111,7 +111,7 @@ def compile_and_format(
             )
         else:
             compiler_targets[vyper_version] = list(vyper_sources)
-            
+
     solc_sources = {
         key: contract_sources[key] for key in contract_sources if Path(key).suffix == ".sol"
     }
