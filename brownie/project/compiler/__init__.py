@@ -214,10 +214,10 @@ def generate_input_json(
     settings = input_json["settings"]
     settings["evmVersion"] = evm_version
     if language == "Solidity":
-        settings["optimizer"] = optimizer
-        settings["remappings"] = _get_solc_remappings(remappings)
+        settings["optimizer"] = optimizer  # type: ignore [typeddict-unknown-key]
+        settings["remappings"] = _get_solc_remappings(remappings)  # type: ignore [typeddict-unknown-key]
         if viaIR is not None:
-            settings["viaIR"] = viaIR
+            settings["viaIR"] = viaIR  # type: ignore [typeddict-unknown-key]
     input_json["sources"] = _sources_dict(contract_sources, language)
 
     if interface_sources:
