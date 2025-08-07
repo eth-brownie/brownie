@@ -621,7 +621,7 @@ def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJs
     except JSONDecodeError:
         return {}  # type: ignore [typeddict-item]
 
-            
+
 # TODO: remove this decorator once weakref support is implemented
 @mypyc_attr(native_class=False)
 class TempProject(_ProjectBase):
