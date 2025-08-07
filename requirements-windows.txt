@@ -87,7 +87,7 @@ eth-account==0.13.7
     #   -r requirements.txt
     #   eip712
     #   web3
-eth-event==1.3.4
+eth-event==1.3.5
     # via -r requirements.txt
 eth-hash[pycryptodome]==0.7.1
     # via
@@ -134,7 +134,7 @@ execnet==2.1.1
     # via
     #   -r requirements.txt
     #   pytest-xdist
-faster-eth-utils==4.1.3
+faster-eth-utils==4.1.4
     # via -r requirements.txt
 frozenlist==1.7.0
     # via
@@ -295,7 +295,7 @@ rlp==4.1.0
     #   -r requirements.txt
     #   eth-account
     #   eth-rlp
-rpds-py==0.26.0
+rpds-py==0.27.0
     # via
     #   -r requirements.txt
     #   jsonschema
