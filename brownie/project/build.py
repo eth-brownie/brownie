@@ -194,7 +194,7 @@ def _get_error_source_from_pc(
     pc: int, pad: int = 3
 ) -> Tuple[Optional[str], Optional[Tuple[int, int]], Optional[str], Optional[str]]:
     # Given the program counter from a stack trace that caused a transaction
-    # to revert, returns the highlighted relevent source code and the method name.
+    # to revert, returns the highlighted relevant source code and the method name.
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
     revert: Tuple[str, Offset, str, str, Sources] = _revert_map[pc]  # type: ignore [assignment]

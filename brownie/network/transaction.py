@@ -1164,7 +1164,7 @@ class TransactionReceipt:
         call_tree: List = [[key]]
         active_tree: List = [call_tree[0]]
 
-        # (index, depth, jumpDepth) for relevent steps in the trace
+        # (index, depth, jumpDepth) for relevant steps in the trace
         trace_index = [(0, 0, 0)] + [
             (i, trace[i]["depth"], trace[i]["jumpDepth"])
             for i in range(1, len(trace))

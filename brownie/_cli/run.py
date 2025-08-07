@@ -23,7 +23,7 @@ Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
   --silent                Suppress console output for transactions
   --interactive -I        Open an interactive console when the script completes or raises
-  --raise -r              Raise exceptions occured in the script to the caller
+  --raise -r              Raise exceptions occurred in the script to the caller
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message
