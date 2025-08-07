@@ -2932,6 +2932,7 @@ struct export_table_b5e4b1180acefab623dd {
     PyTypeObject **CPyType_typing___DeployedBytecodeJson;
     PyTypeObject **CPyType_typing____BuildJsonBase;
     PyTypeObject **CPyType_typing___InterfaceBuildJson;
+    PyTypeObject **CPyType_typing___CoverageMap;
     PyTypeObject **CPyType_typing____ContractBuildJson;
     PyTypeObject **CPyType_typing___SolidityBuildJson;
     PyTypeObject **CPyType_typing___VyperBuildJson;

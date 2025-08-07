@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2430];
+extern PyObject *CPyStatics[2435];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -2131,6 +2131,7 @@ extern PyTypeObject *CPyType_typing___BytecodeJson;
 extern PyTypeObject *CPyType_typing___DeployedBytecodeJson;
 extern PyTypeObject *CPyType_typing____BuildJsonBase;
 extern PyTypeObject *CPyType_typing___InterfaceBuildJson;
+extern PyTypeObject *CPyType_typing___CoverageMap;
 extern PyTypeObject *CPyType_typing____ContractBuildJson;
 extern PyTypeObject *CPyType_typing___SolidityBuildJson;
 extern PyTypeObject *CPyType_typing___VyperBuildJson;
