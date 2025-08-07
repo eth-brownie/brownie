@@ -68,7 +68,9 @@ from brownie.typing import (
     AccountsType,
     ContractBuildJson,
     ContractName,
+    FunctionName,
     Language,
+    Selector,
     TransactionReceiptType,
 )
 from brownie.utils import (
@@ -113,15 +115,19 @@ class _ContractBase:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
-        self.topics: Final = _get_topics(self.abi)
-        self.selectors: Final = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        
+        abi = self.abi
+        self.topics: Final = _get_topics(abi)
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in abi
+            if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures: Final = {
-            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
+        self.signatures: Final[Dict[FunctionName, Selector]] = {
+            v: k for k, v in self.selectors.items()
         }
-        parse_errors_from_abi(self.abi)
+        parse_errors_from_abi(abi)
 
     @property
     def abi(self) -> List[ABIElement]:
@@ -520,9 +526,10 @@ class ContractConstructor:
         self._parent: Final = parent
         try:
             abi = next(i for i in parent.abi if i["type"] == "constructor")
-            abi["name"] = "constructor"
         except Exception:
             abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
+        else:
+            abi["name"] = "constructor"
         self.abi: Final = abi
         self._name: Final = name
 
@@ -649,8 +656,10 @@ class InterfaceConstructor:
     def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
         self._name: Final = name
         self.abi: Final = abi
-        self.selectors: Final = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in abi
+            if i["type"] == "function"
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
@@ -1435,7 +1444,7 @@ class OverloadedMethod:
 
     def __getitem__(self, key: Tuple[str, ...] | str) -> Union["ContractCall", "ContractTx"]:
         if isinstance(key, str):
-            key = tuple(i.strip() for i in key.split(","))
+            key = (i.strip() for i in key.split(","))
 
         key = tuple(i.replace("256", "") for i in key)
         return self.methods[key]
