@@ -260,7 +260,7 @@ def _split(
 
 
 def _statement_totals(
-    coverage_eval: Dict[str, Dict[str, Dict[int, Set]]],
+    coverage_eval: Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]],
     coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
     exclude_contracts,
 ) -> Tuple[Dict[str, Tuple[int, int]], Tuple[int, int]]:
@@ -281,27 +281,34 @@ def _statement_totals(
 
 
 def _branch_totals(
-    coverage_eval: Dict[str, Dict[str, Dict[int, Set]]],
+    coverage_eval: Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]],
     coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
     exclude_contracts: List[str],
 ) -> Tuple[Dict[str, Tuple[int, int, int]], Tuple[int, int, int]]:
     result: Dict[str, Tuple[int, int, int]] = {}
-    final = [0, 0, 0]
+    final_true = 0
+    final_false = 0
+    final_total = 0
     for path, fns in coverage_map.items():
         for fn in fns:
             if fn.split(".")[0] in exclude_contracts:
                 continue
+
             if path not in coverage_eval or fn not in coverage_eval[path]:
                 true, false = 0, 0
             else:
                 coverage_eval_for_fn = coverage_eval[path][fn]
                 true = len(coverage_eval_for_fn[2])
                 false = len(coverage_eval_for_fn[1])
+                final_true += true
+                final_false += false
+
             total = len(coverage_map[path][fn])
+            final_total += total
+
             result[fn] = (true, false, total)
-            for i in range(3):
-                final[i] += result[fn][i]
-    return result, tuple(final)  # type: ignore [return-value]
+
+    return result, (final_true, final_false, final_total)
 
 
 def _get_highlights(build, coverage_eval) -> Dict[str, Dict[str, Dict[str, list]]]:
