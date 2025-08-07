@@ -18,7 +18,6 @@ from typing import (
     Iterator,
     List,
     Match,
-    NewType,
     Optional,
     Set,
     Tuple,
@@ -98,9 +97,6 @@ if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject
 
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
-
-FunctionName = NewType("FunctionName", str)
-Selector = NewType("Selector", HexStr)
 
 _unverified_addresses: Final[Set[ChecksumAddress]] = set()
 
