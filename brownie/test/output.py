@@ -10,7 +10,7 @@ from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.project.build import Build
-from brownie.typing import ContractName
+from brownie.typing import ContractName, CoverageMap
 from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
 
 from .coverage import CoverageEval
@@ -240,16 +240,20 @@ def _split_by_fn(
 
 def _split(
     coverage_eval: Dict[int, Set[int]],
-    coverage_map: Dict[str, Dict[str, Dict[str, Dict[int, Any]]]],
+    coverage_map: CoverageMap,
     key: str,
 ):
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
+    # not too sure what to call these but we don't want to getitem repeatedly
+    first_eval = coverage_eval[0]
+    second_eval = coverage_eval[1]
+    third_eval = coverage_eval[2]
     return {
         fn: [
-            [i for i in statements[fn] if int(i) in coverage_eval[0]],
-            [i for i in branches[fn] if int(i) in coverage_eval[1]],
-            [i for i in branches[fn] if int(i) in coverage_eval[2]],
+            [i for i in statements[fn] if int(i) in first_eval],
+            [i for i in branches[fn] if int(i) in second_eval],
+            [i for i in branches[fn] if int(i) in third_eval],
         ]
         for fn in branches.keys() & statements.keys()
     }
