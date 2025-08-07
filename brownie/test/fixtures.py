@@ -2,11 +2,13 @@
 
 import sys
 import warnings
+from typing import Final, final
 
 import pytest
 
 import brownie
 from brownie._config import CONFIG, _get_data_folder
+from brownie.project.main import Project
 
 from .stateful import _BrownieStateMachine, state_machine
 
@@ -19,10 +21,11 @@ def _generate_fixture(container):
     return pytest.fixture(scope="session")(_fixture)
 
 
+@final
 class PytestBrownieFixtures:
-    def __init__(self, config, project):
-        self.config = config
-        self._interface = project.interface
+    def __init__(self, config, project: Project) -> None:
+        self.config: Final = config
+        self._interface: Final = project.interface
         for container in project:
             setattr(self, container._name, _generate_fixture(container))
 
