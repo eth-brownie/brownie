@@ -599,7 +599,7 @@ def _decode_ds_note(
         func, args = contract.decode_input(data[data.index(selector) :])
     except ValueError:
         return None
-    selector_hexstr = hexbytes_to_hexstring(selector)
+    selector_hexstr = Selector(hexbytes_to_hexstring(selector))
     return {
         "name": name,
         "address": log.address,  # type: ignore [attr-defined, typeddict-item]
