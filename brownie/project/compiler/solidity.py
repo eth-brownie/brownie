@@ -20,7 +20,9 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.typing import (
+    BranchMap,
     BytecodeJson,
+    Count,
     DeployedBytecodeJson,
     InputJsonSolc,
     Offset,
@@ -28,6 +30,7 @@ from brownie.typing import (
     ProgramCounter,
     SolidityBuildJson,
     Source,
+    StatementMap,
 )
 
 from . import sources
