@@ -2,13 +2,13 @@
 
 from json.decoder import JSONDecodeError
 from operator import attrgetter
-from pathlib import Path
+from typing import Final
 
 import hypothesis
 from eth_utils.toolz import compose, concat
 
 import brownie
-from brownie._c_constants import json_load, sha1
+from brownie._c_constants import Path, json_load, sha1
 from brownie._config import CONFIG
 from brownie.project.main import Project
 from brownie.project.scripts import _get_ast_hash
@@ -39,11 +39,11 @@ class PytestBrownieBase:
         self.isolated: Final = {}
         self.skip: Final = {}
         self.contracts: Final = {
-            k: v["bytecodeSha1"] for k, v in project._build.items() if v.get("bytecode")
+            k: v["bytecodeSha1"] for k, v in project._build.items() if v.get("bytecode")  # type: ignore [typeddict-item]
         }
 
         glob = list(
-            self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")
+            self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")  # type: ignore [union-attr]
         )
         key_func = compose(self._path, attrgetter("parent"))
         self.conf_hashes: Final = dict(zip(map(key_func, glob), map(_get_ast_hash, glob)))
