@@ -605,9 +605,9 @@ def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson
             contract_build_json["offset"] = tuple(contract_build_json["offset"])
             for counter in contract_build_json["pcMap"].values():
                 counter["offset"] = tuple(counter["offset"])
-            return contract_build_json
+            return contract_build_json  # type: ignore [return-value]
     except JSONDecodeError:
-        return {}
+        return {}  # type: ignore [return-value]
 
 
 def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJson:
@@ -617,9 +617,9 @@ def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJs
             offset = interface_build_json["offset"]
             if offset is not None:
                 interface_build_json["offset"] = tuple(offset)
-            return interface_build_json
+            return interface_build_json  # type: ignore [return-value]
     except JSONDecodeError:
-        return {}
+        return {}  # type: ignore [typeddict-item]
 
             
 # TODO: remove this decorator once weakref support is implemented
