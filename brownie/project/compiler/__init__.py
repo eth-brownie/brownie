@@ -331,6 +331,7 @@ def generate_build_json(
 
     sources = input_json["sources"]
     contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
+
     for path_str, path_contracts in contracts.items():
         if path_str in sources:
             source = sources[path_str]["content"]
