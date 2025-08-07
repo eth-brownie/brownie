@@ -268,7 +268,9 @@ class Chain(metaclass=_Singleton):
             block: BlockData | AttributeDict = get_block(i)
             yield block
 
-    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator[BlockData | AttributeDict]:
+    def new_blocks(
+        self, height_buffer: int = 0, poll_interval: int = 5
+    ) -> Iterator[BlockData | AttributeDict]:
         """
         Generator for iterating over new blocks.
 
