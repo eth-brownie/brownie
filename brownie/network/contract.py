@@ -1338,7 +1338,7 @@ class ContractEvents(_ContractEvents):
         """
         Creates a listening Coroutine object ending whenever an event matching
         'event_name' occurs. If timeout is superior to zero and no event matching
-        'event_name' has occured, the Coroutine ends when the timeout is reached.
+        'event_name' has occurred, the Coroutine ends when the timeout is reached.
 
         The Coroutine return value is an AttributeDict filled with the following fields :
             - 'event_data' (AttributeDict): The event log receipt that was caught.

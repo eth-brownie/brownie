@@ -298,7 +298,7 @@ class _EventWatchData:
 
     def get_new_events(self) -> List["filters.LogReceipt"]:
         """
-        Retrieves and return the events that occured between now and the last function call.
+        Retrieves and return the events that occurred between now and the last function call.
 
         Returns:
             [List[LogReceipt]]: List of the retrieved events
