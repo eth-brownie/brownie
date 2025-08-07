@@ -75,6 +75,21 @@ class InterfaceBuildJson(_BuildJsonBase):
     ast: NotRequired[List[Dict]]
 
 
+IntegerString = str
+"""An integer cast as a string, as in: ``str(123)``"""
+
+Statements = Dict[str, Dict["Count", Offset]]
+StatementMap = Dict[IntegerString, Statements]
+
+Branches = Dict[str, Dict["Count", Tuple[int, int, bool]]]
+BranchMap = Dict[IntegerString, Branches]
+
+
+class CoverageMap(TypedDict):
+    statements: StatementMap
+    branches: BranchMap
+
+
 class _ContractBuildJson(_BuildJsonBase):
     source: str
     sourcePath: str
@@ -84,6 +99,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
+    coverageMap: CoverageMap
     pcMap: Dict[int, "ProgramCounter"]
     compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
@@ -96,7 +112,6 @@ class SolidityBuildJson(_ContractBuildJson):
     opcodes: NotRequired[List[str]]
     sourceMap: NotRequired[Dict]  # TODO: define typed dict
     deployedSourceMap: NotRequired[Dict]  # TODO: define typed dict
-    coverageMap: Dict[str, Dict]  # TODO define typed dict
 
 
 @final
