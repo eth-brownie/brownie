@@ -371,7 +371,7 @@ def generate_build_json(
                     contract_node,
                     statement_nodes,
                     branch_nodes,
-                    next((True for i in abi if i["type"] == "fallback"), False),
+                    any(i["type"] == "fallback" for i in abi),
                 )
     
             else:
