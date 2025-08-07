@@ -41,7 +41,7 @@ from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
-from brownie.typing import FormattedEvent
+from brownie.typing import FormattedEvent, Selector
 from brownie.utils import hexbytes_to_hexstring
 
 from .web3 import ContractEvent, web3
@@ -588,7 +588,7 @@ def _decode_ds_note(
     # ds-note encodes function selector as the first topic
     # TODO double check typing for `log` input
     selector, tail = log.topics[0][:4], log.topics[0][4:]  # type: ignore [attr-defined]
-    selector_hexstr = hexbytes_to_hexstring(selector)
+    selector_hexstr = Selector(hexbytes_to_hexstring(selector))
     if selector_hexstr not in contract.selectors or sum(tail):
         return None
     name = contract.selectors[selector_hexstr]
