@@ -115,7 +115,7 @@ class _ContractBase:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
-        
+
         abi = self.abi
         self.topics: Final = _get_topics(abi)
         self.selectors: Final[Dict[Selector, FunctionName]] = {
