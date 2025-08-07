@@ -643,10 +643,18 @@ def _get_deployment(
     keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
     build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
     path_map: PathMap = build_json.pop("paths")  # type: ignore [typeddict-item]
-    sources: Dict[str, Any] = {
-        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
-        for i in path_map.values()
-    }
+    try:
+        sources: Dict[str, Any] = {
+            i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
+            for i in path_map.values()
+        }
+    except TypeError as e:
+        if str(e) == "tuple[object, str] object expected; got list":
+            # This was inserted on an older version of brownie and should be replaced
+            cur.execute(f"DELETE from {name} where {query}")
+            return None, None
+        raise
+
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
     pc_map: Optional[Dict[int | str, ProgramCounter]] = build_json.get("pcMap")  # type: ignore [assignment]
     if isinstance(pc_map, dict):
