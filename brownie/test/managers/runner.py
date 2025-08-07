@@ -3,14 +3,14 @@
 import builtins
 import sys
 import warnings
-from pathlib import Path
+from typing import Dict
 
 import pytest
 from _pytest._io import TerminalWriter
 from eth_utils.toolz import keyfilter
 
 import brownie
-from brownie._c_constants import json_dump, regex_compile, regex_fullmatch
+from brownie._c_constants import Path, json_dump, regex_compile, regex_fullmatch
 from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
