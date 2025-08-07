@@ -224,7 +224,7 @@ def _get_totals(
 def _split_by_fn(
     build: Build,
     coverage_eval: Dict[ContractName, Dict[str, Dict[int, Set[int]]]],
-) -> Dict[ContractName, Dict[str, Dict[str, Any]]]:
+) -> Dict[ContractName, Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
     results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
         i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval
@@ -242,7 +242,7 @@ def _split(
     coverage_eval: Dict[int, Set[int]],
     coverage_map: CoverageMap,
     key: str,
-):
+) -> Dict[str, Tuple[List[int], List[int], List[int]]]:
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
     # not too sure what to call these but we don't want to getitem repeatedly
@@ -250,11 +250,11 @@ def _split(
     second_eval = coverage_eval[1]
     third_eval = coverage_eval[2]
     return {
-        fn: [
+        fn: (
             [i for i in statements[fn] if int(i) in first_eval],
             [i for i in branches[fn] if int(i) in second_eval],
             [i for i in branches[fn] if int(i) in third_eval],
-        ]
+        )
         for fn in branches.keys() & statements.keys()
     }
 
