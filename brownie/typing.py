@@ -27,6 +27,8 @@ AccountsType = TypeVar("AccountsType", bound="Accounts")
 
 # Contract
 ContractName = NewType("ContractName", str)
+FunctionName = NewType("FunctionName", str)
+Selector = NewType("Selector", HexStr)
 
 
 # Event
