@@ -68,7 +68,9 @@ from brownie.typing import (
     AccountsType,
     ContractBuildJson,
     ContractName,
+    FunctionName,
     Language,
+    Selector,
     TransactionReceiptType,
 )
 from brownie.utils import (
