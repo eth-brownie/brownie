@@ -5,6 +5,7 @@ requires = [
     "mypy[mypyc]==1.17.0",
     "types-pyyaml",
     "types-requests",
+    "eth-typing==4.4.0",
 ]
 
 
