@@ -144,14 +144,6 @@ class Color:
         if isinstance(exc, SyntaxError) and exc.text is not None:
             return self.format_syntaxerror(exc)
 
-        from brownie.utils import (
-            bright_blue,
-            bright_cyan,
-            bright_magenta,
-            bright_red,
-            dark_white,
-        )
-
         tb = [i.replace("./", "") for i in traceback.format_tb(exc.__traceback__)]
         if filename and not CONFIG.argv["tb"]:
             try:
@@ -197,8 +189,6 @@ class Color:
         return "\n".join(tb)
 
     def format_syntaxerror(self, exc: SyntaxError) -> str:
-        from brownie.utils import bright_blue, bright_magenta, bright_red, dark_white
-
         offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
         exc.filename = exc.filename.replace(base_path, ".")  # type: ignore [union-attr]
         return (
@@ -213,6 +203,22 @@ class Color:
         Apply syntax highlighting to a string.
         """
         return pygments.highlight(text, lexer, formatter)
+
+
+# cached colors
+
+blue: Final = "\x1b[0;34m"  # Color()("blue")
+bright_black: Final = "\x1b[0;1;30m"  # Color()("bright black")
+bright_blue: Final = "\x1b[0;1;34m"  # Color()("bright blue")
+bright_cyan: Final = "\x1b[0;1;36m"  # Color()("bright cyan")
+bright_green: Final = "\x1b[0;1;32m"  # Color()("bright green")
+bright_magenta: Final = "\x1b[0;1;35m"  # Color()("bright magenta")
+bright_red: Final = "\x1b[0;1;31m"  # Color()("bright red")
+bright_yellow: Final = "\x1b[0;1;33m"  # Color()("bright yellow")
+dark_white: Final = "\x1b[0;2;37m"  # Color()("dark white")
+green: Final = "\x1b[0;1;32m"  # Color()("green")
+red: Final = "\x1b[0;1;31m"  # Color()("red")
+yellow: Final = "\x1b[0;1;33m"  # Color()("yellow")
 
 
 def notify(type_: NotifyType, msg):
