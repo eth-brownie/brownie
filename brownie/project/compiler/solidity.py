@@ -544,7 +544,7 @@ def _generate_coverage_data(
                 pc_list[idx[0]]["branch"] = count
                 pc_list[idx[1]]["branch"] = count
                 node = next(i for i in branch_original[path] if i.offset == offset)
-                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
+                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)  # type: ignore [arg-type]
                 count += 1
 
     pc_map: PcMap = {i.pop("pc"): i for i in pc_list}

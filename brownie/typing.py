@@ -73,7 +73,7 @@ class _BuildJsonBase(TypedDict):
 class InterfaceBuildJson(_BuildJsonBase):
     type: Literal["interface"]
     source: Optional[str]
-    offset: Optional[Tuple[int, int]]
+    offset: Optional[Offset]
     ast: NotRequired[List[Dict]]
 
 
@@ -97,7 +97,7 @@ class _ContractBuildJson(_BuildJsonBase):
     sourcePath: str
     natspec: NotRequired[Dict[str, Any]]
     allSourcePaths: Dict[str, Any]
-    offset: Tuple[int, int]
+    offset: Offset
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
@@ -201,7 +201,7 @@ class _InputJsonBase(TypedDict):
     interfaces: InterfaceSources
 
     # if I add a stub like this does it type check properly for members and fallbacks?
-    def __getitem__(self, ContractName) -> Dict[str, Any]: ...  # type: ignore [misc]
+    def __getitem__(self, name: ContractName) -> Dict[str, Any]: ...  # type: ignore [misc]
 
 
 @final
@@ -224,10 +224,10 @@ Count = int
 
 class ProgramCounter(TypedDict):
     count: Count
-    fn: str
     op: str
-    path: str
-    value: str
+    fn: NotRequired[Optional[str]]
+    path: NotRequired[str]
+    value: NotRequired[str]
     pc: NotRequired[int]
     branch: NotRequired[Count]
     jump: NotRequired[str]
