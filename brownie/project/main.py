@@ -248,13 +248,8 @@ class Project(_ProjectBase):
         potential_dependencies: List[Tuple[pathlib.Path, ContractBuildJson]] = []
         build_path = self._build_path
 
-        contract_build_json: ContractBuildJson
         for path in build_path.glob("contracts/*.json"):
-            try:
-                with path.open() as fp:
-                    contract_build_json = json_load(fp)
-            except JSONDecodeError:
-                contract_build_json = {}  # type: ignore [assignment]
+            contract_build_json = _load_contract_build_json_from_disk(path)
             if not set(BUILD_KEYS).issubset(contract_build_json):
                 path.unlink()
                 continue
@@ -284,13 +279,8 @@ class Project(_ProjectBase):
         interface_hashes: Dict[str, HexStr] = {}
         interface_list = sources.get_interface_list()
 
-        interface_build_json: InterfaceBuildJson
         for path in build_path.glob("interfaces/*.json"):
-            try:
-                with path.open() as fp:
-                    interface_build_json = json_load(fp)
-            except JSONDecodeError:
-                interface_build_json = {}  # type: ignore [typeddict-item]
+            interface_build_json = _load_interface_build_json_from_disk(path)
             if (
                 not set(INTERFACE_KEYS).issubset(interface_build_json)
                 or path.stem not in interface_list
@@ -607,6 +597,29 @@ class Project(_ProjectBase):
         self._clear_dev_deployments(0)
 
 
+def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson:
+    try:
+        with path.open() as fp:
+            contract_build_json: dict = json_load(fp)
+            # json loads them as lists but we need tuples
+            contract_build_json["offset"] = tuple(contract_build_json["offset"])
+            return contract_build_json
+    except JSONDecodeError:
+        return {}
+
+
+def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJson:
+    try:
+        with path.open() as fp:
+            interface_build_json: dict = json_load(fp)
+            offset = interface_build_json["offset"]
+            if offset is not None:
+                interface_build_json["offset"] = tuple(offset)
+            return interface_build_json
+    except JSONDecodeError:
+        return {}
+
+            
 # TODO: remove this decorator once weakref support is implemented
 @mypyc_attr(native_class=False)
 class TempProject(_ProjectBase):
