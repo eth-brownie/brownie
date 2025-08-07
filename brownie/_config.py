@@ -129,10 +129,6 @@ class Config(ConfigContainer, metaclass=_Singleton): ...
 
 
 @final
-class Config(ConfigContainer, metaclass=_Singleton): ...
-
-
-@final
 class ConfigDict(Dict[str, Any]):
     """Dict subclass that prevents adding new keys when locked"""
 
