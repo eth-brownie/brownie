@@ -101,6 +101,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
+    coverageMap: CoverageMap
     pcMap: Dict[int, "ProgramCounter"]
     compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
@@ -113,7 +114,6 @@ class SolidityBuildJson(_ContractBuildJson):
     opcodes: NotRequired[List[str]]
     sourceMap: NotRequired[Dict]  # TODO: define typed dict
     deployedSourceMap: NotRequired[Dict]  # TODO: define typed dict
-    coverageMap: Dict[str, Dict]  # TODO define typed dict
 
 
 @final
