@@ -398,14 +398,14 @@ def _generate_coverage_data(
 
         try:
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                this["fn"] = pc_list[-2]["fn"]
+                this_fn = this["fn"] = pc_list[-2]["fn"]
             else:
                 # statement coverage
                 fn = next(k for k, v in fn_offsets.items() if is_inside_offset(offset, v))
-                this["fn"] = f"{contract_name}.{fn}"
+                this_fn = this["fn"] = f"{contract_name}.{fn}"
                 stmt_offset = next(i for i in stmt_nodes if is_inside_offset(offset, i))
                 stmt_nodes.remove(stmt_offset)
-                statement_map.setdefault(this["fn"], {})[count] = stmt_offset
+                statement_map.setdefault(this_fn, {})[count] = stmt_offset
                 this["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
@@ -448,11 +448,11 @@ def _generate_coverage_data(
             # branch coverage
             this["branch"] = count
             this_fn = this["fn"]
-            branch_map.setdefault(this_fn, {})
+            branch_map.setdefault(this_fn, {})  # type: ignore [arg-type]
             if node_ast_type == "If":
-                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)
+                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)  # type: ignore [index]
             else:
-                branch_map[this_fn][count] = offset + (True,)
+                branch_map[this_fn][count] = offset + (True,)  # type: ignore [index]
             count += 1
 
     first = pc_list[0]
@@ -469,8 +469,10 @@ def _generate_coverage_data(
 def _convert_src(src: str) -> Offset:
     if src is None:
         return -1, -1
-    src_int = [int(i) for i in src.split(":")[:2]]
-    return src_int[0], src_int[0] + src_int[1]  # type: ignore [return-value]
+    split = src.split(":")[:2]
+    start = int(split[0])
+    stop = start + int(split[1])
+    return start, stop  # type: ignore [return-value]
 
 
 def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> Optional[VyperAstNode]:
