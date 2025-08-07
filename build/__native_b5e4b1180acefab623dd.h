@@ -2954,18 +2954,6 @@ struct export_table_b5e4b1180acefab623dd {
     PyObject **CPyStatic_brownie___utils___color;
     PyObject **CPyStatic_brownie___utils___bytes_to_hexstring;
     PyObject **CPyStatic_brownie___utils___hexbytes_to_hexstring;
-    PyObject **CPyStatic_brownie___utils___blue;
-    PyObject **CPyStatic_brownie___utils___bright_black;
-    PyObject **CPyStatic_brownie___utils___bright_blue;
-    PyObject **CPyStatic_brownie___utils___bright_cyan;
-    PyObject **CPyStatic_brownie___utils___bright_green;
-    PyObject **CPyStatic_brownie___utils___bright_magenta;
-    PyObject **CPyStatic_brownie___utils___bright_red;
-    PyObject **CPyStatic_brownie___utils___bright_yellow;
-    PyObject **CPyStatic_brownie___utils___dark_white;
-    PyObject **CPyStatic_brownie___utils___green;
-    PyObject **CPyStatic_brownie___utils___red;
-    PyObject **CPyStatic_brownie___utils___yellow;
     char (*CPyDef_brownie___utils_____top_level__)(void);
     PyObject **CPyStatic__color___formatter;
     PyObject **CPyStatic__color___MODIFIERS;
