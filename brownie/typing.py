@@ -135,10 +135,8 @@ Source = Tuple[Start, Stop, ContractName, str]
 class ContractSource(TypedDict):
     content: str
 
-
 class InterfaceSource(TypedDict):
     abi: List[ABIElement]
-
 
 SourcesDict = Dict[str, ContractSource | InterfaceSource]
 InterfaceSources = Dict[str, InterfaceSource]
@@ -209,12 +207,10 @@ class InputJsonSolc(_InputJsonBase, total=False):
     language: Literal["Solidity", None]
     settings: SettingsSolc
 
-
 @final
 class InputJsonVyper(_InputJsonBase, total=False):
     language: Literal["Vyper"]
     settings: SettingsVyper
-
 
 InputJson = InputJsonSolc | InputJsonVyper
 
