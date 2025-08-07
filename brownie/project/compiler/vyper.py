@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Dict, Final, List, Literal, Optional, Set, Tuple, Union
+from typing import Dict, Final, List, Optional, Set, Tuple, Union
 
 import semantic_version
 import vvm
@@ -22,11 +22,15 @@ from brownie.project.compiler.utils import (
 )
 from brownie.project.sources import is_inside_offset
 from brownie.typing import (
+    Branches,
+    BranchMap,
     ContractName,
     InputJsonVyper,
     Offset,
     PcList,
     ProgramCounter,
+    StatementMap,
+    Statements,
     VyperAstJson,
     VyperAstNode,
     VyperBuildJson,
@@ -51,9 +55,6 @@ EVM_VERSION_MAPPING: Final = [
     ("berlin", Version("0.2.12")),
     ("istanbul", Version("0.1.0-beta.16")),
 ]
-
-BranchMap = Dict[str, Dict[int, Tuple[int, int, bool]]]
-StatementMap = Dict[str, Dict[int, Offset]]
 
 _get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
 _get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
@@ -331,9 +332,7 @@ def _generate_coverage_data(
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,
-) -> Tuple[
-    Dict[int, ProgramCounter], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]
-]:
+) -> Tuple[Dict[int, ProgramCounter], StatementMap, BranchMap]:
     if not opcodes_str:
         return {}, {}, {}
 
@@ -344,8 +343,8 @@ def _generate_coverage_data(
     fn_offsets = {i["name"]: _convert_src(i["src"]) for i in fn_nodes}
     stmt_nodes = {_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes)}
 
-    statement_map: StatementMap = {}
-    branch_map: BranchMap = {}
+    statement_map: Statements = {}
+    branch_map: Branches = {}
 
     pc_list: PcList = []
     count, pc = 0, 0
