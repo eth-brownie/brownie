@@ -143,7 +143,7 @@ class Color:
     ) -> str:
         if isinstance(exc, SyntaxError) and exc.text is not None:
             return self.format_syntaxerror(exc)
-    
+
         from brownie.utils import (
             bright_blue,
             bright_cyan,
@@ -202,8 +202,8 @@ class Color:
         offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
         exc.filename = exc.filename.replace(base_path, ".")  # type: ignore [union-attr]
         return (
-            f"  {dark_white}File \"{bright_magenta}{exc.filename}"  # type: ignore [union-attr]
-            f"{dark_white}\", line {bright_blue}{exc.lineno}"
+            f'  {dark_white}File "{bright_magenta}{exc.filename}'  # type: ignore [union-attr]
+            f'{dark_white}", line {bright_blue}{exc.lineno}'
             f"{dark_white},\n{BASE}m    {exc.text.strip()}\n"  # type: ignore [union-attr]
             f"{' '*offset}^\n{bright_red}SyntaxError{BASE}m: {exc.msg}"
         )
