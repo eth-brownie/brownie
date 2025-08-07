@@ -603,8 +603,11 @@ def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson
             contract_build_json: dict = json_load(fp)
             # json loads them as lists but we want tuples for mypyc
             contract_build_json["offset"] = tuple(contract_build_json["offset"])
-            for counter in contract_build_json["pcMap"].values():
-                counter["offset"] = tuple(counter["offset"])
+            pc_map: dict = contract_build_json["pcMap"]
+            counter: dict
+            for counter in pc_map.values():
+                if "offset" in counter:
+                    counter["offset"] = tuple(counter["offset"])
             return contract_build_json  # type: ignore [return-value]
     except JSONDecodeError:
         return {}  # type: ignore [return-value]
