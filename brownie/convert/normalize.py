@@ -2,9 +2,9 @@
 
 from typing import Any, Final, List, Optional, Sequence, Tuple
 
-from eth_abi.grammar import ABIType, TupleType, parse
 from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
+from faster_eth_abi.grammar import ABIType, TupleType, parse
 
 from brownie.typing import FormattedEvent
 
