@@ -46,6 +46,7 @@ cchecksum==0.3.1
     # via
     #   -r requirements.txt
     #   eth-event
+    #   faster-eth-abi
 certifi==2025.8.3
     # via
     #   -r requirements.txt
@@ -117,6 +118,7 @@ eth-typing==4.4.0
     #   eth-abi
     #   eth-keys
     #   eth-utils
+    #   faster-eth-abi
     #   faster-eth-utils
     #   web3
 eth-utils==4.1.1
@@ -134,8 +136,12 @@ execnet==2.1.1
     # via
     #   -r requirements.txt
     #   pytest-xdist
-faster-eth-utils==4.1.4
+faster-eth-abi==5.2.1
     # via -r requirements.txt
+faster-eth-utils==4.1.5
+    # via
+    #   -r requirements.txt
+    #   faster-eth-abi
 frozenlist==1.7.0
     # via
     #   -r requirements.txt
@@ -191,6 +197,7 @@ mypy-extensions==1.1.0
     # via
     #   -r requirements.txt
     #   black
+    #   faster-eth-abi
 packaging==23.2
     # via
     #   -r requirements.txt
@@ -202,6 +209,7 @@ parsimonious==0.10.0
     # via
     #   -r requirements.txt
     #   eth-abi
+    #   faster-eth-abi
 pathspec==0.12.1
     # via
     #   -r requirements.txt

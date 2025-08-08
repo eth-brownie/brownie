@@ -2,9 +2,9 @@
 
 from typing import Any, Final, List, Optional, Sequence, Tuple
 
-from eth_abi.grammar import ABIType, TupleType, parse
 from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
+from faster_eth_abi.grammar import ABIType, TupleType, parse
 
 from brownie.typing import FormattedEvent
 
@@ -84,7 +84,7 @@ def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[
 
 
 def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> List[Any]:
-    _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)
+    _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)  # type: ignore [index]
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]

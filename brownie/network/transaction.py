@@ -23,8 +23,8 @@ from warnings import warn
 
 import black
 import requests
-from eth_abi import decode
 from eth_typing import BlockNumber, ChecksumAddress
+from faster_eth_abi import decode
 from web3.exceptions import TransactionNotFound
 from web3.types import TxReceipt
 

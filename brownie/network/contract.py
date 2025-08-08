@@ -24,10 +24,11 @@ from typing import (
     Union,
 )
 
-import eth_abi
 import requests
 import solcx
 from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
+from faster_eth_abi import decode as decode_abi
+from faster_eth_abi import encode as encode_abi
 from faster_eth_utils import combomethod
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
@@ -115,7 +116,7 @@ class _ContractBase:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
-        
+
         abi = self.abi
         self.topics: Final = _get_topics(abi)
         self.selectors: Final[Dict[Selector, FunctionName]] = {
@@ -181,7 +182,7 @@ class _ContractBase:
         function_sig = build_function_signature(abi)
 
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode(types_list, calldata[4:])
+        result = decode_abi(types_list, calldata[4:])
         input_args = format_input(abi, result)
 
         return function_sig, input_args
@@ -598,7 +599,7 @@ class ContractConstructor:
         abi = self.abi
         data = format_input(abi, args)
         types_list = get_type_strings(abi["inputs"])
-        return bytecode + eth_abi.encode(types_list, data).hex()
+        return bytecode + encode_abi(types_list, data).hex()
 
     def estimate_gas(self, *args: Any) -> int:
         """
@@ -701,7 +702,7 @@ class InterfaceConstructor:
         function_sig = build_function_signature(abi)
 
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode(types_list, calldata[4:])
+        result = decode_abi(types_list, calldata[4:])
         input_args = format_input(abi, result)
 
         return function_sig, input_args
@@ -1726,7 +1727,7 @@ class _ContractMethod:
         """
         abi = self.abi
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode(types_list, HexBytes(hexstr)[4:])
+        result = decode_abi(types_list, HexBytes(hexstr)[4:])
         return format_input(abi, result)
 
     def encode_input(self, *args: Any) -> str:
@@ -1746,7 +1747,7 @@ class _ContractMethod:
         abi = self.abi
         data = format_input(abi, args)
         types_list = get_type_strings(abi["inputs"])
-        return self.signature + eth_abi.encode(types_list, data).hex()
+        return self.signature + encode_abi(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1763,7 +1764,7 @@ class _ContractMethod:
         """
         abi = self.abi
         types_list = get_type_strings(abi["outputs"])
-        result = eth_abi.decode(types_list, HexBytes(hexstr))
+        result = decode_abi(types_list, HexBytes(hexstr))
         result = format_output(abi, result)
         if len(result) == 1:
             result = result[0]
