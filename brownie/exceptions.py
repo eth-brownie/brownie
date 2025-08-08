@@ -5,10 +5,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Type, final
 
-import eth_abi
 import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
+from faster_eth_abi import decode as decode_abi
 
 import brownie
 from brownie._c_constants import HexBytes, json_dump, json_load
@@ -331,7 +331,7 @@ def decode_typed_error(data: HexStr) -> str:
 
     abi = _errors[selector]
     types_list = get_type_strings(abi["inputs"])
-    result = eth_abi.decode(types_list, HexBytes(data)[4:])
+    result = decode_abi(types_list, HexBytes(data)[4:])
     return (
         result[0]
         if selector == ERROR_SIG
