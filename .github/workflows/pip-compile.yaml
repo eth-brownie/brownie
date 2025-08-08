@@ -66,22 +66,17 @@ jobs:
     - name: Compile
       run: pip install .
 
-    - name: Commit & push changes
-      if: env.changes_detected == 'true' &&
-          ( github.event_name == 'push' ||
-            github.event.pull_request.head.repo.full_name == github.repository )
+    - name: Commit & push changes (same-repo PR or push)
+      if: github.event_name == 'push' ||
+          github.event.pull_request.head.repo.full_name == github.repository
       run: |
+        # bail out early if nothing changed
+        if git diff --quiet; then
+          echo "No changes to commit."
+          exit 0
+        fi
         git config --local user.name  "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "chore: auto-format & update lockfiles"
-        git push
-        
-    - name: Commit changes
-      if: env.changes_detected == 'true'
-      run: |
-        git config --local user.name "github-actions[bot]"
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "chore: \`black .\` and \`pip-compile\` and compile C files for source control"
+        git add -A
+        git commit -m "chore: format & update lockfiles"
         git push
