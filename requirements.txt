@@ -99,7 +99,7 @@ eth-utils==4.1.1
     #   web3
 execnet==2.1.1
     # via pytest-xdist
-faster-eth-abi==5.2.0
+faster-eth-abi==5.2.1
     # via -r requirements.in
 faster-eth-utils==4.1.5
     # via
