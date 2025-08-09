@@ -100,43 +100,46 @@ class Build:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
         for pc, data in pcMap.items():
-            op = data["op"]
-            if op in ("REVERT", "INVALID") or "jump_revert" in data:
-                path = data.get("path")
-                if path is None:
-                    continue
-
-                path_str = source_map[path]
-
-                if "dev" not in data:
-                    if "fn" not in data or "first_revert" in data:
-                        _revert_map[pc] = False
+            try:
+                op = data["op"]
+                if op in ("REVERT", "INVALID") or "jump_revert" in data:
+                    path = data.get("path")
+                    if path is None:
                         continue
-                    try:
-                        revert_str = self._sources.get(path_str)[data["offset"][1] :]
-                        revert_str = revert_str[: revert_str.index("\n")]
-                        revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
-                        if revert_str.startswith("dev:"):
-                            data["dev"] = revert_str
-                    except (KeyError, ValueError):
-                        pass
-
-                msg = "" if op == "REVERT" else "invalid opcode"
-                revert = (
-                    path_str,
-                    data["offset"],
-                    data.get("fn", "<None>"),
-                    data.get("dev", msg),
-                    self._sources,
-                )
-
-                # do not compare the final tuple item in case the same project was loaded twice
-                if pc not in _revert_map or (
-                    _revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]
-                ):
-                    _revert_map[pc] = revert
-                    continue
-                _revert_map[pc] = False
+    
+                    path_str = source_map[path]
+    
+                    if "dev" not in data:
+                        if "fn" not in data or "first_revert" in data:
+                            _revert_map[pc] = False
+                            continue
+                        try:
+                            revert_str = self._sources.get(path_str)[data["offset"][1] :]
+                            revert_str = revert_str[: revert_str.index("\n")]
+                            revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
+                            if revert_str.startswith("dev:"):
+                                data["dev"] = revert_str
+                        except (KeyError, ValueError):
+                            pass
+    
+                    msg = "" if op == "REVERT" else "invalid opcode"
+                    revert = (
+                        path_str,
+                        data["offset"],
+                        data.get("fn", "<None>"),
+                        data.get("dev", msg),
+                        self._sources,
+                    )
+    
+                    # do not compare the final tuple item in case the same project was loaded twice
+                    if pc not in _revert_map or (
+                        _revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]
+                    ):
+                        _revert_map[pc] = revert
+                        continue
+                    _revert_map[pc] = False
+            except TypeError as e:
+                raise TypeError(*e.args, data) from e
 
     def _remove_contract(self, contract_name: ContractName) -> None:
         key = self._stem(contract_name)
