@@ -69,7 +69,7 @@ class Wei(int):
         * a large float in scientific notation, where direct conversion to int
           would cause inaccuracy: 8.3e32
         * bytes: b'\xff\xff'
-        * hex strings: "0x330124\" """
+        * hex strings: "0x330124" """
 
     def __new__(cls, value: WeiInputType) -> Self:
         return super().__new__(cls, _to_wei(value))
