@@ -34,7 +34,7 @@ cchecksum==0.3.1
     #   faster-eth-abi
 certifi==2025.8.3
     # via requests
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 ckzg==2.1.1
     # via eth-account
