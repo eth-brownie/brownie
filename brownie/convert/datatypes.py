@@ -258,10 +258,10 @@ class EthAddress(str):
 
 
 def _address_compare(a: str, b: Any) -> bool:
-    b = str(b)
-    if not b.startswith("0x") or not is_hex(b) or len(b) != 42:
-        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid address")
-    return a.lower() == b.lower()
+    bstr = str(b)
+    if not bstr.startswith("0x") or not is_hex(bstr) or len(bstr) != 42:
+        raise TypeError(f"Invalid type for comparison: '{bstr}' is not a valid address")
+    return a.lower() == bstr.lower()
 
 
 @final
@@ -288,10 +288,10 @@ class HexString(bytes):
 
 
 def _hex_compare(a: str, b: Any) -> bool:
-    b = str(b)
-    if not b.startswith("0x") or not is_hex(b):
-        raise TypeError(f"Invalid type for comparison: '{b}' is not a valid hex string")
-    return a.lstrip("0x").lower() == b.lstrip("0x").lower()
+    bstr = str(b)
+    if not bstr.startswith("0x") or not is_hex(bstr):
+        raise TypeError(f"Invalid type for comparison: '{bstr}' is not a valid hex string")
+    return a.lstrip("0x").lower() == bstr.lstrip("0x").lower()
 
 
 def _to_bytes(value: Any, type_str: str = "bytes32") -> bytes:

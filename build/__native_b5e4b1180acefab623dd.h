@@ -254,16 +254,6 @@ typedef struct tuple_T3IIC {
 } tuple_T3IIC;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T4CCCC
-#define MYPYC_DECLARED_tuple_T4CCCC
-typedef struct tuple_T4CCCC {
-    char f0;
-    char f1;
-    char f2;
-    char f3;
-} tuple_T4CCCC;
-#endif
-
 #ifndef MYPYC_DECLARED_tuple_T5OT2IIOOO
 #define MYPYC_DECLARED_tuple_T5OT2IIOOO
 typedef struct tuple_T5OT2IIOOO {
@@ -273,6 +263,26 @@ typedef struct tuple_T5OT2IIOOO {
     PyObject *f3;
     PyObject *f4;
 } tuple_T5OT2IIOOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T4OT2IIOO
+#define MYPYC_DECLARED_tuple_T4OT2IIOO
+typedef struct tuple_T4OT2IIOO {
+    PyObject *f0;
+    tuple_T2II f1;
+    PyObject *f2;
+    PyObject *f3;
+} tuple_T4OT2IIOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T4CCCC
+#define MYPYC_DECLARED_tuple_T4CCCC
+typedef struct tuple_T4CCCC {
+    char f0;
+    char f1;
+    char f2;
+    char f3;
+} tuple_T4CCCC;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T8OOOOOOOO
@@ -2799,6 +2809,8 @@ struct export_table_b5e4b1180acefab623dd {
     char (*CPyDef_project___main____revert_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, CPyTagged cpy_r_height);
     PyObject *(*CPyDef_project___main____reset_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_project___main____reset_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main____load_contract_build_json_from_disk)(PyObject *cpy_r_path);
+    PyObject *(*CPyDef_project___main____load_interface_build_json_from_disk)(PyObject *cpy_r_path);
     PyObject *(*CPyDef_project___main_____init___3_TempProject_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_project___main_____init___3_TempProject_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config);
     PyObject *(*CPyDef_project___main_____repr___3_TempProject_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);

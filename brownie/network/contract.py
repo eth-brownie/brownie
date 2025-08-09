@@ -115,7 +115,7 @@ class _ContractBase:
         self._project = project
         self._build: Final = build.copy()
         self._sources: Final = sources
-        
+
         abi = self.abi
         self.topics: Final = _get_topics(abi)
         self.selectors: Final[Dict[Selector, FunctionName]] = {
@@ -912,6 +912,7 @@ class Contract(_DeployedContractBase):
             address = _resolve_address(address_or_alias)
             build, sources = _get_deployment(address)
         except Exception:
+            raise
             build, sources = _get_deployment(alias=address_or_alias)
             if build is not None:
                 address = build["address"]
