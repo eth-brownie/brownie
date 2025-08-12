@@ -242,11 +242,7 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
         pathname = path.name
-        key = None
-        for k, v in remap_dict.items():
-            if v.startswith(pathname):
-                key = k
-                break
+        key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
         
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
