@@ -7,7 +7,8 @@ from brownie import accounts
 from brownie._c_constants import Path, json_load
 from brownie._config import _get_data_folder
 from brownie.convert import to_address
-from brownie.utils import bright_black, bright_blue, bright_magenta, color, notify
+from brownie.utils import color, notify
+from brownie.utils._color import bright_black, bright_blue, bright_magenta
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie accounts <command> [<arguments> ...] [options]

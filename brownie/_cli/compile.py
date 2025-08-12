@@ -6,7 +6,8 @@ from typing import Final
 from brownie import project
 from brownie._config import _load_project_structure_config
 from brownie.exceptions import ProjectNotFound
-from brownie.utils import bright_red, bright_yellow, color
+from brownie.utils import color
+from brownie.utils._color import bright_red, bright_yellow
 from brownie.utils.docopt import docopt
 
 CODESIZE_COLORS: Final[list[tuple[float, str]]] = [(1.0, bright_red), (0.8, bright_yellow)]

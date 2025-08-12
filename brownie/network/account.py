@@ -32,7 +32,8 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import bright_blue, bright_cyan, bytes_to_hexstring, color
+from brownie.utils import bytes_to_hexstring, color
+from brownie.utils._color import bright_blue, bright_cyan
 
 from .gas.bases import GasABC
 from .rpc import Rpc
