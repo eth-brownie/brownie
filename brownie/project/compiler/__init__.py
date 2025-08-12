@@ -402,7 +402,7 @@ def generate_build_json(
                     "sourcePath": path_str,
                 }
             )
-            size = len(bytecode.removeprefix("0x")) / 2  # type: ignore
+            size = len(bytecode.removeprefix("0x")) / 2
             if size > 24577:
                 notify(
                     "WARNING",
