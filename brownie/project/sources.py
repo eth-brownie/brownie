@@ -17,7 +17,8 @@ from brownie._c_constants import (
 )
 from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.typing import ContractName, Offset
-from brownie.utils import color, dark_white
+from brownie.utils import color
+from brownie.utils._color import dark_white
 
 
 @final

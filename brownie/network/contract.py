@@ -74,13 +74,12 @@ from brownie.typing import (
     Selector,
     TransactionReceiptType,
 )
-from brownie.utils import (
+from brownie.utils import color, hexbytes_to_hexstring
+from brownie.utils._color import (
     bright_blue,
     bright_green,
     bright_magenta,
     bright_red,
-    color,
-    hexbytes_to_hexstring,
 )
 
 from . import accounts, chain
