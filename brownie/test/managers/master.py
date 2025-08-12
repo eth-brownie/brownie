@@ -72,7 +72,7 @@ class PytestBrownieMaster(PytestBrownieBase):
 
         # aggregate worker test results
         report = {"tests": {}, "contracts": self.contracts, "tx": {}}
-        for path in list(build_path.glob("tests-*.json")):
+        for path in list(build_path.glob("tests-*.json")):  # type: ignore [union-attr]
             with path.open() as fp:
                 data = json_load(fp)
             assert data["contracts"] == report["contracts"]
@@ -85,5 +85,5 @@ class PytestBrownieMaster(PytestBrownieBase):
             coverage._add_transaction(hash_, coverage_eval)
 
         # save aggregate test results
-        with build_path.joinpath("tests.json").open("w") as fp:
+        with build_path.joinpath("tests.json").open("w") as fp:  # type: ignore [union-attr]
             json_dump(report, fp, indent=2, sort_keys=True, default=sorted)
