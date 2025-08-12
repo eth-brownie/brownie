@@ -1946,6 +1946,8 @@ def _get_method_object(
         return ContractCall(address, abi, name, owner, natspec)
     return ContractTx(address, abi, name, owner, natspec)
 
+_fixed168x10: Final = {"fixed168x10": "decimal"}
+
 
 _fixed168x10: Final = {"fixed168x10": "decimal"}
 
