@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="union-attr"
 
 from json.decoder import JSONDecodeError
 from operator import attrgetter
