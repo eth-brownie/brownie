@@ -345,17 +345,15 @@ class ReturnValue(tuple):
                 if abi is not None and "components" in (value_abi := abi[i]):
                     if value_abi["type"] == "tuple":
                         # tuple
-                        values[i] = ReturnValue(value, value_abi["components"])
+                        values[i] = ReturnValue(values, value_abi["components"])
                     else:
                         # array of tuples
                         inner_abi = value_abi.copy()
-                        length = len(value)
                         inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
-                        final_abi = [deepcopy(inner_abi) for i in range(length)]
-                        if inner_abi.get("name"):
-                            name = inner_abi["name"]
-                            for x in range(length):
-                                final_abi[x]["name"] = f"{name}[{x}]"
+                        final_abi = [deepcopy(inner_abi) for i in range(len(value))]
+                        if name := inner_abi.get("name"):
+                            for i, d in enumerate(final_abi):
+                                d["name"] = f"{name}[{i}]"
 
                         values[i] = ReturnValue(value, final_abi)
                 else:
