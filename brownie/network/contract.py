@@ -1951,9 +1951,6 @@ def _get_method_object(
 _fixed168x10: Final = {"fixed168x10": "decimal"}
 
 
-_fixed168x10: Final = {"fixed168x10": "decimal"}
-
-
 def _inputs(abi: ABIFunction | ABIConstructor) -> str:
     abi_inputs = abi["inputs"]
     types_list = get_type_strings(abi_inputs, _fixed168x10)
