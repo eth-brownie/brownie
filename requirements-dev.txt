@@ -34,7 +34,7 @@ cffi==1.17.1
     # via cryptography
 chardet==5.2.0
     # via tox
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via
     #   -c requirements.txt
     #   requests
@@ -45,7 +45,7 @@ click==8.2.1
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.10.2
+coverage[toml]==7.10.3
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -94,7 +94,7 @@ jinja2==3.1.6
     # via sphinx
 keyring==25.6.0
     # via twine
-markdown-it-py==3.0.0
+markdown-it-py==4.0.0
     # via rich
 markupsafe==3.0.2
     # via jinja2

@@ -2,7 +2,7 @@
 
 from typing import Any, Callable, Iterable, Literal, Optional, Tuple, Union, overload
 
-from eth_abi.grammar import BasicType, TupleType, parse
+from faster_eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.strategies._internal.deferred import DeferredStrategy
