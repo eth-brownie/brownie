@@ -9,7 +9,8 @@ import yaml
 
 from brownie._c_constants import Path
 from brownie._config import CONFIG, _get_data_folder
-from brownie.utils import bright_black, bright_magenta, color, green, notify
+from brownie.utils import color, notify
+from brownie.utils._color import bright_black, bright_magenta, green
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie networks <command> [<arguments> ...] [options]

@@ -28,7 +28,8 @@ from brownie import network, project
 from brownie._c_constants import import_module
 from brownie._config import CONFIG, _get_data_folder, _update_argv_from_docopt
 from brownie.project.main import Project
-from brownie.utils import bright_blue, bright_cyan, color
+from brownie.utils import color
+from brownie.utils._color import bright_blue, bright_cyan
 from brownie.utils.docopt import docopt
 
 __doc__ = f"""Usage: brownie console [options]

@@ -6,7 +6,8 @@ from typing import Callable, Dict, Final, List, Optional, Set, Tuple, Union
 
 from mypy_extensions import mypyc_attr
 
-from brownie.utils import bright_red, color
+from brownie.utils import color
+from brownie.utils._color import bright_red
 
 __console_dir__: Final = ["Alert", "new", "show", "stop_all"]
 _instances: Final[Set["Alert"]] = set()
