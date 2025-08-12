@@ -44,7 +44,9 @@ from brownie.utils import (
     bright_red,
     bright_yellow,
     bytes_to_hexstring,
+    color,
     dark_white,
+    hexbytes_to_hexstring,
     red,
 )
 from brownie.utils.output import build_tree
