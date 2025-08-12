@@ -43,6 +43,7 @@ from brownie.utils import (
     bright_magenta,
     bright_red,
     bright_yellow,
+    bytes_to_hexstring,
     dark_white,
     red,
 )
