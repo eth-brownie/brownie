@@ -23,8 +23,8 @@ from warnings import warn
 
 import black
 import requests
-from eth_abi import decode
 from eth_typing import BlockNumber, ChecksumAddress
+from faster_eth_abi import decode
 from web3.exceptions import TransactionNotFound
 from web3.types import TxReceipt
 
@@ -43,11 +43,8 @@ from brownie.utils import (
     bright_magenta,
     bright_red,
     bright_yellow,
-    bytes_to_hexstring,
-    color,
     dark_white,
     red,
-    hexbytes_to_hexstring,
 )
 from brownie.utils.output import build_tree
 

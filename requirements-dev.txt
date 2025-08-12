@@ -34,7 +34,7 @@ cffi==1.17.1
     # via cryptography
 chardet==5.2.0
     # via tox
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via
     #   -c requirements.txt
     #   requests
