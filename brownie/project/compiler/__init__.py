@@ -344,7 +344,6 @@ def generate_build_json(
                 print(f" - {contract_alias}")
 
             contract: dict = contracts[path_str][contract_name]
-            abi: List[ABIElement] = contract["abi"]
             natspec = merge_natspec(
                 contract.get("devdoc", {}),
                 contract.get("userdoc", {}),
