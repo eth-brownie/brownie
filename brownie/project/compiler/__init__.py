@@ -518,10 +518,13 @@ def get_abi(
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
+        output_sources: dict = output_json["sources"]
         source_nodes = _from_standard_output(output_json)
-        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        abi_json: Dict[str, dict] = {k: v for k, v in ) if k in path_list}
 
         for path, path_data in abi_json.items():
+            path_source: str = contract_sources[path]
+            ast = output_sources[path]["ast"]
             for name, data in path_data.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
@@ -533,13 +536,13 @@ def get_abi(
 
                 final_output[name] = {
                     "abi": data["abi"],
-                    "ast": output_json["sources"][path]["ast"],
+                    "ast": ast,
                     "contractName": name,
                     "dependencies": dependencies,
                     "type": "interface",
-                    "source": contract_sources[path],
+                    "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
+                    "sha1": sha1(path_source.encode()).hexdigest(),  # type: ignore [typeddict-item]
                 }
 
     return final_output
