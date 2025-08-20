@@ -687,7 +687,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 args=(
                     receipt,
                     self.transfer,
-                    [],
+                    (),
                     {
                         "to": to,
                         "amount": amount,
