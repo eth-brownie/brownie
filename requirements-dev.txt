@@ -45,7 +45,7 @@ click==8.2.1
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.10.3
+coverage[toml]==7.10.4
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -60,7 +60,7 @@ docutils==0.21.2
     #   sphinx-rtd-theme
 eth-retry==0.3.5
     # via -r requirements-dev.in
-filelock==3.18.0
+filelock==3.19.1
     # via
     #   tox
     #   virtualenv
@@ -84,7 +84,7 @@ jaraco-classes==3.4.0
     # via keyring
 jaraco-context==6.0.1
     # via keyring
-jaraco-functools==4.2.1
+jaraco-functools==4.3.0
     # via keyring
 jeepney==0.9.0
     # via
@@ -180,7 +180,7 @@ pytest-mock==3.14.1
     # via -r requirements-dev.in
 readme-renderer==44.0
     # via twine
-requests==2.32.4
+requests==2.32.5
     # via
     #   -c requirements.txt
     #   requests-toolbelt
@@ -236,7 +236,7 @@ urllib3==2.5.0
     #   -c requirements.txt
     #   requests
     #   twine
-virtualenv==20.33.1
+virtualenv==20.34.0
     # via tox
 wheel==0.45.1
     # via
