@@ -254,16 +254,6 @@ typedef struct tuple_T3IIC {
 } tuple_T3IIC;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T4CCCC
-#define MYPYC_DECLARED_tuple_T4CCCC
-typedef struct tuple_T4CCCC {
-    char f0;
-    char f1;
-    char f2;
-    char f3;
-} tuple_T4CCCC;
-#endif
-
 #ifndef MYPYC_DECLARED_tuple_T5OT2IIOOO
 #define MYPYC_DECLARED_tuple_T5OT2IIOOO
 typedef struct tuple_T5OT2IIOOO {
@@ -273,6 +263,26 @@ typedef struct tuple_T5OT2IIOOO {
     PyObject *f3;
     PyObject *f4;
 } tuple_T5OT2IIOOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T4OT2IIOO
+#define MYPYC_DECLARED_tuple_T4OT2IIOO
+typedef struct tuple_T4OT2IIOO {
+    PyObject *f0;
+    tuple_T2II f1;
+    PyObject *f2;
+    PyObject *f3;
+} tuple_T4OT2IIOO;
+#endif
+
+#ifndef MYPYC_DECLARED_tuple_T4CCCC
+#define MYPYC_DECLARED_tuple_T4CCCC
+typedef struct tuple_T4CCCC {
+    char f0;
+    char f1;
+    char f2;
+    char f3;
+} tuple_T4CCCC;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T8OOOOOOOO
@@ -2511,7 +2521,7 @@ struct export_table_b5e4b1180acefab623dd {
     PyObject *(*CPyDef_state___priority_fee_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     PyObject *(*CPyDef_state___priority_fee_Chain_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
     PyObject *(*CPyDef_state____revert_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
-    CPyTagged (*CPyDef_state____revert_Chain_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, CPyTagged cpy_r_id_);
+    PyObject *(*CPyDef_state____revert_Chain_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_id_);
     PyObject *(*CPyDef_state____add_to_undo_buffer_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_state____add_to_undo_buffer_Chain_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_tx, PyObject *cpy_r_fn, PyObject *cpy_r_args, PyObject *cpy_r_kwargs);
     PyObject *(*CPyDef_state____network_connected_Chain_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
