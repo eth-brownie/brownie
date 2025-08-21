@@ -9,6 +9,9 @@ from web3.types import RPCEndpoint
 partial: Final = functools.partial
 
 
+partial: Final = functools.partial
+
+
 class BrownieMiddlewareABC(ABC):
     """
     Base ABC for all middlewares.
