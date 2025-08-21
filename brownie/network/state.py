@@ -286,7 +286,7 @@ class Chain(metaclass=_Singleton):
         if height_buffer < 0:
             raise ValueError("Buffer cannot be negative")
 
-        last_block: Optional[BlockNumber] = None
+        last_block: Optional[BlockData | AttributeDict] = None
         last_height = 0
         last_poll = 0.0
 
