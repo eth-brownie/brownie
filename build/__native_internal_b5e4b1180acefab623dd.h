@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2442];
+extern PyObject *CPyStatics[2439];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1915,6 +1915,10 @@ extern PyObject *CPyDef_project___main____reset_Project_obj_____get__(PyObject *
 extern PyObject *CPyPy_project___main____reset_Project_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_project___main____reset_Project_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
 extern PyObject *CPyPy_project___main____reset_Project_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_project___main____load_contract_build_json_from_disk(PyObject *cpy_r_path);
+extern PyObject *CPyPy_project___main____load_contract_build_json_from_disk(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_project___main____load_interface_build_json_from_disk(PyObject *cpy_r_path);
+extern PyObject *CPyPy_project___main____load_interface_build_json_from_disk(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_project___main_____init___3_TempProject_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
 extern PyObject *CPyPy_project___main_____init___3_TempProject_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_project___main_____init___3_TempProject_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config);

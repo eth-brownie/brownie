@@ -2799,6 +2799,8 @@ struct export_table_b5e4b1180acefab623dd {
     char (*CPyDef_project___main____revert_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, CPyTagged cpy_r_height);
     PyObject *(*CPyDef_project___main____reset_Project_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_project___main____reset_Project_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+    PyObject *(*CPyDef_project___main____load_contract_build_json_from_disk)(PyObject *cpy_r_path);
+    PyObject *(*CPyDef_project___main____load_interface_build_json_from_disk)(PyObject *cpy_r_path);
     PyObject *(*CPyDef_project___main_____init___3_TempProject_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
     char (*CPyDef_project___main_____init___3_TempProject_obj_____call__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_name, PyObject *cpy_r_contract_sources, PyObject *cpy_r_compiler_config);
     PyObject *(*CPyDef_project___main_____repr___3_TempProject_obj_____get__)(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
