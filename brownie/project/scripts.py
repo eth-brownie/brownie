@@ -184,7 +184,7 @@ def _import_from_path(path: pathlib.Path) -> ModuleType:
         return module
 
 
-def _get_ast_hash(path: str) -> str:
+def _get_ast_hash(path: str | pathlib.Path) -> str:
     # Generates a hash based on the AST of a script.
     with Path(path).open() as fp:
         ast_list = [_parse(fp.read(), path)]
