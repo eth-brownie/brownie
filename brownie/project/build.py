@@ -101,10 +101,11 @@ class Build:
         marker = "//" if language == "Solidity" else "#"
         for pc, data in pcMap.items():
             if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
-                if "path" not in data or data["path"] is None:
+                path = data.get("path")
+                if path is None:
                     continue
 
-                path_str = source_map[data["path"]]
+                path_str = source_map[path]
 
                 if "dev" not in data:
                     if "fn" not in data or "first_revert" in data:
@@ -122,7 +123,7 @@ class Build:
                 msg = "" if data["op"] == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
-                    tuple(data["offset"]),
+                    data["offset"],
                     data.get("fn", "<None>"),
                     data.get("dev", msg),
                     self._sources,
