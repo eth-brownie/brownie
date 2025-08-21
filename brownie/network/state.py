@@ -336,20 +336,20 @@ class Chain(metaclass=_Singleton):
             _notify_registry(0)  # type: ignore [arg-type]
             return rpc_client.snapshot()
         rpc_client.revert(id_)
-        id_ = rpc_client.snapshot()
+        new_id = rpc_client.snapshot()
         try:
             self.sleep(0)
         except NotImplementedError:
             pass
         _notify_registry()
-        return id_
+        return new_id
 
     def _add_to_undo_buffer(
         self, tx: TransactionReceipt, fn: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
     ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
-            self._undo_buffer.append((self._current_id, fn, args, kwargs))
+            self._undo_buffer.append((self._current_id, fn, args, kwargs))  # type: ignore [arg-type]
             if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
                 self._redo_buffer.pop()
             else:
