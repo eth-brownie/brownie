@@ -358,8 +358,8 @@ class SanitizedFileHistory(FileHistory):
 
     def store_string(self, line: str):
         try:
-            cls_, method = line[: line.index("(")].split(".")
-            method = getattr(self.locals[cls_], method)
+            cls_, methodname = line[: line.index("(")].split(".")
+            method = getattr(self.locals[cls_], methodname)
             if hasattr(method, "_private"):
                 line = line[: line.index("(")] + "()"
         except (ValueError, AttributeError, KeyError):
