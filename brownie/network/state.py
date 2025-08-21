@@ -215,7 +215,7 @@ class Chain(metaclass=_Singleton):
     def __init__(self) -> None:
         self._time_offset: int = 0
         self._snapshot_id: Optional[int] = None
-        self._reset_id: Optional[int] = None
+        self._reset_id: Optional[int | str] = None
         self._current_id: Optional[int | str] = None
         self._undo_lock: Final = threading.Lock()
         self._undo_buffer: Final[List[Tuple[int | str, Any, Tuple[Any, ...], Dict[str, Any]]]] = []
