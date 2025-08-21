@@ -11,7 +11,7 @@ from json import JSONDecodeError
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
-from typing import Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
+from typing import Any, Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
 from urllib.parse import quote
 
 import requests
@@ -248,13 +248,8 @@ class Project(_ProjectBase):
         potential_dependencies: List[Tuple[pathlib.Path, ContractBuildJson]] = []
         build_path = self._build_path
 
-        contract_build_json: ContractBuildJson
         for path in build_path.glob("contracts/*.json"):
-            try:
-                with path.open() as fp:
-                    contract_build_json = json_load(fp)
-            except JSONDecodeError:
-                contract_build_json = {}  # type: ignore [assignment]
+            contract_build_json = _load_contract_build_json_from_disk(path)
             if not set(BUILD_KEYS).issubset(contract_build_json):
                 path.unlink()
                 continue
@@ -284,13 +279,8 @@ class Project(_ProjectBase):
         interface_hashes: Dict[str, HexStr] = {}
         interface_list = sources.get_interface_list()
 
-        interface_build_json: InterfaceBuildJson
         for path in build_path.glob("interfaces/*.json"):
-            try:
-                with path.open() as fp:
-                    interface_build_json = json_load(fp)
-            except JSONDecodeError:
-                interface_build_json = {}  # type: ignore [typeddict-item]
+            interface_build_json = _load_interface_build_json_from_disk(path)
             if (
                 not set(INTERFACE_KEYS).issubset(interface_build_json)
                 or path.stem not in interface_list
@@ -419,6 +409,12 @@ class Project(_ProjectBase):
             if build.get_dependents(contract_alias):
                 with path.open() as fp:
                     build_json = json_load(fp)
+                # json.load turns arrays into python lists but for "offset" we need tuples
+                build_json["offset"] = tuple(build_json["offset"])
+                pc_map: Dict[Any, dict] = build_json["pcMap"]
+                for counter in pc_map.values():
+                    if "offset" in counter:
+                        counter["offset"] = tuple(counter["offset"])
                 build._add_contract(build_json, contract_alias)
             else:
                 path.unlink()
@@ -605,6 +601,34 @@ class Project(_ProjectBase):
 
     def _reset(self) -> None:
         self._clear_dev_deployments(0)
+
+
+def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson:
+    try:
+        with path.open() as fp:
+            contract_build_json: dict = json_load(fp)
+            # json loads them as lists but we want tuples for mypyc
+            contract_build_json["offset"] = tuple(contract_build_json["offset"])
+            pc_map: dict = contract_build_json["pcMap"]
+            counter: dict
+            for counter in pc_map.values():
+                if "offset" in counter:
+                    counter["offset"] = tuple(counter["offset"])
+            return contract_build_json  # type: ignore [return-value]
+    except JSONDecodeError:
+        return {}  # type: ignore [return-value]
+
+
+def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJson:
+    try:
+        with path.open() as fp:
+            interface_build_json: dict = json_load(fp)
+            offset = interface_build_json["offset"]
+            if offset is not None:
+                interface_build_json["offset"] = tuple(offset)
+            return interface_build_json  # type: ignore [return-value]
+    except JSONDecodeError:
+        return {}  # type: ignore [typeddict-item]
 
 
 # TODO: remove this decorator once weakref support is implemented
