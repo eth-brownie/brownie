@@ -911,8 +911,11 @@ class Contract(_DeployedContractBase):
         address = ""
         try:
             address = _resolve_address(address_or_alias)
+            print(f"resolved address {address}")
             build, sources = _get_deployment(address)
-        except Exception:
+            print("got deployment from db")
+        except Exception as e:
+            print(f"raising {e!r}")
             raise
             build, sources = _get_deployment(alias=address_or_alias)
             if build is not None:
@@ -933,7 +936,9 @@ class Contract(_DeployedContractBase):
             address = contract.address
 
         _ContractBase.__init__(self, None, build, sources)
+        print('inited _ContractBase')
         _DeployedContractBase.__init__(self, address, owner)
+        print('inited _DeployedContractBase')
 
     def _deprecated_init(
         self,
