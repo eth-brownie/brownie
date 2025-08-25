@@ -1732,10 +1732,6 @@ struct export_table_b5e4b1180acefab623dd {
     PyObject **CPyStatic__c_constants___getcontext;
     PyObject **CPyStatic__c_constants___sha1;
     PyObject **CPyStatic__c_constants___import_module;
-    PyObject **CPyStatic__c_constants___json_dump;
-    PyObject **CPyStatic__c_constants___json_dumps;
-    PyObject **CPyStatic__c_constants___json_load;
-    PyObject **CPyStatic__c_constants___json_loads;
     PyObject **CPyStatic__c_constants___Path;
     PyObject **CPyStatic__c_constants___regex_compile;
     PyObject **CPyStatic__c_constants___regex_findall;
@@ -1747,6 +1743,10 @@ struct export_table_b5e4b1180acefab623dd {
     PyObject **CPyStatic__c_constants___NpmSpec;
     PyObject **CPyStatic__c_constants___Version;
     PyObject **CPyStatic__c_constants___mapcat;
+    PyObject **CPyStatic__c_constants___ujson_dump;
+    PyObject **CPyStatic__c_constants___ujson_dumps;
+    PyObject **CPyStatic__c_constants___ujson_load;
+    PyObject **CPyStatic__c_constants___ujson_loads;
     char (*CPyDef__c_constants_____top_level__)(void);
     char (*CPyDef__cli_____top_level__)(void);
     PyTypeObject **CPyType___main_____main_env;
