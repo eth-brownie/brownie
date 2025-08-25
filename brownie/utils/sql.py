@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 from typing import Any, Final, Optional, Tuple, final
 
-from brownie._c_constants import json_dumps, json_loads
+from brownie._c_constants import ujson_dumps, ujson_loads
 
 
 @final
@@ -25,7 +25,7 @@ class Cursor:
         self._fetchall = self._cur.fetchall
 
     def insert(self, table: str, *values: Any) -> None:
-        encoded = [json_dumps(i) if isinstance(i, (dict, list)) else i for i in values]
+        encoded = [ujson_dumps(i) if isinstance(i, (dict, list)) else i for i in values]
         with self._lock:
             self._execute(
                 f"INSERT OR REPLACE INTO {table} VALUES ({','.join('?'*len(encoded))})", encoded
@@ -39,7 +39,7 @@ class Cursor:
         with self._lock:
             self._execute(cmd, *args)
             if result := self._fetchone():
-                return tuple(json_loads(i) if str(i).startswith(("[", "{")) else i for i in result)
+                return tuple(ujson_loads(i) if str(i).startswith(("[", "{")) else i for i in result)
             return None
 
     def fetchall(self, cmd: str, *args: Any) -> Any:
