@@ -248,7 +248,7 @@ toolz==1.0.0
     # via cytoolz
 tqdm==4.67.1
     # via -r requirements.in
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   aiosignal
     #   eth-typing

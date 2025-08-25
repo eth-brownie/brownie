@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2441];
+extern PyObject *CPyStatics[2440];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -104,7 +104,6 @@ extern CPyModule *CPyModule_brownie____cli___test;
 extern PyObject *CPyStatic_test___globals;
 extern CPyModule *CPyModule_pytest;
 extern PyObject *CPyStatic__config___globals;
-extern CPyModule *CPyModule_json;
 extern CPyModule *CPyModule_os;
 extern CPyModule *CPyModule_warnings;
 extern CPyModule *CPyModule_dotenv;

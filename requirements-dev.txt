@@ -227,7 +227,7 @@ tox==4.15.1
     # via -r requirements-dev.in
 twine==6.0.1
     # via -r requirements-dev.in
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   -c requirements.txt
     #   eth-retry
