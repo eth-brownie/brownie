@@ -203,17 +203,25 @@ def _resolve_address(domain: str) -> ChecksumAddress:
     if not isinstance(domain, str) or "." not in domain:
         return to_address(domain)
     domain = domain.lower()
+    print(f"lowered to {domain}")
     if domain not in _ens_cache or time.time() - _ens_cache[domain][1] > 86400:
+        print(f"{domain} not in cache or cache is expired")
         try:
             ns = ENS.from_web3(web3._mainnet)
+            print(f"initialized {ns}")
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)
+        print(f"address: {address}")
         _ens_cache[domain] = [address, int(time.time())]
+        print('opening file')
         with _get_path().open("w") as fp:
+            print('dumping cache json')
             json_dump(_ens_cache, fp)
+        print('cache saved')
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
+    print(f"{domain} found in ens cache")
     return _ens_cache[domain][0]
 
 
