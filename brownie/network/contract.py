@@ -451,7 +451,7 @@ class ContractContainer(_ContractBase):
             "compilerversion": f"v{contract_info['compiler_version']}",
             "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
             "runs": contract_info["optimizer_runs"],
-            "constructorArguements": constructor_arguments,
+            "constructorArguments": constructor_arguments,
             "licenseType": license_code,
         }
         response = requests.post(
