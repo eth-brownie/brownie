@@ -115,7 +115,7 @@ class ExponentialScalingStrategy(TimeGasStrategy):
 
 class GasNowStrategy(SimpleGasStrategy):
     """
-    Gas strategy for determing a price using the GasNow API.
+    Gas strategy for determining a price using the GasNow API.
 
     GasNow returns 4 possible prices:
 
