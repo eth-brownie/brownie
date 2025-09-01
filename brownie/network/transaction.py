@@ -605,7 +605,7 @@ class TransactionReceipt:
             pass
 
     def _set_from_receipt(self, receipt: TxReceipt) -> None:
-        """Sets object attributes based on the transaction reciept."""
+        """Sets object attributes based on the transaction receipt."""
         self.block_number = receipt["blockNumber"]
         self.txindex = receipt["transactionIndex"]
         self.gas_used = receipt["gasUsed"]
