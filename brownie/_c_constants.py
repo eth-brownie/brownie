@@ -13,7 +13,6 @@ import copy
 import decimal
 import hashlib
 import importlib
-import json
 import pathlib
 import re
 from typing import Final
@@ -21,6 +20,7 @@ from typing import Final
 import eth_utils.toolz
 import hexbytes
 import semantic_version
+import ujson
 
 # BUILTINS
 # collections
@@ -39,12 +39,6 @@ sha1: Final = hashlib.sha1
 
 # importlib
 import_module: Final = importlib.import_module
-
-# json
-json_dump: Final = json.dump
-json_dumps: Final = json.dumps
-json_load: Final = json.load
-json_loads: Final = json.loads
 
 # pathlib
 Path: Final = pathlib.Path
@@ -68,3 +62,9 @@ Version: Final = semantic_version.Version
 
 # toolz
 mapcat: Final = eth_utils.toolz.mapcat
+
+# ujson
+ujson_dump: Final = ujson.dump
+ujson_dumps: Final = ujson.dumps
+ujson_load: Final = ujson.load
+ujson_loads: Final = ujson.loads

@@ -24,7 +24,7 @@ bump2version==1.0.1
     # via bumpversion
 bumpversion==0.6.0
     # via -r requirements-dev.in
-cachetools==6.1.0
+cachetools==6.2.0
     # via tox
 certifi==2025.8.3
     # via
@@ -45,11 +45,11 @@ click==8.2.1
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.10.4
+coverage[toml]==7.10.6
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==45.0.6
+cryptography==45.0.7
     # via secretstorage
 distlib==0.4.0
     # via virtualenv
@@ -102,7 +102,7 @@ mccabe==0.7.0
     # via flake8
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==10.7.0
+more-itertools==10.8.0
     # via
     #   jaraco-classes
     #   jaraco-functools
@@ -130,7 +130,7 @@ pip-tools==7.5.0
     # via -r requirements-dev.in
 pkginfo==1.12.1.2
     # via twine
-platformdirs==4.3.8
+platformdirs==4.4.0
     # via
     #   -c requirements.txt
     #   black
@@ -176,7 +176,7 @@ pytest==6.2.5
     #   pytest-mock
 pytest-cov==6.2.1
     # via -r requirements-dev.in
-pytest-mock==3.14.1
+pytest-mock==3.15.0
     # via -r requirements-dev.in
 readme-renderer==44.0
     # via twine
@@ -227,7 +227,7 @@ tox==4.15.1
     # via -r requirements-dev.in
 twine==6.0.1
     # via -r requirements-dev.in
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   -c requirements.txt
     #   eth-retry
