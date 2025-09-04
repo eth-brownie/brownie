@@ -434,7 +434,7 @@ class EventWatcher(metaclass=_Singleton):
             raise TypeError("Argument 'callback' argument must be a callable.")
         delay = max(delay, 0.05)
         self.target_list_lock.acquire()  # lock
-        # Key refering to this specific event (event.address is the address
+        # Key referring to this specific event (event.address is the address
         # of the contract to which the event is linked)
         event_watch_data_key = f"{str(event.address)}+{event.event_name}"
         if self.target_events_watch_data.get(event_watch_data_key) is None:

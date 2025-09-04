@@ -565,7 +565,7 @@ class Chain(metaclass=_Singleton):
 
 # objects that will update whenever the RPC is reset or reverted must register
 # by calling to this function. The must also include _revert and _reset methods
-# to recieve notifications from this object
+# to receive notifications from this object
 def _revert_register(obj: object) -> None:
     _revert_refs.append(weakref.ref(obj))
 
