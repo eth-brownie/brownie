@@ -126,7 +126,7 @@ class TxHistory(metaclass=_Singleton):
         Arguments
         ---------
         key : Callable, optional
-            An optional function to filter with. It should expect one agument and return
+            An optional function to filter with. It should expect one argument and return
             True or False.
 
         Keyword Arguments
@@ -153,7 +153,7 @@ class TxHistory(metaclass=_Singleton):
         Arguments
         ---------
         key : Callable, optional
-            An optional function to filter with. It should expect one agument and return
+            An optional function to filter with. It should expect one argument and return
             True or False.
 
         Keyword Arguments
