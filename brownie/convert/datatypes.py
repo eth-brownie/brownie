@@ -72,7 +72,7 @@ class Wei(int):
         * hex strings: "0x330124\" """
 
     def __new__(cls, value: WeiInputType) -> Self:
-        return super().__new__(cls, _to_wei(value))
+        return int.__new__(cls, _to_wei(value))
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -163,7 +163,7 @@ class Fixed(decimal.Decimal):
     """
 
     def __new__(cls, value: Any) -> Self:
-        return super().__new__(cls, _to_fixed(value))
+        return Decimal.__new__(cls, _to_fixed(value))
 
     def __repr__(self) -> str:
         return f"Fixed('{str(self)}')"
@@ -245,7 +245,7 @@ class EthAddress(str):
             converted_value = to_checksum_address(converted_value)
         except ValueError:
             raise ValueError(f"{value!r} is not a valid ETH address") from None
-        return super().__new__(cls, converted_value)  # type: ignore
+        return str.__new__(cls, converted_value)  # type: ignore
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -272,7 +272,7 @@ class HexString(bytes):
     leading zeros or capitalization."""
 
     def __new__(cls, value: Any, type_str: str) -> Self:
-        return super().__new__(cls, _to_bytes(value, type_str))
+        return bytes.__new__(cls, _to_bytes(value, type_str))
 
     def __eq__(self, other: Any) -> bool:
         return _hex_compare(self.hex(), other)
@@ -362,7 +362,7 @@ class ReturnValue(tuple):
                     # array
                     values[i] = ReturnValue(value)
 
-        self = super().__new__(cls, values)
+        self = tuple.__new__(cls, values)
         self._abi = list(abi) if abi else []
         self._dict = {i.get("name", "") or f"arg[{c}]": values[c] for c, i in enumerate(self._abi)}
 
