@@ -135,11 +135,11 @@ execnet==2.1.1
     # via
     #   -r requirements.txt
     #   pytest-xdist
-faster-eth-abi==5.2.5
+faster-eth-abi==5.2.6
     # via
     #   -r requirements.txt
     #   eth-event
-faster-eth-utils==4.1.6
+faster-eth-utils==4.1.7
     # via
     #   -r requirements.txt
     #   faster-eth-abi
@@ -175,7 +175,7 @@ jsonschema==4.25.1
     # via
     #   -r requirements.txt
     #   web3
-jsonschema-specifications==2025.4.1
+jsonschema-specifications==2025.9.1
     # via
     #   -r requirements.txt
     #   jsonschema
@@ -230,7 +230,7 @@ propcache==0.3.2
     #   -r requirements.txt
     #   aiohttp
     #   yarl
-protobuf==6.32.0
+protobuf==6.32.1
     # via
     #   -r requirements.txt
     #   web3
@@ -251,7 +251,7 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.7
+pydantic==2.11.8
     # via
     #   -r requirements.txt
     #   eth-account
