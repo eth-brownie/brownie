@@ -142,11 +142,13 @@ class Web3(_Web3):
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
         if self.is_connected() and CONFIG.active_network["id"] == "mainnet":
+            print("web3._mainnet is self")
             return self
         try:
             mainnet = CONFIG.networks["mainnet"]
         except KeyError:
             raise MainnetUndefined("No 'mainnet' network defined") from None
+        raise Exception(mainnet)
         if not self._mainnet_w3:
             uri = _expand_environment_vars(mainnet["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
