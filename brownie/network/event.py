@@ -600,13 +600,14 @@ def _decode_ds_note(
     except ValueError:
         return None
     selector_hexstr = Selector(hexbytes_to_hexstring(selector))
-    return {
+    inputs = contract.get_method_object(selector_hexstr).abi["inputs"]  # type: ignore [union-attr]
+    return {  # type: ignore [return-value]
         "name": name,
         "address": log.address,  # type: ignore [attr-defined, typeddict-item]
         "decoded": True,
         "data": [
             {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}
-            for arg, abi in zip(args, contract.get_method_object(selector_hexstr).abi["inputs"])  # type: ignore [union-attr]
+            for arg, abi in zip(args, inputs)
         ],
     }
 
