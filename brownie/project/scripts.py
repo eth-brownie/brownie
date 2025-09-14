@@ -15,7 +15,8 @@ from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
 from brownie._c_constants import Path, import_module, sha1
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
-from brownie.utils import bright_blue, bright_cyan, color
+from brownie.utils import color
+from brownie.utils._color import bright_blue, bright_cyan
 
 # C Constants
 
