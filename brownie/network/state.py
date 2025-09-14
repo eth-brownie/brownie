@@ -286,7 +286,7 @@ class Chain(metaclass=_Singleton):
         if height_buffer < 0:
             raise ValueError("Buffer cannot be negative")
 
-        last_block = None
+        last_block: Optional[BlockNumber] = None
         last_height = 0
         last_poll = 0.0
 
@@ -350,10 +350,11 @@ class Chain(metaclass=_Singleton):
         with self._undo_lock:
             tx._confirmed.wait()
             self._undo_buffer.append((self._current_id, fn, args, kwargs))  # type: ignore [arg-type]
-            if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
-                self._redo_buffer.pop()
+            redo_buffer = self._redo_buffer
+            if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
+                redo_buffer.pop()
             else:
-                self._redo_buffer.clear()
+                redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
             # ensure the local time offset is correct, in case it was modified by the transaction
             self.sleep(0)
