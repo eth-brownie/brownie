@@ -59,6 +59,22 @@ NOTIFY_COLORS: Final = {"WARNING": "bright red", "ERROR": "bright red", "SUCCESS
 base_path: Final = str(Path(".").absolute())
 
 
+# cached color strings
+
+blue: Final = "\x1b[0;34m"  # Color()("blue")
+bright_black: Final = "\x1b[0;1;30m"  # Color()("bright black")
+bright_blue: Final = "\x1b[0;1;34m"  # Color()("bright blue")
+bright_cyan: Final = "\x1b[0;1;36m"  # Color()("bright cyan")
+bright_green: Final = "\x1b[0;1;32m"  # Color()("bright green")
+bright_magenta: Final = "\x1b[0;1;35m"  # Color()("bright magenta")
+bright_red: Final = "\x1b[0;1;31m"  # Color()("bright red")
+bright_yellow: Final = "\x1b[0;1;33m"  # Color()("bright yellow")
+dark_white: Final = "\x1b[0;2;37m"  # Color()("dark white")
+green: Final = "\x1b[0;1;32m"  # Color()("green")
+red: Final = "\x1b[0;1;31m"  # Color()("red")
+yellow: Final = "\x1b[0;1;33m"  # Color()("yellow")
+
+
 @final
 class Color:
     __cache__: Final[Dict[Optional[str], str]] = {}
@@ -203,22 +219,6 @@ class Color:
         Apply syntax highlighting to a string.
         """
         return pygments.highlight(text, lexer, formatter)
-
-
-# cached colors
-
-blue: Final = "\x1b[0;34m"  # Color()("blue")
-bright_black: Final = "\x1b[0;1;30m"  # Color()("bright black")
-bright_blue: Final = "\x1b[0;1;34m"  # Color()("bright blue")
-bright_cyan: Final = "\x1b[0;1;36m"  # Color()("bright cyan")
-bright_green: Final = "\x1b[0;1;32m"  # Color()("bright green")
-bright_magenta: Final = "\x1b[0;1;35m"  # Color()("bright magenta")
-bright_red: Final = "\x1b[0;1;31m"  # Color()("bright red")
-bright_yellow: Final = "\x1b[0;1;33m"  # Color()("bright yellow")
-dark_white: Final = "\x1b[0;2;37m"  # Color()("dark white")
-green: Final = "\x1b[0;1;32m"  # Color()("green")
-red: Final = "\x1b[0;1;31m"  # Color()("red")
-yellow: Final = "\x1b[0;1;33m"  # Color()("yellow")
 
 
 def notify(type_: NotifyType, msg):
