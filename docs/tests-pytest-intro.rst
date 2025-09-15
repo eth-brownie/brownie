@@ -284,7 +284,7 @@ Revert string comments must begin with ``// dev:`` in Solidity, or ``# dev:`` in
 
 * Line 2 will use the given revert string ``"is two"``
 * Line 3 will substitute in the string supplied on the comments: ``"dev: is three"``
-* Line 4 will use the given string ``"cannot be four"`` and ignore the subsitution string.
+* Line 4 will use the given string ``"cannot be four"`` and ignore the substitution string.
 * Line 5 will have no revert string. The comment did not begin with ``"dev:"`` and so is ignored.
 
 If the above function is executed in the console:
