@@ -16,7 +16,8 @@ from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
-from brownie.utils import color, yellow
+from brownie.utils import color
+from brownie.utils._color import yellow
 
 from .base import PytestBrownieBase
 from .utils import convert_outcome
