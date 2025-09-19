@@ -106,9 +106,9 @@ class Build:
                     path = data.get("path")
                     if path is None:
                         continue
-    
+
                     path_str = source_map[path]
-    
+
                     if "dev" not in data:
                         if "fn" not in data or "first_revert" in data:
                             _revert_map[pc] = False
@@ -116,12 +116,14 @@ class Build:
                         try:
                             revert_str = self._sources.get(path_str)[data["offset"][1] :]
                             revert_str = revert_str[: revert_str.index("\n")]
-                            revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
+                            revert_str = revert_str[
+                                revert_str.index(marker) + len(marker) :
+                            ].strip()
                             if revert_str.startswith("dev:"):
                                 data["dev"] = revert_str
                         except (KeyError, ValueError):
                             pass
-    
+
                     msg = "" if op == "REVERT" else "invalid opcode"
                     revert = (
                         path_str,
@@ -130,7 +132,7 @@ class Build:
                         data.get("dev", msg),
                         self._sources,
                     )
-    
+
                     # do not compare the final tuple item in case the same project was loaded twice
                     if pc not in _revert_map or (
                         _revert_map[pc] and revert[:-1] == _revert_map[pc][:-1]
