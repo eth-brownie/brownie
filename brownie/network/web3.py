@@ -2,13 +2,13 @@
 
 import os
 import time
-from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Dict, Optional, Set
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
 from requests import HTTPError
+from ujson import JSONDecodeError
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
 from web3 import WebsocketProvider
@@ -16,7 +16,7 @@ from web3.contract.contract import ContractEvent  # noqa
 from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
-from brownie._c_constants import json_dump, json_load
+from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
@@ -211,7 +211,7 @@ def _resolve_address(domain: str) -> ChecksumAddress:
         address = ns.address(domain)
         _ens_cache[domain] = [address, int(time.time())]
         with _get_path().open("w") as fp:
-            json_dump(_ens_cache, fp)
+            ujson_dump(_ens_cache, fp)
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
     return _ens_cache[domain][0]
@@ -222,6 +222,6 @@ web3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
 
 try:
     with _get_path().open() as fp:
-        _ens_cache: Dict = json_load(fp)
+        _ens_cache: Dict = ujson_load(fp)
 except (FileNotFoundError, JSONDecodeError):
     _ens_cache = {}
