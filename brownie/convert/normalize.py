@@ -30,7 +30,7 @@ def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> List[Any]:
     try:
         return _format_tuple(abi_types, inputs)
     except Exception as e:
-        raise type(e)(f"{abi['name']} {e}") from None
+        raise type(e)(f"{abi['name']} {e}") from e
 
 
 def format_output(abi: ABIFunction, outputs: AnyListOrTuple) -> ReturnValue:
@@ -79,7 +79,7 @@ def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[
             else:
                 result.append(_format_single(type_.to_type_str(), value))
         except Exception as e:
-            raise type(e)(f"'{value}' - {e}") from None
+            raise type(e)(f"'{value}' - {e}") from e
     return result
 
 
