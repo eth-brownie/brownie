@@ -44,7 +44,7 @@ jobs:
     
     - name: Install Mypyc and Deps
       run: |
-        pip install -U mypy[mypyc]==1.18.1 types-PyYAML
+        pip install -U types-PyYAML
         pip install -r requirements.txt
 
     - name: Compile
