@@ -18,7 +18,6 @@ from typing import (
     Iterator,
     List,
     Match,
-    NewType,
     Optional,
     Set,
     Tuple,
