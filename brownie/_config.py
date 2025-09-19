@@ -124,6 +124,7 @@ class ConfigContainer:
         return self.argv["cli"]
 
 
+@final
 class Config(ConfigContainer, metaclass=_Singleton):
     ...
 
