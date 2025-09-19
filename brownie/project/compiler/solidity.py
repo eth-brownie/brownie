@@ -20,7 +20,6 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.typing import (
-    BranchMap,
     BytecodeJson,
     Count,
     DeployedBytecodeJson,
@@ -30,7 +29,6 @@ from brownie.typing import (
     ProgramCounter,
     SolidityBuildJson,
     Source,
-    StatementMap,
 )
 
 from . import sources
@@ -58,7 +56,9 @@ EVM_VERSION_MAPPING: Final = [
 
 PcMap = Dict[Count, ProgramCounter]
 StatementNodes = Dict[str, Set[Offset]]
+StatementMap = Dict[str, Dict[str, Dict[Count, Tuple[int, int]]]]
 BranchNodes = Dict[str, Set[NodeBase]]
+BranchMap = Dict[str, Dict[str, Dict[Count, Tuple[int, int, int]]]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
