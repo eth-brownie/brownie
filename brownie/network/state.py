@@ -214,7 +214,7 @@ class Chain(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self._time_offset: int = 0
-        self._snapshot_id: Optional[int] = None
+        self._snapshot_id: Optional[int | str] = None
         self._reset_id: Optional[int | str] = None
         self._current_id: Optional[int | str] = None
         self._undo_lock: Final = threading.Lock()
@@ -330,19 +330,19 @@ class Chain(metaclass=_Singleton):
     def priority_fee(self) -> Wei:
         return Wei(web3.eth.max_priority_fee)
 
-    def _revert(self, id_: int | str) -> int:
+    def _revert(self, id_: int | str) -> int | str:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
             _notify_registry(0)  # type: ignore [arg-type]
             return rpc_client.snapshot()
         rpc_client.revert(id_)
-        new_id = rpc_client.snapshot()
+        id_ = rpc_client.snapshot()
         try:
             self.sleep(0)
         except NotImplementedError:
             pass
         _notify_registry()
-        return new_id
+        return id_
 
     def _add_to_undo_buffer(
         self, tx: TransactionReceipt, fn: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
