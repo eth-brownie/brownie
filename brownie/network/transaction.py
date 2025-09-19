@@ -37,16 +37,14 @@ from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.typing import ContractName
-from brownie.utils import (
+from brownie.utils import bytes_to_hexstring, color, hexbytes_to_hexstring
+from brownie.utils._color import (
     bright_blue,
     bright_cyan,
     bright_magenta,
     bright_red,
     bright_yellow,
-    bytes_to_hexstring,
-    color,
     dark_white,
-    hexbytes_to_hexstring,
     red,
 )
 from brownie.utils.output import build_tree

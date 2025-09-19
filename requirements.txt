@@ -98,7 +98,7 @@ eth-utils==4.1.1
     #   web3
 execnet==2.1.1
     # via pytest-xdist
-faster-eth-abi==5.2.7
+faster-eth-abi==5.2.8
     # via
     #   -r requirements.in
     #   eth-event

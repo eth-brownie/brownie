@@ -12,7 +12,7 @@ from mypy_extensions import mypyc_attr
 
 import brownie
 from brownie._c_constants import deque
-from brownie.utils import red, yellow
+from brownie.utils._color import red, yellow
 
 sf.__tracebackhide__ = True  # type: ignore [attr-defined]
 

@@ -11,7 +11,8 @@ from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.project.build import Build
 from brownie.typing import ContractName, CoverageMap
-from brownie.utils import bright_green, bright_magenta, bright_red, bright_yellow, color
+from brownie.utils import color
+from brownie.utils._color import bright_green, bright_magenta, bright_red, bright_yellow
 
 from .coverage import CoverageEval
 
