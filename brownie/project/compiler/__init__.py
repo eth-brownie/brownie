@@ -402,24 +402,12 @@ def generate_build_json(
                     "sourcePath": path_str,
                 }
             )
-            size = len(deployed_bytecode["object"].removeprefix("0x")) / 2  # type: ignore
+            size = len(bytecode.removeprefix("0x")) / 2  # type: ignore
             if size > 24577:
                 notify(
                     "WARNING",
                     f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
                 )
-                size = len(deployedBytecode["object"].removeprefix("0x")) / 2  # type: ignore
-                if size > 24577:
-                    notify(
-                        "WARNING",
-                        f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
-                    )
-                    size = len(bytecode.removeprefix("0x")) / 2
-                    if size > 24577:
-                        notify(
-                            "WARNING",
-                            f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
-                        )
 
     if not silent:
         print("")
