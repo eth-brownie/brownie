@@ -104,8 +104,8 @@ def pytest_configure(config):
         base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
         for module in sys.modules.values():
             if getattr(module, "__file__", None) and module.__file__.startswith(base_path):
-                module.__tracebackhide__ = True
-                module.__hypothesistracebackhide__ = True
+                module.__tracebackhide__ = True  # type: ignore [attr-defined]
+                module.__hypothesistracebackhide__ = True  # type: ignore [attr-defined]
 
     # enable verbose output if stdout capture is disabled
     if config.getoption("capture") == "no":
