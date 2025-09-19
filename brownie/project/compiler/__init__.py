@@ -325,11 +325,10 @@ def generate_build_json(
 
     sources = input_json["sources"]
     contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
-
     for path_str, path_contracts in contracts.items():
-        for contract_name in path_contracts:
+        for contract_name, contract in path_contracts.items():
             contract_alias = contract_name
-
+    
             if path_str in sources:
                 source = sources[path_str]["content"]  # type: ignore [typeddict-item]
             else:
@@ -368,23 +367,18 @@ def generate_build_json(
                     branch_nodes,
                     next((True for i in abi if i["type"] == "fallback"), False),
                 )
-                output_evm: dict = ["evm"]
-                deployed_bytecode: dict = output_evm["deployedBytecode"]
-                if contract_alias in build_json and not deployedBytecode["object"]:
-                    continue
-
-                if language == "Solidity":
-                    contract_node = next(
-                        i[contract_name] for i in source_nodes if i.absolutePath == path_str
-                    )
-                    build_json[contract_alias] = solidity._get_unique_build_json(
-                        output_evm,
-                        contract_node,
-                        statement_nodes,
-                        branch_nodes,
-                        next((True for i in abi if i["type"] == "fallback"), False),
-                    )
-
+    
+            else:
+                if contract_name == "<stdin>":
+                    contract_name = contract_alias = "Vyper"
+                build_json[contract_alias] = vyper._get_unique_build_json(
+                    output_evm,
+                    path_str,
+                    contract_alias,
+                    sources[path_str]["ast"],
+                    (0, len(source)),
+                )
+    
             build_json[contract_alias].update(
                 {
                     "abi": abi,
