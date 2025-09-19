@@ -48,6 +48,7 @@ else:
                 "brownie/network/middlewares/geth_poa.py",
                 "brownie/network/middlewares/hardhat.py",
                 "brownie/network/state.py",
+                "brownie/network/web3.py",
                 "brownie/project",
                 "brownie/test/coverage.py",
                 "brownie/test/managers/utils.py",
