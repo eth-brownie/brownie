@@ -6,7 +6,7 @@ from typing import Any, Dict, Final, List, Optional, Union
 import solcast
 from eth_typing import ABIElement, HexStr
 
-from brownie._c_constants import Path, Version, deepcopy, json_loads, sha1
+from brownie._c_constants import Path, Version, deepcopy, sha1, ujson_loads
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
@@ -415,7 +415,7 @@ def _sources_dict(original: Dict[str, Any], language: Language) -> SourcesDict:
     for key, value in original.items():
         if Path(key).suffix == ".json":
             if isinstance(value, str):
-                value = json_loads(value)
+                value = ujson_loads(value)
             result[key] = {"abi": value}
         else:
             result[key] = {"content": value}
@@ -452,7 +452,7 @@ def get_abi(
 
     final_output: Dict[ContractName, InterfaceBuildJson] = {
         Path(k).stem: {  # type: ignore [misc]
-            "abi": json_loads(v),
+            "abi": ujson_loads(v),
             "contractName": Path(k).stem,  # type: ignore [typeddict-item]
             "type": "interface",
             "source": None,
