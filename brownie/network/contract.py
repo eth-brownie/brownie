@@ -214,7 +214,7 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}"""
 
-    def __init__(self, project: Any, build: ContractBuildJson) -> None:
+    def __init__(self, project: Any, build: ContractDeploymentJson) -> None:
         self.tx = None
         self.bytecode: Final = build["bytecode"]
         self._contracts: Final[List["ProjectContract"]] = []
@@ -877,7 +877,7 @@ class _DeployedContractBase(_ContractBase):
         chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
         deployment_build = self._build.copy()
 
-        deployment_build["deployment"] = {
+        deployment_build["deployment"] = {  # type: ignore [typeddict-unknown-key]
             "address": self.address,
             "chainid": chainid,
             "blockHeight": web3.eth.block_number,
