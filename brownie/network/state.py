@@ -214,12 +214,12 @@ class Chain(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self._time_offset: int = 0
-        self._snapshot_id: Optional[int] = None
-        self._reset_id: Optional[int] = None
-        self._current_id: Optional[int] = None
+        self._snapshot_id: Optional[int | str] = None
+        self._reset_id: Optional[int | str] = None
+        self._current_id: Optional[int | str] = None
         self._undo_lock: Final = threading.Lock()
-        self._undo_buffer: Final[List[Tuple[Any, Any, Any, Any]]] = []
-        self._redo_buffer: Final[List[Tuple[Any, Any, Any]]] = []
+        self._undo_buffer: Final[List[Tuple[int | str, Any, Tuple[Any, ...], Dict[str, Any]]]] = []
+        self._redo_buffer: Final[List[Tuple[Any, Tuple[Any, ...], Dict[str, Any]]]] = []
         self._chainid: Optional[int] = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
@@ -286,7 +286,7 @@ class Chain(metaclass=_Singleton):
         if height_buffer < 0:
             raise ValueError("Buffer cannot be negative")
 
-        last_block = None
+        last_block: Optional[BlockData | AttributeDict] = None
         last_height = 0
         last_poll = 0.0
 
@@ -330,7 +330,7 @@ class Chain(metaclass=_Singleton):
     def priority_fee(self) -> Wei:
         return Wei(web3.eth.max_priority_fee)
 
-    def _revert(self, id_: int) -> int:
+    def _revert(self, id_: int | str) -> int | str:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
             _notify_registry(0)  # type: ignore [arg-type]
@@ -345,15 +345,16 @@ class Chain(metaclass=_Singleton):
         return id_
 
     def _add_to_undo_buffer(
-        self, tx: TransactionReceipt, fn: Any, args: Tuple, kwargs: Dict
+        self, tx: TransactionReceipt, fn: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
     ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
-            self._undo_buffer.append((self._current_id, fn, args, kwargs))
-            if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
-                self._redo_buffer.pop()
+            self._undo_buffer.append((self._current_id, fn, args, kwargs))  # type: ignore [arg-type]
+            redo_buffer = self._redo_buffer
+            if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
+                redo_buffer.pop()
             else:
-                self._redo_buffer.clear()
+                redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
             # ensure the local time offset is correct, in case it was modified by the transaction
             self.sleep(0)

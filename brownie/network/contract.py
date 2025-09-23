@@ -914,6 +914,7 @@ class Contract(_DeployedContractBase):
             address = _resolve_address(address_or_alias)
             build, sources = _get_deployment(address)
         except Exception:
+            raise
             build, sources = _get_deployment(alias=address_or_alias)
             if build is not None:
                 address = build["address"]
@@ -1063,6 +1064,7 @@ class Contract(_DeployedContractBase):
                     contract = cls.from_abi(name, address, abi)
                     as_proxy_for = contract.implementation.call()
                 except Exception:
+                    raise
                     # if that fails, fall back to the address provided by etherscan
                     as_proxy_for = _resolve_address(data["result"][0]["Implementation"])
 

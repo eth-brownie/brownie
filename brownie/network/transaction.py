@@ -164,7 +164,7 @@ class TransactionReceipt:
         required_confs: int = 1,
         is_blocking: bool = True,
         name: str = "",
-        revert_data: Optional[Tuple] = None,
+        revert_data: Optional[Tuple[str, int, str]] = None,
     ) -> None:
         """Instantiates a new TransactionReceipt object.
 
