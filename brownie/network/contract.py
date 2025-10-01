@@ -102,6 +102,7 @@ if TYPE_CHECKING:
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
 
 FunctionName = NewType("FunctionName", str)
+Selector = NewType("Selector", HexStr)
 
 _unverified_addresses: Final[Set[ChecksumAddress]] = set()
 
