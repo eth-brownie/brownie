@@ -243,7 +243,6 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     for path in packages.iterdir():
         pathname = path.name
         key = next((k for k, v in remap_dict.items() if v.startswith(pathname)), None)
-        
         if key:
             remapped_dict[key] = path.parent.joinpath(remap_dict.pop(key)).as_posix()
         else:
@@ -469,7 +468,6 @@ def get_abi(
         if Path(path).suffix == ".vy":
             input_json = generate_input_json({path: source}, language="Vyper")  # type: ignore [assignment]
             input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
-
             try:
                 output_json = compile_from_input_json(input_json, silent, allow_paths)
             except Exception:
@@ -477,7 +475,6 @@ def get_abi(
                 # https://github.com/vyperlang/vyper/issues/1944
                 continue
             name: ContractName = Path(path).stem  # type: ignore [assignment]
-
             final_output[name] = {
                 "abi": output_json["contracts"][path][name]["abi"],
                 "contractName": name,
