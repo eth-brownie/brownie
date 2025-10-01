@@ -369,7 +369,7 @@ def generate_build_json(
                     branch_nodes,
                     any(i["type"] == "fallback" for i in abi),
                 )
-    
+
             else:
                 if contract_name == "<stdin>":
                     contract_name = contract_alias = "Vyper"
@@ -380,7 +380,7 @@ def generate_build_json(
                     sources[path_str]["ast"],
                     (0, len(source)),
                 )
-    
+
             build_json[contract_alias].update(
                 {
                     "abi": abi,
