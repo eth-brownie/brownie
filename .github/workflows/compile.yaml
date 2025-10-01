@@ -1,7 +1,7 @@
 name: Repo Chores
 
 on:
-  pull_request:
+  push:
     branches:
       - master
       
@@ -24,29 +24,6 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Install Black
-      run: pip install black
-
-    - name: Run black .
-      run: black .
-
-    - name: Install Pip Tools
-      run: pip install pip-tools
-      
-    - name: Run Pip Compile
-      run: pip-compile -U
-
-    - name: Run Pip Compile for Windows
-      run: pip-compile -U requirements-windows.in
-
-    - name: Run Pip Compile for Dev Deps
-      run: pip-compile -U requirements-dev.in
-    
-    - name: Install Mypyc and Deps
-      run: |
-        pip install -U types-PyYAML
-        pip install -r requirements.txt
-
     - name: Compile
       run: pip install .
     
@@ -64,5 +41,5 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "chore: \`black .\` and \`pip-compile\` and compile C files for source control"
+        git commit -m "chore: compile C files for source control"
         git push
