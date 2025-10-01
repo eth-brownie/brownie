@@ -4,10 +4,9 @@ on:
   pull_request:
     branches:
       - master
-
-permissions:
-  contents: write        # allow committing back to a branch
-  pull-requests: write   # needed if you later switch to create-pull-request
+  push:
+    branches:
+      - master
       
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -65,18 +64,20 @@ jobs:
 
     - name: Compile
       run: pip install .
-
-    - name: Commit & push changes (same-repo PR or push)
-      if: github.event_name == 'push' ||
-          github.event.pull_request.head.repo.full_name == github.repository
+    
+    - name: Check for changes
+      id: changes
       run: |
-        # bail out early if nothing changed
-        if git diff --quiet; then
-          echo "No changes to commit."
-          exit 0
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "changes_detected=true" >> $GITHUB_ENV
+        else
+          echo "changes_detected=false" >> $GITHUB_ENV
         fi
-        git config --local user.name  "github-actions[bot]"
+    - name: Commit changes
+      if: env.changes_detected == 'true'
+      run: |
+        git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git add -A
-        git commit -m "chore: format & update lockfiles"
+        git add .
+        git commit -m "chore: \`black .\` and \`pip-compile\` and compile C files for source control"
         git push
