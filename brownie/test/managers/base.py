@@ -29,7 +29,7 @@ class PytestBrownieBase:
 
         self.config = config
         # required when brownie project is in a subfolder of another project
-        config._rootpath = Path(project._path)
+        config._rootpath = Path(project._path)  # type: ignore [arg-type]
 
         self.project: Final = project
         self.project_path: Final = project._path
