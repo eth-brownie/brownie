@@ -358,6 +358,8 @@ def generate_build_json(
             if contract_alias in build_json and not bytecode:
                 continue
 
+            ast = sources[path_str]["ast"]
+
             if language == "Solidity":
                 contract_node = next(
                     i[contract_name] for i in source_nodes if i.absolutePath == path_str
@@ -377,14 +379,14 @@ def generate_build_json(
                     output_evm,
                     path_str,
                     contract_alias,
-                    sources[path_str]["ast"],
+                    ast,
                     (0, len(source)),
                 )
 
             build_json[contract_alias].update(
                 {
                     "abi": abi,
-                    "ast": sources[path_str]["ast"],
+                    "ast": ast,
                     "compiler": compiler_data,  # type: ignore [typeddict-item]
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
@@ -392,7 +394,7 @@ def generate_build_json(
                     "language": language,  # type: ignore [typeddict-item]
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
-                    "sha1": sha1(source.encode()).hexdigest(),  # type: ignore [typeddict-item]
+                    "sha1": HexStr(sha1(source.encode()).hexdigest()),
                     "source": source,
                     "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                     "sourcePath": path_str,
