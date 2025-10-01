@@ -507,7 +507,7 @@ def get_abi(
         compiled_sources: dict = output_json["sources"]
 
         for path, path_data in abi_json.items():
-            source = contract_sources[path]
+            path_source = contract_sources[path]
             for name, data in path_data.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
@@ -523,9 +523,9 @@ def get_abi(
                     "contractName": name,
                     "dependencies": dependencies,
                     "type": "interface",
-                    "source": source,
+                    "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": sha1(source.encode()).hexdigest(),  # type: ignore [typeddict-item]
+                    "sha1": HexStr(sha1(path_source.encode()).hexdigest()),
                 }
 
     return final_output
