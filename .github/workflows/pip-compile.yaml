@@ -14,27 +14,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # ───────────── branch lives in a *fork* ─────────────
-    - name: Checkout fork branch
-      if: github.event_name == 'pull_request'
+    - name: Checkout code
       uses: actions/checkout@v4
       with:
-        repository: ${{ github.event.pull_request.head.repo.full_name }}
-        ref:        ${{ github.event.pull_request.head.ref }}
-        fetch-depth: 0        # full history for black-isort, etc.
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-      # ───────────── branch lives in the *main repo* ─────
-    - name: Checkout repo branch / push event
-      if: github.event_name != 'pull_request'
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+        ref: ${{ github.head_ref }}  # Check out the PR branch
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.13'
 
     - name: Install Black
       run: pip install black
