@@ -331,8 +331,8 @@ def generate_build_json(
         for contract_name in path_contracts:
             contract_alias = contract_name
 
-            if path_str in input_json["sources"]:
-                source = input_json["sources"][path_str]["content"]  # type: ignore [typeddict-item]
+            if path_str in sources:
+                source = sources[path_str]["content"]  # type: ignore [typeddict-item]
             else:
                 with Path(path_str).open(encoding="utf-8") as fp:
                     source = fp.read()
@@ -346,7 +346,8 @@ def generate_build_json(
             contract_output: dict = path_output[contract_name]
 
             natspec = merge_natspec(
-                contract_output.get("devdoc", {}), contract_output.get("userdoc", {})
+                contract.get("devdoc", {}),
+                contract.get("userdoc", {}),
             )
 
             abi: List[ABIElement] = contract_output["abi"]
@@ -366,24 +367,24 @@ def generate_build_json(
                     contract_node,
                     statement_nodes,
                     branch_nodes,
-                    any(i["type"] == "fallback" for i in abi),
+                    next((True for i in abi if i["type"] == "fallback"), False),
                 )
 
             else:
                 if contract_name == "<stdin>":
-                    contract_name = contract_alias = "Vyper"  # type: ignore [assignment]
+                    contract_name = contract_alias = "Vyper"
                 build_json[contract_alias] = vyper._get_unique_build_json(
                     output_evm,
                     path_str,
                     contract_alias,
-                    output_json["sources"][path_str]["ast"],
-                    (0, len(source)),  # type: ignore [arg-type]
+                    sources[path_str]["ast"],
+                    (0, len(source)),
                 )
 
             build_json[contract_alias].update(
                 {
                     "abi": abi,
-                    "ast": output_json["sources"][path_str]["ast"],
+                    "ast": sources[path_str]["ast"],
                     "compiler": compiler_data,  # type: ignore [typeddict-item]
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
@@ -397,12 +398,18 @@ def generate_build_json(
                     "sourcePath": path_str,
                 }
             )
-            size = len(bytecode.removeprefix("0x")) / 2
+            size = len(deployedBytecode["object"].removeprefix("0x")) / 2  # type: ignore
             if size > 24577:
                 notify(
                     "WARNING",
                     f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
                 )
+                size = len(bytecode.removeprefix("0x")) / 2
+                if size > 24577:
+                    notify(
+                        "WARNING",
+                        f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
+                    )
 
     if not silent:
         print("")
