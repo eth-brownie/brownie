@@ -41,14 +41,14 @@ jobs:
       run: |
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -b compile-c-files-${{ github.ref }}
+        git checkout -b compile-c-files-auto
         git add .
         git commit -m "chore: compile C files for source control"
-        git push origin compile-c-files-${{ github.ref }}
+        git push origin compile-c-files-auto
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
       with:
-        branch: compile-c-files-${{ github.ref }}
+        branch: compile-c-files-auto
         title: "chore: Compile C files for source control"
         body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
