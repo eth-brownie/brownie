@@ -7,7 +7,7 @@ eth-hash[pycryptodome]
 eth-typing>=4.2.1,<5
 faster-eth-abi
 faster-eth-utils>=4.1.2
-hexbytes
+faster-hexbytes
 hypothesis<6.28.0
 lazy-object-proxy>=1.6.0,<2
 prompt-toolkit<4
