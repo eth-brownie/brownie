@@ -74,7 +74,7 @@ iniconfig==2.1.0
     # via
     #   -c requirements.txt
     #   pytest
-isort==6.0.1
+isort==6.1.0
     # via -r requirements-dev.in
 jaraco-classes==3.4.0
     # via keyring
