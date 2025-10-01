@@ -356,6 +356,8 @@ typing-inspection==0.4.2
     # via
     #   -r requirements.txt
     #   pydantic
+ujson==5.11.0
+    # via -r requirements.txt
 urllib3==2.5.0
     # via
     #   -r requirements.txt
