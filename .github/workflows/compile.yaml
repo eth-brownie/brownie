@@ -1,0 +1,60 @@
+name: Repo Chores
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    # ───────────── branch lives in a *fork* ─────────────
+    - name: Checkout fork branch
+      if: github.event_name == 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
+        ref:        ${{ github.event.pull_request.head.ref }}
+        fetch-depth: 0        # full history for black-isort, etc.
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ───────────── branch lives in the *main repo* ─────
+    - name: Checkout repo branch / push event
+      if: github.event_name != 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Compile
+      run: pip install .
+    
+    - name: Check for changes
+      id: changes
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "changes_detected=true" >> $GITHUB_ENV
+        else
+          echo "changes_detected=false" >> $GITHUB_ENV
+        fi
+    - name: Commit changes
+      if: env.changes_detected == 'true'
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "chore: compile C files for source control"
+        git push
