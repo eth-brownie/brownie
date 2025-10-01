@@ -339,7 +339,10 @@ def generate_build_json(
             get_alias = True
     
         for contract_name, contract in path_contracts.items():
-            contract_alias = _get_alias(contract_name, path_str) if get_alias else contract_name
+            if get_alias:
+                contract_alias = _get_alias(contract_name, path_str)
+            else:
+                contract_alias = contract_name
     
             if not silent:
                 print(f" - {contract_alias}")
