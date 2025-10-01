@@ -60,8 +60,8 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
         if not e["decoded"]:
             e["type"] = "bytes32"
             e["name"] += " (indexed)"
-    abi_types = _get_abi_types(data)  # type: ignore [arg-type]
-    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)  # type: ignore [arg-type]
+    abi_types = _get_abi_types(data)
+    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)
     for e, value in zip(data, values):
         e["value"] = value
     return event  # type: ignore [return-value]
