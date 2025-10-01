@@ -265,7 +265,7 @@ class Console(code.InteractiveConsole):
         finally:
             self.console_printer.finish()
 
-    def showsyntaxerror(self, filename: Optional[str] = None) -> None:
+    def showsyntaxerror(self, filename: Optional[str] = None) -> None: # type: ignore [override]
         tb = color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
         self.write(tb + "\n")
 
