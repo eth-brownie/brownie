@@ -219,11 +219,13 @@ def generate_input_json(
         settings["remappings"] = _get_solc_remappings(remappings)
         if viaIR is not None:
             settings["viaIR"] = viaIR
-    input_json["sources"] = _sources_dict(contract_sources, language)
+
+    input_sources = _sources_dict(contract_sources, language)
+    input_json["sources"] = input_sources
 
     if interface_sources:
         if language == "Solidity":
-            input_json["sources"].update(_sources_dict(interface_sources, language))
+            input_sources.update(_sources_dict(interface_sources, language))
         else:
             input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [arg-type]
 
