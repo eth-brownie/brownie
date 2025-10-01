@@ -5,7 +5,7 @@ requires = [
     "mypy[mypyc]==1.18.2",
     "types-pyyaml",
     "types-requests",
-    "eth-event>=1.4.2,<1.5",
+    "eth-event>=1.4.3,<2",
     "eth-typing==4.4.0",
 ]
 

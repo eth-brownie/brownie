@@ -18,8 +18,8 @@ import pathlib
 import re
 from typing import Final
 
-import eth_utils.toolz
-import hexbytes
+import faster_eth_utils.toolz
+import faster_hexbytes
 import semantic_version
 
 # BUILTINS
@@ -59,12 +59,12 @@ regex_sub: Final = re.sub
 
 
 # DEPENDENCIES
-# hexbytes
-HexBytes: Final = hexbytes.HexBytes
+# faster_hexbytes
+HexBytes: Final = faster_hexbytes.HexBytes
 
 # semantic_version
 NpmSpec: Final = semantic_version.NpmSpec
 Version: Final = semantic_version.Version
 
 # toolz
-mapcat: Final = eth_utils.toolz.mapcat
+mapcat: Final = faster_eth_utils.toolz.mapcat
