@@ -142,11 +142,13 @@ class Web3(_Web3):
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
         if self.is_connected() and CONFIG.active_network["id"] == "mainnet":
+            print("web3._mainnet is self")
             return self
         try:
             mainnet = CONFIG.networks["mainnet"]
         except KeyError:
             raise MainnetUndefined("No 'mainnet' network defined") from None
+        raise Exception(mainnet)
         if not self._mainnet_w3:
             uri = _expand_environment_vars(mainnet["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
@@ -203,17 +205,25 @@ def _resolve_address(domain: str) -> ChecksumAddress:
     if not isinstance(domain, str) or "." not in domain:
         return to_address(domain)
     domain = domain.lower()
+    print(f"lowered to {domain}")
     if domain not in _ens_cache or time.time() - _ens_cache[domain][1] > 86400:
+        print(f"{domain} not in cache or cache is expired")
         try:
             ns = ENS.from_web3(web3._mainnet)
+            print(f"initialized {ns}")
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)
+        print(f"address: {address}")
         _ens_cache[domain] = [address, int(time.time())]
+        print('opening file')
         with _get_path().open("w") as fp:
+            print('dumping cache json')
             json_dump(_ens_cache, fp)
+        print('cache saved')
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
+    print(f"{domain} found in ens cache")
     return _ens_cache[domain][0]
 
 
