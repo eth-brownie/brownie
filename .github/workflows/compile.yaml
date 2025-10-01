@@ -1,4 +1,4 @@
-name: Repo Chores
+name: Compile C Files
 
 on:
   push:
@@ -35,11 +35,20 @@ jobs:
         else
           echo "changes_detected=false" >> $GITHUB_ENV
         fi
+      
     - name: Commit changes
       if: env.changes_detected == 'true'
       run: |
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b compile-c-files-${{ github.ref }}
         git add .
         git commit -m "chore: compile C files for source control"
-        git push
+        git push origin compile-c-files-${{ github.ref }}
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        branch: compile-c-files-${{ github.ref }}
+        title: "chore: Compile C files for source control"
+        body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
