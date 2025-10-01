@@ -349,11 +349,13 @@ class ReturnValue(tuple):
                     else:
                         # array of tuples
                         inner_abi = value_abi.copy()
-                        inner_abi["type"] = value_type.rsplit("[", maxsplit=1)[0]
-                        final_abi = [deepcopy(inner_abi) for i in range(len(value))]
-                        if name := inner_abi.get("name", ""):
-                            for i, d in enumerate(final_abi):
-                                d["name"] = f"{name}[{i}]"
+                        length = len(value)
+                        inner_abi["type"] = inner_abi["type"].rsplit("[", maxsplit=1)[0]
+                        final_abi = [deepcopy(inner_abi) for i in range(length)]
+                        if inner_abi.get("name"):
+                            name = inner_abi["name"]
+                            for x in range(length):
+                                final_abi[x]["name"] = f"{name}[{x}]"
 
                         values[i] = ReturnValue(value, final_abi)
                 else:
