@@ -506,9 +506,9 @@ def get_abi(
         abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
         compiled_sources: dict = output_json["sources"]
 
-        for path, path_data in abi_json.items():
+        for path, contracts in abi_json.items():
             path_source = contract_sources[path]
-            for name, data in path_data.items():
+            for name, data in contracts.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
                 for node in contract_node.dependencies:
