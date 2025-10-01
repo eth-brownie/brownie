@@ -56,6 +56,9 @@ EVM_VERSION_MAPPING: Final = [
     ("istanbul", Version("0.1.0-beta.16")),
 ]
 
+BranchMap = Dict[str, Dict[int, Tuple[int, int, bool]]]
+StatementMap = Dict[str, Dict[int, Offset]]
+
 _get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
 _get_installable_vyper_versions: Final = vvm.get_installable_vyper_versions
 _vvm_set_vyper_version: Final = vvm.set_vyper_version
@@ -332,7 +335,9 @@ def _generate_coverage_data(
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,
-) -> Tuple[Dict[int, ProgramCounter], StatementMap, BranchMap]:
+) -> Tuple[
+    Dict[int, ProgramCounter], Dict[Literal["0"], StatementMap], Dict[Literal["0"], BranchMap]
+]:
     if not opcodes_str:
         return {}, {}, {}
 
