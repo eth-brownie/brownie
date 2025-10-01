@@ -100,7 +100,8 @@ class Build:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
         for pc, data in pcMap.items():
-            if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
+            op = data["op"]
+            if op in ("REVERT", "INVALID") or "jump_revert" in data:
                 path = data.get("path")
                 if path is None:
                     continue
@@ -120,7 +121,7 @@ class Build:
                     except (KeyError, ValueError):
                         pass
 
-                msg = "" if data["op"] == "REVERT" else "invalid opcode"
+                msg = "" if op == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
                     data["offset"],
