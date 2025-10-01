@@ -50,5 +50,6 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       with:
         branch: compile-c-files-auto
+        base: master
         title: "chore: Compile C files for source control"
         body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
