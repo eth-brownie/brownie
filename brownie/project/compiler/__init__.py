@@ -508,7 +508,6 @@ def get_abi(
 
         for path, path_data in abi_json.items():
             source = contract_sources[path]
-            ast = compiled_sources[path]["ast"]
             for name, data in path_data.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
@@ -520,7 +519,7 @@ def get_abi(
 
                 final_output[name] = {
                     "abi": data["abi"],
-                    "ast": ast,
+                    "ast": compiled_sources[path]["ast"],
                     "contractName": name,
                     "dependencies": dependencies,
                     "type": "interface",
