@@ -262,6 +262,8 @@ typing-extensions==4.15.0
     #   web3
 typing-inspection==0.4.2
     # via pydantic
+ujson==5.11.0
+    # via -r requirements.in
 urllib3==2.5.0
     # via requests
 vvm==0.2.1
