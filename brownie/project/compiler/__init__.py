@@ -503,8 +503,8 @@ def get_abi(
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         source_nodes = _from_standard_output(output_json)
+        compiled_sources: dict[str, dict] = output_json["sources"]
         abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
-        compiled_sources: dict = output_json["sources"]
 
         for path, contracts in abi_json.items():
             path_source = contract_sources[path]
