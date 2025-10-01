@@ -343,14 +343,16 @@ def generate_build_json(
             if not silent:
                 print(f" - {contract_alias}")
 
-            contract: dict = contracts[path_str][contract_name]
+            contracts_output: dict = output_json["contracts"]
+            path_output: dict = contracts_output[path_str]
+            contract_output: dict = path_output[contract_name]
+
             natspec = merge_natspec(
-                contract.get("devdoc", {}),
-                contract.get("userdoc", {}),
+                contract_output.get("devdoc", {}), contract_output.get("userdoc", {})
             )
 
-            abi: List[ABIElement] = contract["abi"]
-            output_evm: dict = contract["evm"]
+            abi: List[ABIElement] = contract_output["abi"]
+            output_evm: dict = contract_output["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
 
