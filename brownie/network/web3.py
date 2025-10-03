@@ -158,7 +158,7 @@ class Web3(_Web3):
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self._genesis_hash is None:
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             self._genesis_hash = HexStr(self.eth.get_block(0)["hash"].hex().removeprefix("0x"))
         return self._genesis_hash
 
@@ -168,7 +168,7 @@ class Web3(_Web3):
             raise ConnectionError("web3 is not currently connected")
         if self.genesis_hash not in _chain_uri_cache:
             block_number = max(self.eth.block_number - 16, 0)
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             block_hash = self.eth.get_block(block_number)["hash"].hex().removeprefix("0x")
             chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
             _chain_uri_cache[self.genesis_hash] = chain_uri
