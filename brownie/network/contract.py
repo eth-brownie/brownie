@@ -238,7 +238,7 @@ class ContractContainer(_ContractBase):
             i
             for i in self._contracts
             if (i.tx and i.tx.block_number is not None and i.tx.block_number > height)
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             or len(web3.eth.get_code(i.address).hex().removeprefix("0x")) <= 2
         ]
         for contract in reverted:
@@ -730,7 +730,7 @@ class _DeployedContractBase(_ContractBase):
     ) -> None:
         address = _resolve_address(address)
         self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             self._build.get("deployedBytecode", None)
             or web3.eth.get_code(address).hex().removeprefix("0x")
         )
@@ -983,7 +983,7 @@ class Contract(_DeployedContractBase):
             "address": address,
             "contractName": name,
             "type": "contract",
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             "deployedBytecode": web3.eth.get_code(address).hex().removeprefix("0x"),
         }
 
@@ -1901,7 +1901,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     if CONFIG.mode == "test" and default_owner is False:
         owner = None
 
-    # seperate contract inputs from tx dict and set default tx values
+    # separate contract inputs from tx dict and set default tx values
     tx = {
         "from": owner,
         "value": 0,
@@ -1960,7 +1960,7 @@ def _inputs(abi: ABIFunction | ABIConstructor) -> str:
 def _verify_deployed_code(
     address: ChecksumAddress, expected_bytecode: HexStr, language: Language
 ) -> bool:
-    # removeprefix is used for compatability with both hexbytes<1 and >=1
+    # removeprefix is used for compatibility with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
 
@@ -2018,7 +2018,7 @@ def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) ->
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
-    # removeprefix is used for compatability with both hexbytes<1 and >=1
+    # removeprefix is used for compatibility with both hexbytes<1 and >=1
     code = web3.eth.get_code(address).hex().removeprefix("0x")
     # EIP-1167: Minimal Proxy Contract
     if code[:20] == "363d3d373d3d3d363d73" and code[60:] == "5af43d82803e903d91602b57fd5bf3":
