@@ -46,6 +46,12 @@ jobs:
         git commit -m "chore: compile C files for source control"
         git push --force origin compile-c-files-auto
 
+    - name: Checkout auto branch
+      if: env.changes_detected == 'true'
+      uses: actions/checkout@v4
+      with:
+        ref: compile-c-files-auto
+
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
       with:
