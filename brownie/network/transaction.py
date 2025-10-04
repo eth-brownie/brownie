@@ -704,7 +704,7 @@ class TransactionReceipt:
             for step in trace:
                 if fix_stack:
                     # for stack values, we need 32 bytes (64 chars) without the 0x prefix
-                    # NOTE removeprefix is used for compatability with both hexbytes<1 and >=1
+                    # NOTE removeprefix is used for compatibility with both hexbytes<1 and >=1
                     step["stack"] = [
                         HexBytes(s).hex().removeprefix("0x").zfill(64) for s in step["stack"]
                     ]
