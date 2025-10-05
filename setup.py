@@ -40,6 +40,7 @@ else:
                 "brownie/convert",
                 "brownie/network/__init__.py",
                 "brownie/network/alert.py",
+                "brownie/network/contract.py",
                 "brownie/network/event.py",
                 "brownie/network/middlewares/__init__.py",
                 "brownie/network/middlewares/caching.py",
