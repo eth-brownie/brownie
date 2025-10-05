@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import json
 import os
 import pathlib
 import shutil
@@ -14,7 +13,7 @@ from hypothesis import settings as hp_settings
 from hypothesis.database import DirectoryBasedExampleDatabase
 from mypy_extensions import mypyc_attr
 
-from brownie._c_constants import Path, deepcopy, defaultdict, json_loads, regex_sub
+from brownie._c_constants import Path, deepcopy, defaultdict, regex_sub, ujson_loads
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 
@@ -191,7 +190,7 @@ def _load_config(project_path: pathlib.Path) -> Dict:
             return yaml.safe_load(fp) or {}
         raw_json = fp.read()
     valid_json = regex_sub(r'\/\/[^"]*?(?=\n|$)', "", raw_json)
-    return json_loads(valid_json)
+    return ujson_loads(valid_json)
 
 
 def _load_project_config(project_path: pathlib.Path) -> None:
