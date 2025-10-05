@@ -65,6 +65,6 @@ mapcat: Final = eth_utils.toolz.mapcat
 
 # ujson
 ujson_dump: Final = ujson.dump
-ujson_dumps: Final = ujson.dump
+ujson_dumps: Final = ujson.dumps
 ujson_load: Final = ujson.load
 ujson_loads: Final = ujson.loads
