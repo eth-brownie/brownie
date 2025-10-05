@@ -31,7 +31,7 @@ jobs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
       with:
-        branch: compile-c-files-auto
+        branch: black-formatter-auto
         base: master
         title: "chore: run black formatter `black .`"
         body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
