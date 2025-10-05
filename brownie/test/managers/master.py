@@ -3,7 +3,7 @@
 import pytest
 from xdist.scheduler import LoadFileScheduling
 
-from brownie._c_constants import json_dump, json_load
+from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG
 from brownie.test import coverage
 
@@ -71,7 +71,7 @@ class PytestBrownieMaster(PytestBrownieBase):
         report = {"tests": {}, "contracts": self.contracts, "tx": {}}
         for path in list(build_path.glob("tests-*.json")):
             with path.open() as fp:
-                data = json_load(fp)
+                data = ujson_load(fp)
             assert data["contracts"] == report["contracts"]
             report["tests"].update(data["tests"])
             report["tx"].update(data["tx"])
@@ -83,4 +83,4 @@ class PytestBrownieMaster(PytestBrownieBase):
 
         # save aggregate test results
         with build_path.joinpath("tests.json").open("w") as fp:
-            json_dump(report, fp, indent=2, sort_keys=True, default=sorted)
+            ujson_dump(report, fp, indent=2, sort_keys=True, default=sorted)

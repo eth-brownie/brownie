@@ -4,7 +4,6 @@
 import time
 import warnings
 from collections import OrderedDict
-from json.decoder import JSONDecodeError
 from pathlib import Path
 from threading import Lock, Thread
 from typing import (
@@ -32,10 +31,11 @@ import eth_event
 from eth_event import EventError
 from eth_event.main import _TraceStep, DecodedEvent, NonDecodedEvent, TopicMapData
 from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
+from ujson import JSONDecodeError
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 
-from brownie._c_constants import json_dump, json_load
+from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
@@ -534,7 +534,7 @@ def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
     if updated_topics != _topics:
         _topics.update(updated_topics)
         with __get_path().open("w") as fp:
-            json_dump(updated_topics, fp, sort_keys=True, indent=2)
+            ujson_dump(updated_topics, fp, sort_keys=True, indent=2)
 
     return {v["name"]: k for k, v in topic_map.items()}
 
@@ -633,7 +633,7 @@ event_watcher: Final = EventWatcher()
 
 try:
     with __get_path().open() as fp:
-        __topics = json_load(fp)
+        __topics = ujson_load(fp)
 except (FileNotFoundError, JSONDecodeError):
     __topics = None
 

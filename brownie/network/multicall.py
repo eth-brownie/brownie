@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
 
-from brownie._c_constants import json_loads
+from brownie._c_constants import ujson_loads
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
 from brownie.network import accounts, web3
@@ -16,7 +16,7 @@ from brownie.project import compile_source
 from brownie.utils import color
 
 DATA_DIR = BROWNIE_FOLDER.joinpath("data")
-MULTICALL2_ABI = json_loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
+MULTICALL2_ABI = ujson_loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
 MULTICALL2_SOURCE = DATA_DIR.joinpath("contracts", "Multicall2.sol").read_text()
 
 

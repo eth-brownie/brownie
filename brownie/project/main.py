@@ -7,7 +7,6 @@ import shutil
 import sys
 import warnings
 import zipfile
-from json import JSONDecodeError
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
@@ -20,17 +19,18 @@ from eth_typing import ChecksumAddress, HexStr
 from mypy_extensions import mypyc_attr
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
+from ujson import JSONDecodeError
 from vvm.exceptions import VyperNotInstalled
 
 from brownie._c_constants import (
     Path,
     Version,
     import_module,
-    json_dump,
-    json_load,
     mapcat,
     regex_match,
     sha1,
+    ujson_dump,
+    ujson_load,
 )
 from brownie._config import (
     CONFIG,
@@ -159,7 +159,7 @@ class _ProjectBase:
                     for parent in list(path.parents)[::-1]:
                         parent.mkdir(exist_ok=True)
                 with path.open("w") as fp:
-                    json_dump(data, fp, sort_keys=True, indent=2, default=sorted)
+                    ujson_dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
             if alias == data["contractName"]:
                 # only add artifacts from the core project for now
@@ -398,7 +398,7 @@ class Project(_ProjectBase):
         build_path = self._build_path
         for name, abi in abi_json.items():
             with build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
-                json_dump(abi, fp, sort_keys=True, indent=2, default=sorted)
+                ujson_dump(abi, fp, sort_keys=True, indent=2, default=sorted)
             build._add_interface(abi)
 
     def _load_dependency_artifacts(self) -> None:
@@ -408,7 +408,7 @@ class Project(_ProjectBase):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
             if build.get_dependents(contract_alias):
                 with path.open() as fp:
-                    build_json = json_load(fp)
+                    build_json = ujson_load(fp)
                 # json.load turns arrays into python lists but for "offset" we need tuples
                 build_json["offset"] = tuple(build_json["offset"])
                 pc_map: Dict[Any, dict] = build_json["pcMap"]
@@ -432,7 +432,7 @@ class Project(_ProjectBase):
         build: BuildJson
         for build_json in deployments:
             with build_json.open() as fp:
-                build = json_load(fp)
+                build = ujson_load(fp)
 
             contract_name = build["contractName"]
             if contract_name not in self._containers:
@@ -462,12 +462,12 @@ class Project(_ProjectBase):
         map_path = self._build_path.joinpath("deployments/map.json")
         if map_path.exists():
             with map_path.open("r") as fp:
-                deployment_map = json_load(fp)
+                deployment_map = ujson_load(fp)
         return deployment_map
 
     def _save_deployment_map(self, deployment_map: DeploymentMap) -> None:
         with self._build_path.joinpath("deployments/map.json").open("w") as fp:
-            json_dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
+            ujson_dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
@@ -580,7 +580,7 @@ class Project(_ProjectBase):
                     deployment.unlink()
                 else:
                     with deployment.open("r") as fp:
-                        deployment_artifact: dict = json_load(fp)
+                        deployment_artifact: dict = ujson_load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
                     if block_height > height:
                         deployment.unlink()
@@ -606,7 +606,7 @@ class Project(_ProjectBase):
 def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson:
     try:
         with path.open() as fp:
-            contract_build_json: dict = json_load(fp)
+            contract_build_json: dict = ujson_load(fp)
             # json loads them as lists but we want tuples for mypyc
             contract_build_json["offset"] = tuple(contract_build_json["offset"])
             pc_map: dict = contract_build_json["pcMap"]
@@ -622,7 +622,7 @@ def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson
 def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJson:
     try:
         with path.open() as fp:
-            interface_build_json: dict = json_load(fp)
+            interface_build_json: dict = ujson_load(fp)
             offset = interface_build_json["offset"]
             if offset is not None:
                 interface_build_json["offset"] = tuple(offset)
