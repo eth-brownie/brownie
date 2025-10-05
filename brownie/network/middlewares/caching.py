@@ -1,4 +1,4 @@
-import hexbytes
+import faster_hexbytes
 import threading
 import time
 from collections import OrderedDict
@@ -31,7 +31,7 @@ def _strip_push_data(bytecode: bytes) -> bytes:
     return bytecode
 
 
-def is_cacheable_bytecode(web3: Web3, bytecode: hexbytes.HexBytes) -> bool:
+def is_cacheable_bytecode(web3: Web3, bytecode: faster_hexbytes.HexBytes) -> bool:
     """
     Check if bytecode can safely by cached.
 
