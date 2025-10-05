@@ -16,8 +16,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        ref: ${{ github.head_ref }}  # Check out the PR branch
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -26,31 +24,6 @@ jobs:
 
     - name: Compile
       run: pip install .
-    
-    - name: Check for changes
-      id: changes
-      run: |
-        if [[ -n $(git status --porcelain) ]]; then
-          echo "changes_detected=true" >> $GITHUB_ENV
-        else
-          echo "changes_detected=false" >> $GITHUB_ENV
-        fi
-      
-    - name: Commit changes
-      if: env.changes_detected == 'true'
-      run: |
-        git config --local user.name "github-actions[bot]"
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -b compile-c-files-auto
-        git add .
-        git commit -m "chore: compile C files for source control"
-        git push --force origin compile-c-files-auto
-
-    - name: Checkout auto branch
-      if: env.changes_detected == 'true'
-      uses: actions/checkout@v4
-      with:
-        ref: compile-c-files-auto
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
@@ -59,3 +32,4 @@ jobs:
         base: master
         title: "chore: Compile C files for source control"
         body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
+        commit-message: "chore: compile C files for source control"
