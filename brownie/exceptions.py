@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Type, final
@@ -9,6 +8,7 @@ import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
+from ujson import JSONDecodeError
 
 import brownie
 from brownie._c_constants import HexBytes, ujson_dump, ujson_load
@@ -319,7 +319,7 @@ _errors: Dict[HexStr, ABIError] = {
 try:
     with __get_path().open() as fp:
         _errors.update(ujson_load(fp))
-except (FileNotFoundError, json.decoder.JSONDecodeError):
+except (FileNotFoundError, JSONDecodeError):
     pass
 
 
