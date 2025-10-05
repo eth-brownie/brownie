@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Type, final
@@ -9,9 +8,10 @@ import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
+from ujson import JSONDecodeError
 
 import brownie
-from brownie._c_constants import HexBytes, json_dump, json_load
+from brownie._c_constants import HexBytes, ujson_dump, ujson_load
 from brownie._config import _get_data_folder
 from brownie.convert.utils import build_function_selector, get_type_strings
 
@@ -308,7 +308,7 @@ def parse_errors_from_abi(abi: List[ABIElement]):
 
     if updated:
         with __get_path().open("w") as fp:
-            json_dump(_errors, fp, sort_keys=True, indent=2)
+            ujson_dump(_errors, fp, sort_keys=True, indent=2)
 
 
 _errors: Dict[HexStr, ABIError] = {
@@ -318,8 +318,8 @@ _errors: Dict[HexStr, ABIError] = {
 
 try:
     with __get_path().open() as fp:
-        _errors.update(json_load(fp))
-except (FileNotFoundError, json.decoder.JSONDecodeError):
+        _errors.update(ujson_load(fp))
+except (FileNotFoundError, JSONDecodeError):
     pass
 
 
