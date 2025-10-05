@@ -47,7 +47,7 @@ cchecksum==0.3.1
     #   -r requirements.txt
     #   eth-event
     #   faster-eth-abi
-certifi==2025.8.3
+certifi==2025.10.5
     # via
     #   -r requirements.txt
     #   requests
@@ -382,7 +382,7 @@ wheel==0.45.1
     #   vyper
 wrapt==1.17.3
     # via -r requirements.txt
-yarl==1.20.1
+yarl==1.21.0
     # via
     #   -r requirements.txt
     #   aiohttp
