@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import sqlite3
 import threading
 from pathlib import Path
