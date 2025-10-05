@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2447];
+extern PyObject *CPyStatics[2449];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1579,7 +1579,7 @@ extern PyObject *CPyDef_state___priority_fee_Chain_obj_____call__(PyObject *cpy_
 extern PyObject *CPyPy_state___priority_fee_Chain_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_state____revert_Chain_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
 extern PyObject *CPyPy_state____revert_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern CPyTagged CPyDef_state____revert_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, CPyTagged cpy_r_id_);
+extern PyObject *CPyDef_state____revert_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_id_);
 extern PyObject *CPyPy_state____revert_Chain_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_state____add_to_undo_buffer_Chain_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
 extern PyObject *CPyPy_state____add_to_undo_buffer_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
