@@ -33,5 +33,3 @@ jobs:
         title: "chore: Compile C files for source control"
         body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
         commit-message: "chore: compile C files for source control"
-        title: "chore: Compile C files for source control"
-        body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
