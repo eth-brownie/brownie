@@ -34,6 +34,7 @@ def test_proxy_object_is_returned_from_calls(accounts, tester):
         assert ret_val.__wrapped__ == value
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_flush_mid_execution(accounts, tester):
     addr = accounts[1]
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]

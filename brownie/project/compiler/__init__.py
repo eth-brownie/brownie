@@ -219,11 +219,13 @@ def generate_input_json(
         settings["remappings"] = _get_solc_remappings(remappings)
         if viaIR is not None:
             settings["viaIR"] = viaIR
-    input_json["sources"] = _sources_dict(contract_sources, language)
+
+    input_sources = _sources_dict(contract_sources, language)
+    input_json["sources"] = input_sources
 
     if interface_sources:
         if language == "Solidity":
-            input_json["sources"].update(_sources_dict(interface_sources, language))
+            input_sources.update(_sources_dict(interface_sources, language))
         else:
             input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [arg-type]
 
@@ -328,34 +330,34 @@ def generate_build_json(
     contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
 
     for path_str, path_contracts in contracts.items():
-        for contract_name in path_contracts:
-            contract_alias = contract_name
-
-            if path_str in input_json["sources"]:
-                source = input_json["sources"][path_str]["content"]  # type: ignore [typeddict-item]
-            else:
-                with Path(path_str).open(encoding="utf-8") as fp:
-                    source = fp.read()
+        if path_str in sources:
+            source: str = sources[path_str]["content"]  # type: ignore [typeddict-item]
+            get_alias = False
+        else:
+            with Path(path_str).open(encoding="utf-8") as fp:
+                source = fp.read()
+            get_alias = True
+    
+        for contract_name, contract in path_contracts.items():
+            if get_alias:
                 contract_alias = _get_alias(contract_name, path_str)
-
+            else:
+                contract_alias = contract_name
+    
             if not silent:
                 print(f" - {contract_alias}")
 
-            contracts_output: dict = output_json["contracts"]
-            path_output: dict = contracts_output[path_str]
-            contract_output: dict = path_output[contract_name]
+            natspec = merge_natspec(contract.get("devdoc", {}), contract.get("userdoc", {}))
 
-            natspec = merge_natspec(
-                contract_output.get("devdoc", {}), contract_output.get("userdoc", {})
-            )
-
-            abi: List[ABIElement] = contract_output["abi"]
-            output_evm: dict = contract_output["evm"]
+            abi: List[ABIElement] = contract["abi"]
+            output_evm: dict = contract["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
 
             if contract_alias in build_json and not bytecode:
                 continue
+
+            ast = output_json["sources"][path_str]["ast"]
 
             if language == "Solidity":
                 contract_node = next(
@@ -371,19 +373,19 @@ def generate_build_json(
 
             else:
                 if contract_name == "<stdin>":
-                    contract_name = contract_alias = "Vyper"  # type: ignore [assignment]
+                    contract_name = contract_alias = ContractName("Vyper")
                 build_json[contract_alias] = vyper._get_unique_build_json(
                     output_evm,
                     path_str,
                     contract_alias,
-                    output_json["sources"][path_str]["ast"],
-                    (0, len(source)),  # type: ignore [arg-type]
+                    ast,
+                    (0, len(source)),
                 )
 
             build_json[contract_alias].update(
                 {
                     "abi": abi,
-                    "ast": output_json["sources"][path_str]["ast"],
+                    "ast": ast,
                     "compiler": compiler_data,  # type: ignore [typeddict-item]
                     "contractName": contract_name,
                     "deployedBytecode": bytecode,
@@ -391,7 +393,7 @@ def generate_build_json(
                     "language": language,  # type: ignore [typeddict-item]
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
-                    "sha1": sha1(source.encode()).hexdigest(),  # type: ignore [typeddict-item]
+                    "sha1": HexStr(sha1(source.encode()).hexdigest()),
                     "source": source,
                     "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                     "sourcePath": path_str,
@@ -502,9 +504,11 @@ def get_abi(
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         source_nodes = _from_standard_output(output_json)
-        abi_json = {k: v for k, v in output_json["contracts"].items() if k in path_list}
+        compiled_sources: dict[str, dict] = output_json["sources"]
+        abi_json: Dict[str, dict] = {k: v for k, v in output_json["contracts"].items() if k in path_list}
 
         for path, contracts in abi_json.items():
+            path_source = contract_sources[path]
             for name, data in contracts.items():
                 contract_node = next(i[name] for i in source_nodes if i.absolutePath == path)
                 dependencies = []
@@ -516,13 +520,13 @@ def get_abi(
 
                 final_output[name] = {
                     "abi": data["abi"],
-                    "ast": output_json["sources"][path]["ast"],
+                    "ast": compiled_sources[path]["ast"],
                     "contractName": name,
                     "dependencies": dependencies,
                     "type": "interface",
-                    "source": contract_sources[path],
+                    "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
+                    "sha1": HexStr(sha1(path_source.encode()).hexdigest()),
                 }
 
     return final_output
