@@ -4,7 +4,7 @@ import shutil
 import sys
 
 from brownie import accounts
-from brownie._c_constants import Path, json_load
+from brownie._c_constants import Path, ujson_load
 from brownie._config import _get_data_folder
 from brownie.convert import to_address
 from brownie.utils import color, notify
@@ -50,7 +50,7 @@ def _list():
     for path in account_paths:
         u = "\u2514" if path == account_paths[-1] else "\u251c"
         with path.open() as fp:
-            data = json_load(fp)
+            data = ujson_load(fp)
         print(
             f" {bright_black}{u}\u2500{bright_blue}{path.stem}{color}"
             f": {bright_magenta}{to_address(data['address'])}{color}"
