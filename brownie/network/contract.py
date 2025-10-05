@@ -114,6 +114,7 @@ from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 if TYPE_CHECKING:
     from brownie.network.transaction import TransactionReceipt
     from brownie.project.main import Project, TempProject
+    from brownie.project.sources import Sources
 
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
 
@@ -127,7 +128,7 @@ class _ContractBase:
         self,
         project: Optional[Union["Project", "TempProject"]],
         build: ContractDeploymentJson,
-        sources: Dict[str, Any],
+        sources: Sources,
     ) -> None:
         self._project = project
         self._build: Final = build.copy()
@@ -214,7 +215,11 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}"""
 
-    def __init__(self, project: Any, build: ContractDeploymentJson) -> None:
+    def __init__(
+        self,
+        project: Union["Project", "TempProject"],
+        build: ContractDeploymentJson,
+    ) -> None:
         self.tx = None
         self.bytecode: Final = build["bytecode"]
         self._contracts: Final[List["ProjectContract"]] = []
@@ -653,7 +658,7 @@ class InterfaceContainer:
     Container class that provides access to interfaces within a project.
     """
 
-    def __init__(self, project: Any) -> None:
+    def __init__(self, project: Union["Project", "TempProject"]) -> None:
         self._project = project
 
         # automatically populate with interfaces in `data/interfaces`
@@ -1294,8 +1299,8 @@ class ProjectContract(_DeployedContractBase):
 
     def __init__(
         self,
-        project: Any,
-        build: ContractBuildJson,
+        project: "Project",
+        build: ContractDeploymentJson,
         address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
         tx: Optional[TransactionReceipt] = None,
