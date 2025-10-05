@@ -132,13 +132,13 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 @final
 class SolidityDeploymentJson(SolidityBuildJson):
     address: ChecksumAddress
-    alias: NotRequired[ContractName]
+    alias: NotRequired[ContractName | None]
 
 
 @final
 class VyperDeploymentJson(VyperBuildJson):
     address: ChecksumAddress
-    alias: NotRequired[ContractName]
+    alias: NotRequired[ContractName | None]
 
 
 ContractDeploymentJson = SolidityDeploymentJson | VyperDeploymentJson
