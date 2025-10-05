@@ -337,13 +337,11 @@ def generate_build_json(
             with Path(path_str).open(encoding="utf-8") as fp:
                 source = fp.read()
             get_alias = True
-
         for contract_name, contract in path_contracts.items():
             if get_alias:
                 contract_alias = _get_alias(contract_name, path_str)
             else:
                 contract_alias = contract_name
-
             if not silent:
                 print(f" - {contract_alias}")
 
