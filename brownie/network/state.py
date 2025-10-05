@@ -31,7 +31,7 @@ from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.project.build import DEPLOYMENT_KEYS
-from brownie.typing import ContractBuildJson, ContractName, ProgramCounter
+from brownie.typing import ContractBuildJson, ContractDeploymentJson, ContractName, ProgramCounter
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
 PathMap = Dict[str, Tuple[HexStr, str]]
-Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
+Deployment = Tuple[ContractDeploymentJson, Dict[str, Any]]
 
 AnyContract = Union["Contract", "ProjectContract"]
 
@@ -659,7 +659,7 @@ def _get_deployment(
 
 
 def _add_deployment(
-    contract: "Contract",
+    contract: AnyContract,
     alias: Optional[ContractName] = None,
 ) -> None:
     if "chainid" not in CONFIG.active_network:
