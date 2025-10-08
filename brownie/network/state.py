@@ -4,41 +4,64 @@ import gc
 import threading
 import time
 import weakref
-from hashlib import sha1
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Final,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    final,
+)
 
-from eth_utils.toolz import keymap
+from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
+from web3.datastructures import AttributeDict
 from web3.types import BlockData
 
+import brownie.network.rpc as rpc
+from brownie._c_constants import sha1
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
-from brownie.network import rpc
 from brownie.project.build import DEPLOYMENT_KEYS
+from brownie.typing import ContractBuildJson, ContractName, ProgramCounter
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
 
-_contract_map: Dict = {}
-_revert_refs: List = []
+if TYPE_CHECKING:
+    from .contract import Contract, ProjectContract
 
-cur = Cursor(_get_data_folder().joinpath("deployments.db"))
+PathMap = Dict[str, Tuple[HexStr, str]]
+Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
+
+AnyContract = Union["Contract", "ProjectContract"]
+
+_contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
+_revert_refs: Final[List[weakref.ReferenceType]] = []
+
+cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
 
 
+@final
 class TxHistory(metaclass=_Singleton):
     """List-like singleton container that contains TransactionReceipt objects.
     Whenever a transaction is broadcast, the TransactionReceipt is automatically
     added to this container."""
 
     def __init__(self) -> None:
-        self._list: List = []
-        self.gas_profile: Dict = {}
+        self._list: List[TransactionReceipt] = []
+        self.gas_profile: Final[Dict[str, Dict[str, int]]] = {}
         _revert_register(self)
 
     def __repr__(self) -> str:
@@ -48,7 +71,7 @@ class TxHistory(metaclass=_Singleton):
 
     def __getattribute__(self, name: str) -> Any:
         # filter dropped transactions prior to attribute access
-        items = super().__getattribute__("_list")
+        items: List[TransactionReceipt] = super().__getattribute__("_list")
         items = [i for i in items if i.status != -2]
         setattr(self, "_list", items)
         return super().__getattribute__(name)
@@ -59,7 +82,7 @@ class TxHistory(metaclass=_Singleton):
     def __contains__(self, item: Any) -> bool:
         return item in self._list
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[TransactionReceipt]:
         return iter(self._list)
 
     def __getitem__(self, key: int) -> TransactionReceipt:
@@ -71,8 +94,8 @@ class TxHistory(metaclass=_Singleton):
     def _reset(self) -> None:
         self._list.clear()
 
-    def _revert(self, height: int) -> None:
-        self._list = [i for i in self._list if i.block_number <= height]
+    def _revert(self, height: BlockNumber) -> None:
+        self._list = [i for i in self._list if i.block_number <= height]  # type: ignore [operator]
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
         if tx not in self._list:
@@ -92,20 +115,18 @@ class TxHistory(metaclass=_Singleton):
         else:
             self._list.clear()
 
-    def copy(self) -> List:
+    def copy(self) -> List[TransactionReceipt]:
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
-    def filter(
-        self, key: Optional[Callable] = None, **kwargs: Optional[Any]
-    ) -> List[TransactionReceipt]:
+    def filter(self, key: Optional[Callable] = None, **kwargs: Any) -> List[TransactionReceipt]:
         """
         Return a filtered list of transactions.
 
         Arguments
         ---------
         key : Callable, optional
-            An optional function to filter with. It should expect one agument and return
+            An optional function to filter with. It should expect one argument and return
             True or False.
 
         Keyword Arguments
@@ -121,7 +142,7 @@ class TxHistory(metaclass=_Singleton):
         result = (i for i in self._list if all(getattr(i, k) == v for k, v in kwargs.items()))
         return list(result if key is None else filter(key, result))
 
-    def wait(self, key: Optional[Callable] = None, **kwargs: Optional[Any]) -> None:
+    def wait(self, key: Optional[Callable] = None, **kwargs: Any) -> None:
         """
         Wait for pending transactions to confirm.
 
@@ -132,7 +153,7 @@ class TxHistory(metaclass=_Singleton):
         Arguments
         ---------
         key : Callable, optional
-            An optional function to filter with. It should expect one agument and return
+            An optional function to filter with. It should expect one argument and return
             True or False.
 
         Keyword Arguments
@@ -146,15 +167,15 @@ class TxHistory(metaclass=_Singleton):
                 return
             pending._confirmed.wait()
 
-    def from_sender(self, account: str) -> List:
+    def from_sender(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: str) -> List:
+    def to_receiver(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: str) -> List:
+    def of_address(self, account: str) -> List[TransactionReceipt]:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
@@ -184,6 +205,7 @@ class TxHistory(metaclass=_Singleton):
                 gas["avg_success"] = (avg * count + gas_used) // (count + 1)
 
 
+@final
 class Chain(metaclass=_Singleton):
     """
     List-like singleton used to access block data, and perform actions such as
@@ -192,12 +214,12 @@ class Chain(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self._time_offset: int = 0
-        self._snapshot_id: Optional[int] = None
-        self._reset_id: Optional[int] = None
-        self._current_id: Optional[int] = None
-        self._undo_lock = threading.Lock()
-        self._undo_buffer: List = []
-        self._redo_buffer: List = []
+        self._snapshot_id: Optional[int | str] = None
+        self._reset_id: Optional[int | str] = None
+        self._current_id: Optional[int | str] = None
+        self._undo_lock: Final = threading.Lock()
+        self._undo_buffer: Final[List[Tuple[int | str, Any, Tuple[Any, ...], Dict[str, Any]]]] = []
+        self._redo_buffer: Final[List[Tuple[Any, Tuple[Any, ...], Dict[str, Any]]]] = []
         self._chainid: Optional[int] = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
@@ -214,13 +236,13 @@ class Chain(metaclass=_Singleton):
         """
         return web3.eth.block_number + 1
 
-    def __getitem__(self, block_number: int) -> BlockData:
+    def __getitem__(self, block_number: BlockNumber) -> BlockData | AttributeDict:
         """
         Return information about a block by block number.
 
         Arguments
         ---------
-        block_number : int
+        block_number : BlockNumber
             Integer of a block number. If the value is negative, the block returned
             is relative to the most recently mined block, e.g. `chain[-1]` returns
             the most recent block.
@@ -234,16 +256,21 @@ class Chain(metaclass=_Singleton):
             raise TypeError("Block height must be given as an integer")
         if block_number < 0:
             block_number = web3.eth.block_number + 1 + block_number
-        block = web3.eth.get_block(block_number)
+        block: BlockData | AttributeDict = web3.eth.get_block(block_number)
         if block["timestamp"] > self._block_gas_time:
             self._block_gas_limit = block["gasLimit"]
             self._block_gas_time = block["timestamp"]
         return block
 
-    def __iter__(self) -> Iterator:
-        return iter(web3.eth.get_block(i) for i in range(web3.eth.block_number + 1))
+    def __iter__(self) -> Iterator[BlockData | AttributeDict]:
+        get_block = web3.eth.get_block
+        for i in range(web3.eth.block_number + 1):
+            block: BlockData | AttributeDict = get_block(i)
+            yield block
 
-    def new_blocks(self, height_buffer: int = 0, poll_interval: int = 5) -> Iterator:
+    def new_blocks(
+        self, height_buffer: int = 0, poll_interval: int = 5
+    ) -> Iterator[BlockData | AttributeDict]:
         """
         Generator for iterating over new blocks.
 
@@ -259,14 +286,15 @@ class Chain(metaclass=_Singleton):
         if height_buffer < 0:
             raise ValueError("Buffer cannot be negative")
 
-        last_block = None
+        last_block: Optional[BlockData | AttributeDict] = None
         last_height = 0
         last_poll = 0.0
 
+        get_block = web3.eth.get_block
         while True:
             if last_poll + poll_interval < time.time() or last_height != web3.eth.block_number:
                 last_height = web3.eth.block_number
-                block = web3.eth.get_block(last_height - height_buffer)
+                block: BlockData | AttributeDict = get_block(last_height - height_buffer)
                 last_poll = time.time()
 
                 if block != last_block:
@@ -276,7 +304,7 @@ class Chain(metaclass=_Singleton):
                 time.sleep(1)
 
     @property
-    def height(self) -> int:
+    def height(self) -> BlockNumber:
         return web3.eth.block_number
 
     @property
@@ -288,24 +316,24 @@ class Chain(metaclass=_Singleton):
     @property
     def block_gas_limit(self) -> Wei:
         if time.time() > self._block_gas_time + 3600:
-            block = web3.eth.get_block("latest")
+            block: BlockData | AttributeDict = web3.eth.get_block("latest")
             self._block_gas_limit = block["gasLimit"]
             self._block_gas_time = block["timestamp"]
         return Wei(self._block_gas_limit)
 
     @property
     def base_fee(self) -> Wei:
-        block = web3.eth.get_block("latest")
-        return Wei(block.baseFeePerGas)
+        block: BlockData | AttributeDict = web3.eth.get_block("latest")
+        return Wei(block["baseFeePerGas"])
 
     @property
     def priority_fee(self) -> Wei:
         return Wei(web3.eth.max_priority_fee)
 
-    def _revert(self, id_: int) -> int:
+    def _revert(self, id_: int | str) -> int | str:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
             return rpc_client.snapshot()
         rpc_client.revert(id_)
         id_ = rpc_client.snapshot()
@@ -316,14 +344,17 @@ class Chain(metaclass=_Singleton):
         _notify_registry()
         return id_
 
-    def _add_to_undo_buffer(self, tx: Any, fn: Any, args: Tuple, kwargs: Dict) -> None:
+    def _add_to_undo_buffer(
+        self, tx: TransactionReceipt, fn: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
+    ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
-            self._undo_buffer.append((self._current_id, fn, args, kwargs))
-            if self._redo_buffer and (fn, args, kwargs) == self._redo_buffer[-1]:
-                self._redo_buffer.pop()
+            self._undo_buffer.append((self._current_id, fn, args, kwargs))  # type: ignore [arg-type]
+            redo_buffer = self._redo_buffer
+            if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
+                redo_buffer.pop()
             else:
-                self._redo_buffer.clear()
+                redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
             # ensure the local time offset is correct, in case it was modified by the transaction
             self.sleep(0)
@@ -334,7 +365,7 @@ class Chain(metaclass=_Singleton):
             self.reset()
         except NotImplementedError:
             # required for geth dev
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
 
     def _network_disconnected(self) -> None:
         self._undo_buffer.clear()
@@ -343,7 +374,7 @@ class Chain(metaclass=_Singleton):
         self._reset_id = None
         self._current_id = None
         self._chainid = None
-        _notify_registry(0)
+        _notify_registry(0)  # type: ignore [arg-type]
 
     def get_transaction(self, txid: Union[str, bytes]) -> TransactionReceipt:
         """
@@ -375,7 +406,9 @@ class Chain(metaclass=_Singleton):
             self._redo_buffer.clear()
             self._current_id = rpc.Rpc().snapshot()
 
-    def mine(self, blocks: int = 1, timestamp: int = None, timedelta: int = None) -> int:
+    def mine(
+        self, blocks: int = 1, timestamp: Optional[int] = None, timedelta: Optional[int] = None
+    ) -> BlockNumber:
         """
         Increase the block height within the test RPC.
 
@@ -393,7 +426,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         if not isinstance(blocks, int):
@@ -434,7 +467,7 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer.clear()
         self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
 
-    def revert(self) -> int:
+    def revert(self) -> BlockNumber:
         """
         Revert the EVM to the most recently taken snapshot.
 
@@ -442,7 +475,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         if self._snapshot_id is None:
@@ -452,7 +485,7 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
         return web3.eth.block_number
 
-    def reset(self) -> int:
+    def reset(self) -> BlockNumber:
         """
         Revert the EVM to the initial state when loaded.
 
@@ -460,7 +493,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         self._snapshot_id = None
@@ -468,12 +501,12 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer.clear()
         if self._reset_id is None:
             self._reset_id = self._current_id = rpc.Rpc().snapshot()
-            _notify_registry(0)
+            _notify_registry(0)  # type: ignore [arg-type]
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
         return web3.eth.block_number
 
-    def undo(self, num: int = 1) -> int:
+    def undo(self, num: int = 1) -> BlockNumber:
         """
         Undo one or more transactions.
 
@@ -484,7 +517,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         with self._undo_lock:
@@ -502,7 +535,7 @@ class Chain(metaclass=_Singleton):
             self._current_id = self._revert(id_)
             return web3.eth.block_number
 
-    def redo(self, num: int = 1) -> int:
+    def redo(self, num: int = 1) -> BlockNumber:
         """
         Redo one or more undone transactions.
 
@@ -513,7 +546,7 @@ class Chain(metaclass=_Singleton):
 
         Returns
         -------
-        int
+        BlockNumber
             Current block height
         """
         with self._undo_lock:
@@ -533,12 +566,12 @@ class Chain(metaclass=_Singleton):
 
 # objects that will update whenever the RPC is reset or reverted must register
 # by calling to this function. The must also include _revert and _reset methods
-# to recieve notifications from this object
+# to receive notifications from this object
 def _revert_register(obj: object) -> None:
     _revert_refs.append(weakref.ref(obj))
 
 
-def _notify_registry(height: int = None) -> None:
+def _notify_registry(height: Optional[BlockNumber] = None) -> None:
     gc.collect()
     if height is None:
         height = web3.eth.block_number
@@ -552,40 +585,43 @@ def _notify_registry(height: int = None) -> None:
             obj._reset()
 
 
-def _find_contract(address: Any) -> Any:
+def _find_contract(address: Optional[HexAddress]) -> Optional[AnyContract]:
     if address is None:
-        return
+        return None
 
     address = _resolve_address(address)
     if address in _contract_map:
         return _contract_map[address]
-    if "chainid" in CONFIG.active_network:
-        try:
-            from brownie.network.contract import Contract
+    if "chainid" not in CONFIG.active_network:
+        return None
 
-            return Contract(address)
-        except (ValueError, CompilerError):
-            pass
+    from brownie.network.contract import Contract
+
+    try:
+        return Contract(address)
+    except (ValueError, CompilerError):
+        return None
 
 
-def _get_current_dependencies() -> List:
+def _get_current_dependencies() -> List[ContractName]:
     dependencies = {v._name for v in _contract_map.values()}
     for contract in _contract_map.values():
         dependencies.update(contract._build.get("dependencies", []))
     return sorted(dependencies)
 
 
-def _add_contract(contract: Any) -> None:
+def _add_contract(contract: AnyContract) -> None:
     _contract_map[contract.address] = contract
 
 
-def _remove_contract(contract: Any) -> None:
+def _remove_contract(contract: AnyContract) -> None:
     _contract_map.pop(contract.address, None)
 
 
 def _get_deployment(
-    address: str = None, alias: str = None
-) -> Tuple[Optional[Dict], Optional[Dict]]:
+    address: Optional[HexAddress] = None,
+    alias: Optional[ContractName] = None,
+) -> Deployment | Tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -605,21 +641,27 @@ def _get_deployment(
     if not row:
         return None, None
 
-    keys = ["address", "alias", "paths"] + DEPLOYMENT_KEYS
-    build_json = dict(zip(keys, row))
-    path_map = build_json.pop("paths")
-    sources = {
-        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]
+    keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
+    build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
+    # when we json.dump the path map, the tuples are encoded as lists so we need to make them tuples again.
+    path_map: PathMap = {k: tuple(v) for k, v in build_json.pop("paths", {}).items()}  # type: ignore [typeddict-item]
+    sources: Dict[str, Any] = {
+        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
-    build_json["allSourcePaths"] = {k: v[1] for k, v in path_map.items()}
-    if isinstance(build_json["pcMap"], dict):
-        build_json["pcMap"] = keymap(int, build_json["pcMap"])
+
+    build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
+    pc_map: Optional[Dict[int | str, ProgramCounter]] = build_json.get("pcMap")  # type: ignore [assignment]
+    if isinstance(pc_map, dict):
+        build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
 
     return build_json, sources
 
 
-def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
+def _add_deployment(
+    contract: "Contract",
+    alias: Optional[ContractName] = None,
+) -> None:
     if "chainid" not in CONFIG.active_network:
         return
 
@@ -631,28 +673,33 @@ def _add_deployment(contract: Any, alias: Optional[str] = None) -> None:
         f"(address UNIQUE, alias UNIQUE, paths, {', '.join(DEPLOYMENT_KEYS)})"
     )
 
-    if "compiler" not in contract._build:
+    contract_build = contract._build
+    if "compiler" not in contract_build:
         # do not replace full contract artifacts with ABI-only ones
         row = cur.fetchone(f"SELECT compiler FROM {name} WHERE address=?", (address,))
         if row and row[0]:
             return
 
     all_sources = {}
-    for key, path in contract._build.get("allSourcePaths", {}).items():
-        source = contract._sources.get(path)
-        if source is None:
-            source = Path(path).read_text()
-        hash_ = sha1(source.encode()).hexdigest()
-        cur.insert("sources", hash_, source)
-        all_sources[key] = [hash_, path]
+    source_paths: dict = contract_build.get("allSourcePaths", {})
+    if source_paths:
+        contract_sources: dict = contract._sources
+        for key, path in source_paths.items():
+            source = contract_sources.get(path)
+            if source is None:
+                source = Path(path).read_text()
+            hash_ = sha1(source.encode()).hexdigest()
+            cur.insert("sources", hash_, source)
+            all_sources[key] = [hash_, path]
 
-    values = [contract._build.get(i) for i in DEPLOYMENT_KEYS]
+    values = (contract_build.get(i) for i in DEPLOYMENT_KEYS)
     cur.insert(name, address, alias, all_sources, *values)
 
 
 def _remove_deployment(
-    address: str = None, alias: str = None
-) -> Tuple[Optional[Dict], Optional[Dict]]:
+    address: Optional[HexAddress] = None,
+    alias: Optional[ContractName] = None,
+) -> Deployment | Tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -666,7 +713,7 @@ def _remove_deployment(
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 
-    build_json, sources = _get_deployment(address, alias)
+    deployment = _get_deployment(address, alias)
     # delete entry from chain{n}
     cur.execute(f"DELETE FROM {name} WHERE {query}")
     # delete all entries from sources matching the contract's source hashes
@@ -678,4 +725,4 @@ def _remove_deployment(
             hash_ = sha1(source.encode()).hexdigest()
             cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
-    return build_json, sources
+    return deployment

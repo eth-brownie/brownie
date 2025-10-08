@@ -248,21 +248,25 @@ def plugintester(_project_factory, plugintesterbase, request):
     yield plugintesterbase
 
 
+_devnetwork_lock = threading.Lock()
+
+
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc, chain, network_name):
-    try:
-        network.connect(network_name)
-    except ConnectionError as e:
-        if not e.args[0].startswith("Already connected to network "):
-            raise
-        if network_name not in e.args[0]:
-            _disconnect_network()
+    with _devnetwork_lock:
+        try:
             network.connect(network_name)
+        except ConnectionError as e:
+            if not e.args[0].startswith("Already connected to network "):
+                raise
+            if network_name not in e.args[0]:
+                _disconnect_network()
+                network.connect(network_name)
 
-    yield network
-    if rpc.is_active():
-        chain.reset()
+        yield network
+        if rpc.is_active():
+            chain.reset()
 
 
 # brownie object fixtures
@@ -296,11 +300,7 @@ def network():  # sourcery skip: use-contextlib-suppress
 
 @pytest.fixture
 def connect_to_mainnet(network):
-    try:
-        network.connect("mainnet")
-    except ConnectionError:
-        _disconnect_network()
-        network.connect("mainnet")
+    _connect_to_mainnet(network)
     yield network
 
 
@@ -443,7 +443,17 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
             pass
 
 
-def _disconnect_network():
+def _connect_to_mainnet(network) -> None:
+    # This recursive helper helps us with a race condition.
+    # Usually the first call of this func will work fine, but in edge cases we need to call it more than once to make all of the tests succeed.
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        _disconnect_network()
+        _connect_to_mainnet(network)
+
+
+def _disconnect_network() -> None:
     try:
         brownie.network.disconnect(False)
     except ConnectionError:

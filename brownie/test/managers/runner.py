@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
 import builtins
-import json
-import re
 import sys
 import warnings
 from pathlib import Path
@@ -12,12 +10,14 @@ from _pytest._io import TerminalWriter
 from eth_utils.toolz import keyfilter
 
 import brownie
+from brownie._c_constants import regex_compile, regex_fullmatch, ujson_dump
 from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
 from brownie.utils import color
+from brownie.utils._color import yellow
 
 from .base import PytestBrownieBase
 from .utils import convert_outcome
@@ -58,9 +58,9 @@ class RevertContextManager:
             raise ValueError("Can only use one of `dev_revert_msg` and `dev_revert_pattern`")
 
         if revert_pattern:
-            re.compile(revert_pattern)
+            regex_compile(revert_pattern)
         if dev_revert_pattern:
-            re.compile(dev_revert_pattern)
+            regex_compile(dev_revert_pattern)
 
         self.revert_msg = revert_msg
         self.dev_revert_msg = dev_revert_msg
@@ -84,23 +84,27 @@ class RevertContextManager:
         if exc_type is not VirtualMachineError:
             raise
 
-        if self.dev_revert_msg or self.dev_revert_pattern:
+        message = self.dev_revert_msg
+        pattern = self.dev_revert_pattern
+        if message or pattern:
             actual = exc_value.dev_revert_msg
             if (
                 actual is None
-                or (self.dev_revert_pattern and not re.fullmatch(self.dev_revert_pattern, actual))
-                or (self.dev_revert_msg and self.dev_revert_msg != actual)
+                or (pattern and not regex_fullmatch(pattern, actual))
+                or (message and message != actual)
             ):
                 raise AssertionError(
                     f"Unexpected dev revert string '{actual}'\n{exc_value.source}"
                 ) from None
 
-        if self.revert_msg or self.revert_pattern:
+        message = self.revert_msg
+        pattern = self.revert_pattern
+        if message or pattern:
             actual = exc_value.revert_msg
             if (
                 actual is None
-                or (self.revert_pattern and not re.fullmatch(self.revert_pattern, actual))
-                or (self.revert_msg and self.revert_msg != actual)
+                or (pattern and not regex_fullmatch(pattern, actual))
+                or (message and message != actual)
             ):
                 raise AssertionError(
                     f"Unexpected revert string '{actual}'\n{exc_value.source}"
@@ -129,7 +133,7 @@ class PytestPrinter:
 
         if self.first_line:
             self.first_line = False
-            sys.stdout.write(f"{color('yellow')}RUNNING{color}\n")
+            sys.stdout.write(f"{yellow}RUNNING{color}\n")
         text = f"{sep.join(str(i) for i in values)}{end}"
         sys.stdout.write(text)
         if flush:
@@ -502,7 +506,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
-            json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+            ujson_dump(report, fp, indent=2, sort_keys=True, default=sorted)
 
     def pytest_terminal_summary(self, terminalreporter):
         """

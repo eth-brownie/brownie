@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import warnings
-from typing import Optional, Tuple, Union
+from typing import Final, Optional, Union
 
 from brownie import project
 from brownie._config import CONFIG
@@ -14,11 +14,11 @@ from .rpc import Rpc
 from .state import Chain, _notify_registry
 from .web3 import web3
 
-chain = Chain()
-rpc = Rpc()
+chain: Final = Chain()
+rpc: Final = Rpc()
 
 
-def connect(network: str = None, launch_rpc: bool = True) -> None:
+def connect(network: Optional[str] = None, launch_rpc: bool = True) -> None:
     """Connects to the network.
 
     Args:
@@ -81,7 +81,7 @@ def is_connected() -> bool:
     return web3.isConnected()
 
 
-def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def gas_limit(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     """Gets and optionally sets the default gas limit.
 
     * If an integer value is given, this will be the default gas limit.
@@ -103,7 +103,7 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["gas_limit"]
 
 
-def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def gas_price(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     """Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
@@ -125,7 +125,7 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["gas_price"]
 
 
-def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
+def gas_buffer(*args: Optional[float]) -> Optional[float]:
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
@@ -138,7 +138,7 @@ def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
     return CONFIG.active_network["settings"]["gas_buffer"]
 
 
-def max_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def max_fee(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     """
     Gets and optionally sets the default max fee per gas.
 
@@ -159,7 +159,7 @@ def max_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["max_fee"]
 
 
-def priority_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def priority_fee(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     """
     Gets and optionally sets the default max priority fee per gas.
 

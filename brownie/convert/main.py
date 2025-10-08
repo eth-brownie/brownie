@@ -1,13 +1,20 @@
 #!/usr/bin/python3
 
-from decimal import Decimal
-from typing import Any
+from typing import Any, Final, Union
 
-import eth_utils
-from hexbytes import HexBytes
+import faster_eth_utils
+from eth_typing import ChecksumAddress
+
+from brownie._c_constants import Decimal, HexBytes
 
 from .datatypes import EthAddress, Fixed, HexString, Wei
 from .utils import get_int_bounds
+
+
+is_hex: Final = faster_eth_utils.is_hex
+to_text: Final = faster_eth_utils.to_text
+
+_TEN_DECIMALS: Final = Decimal("1.0000000000")
 
 
 def to_uint(value: Any, type_str: str = "uint256") -> Wei:
@@ -33,14 +40,14 @@ def to_decimal(value: Any) -> Fixed:
     d: Fixed = Fixed(value)
     if d < -(2**127) or d >= 2**127:
         raise OverflowError(f"{value} is outside allowable range for decimal")
-    if d.quantize(Decimal("1.0000000000")) != d:
+    if d.quantize(_TEN_DECIMALS) != d:
         raise ValueError("Maximum of 10 decimal points allowed")
     return d
 
 
-def to_address(value: str) -> str:
+def to_address(value: Union[str, bytes]) -> ChecksumAddress:
     """Convert a value to an address"""
-    return str(EthAddress(value))
+    return str(EthAddress(value))  # type: ignore [return-value]
 
 
 def to_bytes(value: Any, type_str: str = "bytes32") -> bytes:
@@ -67,10 +74,13 @@ def to_string(value: Any) -> str:
     """Convert a value to a string"""
     try:
         if isinstance(value, bytes):
-            return eth_utils.to_text(hexstr=HexBytes(value).hex())
+            return to_text(hexstr=HexBytes(value).hex())  # type: ignore [arg-type]
         value = str(value)
-        if value.startswith("0x") and eth_utils.is_hex(value):
-            return eth_utils.to_text(hexstr=value)
+        if value.startswith("0x") and is_hex(value):
+            return to_text(hexstr=value)
         return value
     except UnicodeDecodeError as e:
         raise ValueError(e)
+
+
+__all__ = ["to_uint", "to_int", "to_decimal", "to_address", "to_bytes", "to_bool", "to_string"]

@@ -2,14 +2,17 @@
 
 import json
 
+from eth_retry import auto_retry
+
 
 def test_persist_load_unload(testproject, connect_to_mainnet):
     testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.close()
     testproject.load()
-    assert len(testproject.BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
 
 
+@auto_retry
 def test_delete(testproject, network, connect_to_mainnet):
     testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.BrownieTester.at("0xB8c77482e45F1F44dE1745F52C74426C631bDD52")
@@ -18,7 +21,7 @@ def test_delete(testproject, network, connect_to_mainnet):
     del testproject.BrownieTester[0]
     _disconnect(network)
     _reconnect(network)
-    assert len(testproject.BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
     assert testproject.BrownieTester[0].address == "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
 
 
@@ -37,7 +40,7 @@ def test_changed_name(testproject, network, connect_to_mainnet):
 
     _reconnect(network)
     assert not path.exists()
-    assert len(testproject.BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
     assert testproject.BrownieTester[0].address == "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
 
 

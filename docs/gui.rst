@@ -11,7 +11,7 @@ Parts of this section assume a level of familiarity with EVM bytecode. If you ar
 
 .. note::
 
-    If you receive an error when attempting to load the GUI, you probably do not have Tk installed on your system. See the :ref:`Tk installation instrucions<install-tk>` for more detailed information.
+    If you receive an error when attempting to load the GUI, you probably do not have Tk installed on your system. See the :ref:`Tk installation instructions<install-tk>` for more detailed information.
 
 Getting Started
 ===============

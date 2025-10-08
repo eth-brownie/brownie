@@ -169,7 +169,7 @@ All ``bytes`` strategies accept the following keyword arguments:
 
     * ``excludes``: An object, iterable or callable used to filter strategy results.
 
-For `fixed length values <https://solidity.readthedocs.io/en/latest/types.html#fixed-size-byte-arrays>`_ (``bytes1`` ... ``bytes32``) the strategy always generates bytes of exactly the given length. For `dynamic bytes arrays <https://solidity.readthedocs.io/en/latest/types.html#bytes-and-strings-as-arrays>`_ (``bytes``), the minimum and maximum length may be specified using keyord arguments:
+For `fixed length values <https://solidity.readthedocs.io/en/latest/types.html#fixed-size-byte-arrays>`_ (``bytes1`` ... ``bytes32``) the strategy always generates bytes of exactly the given length. For `dynamic bytes arrays <https://solidity.readthedocs.io/en/latest/types.html#bytes-and-strings-as-arrays>`_ (``bytes``), the minimum and maximum length may be specified using keyword arguments:
 
     * ``min_size``: Minimum length for each returned value. The default value is ``1``.
     * ``max_size``: Maximum length for each returned value. The default value is ``64``.
@@ -404,6 +404,6 @@ Available Settings
 
     The maximum number of rules to execute in a stateful program before ending the run and considering it to have passed.
 
-    For more complex state machines you may wish to increase this value - however you should keep in mind that this can result in siginificantly longer execution times.
+    For more complex state machines you may wish to increase this value - however you should keep in mind that this can result in significantly longer execution times.
 
     default-value: ``10``

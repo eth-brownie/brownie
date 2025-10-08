@@ -35,6 +35,7 @@ def test_type_vyper(vypertester):
     assert isinstance(vypertester, _DeployedContractBase)
 
 
+@auto_retry
 def test_namespace_collision(tester, build):
     build["abi"].append(
         {
@@ -73,6 +74,7 @@ def test_balance(tester):
     assert balance == "0 ether"
 
 
+@auto_retry
 def test_comparison(testproject, tester):
     del testproject.BrownieTester[0]
     assert tester != 123
@@ -87,6 +89,7 @@ def test_revert_not_found(tester, chain):
         tester.balance()
 
 
+@auto_retry
 def test_contractabi_replace_contract(testproject, tester):
     Contract.from_abi("BrownieTester", tester.address, tester.abi)
     del testproject.BrownieTester[0]
@@ -94,6 +97,7 @@ def test_contractabi_replace_contract(testproject, tester):
     Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
 
+@auto_retry
 def test_deprecated_init_abi(tester):
     with pytest.warns(DeprecationWarning):
         old = Contract("BrownieTester", tester.address, tester.abi)
@@ -158,12 +162,16 @@ def test_from_explorer_vyper_old_version(connect_to_mainnet):
     assert "pcMap" not in contract._build
 
 
+@auto_retry
 def test_from_explorer_unverified(connect_to_mainnet):
     with pytest.raises(ValueError):
         Contract.from_explorer("0x0000000000000000000000000000000000000000")
 
 
-@pytest.mark.xfail
+@pytest.mark.skip(
+    "etc rpc fails to connect and blocks the test runner while retrying. "
+    "Maybe fix this test with a different network."
+)
 @auto_retry
 def test_from_explorer_etc(network):
     network.connect("etc")
@@ -231,6 +239,7 @@ def test_duplicate_alias(connect_to_mainnet):
     bar.set_alias("foo")
 
 
+@auto_retry
 def test_alias_in_development(tester):
     contract = Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
@@ -238,6 +247,7 @@ def test_alias_in_development(tester):
         contract.set_alias("testalias")
 
 
+@auto_retry
 def test_autofetch(config, connect_to_mainnet):
     with pytest.raises(ValueError):
         Contract("0xdAC17F958D2ee523a2206206994597C13D831ec7")
@@ -335,6 +345,7 @@ def test_solc_use_latest_patch_specific_included(testproject, connect_to_mainnet
     ) == Version("0.4.26")
 
 
+@auto_retry
 def test_abi_deployment_enabled_by_default(build, connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_abi("abiTester", address, build["abi"])
@@ -344,6 +355,7 @@ def test_abi_deployment_enabled_by_default(build, connect_to_mainnet):
     Contract.remove_deployment(address)
 
 
+@auto_retry
 def test_abi_deployment_disabled(build, connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_abi("abiTester", address, build["abi"], persist=False)

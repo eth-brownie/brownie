@@ -1,4 +1,3 @@
-import json
 from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock, get_ident
@@ -8,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
 
+from brownie._c_constants import ujson_loads
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
 from brownie.network import accounts, web3
@@ -16,7 +16,7 @@ from brownie.project import compile_source
 from brownie.utils import color
 
 DATA_DIR = BROWNIE_FOLDER.joinpath("data")
-MULTICALL2_ABI = json.loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
+MULTICALL2_ABI = ujson_loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
 MULTICALL2_SOURCE = DATA_DIR.joinpath("contracts", "Multicall2.sol").read_text()
 
 
@@ -115,7 +115,7 @@ class Multicall:
         """Flush the pending queue of calls, retrieving all the results."""
         return self._flush()
 
-    def _call_contract(self, call: ContractCall, *args: Tuple, **kwargs: Dict[str, Any]) -> Proxy:
+    def _call_contract(self, call: ContractCall, *args: Any, **kwargs: Any) -> Proxy:
         """Add a call to the buffer of calls to be made"""
         calldata = (call._address, call.encode_input(*args, **kwargs))  # type: ignore
         readable = f"{call._name}({', '.join(str(i) for i in args)})"
@@ -127,7 +127,7 @@ class Multicall:
         return LazyResult(lambda: self._flush(result))
 
     @staticmethod
-    def _proxy_call(*args: Tuple, **kwargs: Dict[str, Any]) -> Any:
+    def _proxy_call(*args: Any, **kwargs: Any) -> Any:
         """Proxy code which substitutes `ContractCall.__call__"""
         if self := getattr(ContractCall, "__multicall", {}).get(get_ident()):
             return self._call_contract(*args, **kwargs)

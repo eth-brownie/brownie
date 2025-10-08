@@ -33,23 +33,29 @@
 #
 ########################################################################
 
-from functools import reduce as _reduce
+import functools
+from typing import Dict, Final, Iterator, List, Set, final
 
 __all__ = ["toposort", "toposort_flatten", "CircularDependencyError"]
 
 
+_reduce: Final = functools.reduce
+
+
+@final
 class CircularDependencyError(ValueError):
     def __init__(self, data):
         # Sort the data just to make the output consistent, for use in
         #  error messages.  That's convenient for doctests.
-        s = "Circular dependencies exist among these items: {{{}}}".format(
-            ", ".join("{!r}:{!r}".format(key, value) for key, value in sorted(data.items()))
+        super().__init__(
+            "Circular dependencies exist among these items: {{{}}}".format(
+                ", ".join("{!r}:{!r}".format(key, value) for key, value in sorted(data.items()))
+            )
         )
-        super(CircularDependencyError, self).__init__(s)
         self.data = data
 
 
-def toposort(data):
+def toposort(data: Dict) -> Iterator[Set]:
     """Dependencies are expressed as a dictionary whose keys are items
     and whose values are a set of dependent items. Output is a list of
     sets in topological order. The first set consists of items with no
@@ -80,12 +86,16 @@ def toposort(data):
         raise CircularDependencyError(data)
 
 
-def toposort_flatten(data, sort=True):
+def toposort_flatten(data: Dict, sort: bool = True) -> List:
     """Returns a single list of dependencies. For any set returned by
     toposort(), those items are sorted and appended to the result (just to
     make the results deterministic)."""
 
     result = []
-    for d in toposort(data):
-        result.extend((sorted if sort else list)(d))
+    if sort:
+        for d in toposort(data):
+            result.extend(sorted(d))
+    else:
+        for d in toposort(data):
+            result.extend(d)
     return result

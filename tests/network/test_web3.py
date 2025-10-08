@@ -5,6 +5,8 @@ from web3 import HTTPProvider, IPCProvider, Web3, WebsocketProvider
 
 from brownie.exceptions import MainnetUndefined
 
+from tests.conftest import _connect_to_mainnet
+
 
 def test_connect_http(web3):
     web3.connect("http://localhost")
@@ -43,13 +45,7 @@ def test_bad_env_var(web3):
 def test_mainnet(config, network, web3):
     assert type(web3._mainnet) == Web3
     assert web3._mainnet != web3
-    try:
-        network.connect("mainnet")
-    except ConnectionError as e:
-        # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
-        # It's probably just a silly race condition due to parallel testing.
-        network.disconnect()
-        network.connect("mainnet")
+    _connect_to_mainnet(network)
 
     assert web3._mainnet == web3
 

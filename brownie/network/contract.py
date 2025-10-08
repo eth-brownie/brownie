@@ -2,19 +2,19 @@
 
 import asyncio
 import io
-import json
 import os
-import re
 import time
 import warnings
 from pathlib import Path
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Coroutine,
     Dict,
+    Final,
     Iterator,
     List,
     Match,
@@ -24,18 +24,27 @@ from typing import (
     Union,
 )
 
-import eth_abi
 import requests
 import solcx
-from eth_utils import combomethod
-from hexbytes import HexBytes
-from semantic_version import Version
+from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
+from faster_eth_abi import decode as decode_abi
+from faster_eth_abi import encode as encode_abi
+from faster_eth_utils import combomethod
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
+from brownie._c_constants import (
+    HexBytes,
+    Version,
+    regex_findall,
+    ujson_dump,
+    ujson_dumps,
+    ujson_load,
+    ujson_loads,
+)
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
@@ -56,8 +65,22 @@ from brownie.exceptions import (
 )
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
-from brownie.typing import AccountsType, TransactionReceiptType
+from brownie.typing import (
+    AccountsType,
+    ContractBuildJson,
+    ContractName,
+    FunctionName,
+    Language,
+    Selector,
+    TransactionReceiptType,
+)
 from brownie.utils import color, hexbytes_to_hexstring
+from brownie.utils._color import (
+    bright_blue,
+    bright_green,
+    bright_magenta,
+    bright_red,
+)
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher
@@ -72,40 +95,54 @@ from .state import (
 )
 from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
-_unverified_addresses: Set = set()
+if TYPE_CHECKING:
+    from brownie.project.main import Project, TempProject
+
+AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+
+_unverified_addresses: Final[Set[ChecksumAddress]] = set()
 
 
 class _ContractBase:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
-    def __init__(self, project: Any, build: Dict, sources: Dict) -> None:
+    def __init__(
+        self,
+        project: Optional[Union["Project", "TempProject"]],
+        build: ContractBuildJson,
+        sources: Dict[str, Any],
+    ) -> None:
         self._project = project
-        self._build = build.copy()
-        self._sources = sources
-        self.topics = _get_topics(self.abi)
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+        self._build: Final = build.copy()
+        self._sources: Final = sources
+
+        abi = self.abi
+        self.topics: Final = _get_topics(abi)
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in abi
+            if i["type"] == "function"
         }
         # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures = {
-            i["name"]: build_function_selector(i) for i in self.abi if i["type"] == "function"
+        self.signatures: Final[Dict[FunctionName, Selector]] = {
+            v: k for k, v in self.selectors.items()
         }
-        parse_errors_from_abi(self.abi)
+        parse_errors_from_abi(abi)
 
     @property
-    def abi(self) -> List:
+    def abi(self) -> List[ABIElement]:
         return self._build["abi"]
 
     @property
-    def _name(self) -> str:
+    def _name(self) -> ContractName:
         return self._build["contractName"]
 
     def info(self) -> None:
         """
         Display NatSpec documentation for this contract.
         """
-        if self._build.get("natspec"):
-            _print_natspec(self._build["natspec"])
+        if natspec := self._build.get("natspec"):
+            _print_natspec(natspec)
 
     def get_method(self, calldata: str) -> Optional[str]:
         sig = calldata[:10].lower()
@@ -132,21 +169,19 @@ class _ContractBase:
 
         fn_selector = hexbytes_to_hexstring(calldata[:4])
 
-        abi = next(
-            (
-                i
-                for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == fn_selector
-            ),
-            None,
-        )
+        abi: Optional[ABIFunction] = None
+        for i in self.abi:
+            if i["type"] == "function" and build_function_selector(i) == fn_selector:
+                abi = i
+                break
+
         if abi is None:
             raise ValueError("Four byte selector does not match the ABI for this contract")
 
         function_sig = build_function_signature(abi)
 
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode(types_list, calldata[4:])
+        result = decode_abi(types_list, calldata[4:])
         input_args = format_input(abi, result)
 
         return function_sig, input_args
@@ -162,19 +197,19 @@ class ContractContainer(_ContractBase):
         signatures: Dictionary of {'function name': "bytes4 signature"}
         topics: Dictionary of {'event name': "bytes32 topic"}"""
 
-    def __init__(self, project: Any, build: Dict) -> None:
+    def __init__(self, project: Any, build: ContractBuildJson) -> None:
         self.tx = None
-        self.bytecode = build["bytecode"]
-        self._contracts: List["ProjectContract"] = []
+        self.bytecode: Final = build["bytecode"]
+        self._contracts: Final[List["ProjectContract"]] = []
         super().__init__(project, build, project._sources)
-        self.deploy = ContractConstructor(self, self._name)
+        self.deploy: Final = ContractConstructor(self, self._name)
         _revert_register(self)
 
         # messes with tests if it is created on init
         # instead we create when it's requested, but still define it here
         self._flattener: Flattener = None  # type: ignore
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["ProjectContract"]:
         return iter(self._contracts)
 
     def __getitem__(self, i: Any) -> "ProjectContract":
@@ -203,7 +238,7 @@ class ContractContainer(_ContractBase):
             i
             for i in self._contracts
             if (i.tx and i.tx.block_number is not None and i.tx.block_number > height)
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             or len(web3.eth.get_code(i.address).hex().removeprefix("0x")) <= 2
         ]
         for contract in reverted:
@@ -223,7 +258,7 @@ class ContractContainer(_ContractBase):
 
     def at(
         self,
-        address: str,
+        address: HexAddress,
         owner: Optional[AccountsType] = None,
         tx: Optional[TransactionReceiptType] = None,
         persist: bool = True,
@@ -294,7 +329,7 @@ class ContractContainer(_ContractBase):
                         compiler._get_solc_remappings(config["solc"]["remappings"]),
                     )
                 )
-                libs = {lib.strip("_") for lib in re.findall("_{1,}[^_]*_{1,}", self.bytecode)}
+                libs = {lib.strip("_") for lib in regex_findall("_{1,}[^_]*_{1,}", self.bytecode)}
                 compiler_settings = {
                     "evmVersion": self._build["compiler"]["evm_version"],
                     "optimizer": config["solc"]["optimizer"],
@@ -318,7 +353,7 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: Any, silent: bool = False) -> bool:
+    def publish_source(self, contract: "Contract", silent: bool = False) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -409,12 +444,14 @@ class ContractContainer(_ContractBase):
             "module": "contract",
             "action": "verifysourcecode",
             "contractaddress": address,
-            "sourceCode": io.StringIO(json.dumps(self._flattener.standard_input_json)),
+            "sourceCode": io.StringIO(ujson_dumps(self._flattener.standard_input_json)),
             "codeformat": "solidity-standard-json-input",
             "contractname": f"{self._flattener.contract_file}:{self._flattener.contract_name}",
             "compilerversion": f"v{contract_info['compiler_version']}",
             "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
             "runs": contract_info["optimizer_runs"],
+            # NOTE: This typo is intentional. https://docs.etherscan.io/etherscan-v2/common-verification-errors
+            # "There is an easter egg 🐣 on the constructorArguements field spelling, using it as the "correct" spelling may miss your submission!"
             "constructorArguements": constructor_arguments,
             "licenseType": license_code,
         }
@@ -453,8 +490,8 @@ class ContractContainer(_ContractBase):
                     print("Verification pending...")
             else:
                 if not silent:
-                    col = "bright green" if data["message"] == "OK" else "bright red"
-                    print(f"Verification complete. Result: {color(col)}{data['result']}{color}")
+                    color = bright_green if data["message"] == "OK" else bright_red
+                    print(f"Verification complete. Result: {color}{data['result']}{color}")
                 return data["message"] == "OK"
             time.sleep(10)
 
@@ -485,29 +522,32 @@ class ContractContainer(_ContractBase):
 
 
 class ContractConstructor:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
-    def __init__(self, parent: "ContractContainer", name: str) -> None:
-        self._parent = parent
+    def __init__(self, parent: "ContractContainer", name: ContractName) -> None:
+        self._parent: Final = parent
         try:
-            self.abi = next(i for i in parent.abi if i["type"] == "constructor")
-            self.abi["name"] = "constructor"
+            abi = next(i for i in parent.abi if i["type"] == "constructor")
         except Exception:
-            self.abi = {"inputs": [], "name": "constructor", "type": "constructor"}
-        self._name = name
+            abi: ABIConstructor = {"inputs": [], "name": "constructor", "type": "constructor"}
+        else:
+            abi["name"] = "constructor"
+        self.abi: Final = abi
+        self._name: Final = name
 
     @property
     def payable(self) -> bool:
-        if "payable" in self.abi:
-            return self.abi["payable"]
+        abi = self.abi
+        if "payable" in abi:
+            return abi["payable"]
         else:
-            return self.abi["stateMutability"] == "payable"
+            return abi["stateMutability"] == "payable"
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self._name}.constructor({_inputs(self.abi)})'>"
 
     def __call__(
-        self, *args: Tuple, publish_source: bool = False, silent: bool = False
+        self, *args: Any, publish_source: bool = False, silent: bool = False
     ) -> Union["Contract", TransactionReceiptType]:
         """Deploys a contract.
 
@@ -542,13 +582,13 @@ class ContractConstructor:
         )
 
     @staticmethod
-    def _autosuggest(obj: "ContractConstructor") -> List:
+    def _autosuggest(obj: "ContractConstructor") -> List[str]:
         return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
-    def encode_input(self, *args: tuple) -> str:
+    def encode_input(self, *args: Any) -> str:
         bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
-        for marker in re.findall("_{1,}[^_]*_{1,}", bytecode):
+        for marker in regex_findall("_{1,}[^_]*_{1,}", bytecode):
             library = marker.strip("_")
             if not self._parent._project[library]:
                 raise UndeployedLibrary(
@@ -557,11 +597,12 @@ class ContractConstructor:
             address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
-        data = format_input(self.abi, args)
-        types_list = get_type_strings(self.abi["inputs"])
-        return bytecode + eth_abi.encode(types_list, data).hex()
+        abi = self.abi
+        data = format_input(abi, args)
+        types_list = get_type_strings(abi["inputs"])
+        return bytecode + encode_abi(types_list, data).hex()
 
-    def estimate_gas(self, *args: Tuple) -> int:
+    def estimate_gas(self, *args: Any) -> int:
         """
         Estimate the gas cost for the deployment.
 
@@ -601,10 +642,10 @@ class InterfaceContainer:
         # overwritten if a project contains an interface with the same name
         for path in BROWNIE_FOLDER.glob("data/interfaces/*.json"):
             with path.open() as fp:
-                abi = json.load(fp)
+                abi = ujson_load(fp)
             self._add(path.stem, abi)
 
-    def _add(self, name: str, abi: List) -> None:
+    def _add(self, name: ContractName, abi: List[ABIElement]) -> None:
         constructor = InterfaceConstructor(name, abi)
         setattr(self, name, constructor)
 
@@ -614,11 +655,13 @@ class InterfaceConstructor:
     Constructor used to create Contract objects from a project interface.
     """
 
-    def __init__(self, name: str, abi: List) -> None:
-        self._name = name
-        self.abi = abi
-        self.selectors = {
-            build_function_selector(i): i["name"] for i in self.abi if i["type"] == "function"
+    def __init__(self, name: ContractName, abi: List[ABIElement]) -> None:
+        self._name: Final = name
+        self.abi: Final = abi
+        self.selectors: Final[Dict[Selector, FunctionName]] = {
+            build_function_selector(i): FunctionName(i["name"])
+            for i in abi
+            if i["type"] == "function"
         }
 
     def __call__(self, address: str, owner: Optional[AccountsType] = None) -> "Contract":
@@ -648,21 +691,19 @@ class InterfaceConstructor:
 
         fn_selector = hexbytes_to_hexstring(calldata[:4])
 
-        abi = next(
-            (
-                i
-                for i in self.abi
-                if i["type"] == "function" and build_function_selector(i) == fn_selector
-            ),
-            None,
-        )
+        abi: Optional[ABIFunction] = None
+        for _abi in self.abi:
+            if _abi["type"] == "function" and build_function_selector(_abi) == fn_selector:
+                abi = _abi
+                break
+
         if abi is None:
             raise ValueError("Four byte selector does not match the ABI for this contract")
 
         function_sig = build_function_signature(abi)
 
         types_list = get_type_strings(abi["inputs"])
-        result = eth_abi.decode(types_list, calldata[4:])
+        result = decode_abi(types_list, calldata[4:])
         input_args = format_input(abi, result)
 
         return function_sig, input_args
@@ -682,40 +723,46 @@ class _DeployedContractBase(_ContractBase):
     _initialized = False
 
     def __init__(
-        self, address: str, owner: Optional[AccountsType] = None, tx: TransactionReceiptType = None
+        self,
+        address: HexAddress,
+        owner: Optional[AccountsType] = None,
+        tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode = (
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+        self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             self._build.get("deployedBytecode", None)
             or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
-        self._owner = owner
-        self.tx = tx
-        self.address = address
+        self._owner: Final = owner
+        self.tx: Final = tx
+        self.address: Final = address
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
-        fn_names = [i["name"] for i in self.abi if i["type"] == "function"]
-        for abi in [i for i in self.abi if i["type"] == "function"]:
-            name = f"{self._name}.{abi['name']}"
-            sig = build_function_signature(abi)
-            natspec: Dict = {}
-            if self._build.get("natspec"):
-                natspec = self._build["natspec"]["methods"].get(sig, {})
+        fn_abis = [abi for abi in self.abi if abi["type"] == "function"]
+        fn_names = [abi["name"] for abi in fn_abis]
 
-            if fn_names.count(abi["name"]) == 1:
+        contract_name = self._name
+        contract_natspec: dict = self._build.get("natspec") or {}
+        methods_natspec: dict = contract_natspec.get("methods") or {}
+        for abi, abi_name in zip(fn_abis, fn_names):
+            name = f"{contract_name}.{abi_name}"
+            sig = build_function_signature(abi)
+            natspec = methods_natspec.get(sig, {})
+
+            if fn_names.count(abi_name) == 1:
                 fn = _get_method_object(address, abi, name, owner, natspec)
-                self._check_and_set(abi["name"], fn)
+                self._check_and_set(abi_name, fn)
                 continue
 
             # special logic to handle function overloading
-            if not hasattr(self, abi["name"]):
+            if not hasattr(self, abi_name):
                 overloaded = OverloadedMethod(address, name, owner)
-                self._check_and_set(abi["name"], overloaded)
-            getattr(self, abi["name"])._add_fn(abi, natspec)
+                self._check_and_set(abi_name, overloaded)
+            getattr(self, abi_name)._add_fn(abi, natspec)
 
         self._initialized = True
 
@@ -760,7 +807,7 @@ class _DeployedContractBase(_ContractBase):
                 return False
         return super().__eq__(other)
 
-    def __getattribute__(self, name: str) -> Any:
+    def __getattribute__(self, name: str) -> AnyContractMethod:
         if super().__getattribute__("_reverted"):
             raise ContractNotFound("This contract no longer exists.")
         try:
@@ -817,7 +864,7 @@ class _DeployedContractBase(_ContractBase):
             self._project._add_to_deployment_map(self)
             if not path.exists():
                 with path.open("w") as fp:
-                    json.dump(deployment_build, fp)
+                    ujson_dump(deployment_build, fp)
 
     def _delete_deployment(self) -> None:
         if path := self._deployment_path():
@@ -832,7 +879,11 @@ class Contract(_DeployedContractBase):
     """
 
     def __init__(
-        self, address_or_alias: str, *args: Any, owner: Optional[AccountsType] = None, **kwargs: Any
+        self,
+        address_or_alias: HexAddress | ContractName,
+        *args: Any,
+        owner: Optional[AccountsType] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Recreate a `Contract` object from the local database.
@@ -886,9 +937,9 @@ class Contract(_DeployedContractBase):
 
     def _deprecated_init(
         self,
-        name: str,
-        address: Optional[str] = None,
-        abi: Optional[List] = None,
+        name: ContractName,
+        address: Optional[HexAddress] = None,
+        abi: Optional[List[ABIElement]] = None,
         manifest_uri: Optional[str] = None,
         owner: Optional[AccountsType] = None,
     ) -> None:
@@ -905,9 +956,9 @@ class Contract(_DeployedContractBase):
     @classmethod
     def from_abi(
         cls,
-        name: str,
-        address: str,
-        abi: List,
+        name: ContractName,
+        address: HexAddress,
+        abi: List[ABIElement],
         owner: Optional[AccountsType] = None,
         persist: bool = True,
     ) -> "Contract":
@@ -932,7 +983,7 @@ class Contract(_DeployedContractBase):
             "address": address,
             "contractName": name,
             "type": "contract",
-            # removeprefix is used for compatability with both hexbytes<1 and >=1
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
             "deployedBytecode": web3.eth.get_code(address).hex().removeprefix("0x"),
         }
 
@@ -946,7 +997,7 @@ class Contract(_DeployedContractBase):
     @classmethod
     def from_explorer(
         cls,
-        address: str,
+        address: HexAddress,
         as_proxy_for: Optional[str] = None,
         owner: Optional[AccountsType] = None,
         silent: bool = False,
@@ -973,7 +1024,7 @@ class Contract(_DeployedContractBase):
         is_verified = bool(data["result"][0].get("SourceCode"))
 
         if is_verified:
-            abi = json.loads(data["result"][0]["ABI"])
+            abi = ujson_loads(data["result"][0]["ABI"])
             name = data["result"][0]["ContractName"]
         else:
             # if the source is not available, try to fetch only the ABI
@@ -982,7 +1033,7 @@ class Contract(_DeployedContractBase):
             except ValueError as exc:
                 _unverified_addresses.add(address)
                 raise exc
-            abi = json.loads(data_abi["result"].strip())
+            abi = ujson_loads(data_abi["result"].strip())
             name = "UnknownContractName"
             if not silent:
                 warnings.warn(
@@ -1074,7 +1125,7 @@ class Contract(_DeployedContractBase):
         try:
             if source_str.startswith("{{"):
                 # source was verified using compiler standard JSON
-                input_json = json.loads(source_str[1:-1])
+                input_json = ujson_loads(source_str[1:-1])
                 sources = {k: v["content"] for k, v in input_json["sources"].items()}
                 evm_version = input_json["settings"].get("evmVersion", evm_version)
                 remappings = input_json["settings"].get("remappings", [])
@@ -1090,7 +1141,7 @@ class Contract(_DeployedContractBase):
             else:
                 if source_str.startswith("{"):
                     # source was submitted as multiple files
-                    sources = {k: v["content"] for k, v in json.loads(source_str).items()}
+                    sources = {k: v["content"] for k, v in ujson_loads(source_str).items()}
                 else:
                     # source was submitted as a single file
                     if compiler_str.startswith("vyper"):
@@ -1171,7 +1222,9 @@ class Contract(_DeployedContractBase):
 
     @classmethod
     def remove_deployment(
-        cls, address: str = None, alias: str = None
+        cls,
+        address: Optional[ChecksumAddress] = None,
+        alias: Optional[ContractName] = None,
     ) -> Tuple[Optional[Dict], Optional[Dict]]:
         """
         Removes this contract from the internal deployments db
@@ -1223,8 +1276,8 @@ class ProjectContract(_DeployedContractBase):
     def __init__(
         self,
         project: Any,
-        build: Dict,
-        address: str,
+        build: ContractBuildJson,
+        address: ChecksumAddress,
         owner: Optional[AccountsType] = None,
         tx: TransactionReceiptType = None,
     ) -> None:
@@ -1296,7 +1349,7 @@ class ContractEvents(_ContractEvents):
         """
         Creates a listening Coroutine object ending whenever an event matching
         'event_name' occurs. If timeout is superior to zero and no event matching
-        'event_name' has occured, the Coroutine ends when the timeout is reached.
+        'event_name' has occurred, the Coroutine ends when the timeout is reached.
 
         The Coroutine return value is an AttributeDict filled with the following fields :
             - 'event_data' (AttributeDict): The event log receipt that was caught.
@@ -1363,14 +1416,14 @@ class ContractEvents(_ContractEvents):
 
 
 class OverloadedMethod:
-    def __init__(self, address: str, name: str, owner: Optional[AccountsType]):
-        self._address = address
-        self._name = name
-        self._owner = owner
-        self.methods: Dict = {}
-        self.natspec: Dict = {}
+    def __init__(self, address: ChecksumAddress, name: str, owner: Optional[AccountsType]):
+        self._address: Final = address
+        self._name: Final = name
+        self._owner: Final = owner
+        self.methods: Final[Dict[Any, ContractCall | ContractTx]] = {}
+        self.natspec: Final[Dict[str, Any]] = {}
 
-    def _add_fn(self, abi: Dict, natspec: Dict) -> None:
+    def _add_fn(self, abi: ABIFunction, natspec: Dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1391,9 +1444,9 @@ class OverloadedMethod:
             )
         return self.methods[keys[0]]
 
-    def __getitem__(self, key: Union[Tuple, str]) -> "_ContractMethod":
+    def __getitem__(self, key: Tuple[str, ...] | str) -> Union["ContractCall", "ContractTx"]:
         if isinstance(key, str):
-            key = tuple(i.strip() for i in key.split(","))
+            key = (i.strip() for i in key.split(","))
 
         key = tuple(i.replace("256", "") for i in key)
         return self.methods[key]
@@ -1405,7 +1458,7 @@ class OverloadedMethod:
         return len(self.methods)
 
     def __call__(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         fn = self._get_fn_from_args(args)
         kwargs = {"block_identifier": block_identifier, "override": override}
@@ -1413,7 +1466,7 @@ class OverloadedMethod:
         return fn(*args, **kwargs)  # type: ignore
 
     def call(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1442,7 +1495,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         return fn.call(*args, block_identifier=block_identifier, override=override)
 
-    def transact(self, *args: Tuple) -> TransactionReceiptType:
+    def transact(self, *args: Any) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1464,7 +1517,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         return fn.transact(*args)
 
-    def encode_input(self, *args: Tuple) -> Any:
+    def encode_input(self, *args: Any) -> Any:
         """
         Generate encoded ABI data to call the method with the given arguments.
 
@@ -1495,13 +1548,12 @@ class OverloadedMethod:
         Decoded values
         """
         selector = hexbytes_to_hexstring(HexBytes(hexstr)[:4])
-
-        fn = next((i for i in self.methods.values() if i == selector), None)
-        if fn is None:
-            raise ValueError(
-                "Data cannot be decoded using any input signatures of functions of this name"
-            )
-        return fn.decode_input(hexstr)
+        for fn in self.methods.values():
+            if fn == selector:
+                return fn.decode_input(hexstr)
+        raise ValueError(
+            "Data cannot be decoded using any input signatures of functions of this name"
+        )
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1536,23 +1588,23 @@ class OverloadedMethod:
 
 
 class _ContractMethod:
-    _dir_color = "bright magenta"
+    _dir_color: Final = "bright magenta"
 
     def __init__(
         self,
-        address: str,
-        abi: Dict,
+        address: ChecksumAddress,
+        abi: ABIFunction,
         name: str,
         owner: Optional[AccountsType],
-        natspec: Optional[Dict] = None,
+        natspec: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._address = address
-        self._name = name
-        self.abi = abi
-        self._owner = owner
-        self.signature = build_function_selector(abi)
-        self._input_sig = build_function_signature(abi)
-        self.natspec = natspec or {}
+        self._address: Final = address
+        self._name: Final = name
+        self.abi: Final = abi
+        self._owner: Final = owner
+        self.signature: Final = build_function_selector(abi)
+        self._input_sig: Final = build_function_signature(abi)
+        self.natspec: Final[Dict[str, Any]] = natspec or {}
 
     def __repr__(self) -> str:
         pay = "payable " if self.payable else ""
@@ -1560,13 +1612,14 @@ class _ContractMethod:
 
     @property
     def payable(self) -> bool:
-        if "payable" in self.abi:
-            return self.abi["payable"]
+        abi = self.abi
+        if "payable" in abi:
+            return abi["payable"]
         else:
-            return self.abi["stateMutability"] == "payable"
+            return abi["stateMutability"] == "payable"
 
     @staticmethod
-    def _autosuggest(obj: "_ContractMethod") -> List:
+    def _autosuggest(obj: "_ContractMethod") -> List[str]:
         # this is a staticmethod to be compatible with `_call_suggest` and `_transact_suggest`
         return _contract_method_autosuggest(
             obj.abi["inputs"], isinstance(obj, ContractTx), obj.payable
@@ -1576,11 +1629,12 @@ class _ContractMethod:
         """
         Display NatSpec documentation for this method.
         """
-        print(f"{self.abi['name']}({_inputs(self.abi)})")
+        abi = self.abi
+        print(f"{abi['name']}({_inputs(abi)})")
         _print_natspec(self.natspec)
 
     def call(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1621,7 +1675,7 @@ class _ContractMethod:
         except Exception:
             raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
 
-    def transact(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
+    def transact(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1672,11 +1726,12 @@ class _ContractMethod:
         -------
         Decoded values
         """
-        types_list = get_type_strings(self.abi["inputs"])
-        result = eth_abi.decode(types_list, HexBytes(hexstr)[4:])
-        return format_input(self.abi, result)
+        abi = self.abi
+        types_list = get_type_strings(abi["inputs"])
+        result = decode_abi(types_list, HexBytes(hexstr)[4:])
+        return format_input(abi, result)
 
-    def encode_input(self, *args: Tuple) -> str:
+    def encode_input(self, *args: Any) -> str:
         """
         Generate encoded ABI data to call the method with the given arguments.
 
@@ -1690,9 +1745,10 @@ class _ContractMethod:
         str
             Hexstring of encoded ABI data
         """
-        data = format_input(self.abi, args)
-        types_list = get_type_strings(self.abi["inputs"])
-        return self.signature + eth_abi.encode(types_list, data).hex()
+        abi = self.abi
+        data = format_input(abi, args)
+        types_list = get_type_strings(abi["inputs"])
+        return self.signature + encode_abi(types_list, data).hex()
 
     def decode_output(self, hexstr: str) -> Tuple:
         """
@@ -1707,14 +1763,15 @@ class _ContractMethod:
         -------
         Decoded values
         """
-        types_list = get_type_strings(self.abi["outputs"])
-        result = eth_abi.decode(types_list, HexBytes(hexstr))
-        result = format_output(self.abi, result)
+        abi = self.abi
+        types_list = get_type_strings(abi["outputs"])
+        result = decode_abi(types_list, HexBytes(hexstr))
+        result = format_output(abi, result)
         if len(result) == 1:
             result = result[0]
         return result
 
-    def estimate_gas(self, *args: Tuple) -> int:
+    def estimate_gas(self, *args: Any) -> int:
         """
         Estimate the gas cost for a transaction.
 
@@ -1756,7 +1813,7 @@ class ContractTx(_ContractMethod):
         Bytes4 method signature.
     """
 
-    def __call__(self, *args: Tuple, silent: bool = False) -> TransactionReceiptType:
+    def __call__(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
         """
         Broadcast a transaction that calls this contract method.
 
@@ -1788,7 +1845,7 @@ class ContractCall(_ContractMethod):
     """
 
     def __call__(
-        self, *args: Tuple, block_identifier: Union[int, str, bytes] = None, override: Dict = None
+        self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1844,7 +1901,7 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
     if CONFIG.mode == "test" and default_owner is False:
         owner = None
 
-    # seperate contract inputs from tx dict and set default tx values
+    # separate contract inputs from tx dict and set default tx values
     tx = {
         "from": owner,
         "value": 0,
@@ -1872,8 +1929,12 @@ def _get_tx(owner: Optional[AccountsType], args: Tuple) -> Tuple:
 
 
 def _get_method_object(
-    address: str, abi: Dict, name: str, owner: Optional[AccountsType], natspec: Dict
-) -> Union["ContractCall", "ContractTx"]:
+    address: ChecksumAddress,
+    abi: ABIFunction,
+    name: str,
+    owner: Optional[AccountsType],
+    natspec: Dict[str, Any],
+) -> ContractCall | ContractTx:
     if "constant" in abi:
         constant = abi["constant"]
     else:
@@ -1884,16 +1945,22 @@ def _get_method_object(
     return ContractTx(address, abi, name, owner, natspec)
 
 
-def _inputs(abi: Dict) -> str:
-    types_list = get_type_strings(abi["inputs"], {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in abi["inputs"]], types_list)
+_fixed168x10: Final = {"fixed168x10": "decimal"}
+
+
+def _inputs(abi: ABIFunction | ABIConstructor) -> str:
+    abi_inputs = abi["inputs"]
+    types_list = get_type_strings(abi_inputs, _fixed168x10)
     return ", ".join(
-        f"{i[1]}{color('bright blue')}{f' {i[0]}' if i[0] else ''}{color}" for i in params
+        f"{types}{bright_blue}{f' {name}' if name else ''}{color}"
+        for name, types in zip((i["name"] for i in abi_inputs), types_list)
     )
 
 
-def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -> bool:
-    # removeprefix is used for compatability with both hexbytes<1 and >=1
+def _verify_deployed_code(
+    address: ChecksumAddress, expected_bytecode: HexStr, language: Language
+) -> bool:
+    # removeprefix is used for compatibility with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
 
@@ -1905,7 +1972,7 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
         )
 
     if "_" in expected_bytecode:
-        for marker in re.findall("_{1,}[^_]*_{1,}", expected_bytecode):
+        for marker in regex_findall("_{1,}[^_]*_{1,}", expected_bytecode):
             idx = expected_bytecode.index(marker)
             actual_bytecode = actual_bytecode[:idx] + actual_bytecode[idx + 40 :]
             expected_bytecode = expected_bytecode[:idx] + expected_bytecode[idx + 40 :]
@@ -1925,15 +1992,16 @@ def _verify_deployed_code(address: str, expected_bytecode: str, language: str) -
     return actual_bytecode == expected_bytecode
 
 
-def _print_natspec(natspec: Dict) -> None:
-    wrapper = TextWrapper(initial_indent=f"  {color('bright magenta')}")
-    for key in [i for i in ("title", "notice", "author", "details") if i in natspec]:
-        wrapper.subsequent_indent = " " * (len(key) + 4)
-        print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
+def _print_natspec(natspec: Dict[str, Any]) -> None:
+    wrapper = TextWrapper(initial_indent=f"  {bright_magenta}")
+    for key in ("title", "notice", "author", "details"):
+        if key in natspec:
+            wrapper.subsequent_indent = " " * (len(key) + 4)
+            print(wrapper.fill(f"@{key} {color}{natspec[key]}"))
 
     for key, value in natspec.get("params", {}).items():
         wrapper.subsequent_indent = " " * 9
-        print(wrapper.fill(f"@param {color('bright blue')}{key}{color} {value}"))
+        print(wrapper.fill(f"@param {bright_blue}{key}{color} {value}"))
 
     if "return" in natspec:
         wrapper.subsequent_indent = " " * 10
@@ -1946,11 +2014,11 @@ def _print_natspec(natspec: Dict) -> None:
     print()
 
 
-def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
+def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) -> Dict[str, Any]:
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
-    # removeprefix is used for compatability with both hexbytes<1 and >=1
+    # removeprefix is used for compatibility with both hexbytes<1 and >=1
     code = web3.eth.get_code(address).hex().removeprefix("0x")
     # EIP-1167: Minimal Proxy Contract
     if code[:20] == "363d3d373d3d3d363d73" and code[60:] == "5af43d82803e903d91602b57fd5bf3":
@@ -1969,7 +2037,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
     ):
         address = _resolve_address(code[120:160])
 
-    params: Dict = {
+    params: Dict[str, Any] = {
         "module": "contract",
         "action": action,
         "address": address,
@@ -1986,7 +2054,7 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
             BrownieEnvironmentWarning,
         )
     if not silent:
-        print(f"Fetching source of {color('bright blue')}{address}{color} from Etherscan...")
+        print(f"Fetching source of {bright_blue}{address}{color} from Etherscan...")
 
     response = requests.get(
         "https://api.etherscan.io/v2/api", params=params, headers=REQUEST_HEADERS
@@ -2005,14 +2073,14 @@ def _fetch_from_explorer(address: str, action: str, silent: bool) -> Dict:
 # console auto-completion logic
 
 
-def _call_autosuggest(method: Any) -> List:
+def _call_autosuggest(method: ContractCall | ContractTx) -> List[str]:
     # since methods are not unique for each object, we use `__reduce__`
     # to locate the specific object so we can access the correct ABI
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], False, False)
 
 
-def _transact_autosuggest(method: Any) -> List:
+def _transact_autosuggest(method: ContractCall | ContractTx) -> List[str]:
     method = method.__reduce__()[1][0]
     return _contract_method_autosuggest(method.abi["inputs"], True, method.payable)
 
@@ -2027,17 +2095,18 @@ _ContractMethod.estimate_gas.__dict__["_autosuggest"] = _transact_autosuggest
 _ContractMethod.transact.__dict__["_autosuggest"] = _transact_autosuggest
 
 
-def _contract_method_autosuggest(args: List, is_transaction: bool, is_payable: bool) -> List:
-    types_list = get_type_strings(args, {"fixed168x10": "decimal"})
-    params = zip([i["name"] for i in args], types_list)
-
-    suggestions = (f" {i[1]}{f' {i[0]}' if i[0] else ''}" for i in params)
-    if not is_transaction:
-        return list(suggestions)
-    elif is_payable:
-        return [*suggestions, " {'from': Account", " 'value': Wei}"]
-    else:
-        return [*suggestions, " {'from': Account}"]
+def _contract_method_autosuggest(
+    args: List[Dict[str, Any]], is_transaction: bool, is_payable: bool
+) -> List[str]:
+    types_list = get_type_strings(args, _fixed168x10)
+    names = (i["name"] for i in args)
+    suggestions = [f" {typ}{f' {name}' if name else ''}" for name, typ in zip(names, types_list)]
+    if is_transaction:
+        if is_payable:
+            suggestions.append(" {'from': Account", " 'value': Wei}")
+        else:
+            suggestions.append(" {'from': Account}")
+    return suggestions
 
 
 def _comment_slicer(match: Match) -> str:

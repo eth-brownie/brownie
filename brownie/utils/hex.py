@@ -1,4 +1,4 @@
-"""This file contains utility funtions for converting bytes values to hexstrings.
+"""This file contains utility functions for converting bytes values to hexstrings.
 
 Since this code is frequently accessed, instead of adding runtime checks within
 the function bodies, we opted to microoptimize by defining functions specific to
@@ -9,7 +9,8 @@ from importlib.metadata import version
 from typing import Final
 
 from eth_typing import HexStr
-from hexbytes import HexBytes
+
+from brownie._c_constants import HexBytes
 
 HEXBYTES_LT_1_0_0: Final = tuple(int(i) for i in version("hexbytes").split(".")) < (
     1,

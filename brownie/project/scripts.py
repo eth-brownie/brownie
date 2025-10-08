@@ -1,28 +1,49 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="arg-type,union-attr"
 
-import ast
-import importlib
+import pathlib
 import sys
 import warnings
-from hashlib import sha1
+from ast import FunctionDef, Import, ImportFrom, dump, parse
+from importlib import reload
 from importlib.machinery import SourceFileLoader
-from pathlib import Path, WindowsPath
+from importlib.util import find_spec
+from pathlib import WindowsPath
 from types import FunctionType, ModuleType
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
 
+from brownie._c_constants import Path, import_module, sha1
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
 from brownie.utils import color
+from brownie.utils._color import bright_blue, bright_cyan
 
-_import_cache: Dict = {}
+# C Constants
+
+_FunctionDef: Final = FunctionDef
+_Import: Final = Import
+_ImportFrom: Final = ImportFrom
+
+_FunctionType: Final = FunctionType
+
+_parse: Final = parse
+_dump: Final = dump
+
+_import_module: Final = import_module
+_find_spec: Final = find_spec
+_reload: Final = reload
+
+_DOT_PATH: Final = Path(".")
+
+_import_cache: Final[Dict[str, ModuleType]] = {}
 
 
 def run(
     script_path: str,
     method_name: str = "main",
-    args: Optional[Tuple] = None,
-    kwargs: Optional[Dict] = None,
-    project: Any = None,
+    args: Optional[Sequence[Any]] = None,
+    kwargs: Optional[Dict[str, Any]] = None,
+    project: Optional[Project] = None,
     _include_frame: bool = False,
 ) -> Any:
     """Loads a project script and runs a method in it.
@@ -49,27 +70,30 @@ def run(
     # modify sys.path to ensure script can be imported
     if isinstance(script, WindowsPath):
         # far from elegant but just works
-        root_path = str(Path(".").resolve())
+        root_path = str(_DOT_PATH.resolve())
         script = script.relative_to(Path("..").resolve())
     else:
-        root_path = Path(".").resolve().root
+        root_path = _DOT_PATH.resolve().root
 
     sys.path.insert(0, root_path)
 
     try:
         module = _import_from_path(script)
-        name = module.__name__
+        module_name = module.__name__
 
         func = getattr(module, method_name, None)
-        if not isinstance(func, FunctionType):
-            raise AttributeError(f"Module '{name}' has no method '{method_name}'")
+        if not isinstance(func, _FunctionType):
+            raise AttributeError(f"Module '{module_name}' has no method '{method_name}'")
+
+        file = module.__file__
+        absolute_path = Path(file)
         try:
-            module_path = Path(module.__file__).relative_to(Path(".").absolute())
+            module_path = absolute_path.relative_to(_DOT_PATH.absolute())
         except ValueError:
-            module_path = Path(module.__file__)
+            module_path = absolute_path
         print(
-            f"\nRunning '{color('bright blue')}{module_path}{color}::"
-            f"{color('bright cyan')}{method_name}{color}'..."
+            f"\nRunning '{bright_blue}{module_path}{color}::"
+            f"{bright_cyan}{method_name}{color}'..."
         )
 
         if not _include_frame:
@@ -81,27 +105,28 @@ def run(
 
         # first, we extract the source code from the function and parse it to an AST
         # we generate the AST from the entire module to preserve line numbers
-        assert isinstance(module.__loader__, SourceFileLoader)
-        source = module.__loader__.get_source(module.__name__) or ""
-        func_ast = ast.parse(source)
+        loader = module.__loader__
+        assert isinstance(loader, SourceFileLoader)
+        source = loader.get_source(module_name) or ""
+        func_ast = _parse(source)
 
         # use the last function with the correct name, consistent with how python handles
         func_nodes: List = [
-            i for i in func_ast.body if isinstance(i, ast.FunctionDef) and i.name == method_name
+            i for i in func_ast.body if isinstance(i, _FunctionDef) and i.name == method_name
         ]
         func_ast.body = func_nodes[-1:]
 
         # next, we insert some new logic into the beginning of the function. this imports
         # the sys module and assigns the current frame to a global var `__brownie_frame`
         injected_source = "import sys\nglobal __brownie_frame\n__brownie_frame = sys._getframe()"
-        injected_ast = ast.parse(injected_source)
-        func_ast.body[0].body = injected_ast.body + func_ast.body[0].body  # type: ignore
+        injected_ast = _parse(injected_source)
+        func_ast.body[0].body = injected_ast.body + func_ast.body[0].body  # type: ignore [attr-defined]
 
         # now we compile the AST into a code object, using the module's `__dict__` as our globals
         # so that we have access to all the required imports and other objects
         f_locals: Dict = module.__dict__.copy()
         del f_locals[method_name]
-        func_code = compile(func_ast, module.__file__, "exec")
+        func_code = compile(func_ast, file, "exec")
         exec(func_code, f_locals)
 
         # finally, we execute our new function from inside the copied globals dict. the frame
@@ -117,7 +142,7 @@ def run(
             project._remove_from_main_namespace()
 
 
-def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
+def _get_path(path_str: str) -> Tuple[pathlib.Path, Optional[Project]]:
     # Returns path to a python module
     path = Path(path_str).with_suffix(".py")
 
@@ -128,10 +153,12 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
 
     if not path.is_absolute():
         for project in get_loaded_projects():
-            if path.parts[:1] == (project._structure["scripts"],):
+            project_structure: dict = project._structure
+            project_scripts = project_structure["scripts"]
+            if path.parts[:1] == (project_scripts,):
                 script_path = project._path.joinpath(path)
             else:
-                script_path = project._path.joinpath(project._structure["scripts"]).joinpath(path)
+                script_path = project._path.joinpath(project_scripts).joinpath(path)
             if script_path.exists():
                 return script_path.resolve(), project
         raise FileNotFoundError(f"Cannot find {path_str}")
@@ -139,37 +166,40 @@ def _get_path(path_str: str) -> Tuple[Path, Optional[Project]]:
     if not path.exists():
         raise FileNotFoundError(f"Cannot find {path_str}")
 
-    try:
-        project = next(i for i in get_loaded_projects() if path_str.startswith(i._path.as_posix()))
-    except StopIteration:
-        raise ProjectNotFound(f"{path_str} is not part of an active project")
+    for project in get_loaded_projects():
+        if path_str.startswith(project._path.as_posix()):
+            return path.resolve(), project
 
-    return path.resolve(), project
+    raise ProjectNotFound(f"{path_str} is not part of an active project")
 
 
-def _import_from_path(path: Path) -> ModuleType:
+def _import_from_path(path: pathlib.Path) -> ModuleType:
     # Imports a module from the given path
-    import_str = ".".join(path.parts[1:-1] + (path.stem,))
+    import_str = f"{'.'.join(path.parts[1:-1])}.{path.stem}"
     if import_str in _import_cache:
-        importlib.reload(_import_cache[import_str])
+        _reload(_import_cache[import_str])
+        return _import_cache[import_str]
     else:
-        _import_cache[import_str] = importlib.import_module(import_str)
-    return _import_cache[import_str]
+        module = _import_module(import_str)
+        _import_cache[import_str] = module
+        return module
 
 
-def _get_ast_hash(path: str) -> str:
+def _get_ast_hash(path: str | pathlib.Path) -> str:
     # Generates a hash based on the AST of a script.
     with Path(path).open() as fp:
-        ast_list = [ast.parse(fp.read(), path)]
+        ast_list = [_parse(fp.read(), path)]
     base_path = str(check_for_project(path))
 
-    for obj in [i for i in ast_list[0].body if isinstance(i, (ast.Import, ast.ImportFrom))]:
-        if isinstance(obj, ast.Import):
-            name = obj.names[0].name  # type: ignore
+    for obj in ast_list[0].body:
+        if isinstance(obj, _Import):
+            name = obj.names[0].name
+        elif isinstance(obj, _ImportFrom):
+            name = obj.module  # type: ignore [assignment]
         else:
-            name = obj.module  # type: ignore
+            continue
         try:
-            origin = importlib.util.find_spec(name).origin  # type: ignore
+            origin = _find_spec(name).origin
         except Exception:
             warnings.warn(
                 f"{Path(path).name}, unable to determine import spec for '{name}',"
@@ -179,7 +209,7 @@ def _get_ast_hash(path: str) -> str:
             continue
         if origin is not None and base_path in origin:
             with open(origin) as fp:
-                ast_list.append(ast.parse(fp.read(), origin))
+                ast_list.append(_parse(fp.read(), origin))
 
-    dump = "\n".join(ast.dump(i) for i in ast_list)
+    dump = "\n".join(_dump(i) for i in ast_list)
     return sha1(dump.encode()).hexdigest()

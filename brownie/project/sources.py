@@ -1,33 +1,43 @@
 #!/usr/bin/python3
 
-import re
 import textwrap
-from hashlib import sha1
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Final, List, Optional, Set, Tuple, final
 
-from semantic_version import NpmSpec
+import semantic_version
+from eth_typing import HexStr
 from vvm.utils.convert import to_vyper_version
 
+from brownie._c_constants import (
+    Path,
+    NpmSpec,
+    regex_findall,
+    regex_finditer,
+    regex_sub,
+    sha1,
+)
 from brownie.exceptions import NamespaceCollision, PragmaError
+from brownie.typing import ContractName, Offset
 from brownie.utils import color
+from brownie.utils._color import dark_white
 
 
+@final
 class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, contract_sources: Dict, interface_sources: Dict) -> None:
-        self._contract_sources: Dict = {}
-        self._contracts: Dict = {}
-        self._interface_sources: Dict = {}
-        self._interfaces: Dict = {}
+    def __init__(self, contract_sources: Dict[str, str], interface_sources: Dict[str, str]) -> None:
+        self._contract_sources: Final[Dict[str, str]] = {}
+        self._contracts: Final[Dict[ContractName, str]] = {}
+        self._interface_sources: Final[Dict[str, str]] = {}
+        self._interfaces: Final[Dict[ContractName, str]] = {}
 
-        contracts: Dict = {}
-        collisions: Dict = {}
+        contracts: Dict[ContractName, Tuple[str, str]] = {}
+        collisions: Dict[ContractName, Set[str]] = {}
+        contract_names: List[Tuple[ContractName, str]]
         for path, source in contract_sources.items():
             self._contract_sources[path] = source
             if Path(path).suffix != ".sol":
-                contract_names = [(Path(path).stem, "contract")]
+                contract_names = [(Path(path).stem, "contract")]  # type: ignore [list-item]
             else:
                 contract_names = get_contract_names(source)
             for name, type_ in contract_names:
@@ -39,13 +49,15 @@ class Sources:
                         collisions.setdefault(name, set()).update([path, contracts[name][0]])
                 contracts[name] = (path, type_)
 
-        self._contracts = {k: v[0] for k, v in contracts.items()}
+        for k, v in contracts.items():
+            self._contracts[k] = v[0]
 
+        interface_names: List[Tuple[ContractName, str]]
         for path, source in interface_sources.items():
             self._interface_sources[path] = source
 
             if Path(path).suffix != ".sol":
-                interface_names = [(Path(path).stem, "interface")]
+                interface_names = [(Path(path).stem, "interface")]  # type: ignore [list-item]
             else:
                 interface_names = get_contract_names(source)
             for name, type_ in interface_names:
@@ -59,7 +71,7 @@ class Sources:
                 + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
             )
 
-    def get(self, key: str) -> str:
+    def get(self, key: ContractName | str) -> str:
         """
         Return the source code file for the given name.
 
@@ -70,7 +82,7 @@ class Sources:
         key = str(key)
 
         if key in self._contracts:
-            return self._contract_sources[self._contracts[key]]
+            return self._contract_sources[self._contracts[key]]  # type: ignore [index]
         if key in self._contract_sources:
             return self._contract_sources[key]
         if key in self._interface_sources:
@@ -82,30 +94,30 @@ class Sources:
             self._contract_sources[key] = source
             return source
 
-    def get_path_list(self) -> List:
+    def get_path_list(self) -> List[str]:
         """Returns a sorted list of source code file paths for the active project."""
         return sorted(self._contract_sources.keys())
 
-    def get_contract_list(self) -> List:
+    def get_contract_list(self) -> List[ContractName]:
         """Returns a sorted list of contract names for the active project."""
         return sorted(self._contracts.keys())
 
-    def get_interface_list(self) -> List:
+    def get_interface_list(self) -> List[ContractName]:
         """Returns a sorted list of interface names for the active project."""
         return sorted(self._interfaces.keys())
 
-    def get_interface_hashes(self) -> Dict:
+    def get_interface_hashes(self) -> Dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
         return {
-            k: sha1(self._interface_sources[v].encode()).hexdigest()
+            k: sha1(self._interface_sources[v].encode()).hexdigest()  # type: ignore [misc]
             for k, v in self._interfaces.items()
         }
 
-    def get_interface_sources(self) -> Dict:
+    def get_interface_sources(self) -> Dict[str, str]:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
-    def get_source_path(self, contract_name: str, is_interface: bool = False) -> str:
+    def get_source_path(self, contract_name: ContractName, is_interface: bool = False) -> str:
         """Returns the path to the source file where a contract is located."""
         if contract_name in self._contracts and not is_interface:
             return self._contracts[contract_name]
@@ -114,7 +126,7 @@ class Sources:
         raise KeyError(contract_name)
 
 
-def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
+def is_inside_offset(inner: Offset, outer: Offset) -> bool:
     """Checks if the first offset is contained in the second offset
 
     Args:
@@ -125,7 +137,9 @@ def is_inside_offset(inner: Tuple, outer: Tuple) -> bool:
     return outer[0] <= inner[0] <= inner[1] <= outer[1]
 
 
-def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
+def highlight_source(
+    source: str, offset: Offset, pad: int = 3
+) -> Tuple[Optional[str], Optional[Tuple[int, int]]]:
     """Returns a highlighted section of source code.
 
     Args:
@@ -138,9 +152,10 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
         int: Line number that highlight begins on"""
 
     newlines = [i for i in range(len(source)) if source[i] == "\n"]
+    start_offset, stop_offset = offset
     try:
-        pad_start = newlines.index(next(i for i in newlines if i >= offset[0]))
-        pad_stop = newlines.index(next(i for i in newlines if i >= offset[1]))
+        pad_start = newlines.index(next(i for i in newlines if i >= start_offset))
+        pad_stop = newlines.index(next(i for i in newlines if i >= stop_offset))
     except StopIteration:
         return None, None
 
@@ -148,30 +163,27 @@ def highlight_source(source: str, offset: Tuple, pad: int = 3) -> Tuple:
     pad_start = newlines[max(pad_start - (pad + 1), 0)]
     pad_stop = newlines[min(pad_stop + pad, len(newlines) - 1)]
 
-    final = textwrap.indent(
-        f"{color('dark white')}"
-        + textwrap.dedent(
-            f"{source[pad_start:offset[0]]}{color}"
-            f"{source[offset[0]:offset[1]]}{color('dark white')}{source[offset[1]:pad_stop]}{color}"
-        ),
-        "    ",
+    dedented = textwrap.dedent(
+        f"{source[pad_start:start_offset]}{color}"
+        f"{source[start_offset:stop_offset]}{dark_white}{source[stop_offset:pad_stop]}{color}"
     )
+    final = textwrap.indent(f"{dark_white}{dedented}", "    ")
 
-    count = source[pad_start : offset[0]].count("\n")
-    final = final.replace("\n ", f"\n{color('dark white')} ", count)
-    count = source[offset[0] : offset[1]].count("\n")
+    count = source[pad_start:start_offset].count("\n")
+    final = final.replace("\n ", f"\n{dark_white} ", count)
+    count = source[start_offset:stop_offset].count("\n")
     final = final.replace("\n ", f"\n{color} ", count)
-    count = source[offset[1] : pad_stop].count("\n")
-    final = final.replace("\n ", f"\n{color('dark white')} ", count)
+    count = source[stop_offset:pad_stop].count("\n")
+    final = final.replace("\n ", f"\n{dark_white} ", count)
 
     # prepend with a newline if the offset starts on the first line
-    if offset[0] < newlines[1]:
+    if start_offset < newlines[1]:
         final = f"\n{final}"
 
     return final, ln
 
 
-def get_contract_names(full_source: str) -> List:
+def get_contract_names(full_source: str) -> List[Tuple[ContractName, str]]:
     """
     Get contract names from Solidity source code.
 
@@ -182,15 +194,15 @@ def get_contract_names(full_source: str) -> List:
     """
     # remove comments in case they contain code snippets that could fail the regex
     comment_regex = r"(?:\s*\/\/[^\n]*)|(?:\/\*[\s\S]*?\*\/)"
-    uncommented_source = re.sub(comment_regex, "", full_source)
-    contracts = re.findall(
+    uncommented_source = regex_sub(comment_regex, "", full_source)
+    contracts = regex_findall(
         r"((?:abstract contract|contract|library|interface)\s[^;{]*{[\s\S]*?})\s*(?=(?:abstract contract|contract|library|interface|pragma|struct|enum)\s|$)",  # NOQA: E501
         uncommented_source,
     )
 
     contract_names = []
     for source in contracts:
-        if matches := re.findall(
+        if matches := regex_findall(
             r"(abstract contract|contract|library|interface)\s+(\S*)\s*(?:is\s+([\s\S]*?)|)(?:{)",
             source,
         ):
@@ -199,7 +211,7 @@ def get_contract_names(full_source: str) -> List:
     return contract_names
 
 
-def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+def get_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version.NpmSpec:
     """
     Extracts pragma information from Solidity source code.
 
@@ -210,7 +222,7 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
 
-    pragma_match = next(re.finditer(r"pragma +solidity([^;]*);", source), None)
+    pragma_match = next(regex_finditer(r"pragma +solidity([^;]*);", source), None)
     if pragma_match is not None:
         pragma_string = pragma_match.groups()[0]
         pragma_string = " ".join(pragma_string.split())
@@ -220,7 +232,7 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     raise PragmaError("String does not contain a version pragma")
 
 
-def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
+def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version.NpmSpec:
     """
     Extracts pragma information from Vyper source code.
 
@@ -231,7 +243,7 @@ def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> NpmSpec:
     Returns: NpmSpec object
     """
     pragma_match = next(
-        re.finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
+        regex_finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
     )
     if pragma_match is None:
         if path:

@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 
-import json
 import tkinter as tk
 from tkinter import ttk
 
-from eth_utils.toolz import keymap
-
+from brownie._c_constants import ujson_load
 from brownie.project import get_loaded_projects
 
 from .console import Console, ConsoleButton
@@ -40,7 +38,7 @@ class Root(tk.Tk):
         for path in self.active_project._path.glob("reports/*.json"):
             try:
                 with path.open() as fp:
-                    self.reports[path.stem] = json.load(fp)
+                    self.reports[path.stem] = ujson_load(fp)
             except Exception:
                 continue
 
@@ -72,7 +70,7 @@ class Root(tk.Tk):
         self.main.note.set_active(build_json["sourcePath"])
         pcMap = build_json["pcMap"]
         self.main.oplist.set_opcodes(pcMap)
-        self.pcMap = keymap(str, pcMap)
+        self.pcMap = {str(k): pcMap[k] for k in pcMap}
         for value in (v for v in pcMap.values() if "path" in v):
             value_path = value["path"]
             if value_path not in pathMap:

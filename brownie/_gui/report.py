@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 
 import warnings
-from pathlib import Path
+
+from brownie._c_constants import Path
 
 from .bases import SelectBox
 

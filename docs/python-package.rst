@@ -58,7 +58,7 @@ Importing with a wildcard will retrieve every available :func:`ContractContainer
 Loading Project Config Settings
 ===============================
 
-When accessing Brownie via the regular Python interpreter, you must explicitely load configuration settings for a project:
+When accessing Brownie via the regular Python interpreter, you must explicitly load configuration settings for a project:
 
 .. code-block:: python
 
