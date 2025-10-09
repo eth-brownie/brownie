@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - compile half of the libarary to C with mypyc ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
 - optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
 - implement faster-eth-utils ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
+- support eth-utils v5 ([#1872](https://github.com/eth-brownie/brownie/pull/1872))
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
