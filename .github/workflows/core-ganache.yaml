@@ -1,5 +1,32 @@
 name: Core Ganache
-on: ["push", "pull_request"]
+on:
+  push:
+    paths:
+      - '**.py'
+      - '.github/workflows/core-ganache.yaml'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'requirements.in'
+      - 'requirements.txt'
+      - 'requirements-windows.in'
+      - 'requirements-windows.txt'
+      - 'requirements-dev.in'
+      - 'requirements-dev.txt'
+  pull_request:
+    paths:
+      - '**.py'
+      - '.github/workflows/core-ganache.yaml'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'requirements.in'
+      - 'requirements.txt'
+      - 'requirements-windows.in'
+      - 'requirements-windows.txt'
+      - 'requirements-dev.in'
+      - 'requirements-dev.txt'
+  schedule:
+    - cron: '0 6 * * *'  # Daily 0600 UTC
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
