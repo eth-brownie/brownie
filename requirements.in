@@ -17,7 +17,8 @@ py-solc-x>=1.1.0,<2
 py>=1.5.0,<2
 pygments-lexer-solidity<1
 pygments<3
-pytest-xdist<2
+# temporarily disabled until web3 v7 support
+# pytest-xdist<2
 pytest<7
 python-dotenv>=0.16.0,<0.17.0
 pyyaml>=6,<7
