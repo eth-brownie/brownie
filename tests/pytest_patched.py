@@ -9,7 +9,7 @@ to load any plugins.
 """
 
 import sys
-from typing import NewType
+from typing import Any, Dict, NewType
 
 import eth_typing
 import pytest
@@ -17,6 +17,7 @@ import pytest
 # Patch eth_typing (if the currently installed version is missing ContractName)
 if not hasattr(eth_typing, "ContractName"):
     eth_typing.ContractName = NewType("ContractName", str)
+    eth_typing.Manifest = NewType("Manifest", Dict[str, Any])
 
 # Now run pytest, forwarding all CLI arguments
 sys.exit(pytest.main(sys.argv[1:]))
