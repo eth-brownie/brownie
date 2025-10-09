@@ -8,6 +8,7 @@ We must be sure it is patched before pytest starts up and attempts
 to load any plugins.
 """
 import sys
+from typing import NewType
 
 import eth_typing
 import pytest
