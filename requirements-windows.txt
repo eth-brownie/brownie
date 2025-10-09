@@ -8,7 +8,7 @@ aiohappyeyeballs==2.6.1
     # via
     #   -r requirements.txt
     #   aiohttp
-aiohttp==3.12.15
+aiohttp==3.13.0
     # via
     #   -r requirements.txt
     #   web3
@@ -24,7 +24,7 @@ asttokens==3.0.0
     # via
     #   -r requirements.txt
     #   vyper
-attrs==25.3.0
+attrs==25.4.0
     # via
     #   -r requirements.txt
     #   aiohttp
@@ -32,7 +32,7 @@ attrs==25.3.0
     #   jsonschema
     #   pytest
     #   referencing
-bitarray==3.7.1
+bitarray==3.7.2
     # via
     #   -r requirements.txt
     #   eth-account
@@ -42,11 +42,12 @@ cbor2==5.7.0
     # via
     #   -r requirements.txt
     #   vyper
-cchecksum==0.3.1
+cchecksum==0.3.3
     # via
     #   -r requirements.txt
     #   eth-event
     #   faster-eth-abi
+    #   faster-eth-utils
 certifi==2025.10.5
     # via
     #   -r requirements.txt
@@ -109,7 +110,7 @@ eth-rlp==2.2.0
     # via
     #   -r requirements.txt
     #   eth-account
-eth-typing==4.4.0
+eth-typing==5.2.1
     # via
     #   -r requirements.txt
     #   cchecksum
@@ -120,7 +121,7 @@ eth-typing==4.4.0
     #   faster-eth-abi
     #   faster-eth-utils
     #   web3
-eth-utils==4.1.1
+eth-utils==5.3.1
     # via
     #   -r requirements.txt
     #   eip712
@@ -139,7 +140,7 @@ faster-eth-abi==5.2.10
     # via
     #   -r requirements.txt
     #   eth-event
-faster-eth-utils==4.1.7
+faster-eth-utils==5.3.9
     # via
     #   -r requirements.txt
     #   faster-eth-abi
@@ -147,7 +148,7 @@ faster-hexbytes==1.3.2
     # via
     #   -r requirements.txt
     #   eth-event
-frozenlist==1.7.0
+frozenlist==1.8.0
     # via
     #   -r requirements.txt
     #   aiohttp
@@ -193,7 +194,7 @@ lru-dict==1.3.0
     # via
     #   -r requirements.txt
     #   web3
-multidict==6.6.4
+multidict==6.7.0
     # via
     #   -r requirements.txt
     #   aiohttp
@@ -220,7 +221,7 @@ pathspec==0.12.1
     # via
     #   -r requirements.txt
     #   black
-platformdirs==4.4.0
+platformdirs==4.5.0
     # via
     #   -r requirements.txt
     #   black
@@ -230,7 +231,7 @@ pluggy==1.6.0
     #   pytest
 prompt-toolkit==3.0.52
     # via -r requirements.txt
-propcache==0.4.0
+propcache==0.4.1
     # via
     #   -r requirements.txt
     #   aiohttp
@@ -256,11 +257,13 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.11.10
+pydantic==2.12.0
     # via
     #   -r requirements.txt
     #   eth-account
-pydantic-core==2.33.2
+    #   eth-utils
+    #   faster-eth-utils
+pydantic-core==2.41.1
     # via
     #   -r requirements.txt
     #   pydantic
@@ -382,7 +385,7 @@ wheel==0.45.1
     #   vyper
 wrapt==1.17.3
     # via -r requirements.txt
-yarl==1.21.0
+yarl==1.22.0
     # via
     #   -r requirements.txt
     #   aiohttp

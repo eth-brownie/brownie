@@ -6,7 +6,7 @@
 #
 alabaster==1.0.0
     # via sphinx
-attrs==25.3.0
+attrs==25.4.0
     # via
     #   -c requirements.txt
     #   pytest
@@ -58,7 +58,7 @@ docutils==0.21.2
     #   sphinx-rtd-theme
 eth-retry==0.3.5
     # via -r requirements-dev.in
-filelock==3.19.1
+filelock==3.20.0
     # via
     #   tox
     #   virtualenv
@@ -106,7 +106,7 @@ mypy-extensions==1.1.0
     # via
     #   -c requirements.txt
     #   black
-nh3==0.3.0
+nh3==0.3.1
     # via readme-renderer
 packaging==23.2
     # via
@@ -126,7 +126,7 @@ pip-tools==7.5.1
     # via -r requirements-dev.in
 pkginfo==1.12.1.2
     # via twine
-platformdirs==4.4.0
+platformdirs==4.5.0
     # via
     #   -c requirements.txt
     #   black
@@ -236,7 +236,7 @@ urllib3==2.5.0
     #   -c requirements.txt
     #   requests
     #   twine
-virtualenv==20.34.0
+virtualenv==20.35.0
     # via tox
 wheel==0.45.1
     # via
