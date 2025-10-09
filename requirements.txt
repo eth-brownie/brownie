@@ -97,6 +97,8 @@ eth-utils==5.3.1
     #   eth-rlp
     #   rlp
     #   web3
+execnet==2.1.1
+    # via pytest-xdist
 faster-eth-abi==5.2.11
     # via
     #   -r requirements.in
@@ -179,6 +181,7 @@ py==1.11.0
     # via
     #   -r requirements.in
     #   pytest
+    #   pytest-forked
 py-solc-ast==1.2.10
     # via -r requirements.in
 py-solc-x==1.1.1
@@ -202,6 +205,13 @@ pygments==2.19.2
 pygments-lexer-solidity==0.7.0
     # via -r requirements.in
 pytest==6.2.5
+    # via
+    #   -r requirements.in
+    #   pytest-forked
+    #   pytest-xdist
+pytest-forked==1.6.0
+    # via pytest-xdist
+pytest-xdist==1.34.0
     # via -r requirements.in
 python-dotenv==0.16.0
     # via -r requirements.in
@@ -238,6 +248,8 @@ semantic-version==2.10.0
     # via
     #   -r requirements.in
     #   py-solc-x
+six==1.17.0
+    # via pytest-xdist
 sortedcontainers==2.4.0
     # via hypothesis
 toml==0.10.2
