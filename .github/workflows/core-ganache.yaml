@@ -12,6 +12,7 @@ on:
       - 'requirements-windows.txt'
       - 'requirements-dev.in'
       - 'requirements-dev.txt'
+      - 'tox.ini'
   pull_request:
     paths:
       - '**.py'
@@ -24,6 +25,7 @@ on:
       - 'requirements-windows.txt'
       - 'requirements-dev.in'
       - 'requirements-dev.txt'
+      - 'tox.ini'
   schedule:
     - cron: '0 6 * * *'  # Daily 0600 UTC
   workflow_dispatch:
