@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List, Optional, Sequence, final
 
-from web3 import Web3
-from web3.types import RPCEndpoint
+from faster_web3 import Web3
+from faster_web3.types import RPCEndpoint
 
 from brownie._c_constants import regex_findall
 from brownie.network.middlewares import BrownieMiddlewareABC
