@@ -1,19 +1,23 @@
 #!/usr/bin/python3
 
+import pathlib
 import sys
-from pathlib import Path
-from typing import Optional
+from typing import Optional, Type
 
 import pytest
 
 from brownie import project
+from brownie._c_constants import Path
 from brownie._config import CONFIG, _modify_hypothesis_settings
 from brownie.test.fixtures import PytestBrownieFixtures
 from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, PytestBrownieXdistRunner
 from brownie.utils import color
 
 
-def _get_project_path() -> Optional[Path]:
+PytestBrownieType = Type[PytestBrownieMaster | PytestBrownieXdistRunner | PytestBrownieRunner]
+
+
+def _get_project_path() -> Optional[pathlib.Path]:
     key = next((i for i in sys.argv if i.startswith("--brownie-project")), "")
     if key == "--brownie-project":
         idx = sys.argv.index(key)
@@ -101,7 +105,7 @@ def pytest_configure(config):
 
     if not config.getoption("showinternal"):
         # do not include brownie internals in tracebacks
-        base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
+        base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()  # type: ignore [arg-type]
         for module in sys.modules.values():
             if getattr(module, "__file__", None) and module.__file__.startswith(base_path):  # type: ignore [union-attr]
                 module.__tracebackhide__ = True  # type: ignore [attr-defined]
@@ -115,6 +119,7 @@ def pytest_configure(config):
     if config.option.verbose:
         _modify_hypothesis_settings({"verbosity": 2}, "brownie-verbose")
 
+    Plugin: PytestBrownieType
     if config.getoption("numprocesses"):
         if config.getoption("interactive"):
             raise ValueError("Cannot use --interactive mode with xdist")
