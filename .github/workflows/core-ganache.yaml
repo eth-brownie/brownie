@@ -102,7 +102,9 @@ jobs:
         run: pip install tox
 
       - name: Run Tox
-        run: tox -v -e py${{ replace(matrix.python-version, '.', '') }}
+        env:
+          TOXENV: py${{ matrix.python-version }}-${{ matrix.jobtype }}
+        run: tox run
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
