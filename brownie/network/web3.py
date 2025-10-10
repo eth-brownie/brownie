@@ -229,4 +229,3 @@ except (FileNotFoundError, JSONDecodeError):
 
 _ens_cache: Final[Dict] = __ens_cache
 del __ens_cache
-
