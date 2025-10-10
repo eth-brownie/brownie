@@ -24,7 +24,7 @@ _time: Final = time.time
 # TODO: remove this decorator once the compiler bug preventing compilation is fixed
 class Alert:
     """Setup notifications and callbacks based on state changes to the blockchain.
-    The alert is immediatly active as soon as the class is insantiated."""
+    The alert is immediately active as soon as the class is instantiated."""
 
     def __init__(
         self,
