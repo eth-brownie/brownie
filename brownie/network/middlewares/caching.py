@@ -4,8 +4,8 @@ import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Final, List, Optional, Sequence, final
 
-from web3 import Web3
-from web3.types import LogReceipt, RPCEndpoint
+from faster_web3 import Web3
+from faster_web3.types import LogReceipt, RPCEndpoint
 
 from brownie._c_constants import HexBytes, ujson_dumps
 from brownie._config import CONFIG, _get_data_folder
