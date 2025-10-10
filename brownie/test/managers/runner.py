@@ -7,7 +7,6 @@ from typing import Dict
 
 import pytest
 from _pytest._io import TerminalWriter
-from eth_utils.toolz import keyfilter
 
 import brownie
 from brownie._c_constants import Path, regex_compile, regex_fullmatch, ujson_dump
@@ -509,7 +508,8 @@ class PytestBrownieRunner(PytestBrownieBase):
     def _sessionfinish(self, path):
         # store test results at the given path
         txhash = {x for v in self.tests.values() for x in v["txhash"]}
-        coverage_eval = keyfilter(txhash.__contains__, coverage.get_coverage_eval())
+        coverage_eval = coverage.get_coverage_eval()
+        coverage_eval = {key: coverage_eval[key] for key in coverage_eval if key in txhash}
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
@@ -580,5 +580,7 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
         Stores test results in `build/tests-{workerid}.json`. Each of these files
         is then aggregated in `PytestBrownieMaster.pytest_sessionfinish`.
         """
-        self.tests = keyfilter(self.results.__contains__, self.tests)
+        tests = self.tests
+        results = self.results
+        self.tests = {key: tests[key] for key in tests if key in results}
         self._sessionfinish(f"tests-{self.workerid}.json")
