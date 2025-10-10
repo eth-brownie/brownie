@@ -156,7 +156,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
     def __init__(self, config, project):
         super().__init__(config, project)
-        brownie.reverts = RevertContextManager
+        brownie.reverts = RevertContextManager  # type: ignore [attr-defined]
         pytest.reverts = revert_deprecation
         self.printer = None
         if config.getoption("capture") == "no":
@@ -198,7 +198,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         stateful = self.config.getoption("--stateful")
         self._make_nodemap([i.nodeid for i in items])
 
-        tests = {}
+        tests: Dict[str, list] = {}
         for i in items:
             # apply --stateful flag
             if stateful is not None:
