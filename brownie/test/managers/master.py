@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from typing import final
+
 import pytest
 from xdist.scheduler import LoadFileScheduling
 
@@ -10,6 +12,7 @@ from brownie.test import coverage
 from .base import PytestBrownieBase
 
 
+@final
 class PytestBrownieMaster(PytestBrownieBase):
     """
     Brownie plugin xdist master hooks.
