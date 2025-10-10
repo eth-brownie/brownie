@@ -104,7 +104,7 @@ jobs:
       - name: Run Tox
         run: |
           toxenv="py${{ matrix.python-version }}"
-          toxenv="${toxenv//./}
+          toxenv="${toxenv//./}"
           tox -e "$toxenv" --showconfig
 
       - name: Upload coverage to Codecov
