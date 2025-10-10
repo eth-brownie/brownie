@@ -7,6 +7,7 @@ from typing import Dict, Final, final
 
 import pytest
 from _pytest._io import TerminalWriter
+from mypy_extensions import mypyc_attr
 
 import brownie
 from brownie._c_constants import Path, regex_compile, regex_fullmatch, ujson_dump
@@ -14,6 +15,7 @@ from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
+from brownie.project.main import Project
 from brownie.test import coverage, output
 from brownie.utils import color
 from brownie.utils._color import yellow
