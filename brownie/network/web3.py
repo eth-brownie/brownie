@@ -5,8 +5,8 @@ import time
 from pathlib import Path
 from typing import Dict, Optional, Set
 
-from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
+from faster_ens import ENS
 from faster_web3 import HTTPProvider, IPCProvider
 from faster_web3 import Web3 as _Web3
 from faster_web3 import WebsocketProvider
