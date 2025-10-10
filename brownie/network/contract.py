@@ -1370,7 +1370,7 @@ class ContractEvents(_ContractEvents):
 
         def _event_callback(event_data: AttributeDict) -> None:
             """
-            Fills the nonlocal varialbe '_received_data' with the received
+            Fills the nonlocal variable '_received_data' with the received
             argument 'event_data' and sets the nonlocal '_triggered' variable to True
             """
             nonlocal _triggered, _received_data

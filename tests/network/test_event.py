@@ -330,6 +330,6 @@ class TestEventWatcher:
 
         assert trigger_count == expected_trigger_count
 
-    @pytest.mark.skip(reason="For developping purpose")
+    @pytest.mark.skip(reason="For developing purpose")
     def test_scripting(_, tester: Contract):
         pass
