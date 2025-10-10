@@ -1,15 +1,17 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="union-attr"
 
 from operator import attrgetter
-from pathlib import Path
+from typing import Final
 
 import hypothesis
 from eth_utils.toolz import compose, concat
 from ujson import JSONDecodeError
 
 import brownie
-from brownie._c_constants import sha1, ujson_load
+from brownie._c_constants import Path, sha1, ujson_load
 from brownie._config import CONFIG
+from brownie.project.main import Project
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
 
@@ -23,29 +25,29 @@ class PytestBrownieBase:
     Pytest hooks in this class are used in every testing mode.
     """
 
-    def __init__(self, config, project):
+    def __init__(self, config, project: Project) -> None:
         _apply_given_wrapper()
 
         self.config = config
         # required when brownie project is in a subfolder of another project
-        config._rootpath = Path(project._path)
+        config._rootpath = Path(project._path)  # type: ignore [arg-type]
 
-        self.project = project
-        self.project_path = project._path
+        self.project: Final = project
+        self.project_path: Final = project._path
 
-        self.results = {}
-        self.node_map = {}
-        self.isolated = {}
-        self.skip = {}
-        self.contracts = {
-            k: v["bytecodeSha1"] for k, v in project._build.items() if v.get("bytecode")
+        self.results: Final = {}
+        self.node_map: Final = {}
+        self.isolated: Final = {}
+        self.skip: Final = {}
+        self.contracts: Final = {
+            k: v["bytecodeSha1"] for k, v in project._build.items() if v.get("bytecode")  # type: ignore [typeddict-item]
         }
 
         glob = list(
-            self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")
+            self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")  # type: ignore [union-attr]
         )
         key_func = compose(self._path, attrgetter("parent"))
-        self.conf_hashes = dict(zip(map(key_func, glob), map(_get_ast_hash, glob)))
+        self.conf_hashes: Final = dict(zip(map(key_func, glob), map(_get_ast_hash, glob)))
         try:
             with self.project._build_path.joinpath("tests.json").open() as fp:
                 hashes = ujson_load(fp)
@@ -75,7 +77,7 @@ class PytestBrownieBase:
             for txhash, coverage_eval in hashes["tx"].items():
                 coverage._add_cached_transaction(txhash, coverage_eval)
 
-    def _reduce_path_strings(self, text):
+    def _reduce_path_strings(self, text: str) -> str:
         # convert absolute path strings to relative ones, prior to outputting to console
         base_path = f"{Path(brownie.__file__).parent.as_posix()}"
         project_path = f"{self.project_path.as_posix()}/"

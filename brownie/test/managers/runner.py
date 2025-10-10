@@ -3,18 +3,19 @@
 import builtins
 import sys
 import warnings
-from pathlib import Path
+from typing import Dict, Final, Optional, final
 
 import pytest
 from _pytest._io import TerminalWriter
-from eth_utils.toolz import keyfilter
+from mypy_extensions import mypyc_attr
 
 import brownie
-from brownie._c_constants import regex_compile, regex_fullmatch, ujson_dump
+from brownie._c_constants import Path, regex_compile, regex_fullmatch, ujson_dump
 from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
+from brownie.project.main import Project
 from brownie.test import coverage, output
 from brownie.utils import color
 from brownie.utils._color import yellow
@@ -22,10 +23,10 @@ from brownie.utils._color import yellow
 from .base import PytestBrownieBase
 from .utils import convert_outcome
 
-SCOPE_ORDER = ("session", "package", "module", "class", "function")
+SCOPE_ORDER: Final = "session", "package", "module", "class", "function"
 
 
-def _make_fixture_execute_first(metafunc, name, scope):
+def _make_fixture_execute_first(metafunc, name, scope) -> None:
     fixtures = metafunc.fixturenames
 
     scopes = SCOPE_ORDER[SCOPE_ORDER.index(scope) :]
@@ -39,7 +40,7 @@ def _make_fixture_execute_first(metafunc, name, scope):
         fixtures.insert(idx, name)
 
 
-def revert_deprecation(revert_msg=None):
+def revert_deprecation(revert_msg: Optional[str] = None) -> RevertContextManager:
     warnings.warn(
         "pytest.reverts has been deprecated, use brownie.reverts instead",
         DeprecationWarning,
@@ -48,10 +49,15 @@ def revert_deprecation(revert_msg=None):
     return RevertContextManager(revert_msg)
 
 
+@final
 class RevertContextManager:
     def __init__(
-        self, revert_msg=None, dev_revert_msg=None, revert_pattern=None, dev_revert_pattern=None
-    ):
+        self,
+        revert_msg: Optional[str] = None,
+        dev_revert_msg: Optional[str] = None,
+        revert_pattern: Optional[str] = None,
+        dev_revert_pattern: Optional[str] = None,
+    ) -> None:
         if revert_msg is not None and revert_pattern is not None:
             raise ValueError("Can only use one of`revert_msg` and `revert_pattern`")
         if dev_revert_msg is not None and dev_revert_pattern is not None:
@@ -62,20 +68,20 @@ class RevertContextManager:
         if dev_revert_pattern:
             regex_compile(dev_revert_pattern)
 
-        self.revert_msg = revert_msg
-        self.dev_revert_msg = dev_revert_msg
-        self.revert_pattern = revert_pattern
-        self.dev_revert_pattern = dev_revert_pattern
-        self.always_transact = CONFIG.argv["always_transact"]
+        self.revert_msg: Final = revert_msg
+        self.dev_revert_msg: Final = dev_revert_msg
+        self.revert_pattern: Final = revert_pattern
+        self.dev_revert_pattern: Final = dev_revert_pattern
+        self.always_transact: Final = CONFIG.argv["always_transact"]
 
         if revert_msg is not None and (revert_msg.startswith("dev:") or dev_revert_msg):
             # run calls as transactinos when catching a dev revert string
             CONFIG.argv["always_transact"] = True
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         pass
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         CONFIG.argv["always_transact"] = self.always_transact
 
         if exc_type is None:
@@ -113,6 +119,8 @@ class RevertContextManager:
         return True
 
 
+@final
+@mypyc_attr(native_class=False)
 class PytestPrinter:
     """
     Custom printer for test execution.
@@ -156,7 +164,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
     def __init__(self, config, project):
         super().__init__(config, project)
-        brownie.reverts = RevertContextManager
+        brownie.reverts = RevertContextManager  # type: ignore [attr-defined]
         pytest.reverts = revert_deprecation
         self.printer = None
         if config.getoption("capture") == "no":
@@ -198,7 +206,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         stateful = self.config.getoption("--stateful")
         self._make_nodemap([i.nodeid for i in items])
 
-        tests = {}
+        tests: Dict[str, list] = {}
         for i in items:
             # apply --stateful flag
             if stateful is not None:
@@ -502,7 +510,8 @@ class PytestBrownieRunner(PytestBrownieBase):
     def _sessionfinish(self, path):
         # store test results at the given path
         txhash = {x for v in self.tests.values() for x in v["txhash"]}
-        coverage_eval = keyfilter(txhash.__contains__, coverage.get_coverage_eval())
+        coverage_eval = coverage.get_coverage_eval()
+        coverage_eval = {key: coverage_eval[key] for key in coverage_eval if key in txhash}
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
@@ -527,6 +536,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         super().pytest_terminal_summary(terminalreporter)
 
 
+@final
 class PytestBrownieXdistRunner(PytestBrownieRunner):
     """
     Brownie plugin xdist worker hooks.
@@ -534,8 +544,8 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
     Hooks in this class are loaded on worker processes when using xdist.
     """
 
-    def __init__(self, config, project):
-        self.workerid = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
+    def __init__(self, config, project: Project) -> None:
+        self.workerid: Final = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
 
         # network ID is passed to the worker via `pytest_configure_node` in the master
         network_id = config.workerinput["network"] or CONFIG.settings["networks"]["default"]
@@ -572,5 +582,7 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
         Stores test results in `build/tests-{workerid}.json`. Each of these files
         is then aggregated in `PytestBrownieMaster.pytest_sessionfinish`.
         """
-        self.tests = keyfilter(self.results.__contains__, self.tests)
+        tests = self.tests
+        results = self.results
+        self.tests = {key: tests[key] for key in tests if key in results}
         self._sessionfinish(f"tests-{self.workerid}.json")
