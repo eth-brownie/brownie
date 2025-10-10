@@ -103,7 +103,7 @@ def pytest_configure(config):
         # do not include brownie internals in tracebacks
         base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
         for module in sys.modules.values():
-            if getattr(module, "__file__", None) and module.__file__.startswith(base_path):
+            if getattr(module, "__file__", None) and module.__file__.startswith(base_path):  # type: ignore [union-attr]
                 module.__tracebackhide__ = True  # type: ignore [attr-defined]
                 module.__hypothesistracebackhide__ = True  # type: ignore [attr-defined]
 
