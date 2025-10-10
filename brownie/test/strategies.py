@@ -239,7 +239,7 @@ def strategy(
 ) -> SearchStrategy: ...
 
 
-def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
+def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:  # type: ignore [misc]
     type_str = TYPE_STR_TRANSLATIONS.get(type_str, type_str)
     if type_str == "fixed168x10":
         return _decimal_strategy(**kwargs)
