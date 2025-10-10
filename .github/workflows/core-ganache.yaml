@@ -99,7 +99,7 @@ jobs:
             requirements-dev.txt
 
       - name: Install Tox
-        run: pip install --upgrade setuptools tox
+        run: python -m pip install --upgrade tox
 
       - name: Run Tox
         shell: bash
