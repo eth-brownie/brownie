@@ -22,10 +22,10 @@ from brownie.utils._color import yellow
 from .base import PytestBrownieBase
 from .utils import convert_outcome
 
-SCOPE_ORDER = ("session", "package", "module", "class", "function")
+SCOPE_ORDER: Final = "session", "package", "module", "class", "function"
 
 
-def _make_fixture_execute_first(metafunc, name, scope):
+def _make_fixture_execute_first(metafunc, name, scope) -> None:
     fixtures = metafunc.fixturenames
 
     scopes = SCOPE_ORDER[SCOPE_ORDER.index(scope) :]
@@ -39,7 +39,7 @@ def _make_fixture_execute_first(metafunc, name, scope):
         fixtures.insert(idx, name)
 
 
-def revert_deprecation(revert_msg=None):
+def revert_deprecation(revert_msg: Optional[str] = None) -> RevertContextManager:
     warnings.warn(
         "pytest.reverts has been deprecated, use brownie.reverts instead",
         DeprecationWarning,
@@ -48,10 +48,15 @@ def revert_deprecation(revert_msg=None):
     return RevertContextManager(revert_msg)
 
 
+@final
 class RevertContextManager:
     def __init__(
-        self, revert_msg=None, dev_revert_msg=None, revert_pattern=None, dev_revert_pattern=None
-    ):
+        self,
+        revert_msg: Optional[str] = None,
+        dev_revert_msg: Optional[str] = None,
+        revert_pattern: Optional[str] = None,
+        dev_revert_pattern: Optional[str] = None,
+    ) -> None:
         if revert_msg is not None and revert_pattern is not None:
             raise ValueError("Can only use one of`revert_msg` and `revert_pattern`")
         if dev_revert_msg is not None and dev_revert_pattern is not None:
@@ -62,20 +67,20 @@ class RevertContextManager:
         if dev_revert_pattern:
             regex_compile(dev_revert_pattern)
 
-        self.revert_msg = revert_msg
-        self.dev_revert_msg = dev_revert_msg
-        self.revert_pattern = revert_pattern
-        self.dev_revert_pattern = dev_revert_pattern
-        self.always_transact = CONFIG.argv["always_transact"]
+        self.revert_msg: Final = revert_msg
+        self.dev_revert_msg: Final = dev_revert_msg
+        self.revert_pattern: Final = revert_pattern
+        self.dev_revert_pattern: Final = dev_revert_pattern
+        self.always_transact: Final = CONFIG.argv["always_transact"]
 
         if revert_msg is not None and (revert_msg.startswith("dev:") or dev_revert_msg):
             # run calls as transactinos when catching a dev revert string
             CONFIG.argv["always_transact"] = True
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         pass
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         CONFIG.argv["always_transact"] = self.always_transact
 
         if exc_type is None:
@@ -113,6 +118,8 @@ class RevertContextManager:
         return True
 
 
+@final
+@mypyc_attr(native_class=False)
 class PytestPrinter:
     """
     Custom printer for test execution.
@@ -527,6 +534,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         super().pytest_terminal_summary(terminalreporter)
 
 
+@final
 class PytestBrownieXdistRunner(PytestBrownieRunner):
     """
     Brownie plugin xdist worker hooks.
@@ -534,8 +542,8 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
     Hooks in this class are loaded on worker processes when using xdist.
     """
 
-    def __init__(self, config, project):
-        self.workerid = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
+    def __init__(self, config, project: Project) -> None:
+        self.workerid: Final = int("".join(i for i in config.workerinput["workerid"] if i.isdigit()))
 
         # network ID is passed to the worker via `pytest_configure_node` in the master
         network_id = config.workerinput["network"] or CONFIG.settings["networks"]["default"]
