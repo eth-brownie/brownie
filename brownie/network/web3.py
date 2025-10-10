@@ -7,14 +7,14 @@ from typing import Dict, Optional, Set
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
+from faster_web3 import HTTPProvider, IPCProvider
+from faster_web3 import Web3 as _Web3
+from faster_web3 import WebsocketProvider
+from faster_web3.contract.contract import ContractEvent  # noqa
+from faster_web3.contract.contract import ContractEvents as _ContractEvents  # noqa
+from faster_web3.gas_strategies.rpc import rpc_gas_price_strategy
 from requests import HTTPError
 from ujson import JSONDecodeError
-from web3 import HTTPProvider, IPCProvider
-from web3 import Web3 as _Web3
-from web3 import WebsocketProvider
-from web3.contract.contract import ContractEvent  # noqa
-from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
-from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
 from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
