@@ -3,7 +3,7 @@
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Final, Optional, Set, final
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
@@ -22,9 +22,10 @@ from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 from brownie.network.middlewares import get_middlewares
 
-_chain_uri_cache: Dict = {}
+_chain_uri_cache: Final[Dict] = {}
 
 
+@final
 class Web3(_Web3):
     """Brownie Web3 subclass"""
 
@@ -217,11 +218,15 @@ def _resolve_address(domain: str) -> ChecksumAddress:
     return _ens_cache[domain][0]
 
 
-web3 = Web3()
+web3: Final = Web3()
 web3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
 
 try:
     with _get_path().open() as fp:
-        _ens_cache: Dict = ujson_load(fp)
+        __ens_cache: Dict = ujson_load(fp)
 except (FileNotFoundError, JSONDecodeError):
-    _ens_cache = {}
+    __ens_cache = {}
+
+_ens_cache: Final[Dict] = __ens_cache
+del __ens_cache
+
