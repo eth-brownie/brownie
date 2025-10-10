@@ -31,9 +31,9 @@ import eth_event
 from eth_event import EventError
 from eth_event.main import _TraceStep, DecodedEvent, NonDecodedEvent, TopicMapData
 from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
+from faster_web3._utils import filters
+from faster_web3.datastructures import AttributeDict
 from ujson import JSONDecodeError
-from web3._utils import filters
-from web3.datastructures import AttributeDict
 
 from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import _get_data_folder
