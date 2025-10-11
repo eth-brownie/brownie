@@ -59,8 +59,8 @@ jobs:
           path: |
             ~/.solcx
             ~/.vvm
-          key: ganache-core-${{ runner.os }}-compiler-cache
-          save-always: true
+          # this cache is KEY for the tests to work. if it gets deleted we're screwed.
+          key: ${{ runner.os }}-compiler-cache
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
