@@ -62,9 +62,7 @@ jobs:
             infura-key: 1668fecbc9c242d58253476103a42ce9
           - python-version: "3.14t"
             infura-key: 21317ddb5ded42ce8d40c7d78f90474f
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.infura-key }}
-      cancel-in-progress: false
+      max-parallel: 6
 
     steps:
       - uses: actions/checkout@v4
