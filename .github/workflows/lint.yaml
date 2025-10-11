@@ -37,6 +37,16 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.13"
+        cache: pip
+        cache-dependency-path: |
+          pyproject.toml
+          setup.py
+          requirements.in
+          requirements.txt
+          requirements-windows.in
+          requirements-windows.txt
+          requirements-dev.in
+          requirements-dev.txt
 
     - name: Install Tox
       run: pip install tox
