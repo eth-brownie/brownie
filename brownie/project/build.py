@@ -100,34 +100,29 @@ class Build:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
         for pc, data in pcMap.items():
-            op = data["op"]
-            if op in ("REVERT", "INVALID") or "jump_revert" in data:
-                path = data.get("path")
-                if path is None:
+            if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
+                if "path" not in data or data["path"] is None:
                     continue
 
-                path_str = source_map[path]
-                offset = tuple(data["offset"])
+                path_str = source_map[data["path"]]
 
                 if "dev" not in data:
                     if "fn" not in data or "first_revert" in data:
                         _revert_map[pc] = False
                         continue
                     try:
-                        revert_str = self._sources.get(path_str)[offset[1] :]
+                        revert_str = self._sources.get(path_str)[data["offset"][1] :]
                         revert_str = revert_str[: revert_str.index("\n")]
-                        revert_str = revert_str[
-                            revert_str.index(marker) + len(marker) :
-                        ].strip()
+                        revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
                         if revert_str.startswith("dev:"):
                             data["dev"] = revert_str
                     except (KeyError, ValueError):
                         pass
 
-                msg = "" if op == "REVERT" else "invalid opcode"
+                msg = "" if data["op"] == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
-                    offset,
+                    tuple(data["offset"]),
                     data.get("fn", "<None>"),
                     data.get("dev", msg),
                     self._sources,
