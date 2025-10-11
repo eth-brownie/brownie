@@ -35,7 +35,7 @@ jobs:
         path: |
           ~/.solcx
           ~/.vvm
-        key: ${{ runner.os }}-compiler-cache
+        key: func-${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
