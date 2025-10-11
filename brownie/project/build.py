@@ -115,7 +115,9 @@ class Build:
                     try:
                         revert_str = self._sources.get(path_str)[data["offset"][1] :]
                         revert_str = revert_str[: revert_str.index("\n")]
-                        revert_str = revert_str[revert_str.index(marker) + len(marker) :].strip()
+                        revert_str = revert_str[
+                            revert_str.index(marker) + len(marker) :
+                        ].strip()
                         if revert_str.startswith("dev:"):
                             data["dev"] = revert_str
                     except (KeyError, ValueError):
