@@ -108,6 +108,14 @@ jobs:
       - name: Install Tox
         run: python -m pip install --upgrade tox
 
+      - name: Cache tox environment and hypothesis examples
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tox
+            .hypothesis
+          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+
       - name: Run Tox
         shell: bash
         env:
