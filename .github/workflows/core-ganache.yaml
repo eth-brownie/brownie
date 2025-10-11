@@ -57,9 +57,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.HOME }}/.solcx
-            ${{ env.HOME }}/.vvm
-          key: ${{ runner.os }}-compiler-cache
+            ~/.solcx
+            ~/.vvm
+          key: ganache-core-${{ runner.os }}-compiler-cache
           save-always: true
 
       - name: Setup Node.js
