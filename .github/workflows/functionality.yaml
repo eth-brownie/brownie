@@ -43,10 +43,10 @@ jobs:
     - name: Install Ganache
       run: npm install -g ganache@7.9.2
 
-    - name: Setup Python 3.12
+    - name: Setup Python 3.10
       uses: actions/setup-python@v4
       with:
-        python-version: "3.12"
+        python-version: "3.10"
 
     - name: Install Tox
       run: pip install tox
