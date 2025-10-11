@@ -107,13 +107,14 @@ class Build:
                     continue
 
                 path_str = source_map[path]
+                offset = tuple(data["offset"])
 
                 if "dev" not in data:
                     if "fn" not in data or "first_revert" in data:
                         _revert_map[pc] = False
                         continue
                     try:
-                        revert_str = self._sources.get(path_str)[data["offset"][1] :]
+                        revert_str = self._sources.get(path_str)[offset[1] :]
                         revert_str = revert_str[: revert_str.index("\n")]
                         revert_str = revert_str[
                             revert_str.index(marker) + len(marker) :
@@ -126,7 +127,7 @@ class Build:
                 msg = "" if op == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
-                    data["offset"],
+                    offset,
                     data.get("fn", "<None>"),
                     data.get("dev", msg),
                     self._sources,
