@@ -3,6 +3,9 @@ on:
     branches:
       - master
   pull_request:
+  schedule:
+    - cron: '0 0 * * *'  # Daily 0000 UTC
+  workflow_dispatch:
 
 name: linting
 
