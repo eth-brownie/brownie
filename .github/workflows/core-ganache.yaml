@@ -45,8 +45,8 @@ jobs:
     name: Ganache Core (${{ matrix.python-version }} on ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
-      # we can increase concurrency beyond 6 but we will need more keys first
-      max-parallel: 6
+      # we can increase concurrency beyond 9 (3 concurrent runners per-key) but we will need more keys first
+      max-parallel: 9
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
