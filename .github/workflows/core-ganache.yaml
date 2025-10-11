@@ -1,6 +1,8 @@
 name: Core Ganache
 on:
   push:
+    branches:
+      - master
     paths:
       - '**.py'
       - '.github/workflows/core-ganache.yaml'
