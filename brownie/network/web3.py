@@ -11,7 +11,7 @@ from requests import HTTPError
 from ujson import JSONDecodeError
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
-from web3 import WebsocketProvider
+from web3 import WebSocketProvider
 from web3.contract.contract import ContractEvent  # noqa
 from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
@@ -61,7 +61,7 @@ class Web3(_Web3):
 
         if self.provider is None:
             if uri.startswith("ws"):
-                self.provider = WebsocketProvider(uri, {"close_timeout": timeout})
+                self.provider = WebSocketProvider(uri, {"close_timeout": timeout})
             elif uri.startswith("http"):
 
                 self.provider = HTTPProvider(uri, {"timeout": timeout})
