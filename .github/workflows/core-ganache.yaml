@@ -45,10 +45,26 @@ jobs:
     name: Ganache Core (${{ matrix.python-version }} on ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
-      fail-fast: false
+        include:
+          - python-version: "3.10"
+            infura-key: 0x123
+          - python-version: "3.11"
+            infura-key: 0x123
+          - python-version: "3.12"
+            infura-key: 0x123
+          - python-version: "3.13"
+            infura-key: 0x123
+          - python-version: "3.14"
+            infura-key: 0x123
+          - python-version: "3.15"
+            infura-key: 0x123
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ matrix.infura-key }}
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -65,19 +81,6 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
 
-      - name: Set Infura Project ID
-        shell: bash
-        run: |
-          if [[ "${{ matrix.python-version }}" == "3.10" || "${{ matrix.python-version }}" == "3.11" ]]; then
-            echo "WEB3_INFURA_PROJECT_ID=ddddf0c53f254d36aa76ce4e3a6a390e" >> $GITHUB_ENV
-          elif [[ "${{ matrix.python-version }}" == "3.12" || "${{ matrix.python-version }}" == "3.13" ]]; then
-            echo "WEB3_INFURA_PROJECT_ID=1668fecbc9c242d58253476103a42ce9" >> $GITHUB_ENV
-          elif [[ "${{ matrix.python-version }}" == "3.14" || "${{ matrix.python-version }}" == "3.14t" ]]; then
-            echo "WEB3_INFURA_PROJECT_ID=21317ddb5ded42ce8d40c7d78f90474f" >> $GITHUB_ENV
-          else
-            echo "ERROR: No Infura Project ID configured for python-version=${{ matrix.python-version }}" >&2
-            exit 1
-          fi
       - name: Install Ganache
         shell: bash
         run: |
@@ -106,6 +109,8 @@ jobs:
 
       - name: Run Tox
         shell: bash
+        env:
+          WEB3_INFURA_PROJECT_ID: ${{ matrix.infura-key }}
         run: |
           toxenv="py${{ matrix.python-version }}"
           toxenv="${toxenv//./}"
