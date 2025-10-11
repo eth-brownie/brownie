@@ -3,6 +3,9 @@ on:
     branches:
       - master
   pull_request:
+  schedule:
+    - cron: '0 18 * * *'  # Daily 1800 UTC
+  workflow_dispatch:
 
 name: functionality
 
