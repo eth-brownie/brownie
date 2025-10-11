@@ -3,6 +3,9 @@ on:
     branches:
       - master
   pull_request:
+  schedule:
+    - cron: '0 12 * * *'  # Daily 1200 UTC
+  workflow_dispatch:
 
 name: evm tests
 
