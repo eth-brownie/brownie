@@ -31,18 +31,22 @@ def test_timestamp_multiple_blocks(devnetwork, chain):
 def test_getitem_negative_index(devnetwork, accounts, chain, web3):
     block = chain[-1]
     # for some reason we get the right block but 'withdrawals' key is missing
-    _assert_blocks_equal(block, web3.eth.get_block("latest"), "withdrawals")
+    # not really worth debugging at this time
+    missing_keys = "withdrawals"
+    _assert_blocks_equal(block, web3.eth.get_block("latest"), missing_keys)
 
     accounts[0].transfer(accounts[1], 1000)
 
     assert chain[-1] != block
-    _assert_blocks_equal(chain[-1], web3.eth.get_block("latest"))
+    _assert_blocks_equal(chain[-1], web3.eth.get_block("latest"), missing_keys)
 
 
 def test_getitem_positive_index(devnetwork, accounts, chain, web3):
     block = chain[0]
     # for some reason we get the right block but 'withdrawals' key is missing
-    _assert_blocks_equal(block, web3.eth.get_block("latest"), "withdrawals")
+    # not really worth debugging at this time
+    missing_keys = "withdrawals"
+    _assert_blocks_equal(block, web3.eth.get_block("latest"), missing_keys)
 
     accounts[0].transfer(accounts[1], 1000)
 

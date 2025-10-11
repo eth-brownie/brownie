@@ -1,4 +1,11 @@
-on: ["push", "pull_request"]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '0 18 * * *'  # Daily 1800 UTC
+  workflow_dispatch:
 
 name: functionality
 
@@ -31,7 +38,7 @@ jobs:
         path: |
           ~/.solcx
           ~/.vvm
-        key: ${{ runner.os }}-compiler-cache
+        key: func-${{ runner.os }}-compiler-cache
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -43,6 +50,16 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
+        cache: pip
+        cache-dependency-path: |
+          pyproject.toml
+          setup.py
+          requirements.in
+          requirements.txt
+          requirements-windows.in
+          requirements-windows.txt
+          requirements-dev.in
+          requirements-dev.txt
 
     - name: Install Tox
       run: pip install tox
