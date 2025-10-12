@@ -85,8 +85,8 @@ class BrownieMiddlewareABC(ABC):
         when this method is called.
         """
         pass
-        
-    
+
+
 def get_middlewares(
     web3: Web3, network_type: str
 ) -> Dict[int, List[Type[BrownieMiddlewareABC]]]:

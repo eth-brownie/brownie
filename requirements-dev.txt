@@ -74,7 +74,7 @@ iniconfig==2.1.0
     # via
     #   -c requirements.txt
     #   pytest
-isort==6.1.0
+isort==7.0.0
     # via -r requirements-dev.in
 jaraco-classes==3.4.0
     # via keyring
@@ -236,7 +236,7 @@ urllib3==2.5.0
     #   -c requirements.txt
     #   requests
     #   twine
-virtualenv==20.35.2
+virtualenv==20.35.3
     # via tox
 wheel==0.45.1
     # via
