@@ -107,6 +107,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     """
     Web3 middleware for request caching.
     """
+
     __is_killed: Final[WeakKeyDictionary[Web3, bool]] = WeakKeyDictionary()
     __block_cache: Final[WeakKeyDictionary[Web3, BlockCache]] = WeakKeyDictionary()
     __block_filter: Final[WeakKeyDictionary[Web3, Filter]] = WeakKeyDictionary()
