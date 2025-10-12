@@ -37,7 +37,10 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, make_request: Callable, w3: Web3) -> Callable:
+    def __call__(
+        self,
+        make_request: Callable,
+    ) -> Callable[[RPCEndpoint, Sequence[Any]], Dict[str, Any]]:
         """
         Receive the initial middleware request and return `process_request`.
 
@@ -82,8 +85,8 @@ class BrownieMiddlewareABC(ABC):
         when this method is called.
         """
         pass
-
-
+        
+    
 def get_middlewares(web3: Web3, network_type: str) -> Dict:
     """
     Get a list of middlewares to be used for the given web3 object.
