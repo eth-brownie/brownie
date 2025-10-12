@@ -87,9 +87,7 @@ class BrownieMiddlewareABC(ABC):
         pass
 
 
-def get_middlewares(
-    web3: Web3, network_type: str
-) -> Dict[int, List[Type[BrownieMiddlewareABC]]]:
+def get_middlewares(web3: Web3, network_type: str) -> Dict[int, List[Type[BrownieMiddlewareABC]]]:
     """
     Get a list of middlewares to be used for the given web3 object.
 
