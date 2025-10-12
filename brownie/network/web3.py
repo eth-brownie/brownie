@@ -91,16 +91,14 @@ class Web3(_Web3):
         # middlewares with a layer below zero are injected
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
         for layer in to_inject:
-            for obj in middleware_layers[layer]:
-                middleware = obj(self)
+            for middleware in middleware_layers[layer]:
                 self.middleware_onion.inject(middleware, layer=0)
                 self._custom_middleware.add(middleware)
 
         # middlewares with a layer of zero or greater are added
         to_add = sorted(i for i in middleware_layers if i >= 0)
         for layer in to_add:
-            for obj in middleware_layers[layer]:
-                middleware = obj(self)
+            for middleware in middleware_layers[layer]:
                 self.middleware_onion.add(middleware)
                 self._custom_middleware.add(middleware)
 
