@@ -85,8 +85,8 @@ class BrownieMiddlewareABC(ABC):
         when this method is called.
         """
         pass
-        
-    
+
+
 def get_middlewares(web3: Web3, network_type: str) -> Dict:
     """
     Get a list of middlewares to be used for the given web3 object.
