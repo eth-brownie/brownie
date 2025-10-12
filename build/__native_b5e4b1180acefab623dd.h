@@ -991,17 +991,17 @@ typedef struct {
     vectorcallfunc vectorcall;
     PyObject *_w3;
     uint32_t bitmap;
+    PyObject *___is_killed;
+    PyObject *___block_cache;
+    PyObject *___block_filter;
     PyObject *_table_key;
     PyObject *_cur;
     PyObject *_lock;
     PyObject *_event;
     PyObject *_loop_thread;
-    char _is_killed;
     PyObject *_last_block;
     PyObject *_last_block_seen;
     double _last_request;
-    PyObject *_block_cache;
-    PyObject *_block_filter;
 } brownie___network___middlewares___caching___RequestCachingMiddlewareObject;
 
 typedef struct {
