@@ -99,7 +99,7 @@ def _new_filter(w3: Web3) -> Any:
         return None
 
 
-BlockCache = OrderedDict[AttributeDict, List[Dict[RPCEndpoint, Dict]]]
+BlockCache = OrderedDict[AttributeDict, Dict[RPCEndpoint, Dict[str, Any]]]
 
 
 @final
@@ -108,8 +108,8 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     Web3 middleware for request caching.
     """
     __is_killed: Final[WeakKeyDictionary[Web3, bool]] = WeakKeyDictionary()
-    __block_cache: Final["WeakKeyDictionary[Web3, BlockCache]"] = WeakKeyDictionary()
-    __block_filter: Final[Dict[Web3, Filter]] = WeakKeyDictionary()
+    __block_cache: Final[WeakKeyDictionary[Web3, BlockCache]] = WeakKeyDictionary()
+    __block_filter: Final[WeakKeyDictionary[Web3, Filter]] = WeakKeyDictionary()
 
     def __init__(self, w3: Web3) -> None:
         super().__init__(w3)
