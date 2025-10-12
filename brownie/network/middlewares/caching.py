@@ -191,7 +191,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.last_block = latest.hash
         self.last_block_seen = latest.timestamp
         self.last_request = time.time()
-        self.block_cache: OrderedDict = OrderedDict()
+        self.block_cache = OrderedDict()
         self.block_filter = w3.eth.filter("latest")
         self.is_killed = False
         self.event.set()
@@ -226,7 +226,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     should_skip = False
                     if new_blocks:
                         block_cache = self.block_cache
-                        block_cache[new_blocks[-1]] = {}
+                        block_cache[new_blocks[-1]] = {}  # type: ignore [index]
                         self.last_block = new_blocks[-1]
                         self.last_block_seen = time.time()
                         if len(block_cache) > 5:
