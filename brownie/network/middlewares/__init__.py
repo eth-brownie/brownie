@@ -76,7 +76,8 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def uninstall(self) -> None:
+    @classmethod
+    def uninstall(cls, w3: Web3) -> None:
         """
         Uninstall a middleware.
 

@@ -3,7 +3,7 @@
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Type
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
@@ -20,7 +20,7 @@ from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
-from brownie.network.middlewares import get_middlewares
+from brownie.network.middlewares import BrownieMiddlewareABC, get_middlewares
 
 _chain_uri_cache: Dict = {}
 
@@ -34,7 +34,7 @@ class Web3(_Web3):
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[HexStr] = None
         self._chain_uri: Optional[str] = None
-        self._custom_middleware: Set = set()
+        self._custom_middleware: Set[Type[BrownieMiddlewareABC]] = set()
         self._supports_traces = None
         self._chain_id: Optional[int] = None
 
@@ -44,7 +44,7 @@ class Web3(_Web3):
                 self.middleware_onion.remove(middleware)
             except ValueError:
                 pass
-            middleware.uninstall()
+            middleware.uninstall(self)
         self._custom_middleware.clear()
 
     def connect(self, uri: str, timeout: int = 30) -> None:
