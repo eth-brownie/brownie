@@ -981,14 +981,12 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
     PyObject *_w3;
 } brownie___network___middlewares___BrownieMiddlewareABCObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
     PyObject *_w3;
     uint32_t bitmap;
     PyObject *___is_killed;
@@ -1013,28 +1011,24 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
     PyObject *_w3;
 } brownie___network___middlewares___catch_tx_revert___TxRevertCatcherMiddlewareObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
     PyObject *_w3;
 } brownie___network___middlewares___ganache7___Ganache7MiddleWareObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
     PyObject *_w3;
 } brownie___network___middlewares___geth_poa___GethPOAMiddlewareObject;
 
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
     PyObject *_w3;
 } brownie___network___middlewares___hardhat___HardhatMiddleWareObject;
 
