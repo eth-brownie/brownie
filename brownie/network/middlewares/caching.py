@@ -2,6 +2,7 @@ import threading
 import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Final, List, Optional, Sequence, final
+from weakref import WeakKeyDictionary
 
 import faster_hexbytes
 from web3 import Web3
@@ -98,16 +99,17 @@ def _new_filter(w3: Web3) -> Any:
         return None
 
 
+BlockCache = OrderedDict[AttributeDict, List[Dict[RPCEndpoint, Dict]]]
+
+
 @final
 class RequestCachingMiddleware(BrownieMiddlewareABC):
     """
     Web3 middleware for request caching.
     """
-    __is_killed: Final[Dict[Web3, bool]] = {}
-    __block_cache: Final[
-        "OrderedDict[Web3, Dict[AttributeDict, List[Dict[RPCEndpoint, Dict]]]]"
-    ] = {}
-    __block_filter: Final[Dict[Web3, Filter]] = {}
+    __is_killed: Final[WeakKeyDictionary[Web3, bool]] = WeakKeyDictionary()
+    __block_cache: Final["WeakKeyDictionary[Web3, BlockCache]"] = WeakKeyDictionary()
+    __block_filter: Final[Dict[Web3, Filter]] = WeakKeyDictionary()
 
     def __init__(self, w3: Web3) -> None:
         super().__init__(w3)
@@ -121,16 +123,28 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.start_block_filter_loop()
 
     @property
-    def block_cache(self) -> Dict[AttributeDict, List[Dict[RPCEndpoint, Dict]]]:
+    def block_cache(self) -> BlockCache:
         return self.__block_cache[self.w3]
+
+    @block_cache.setter
+    def block_cache(self, cache: BlockCache) -> None:
+        self.__block_cache[self.w3] = cache
 
     @property
     def block_filter(self) -> Filter:
         return self.__block_filter[self.w3]
 
+    @block_filter.setter
+    def block_filter(self, filter: Filter) -> None:
+        self.__block_filter[self.w3] = filter
+
     @property
     def is_killed(self) -> bool:
         return self.__is_killed[self.w3]
+
+    @is_killed.setter
+    def is_killed(self, killed: bool) -> None:
+        self.__is_killed[self.w3] = killed
 
     def start_block_filter_loop(self):
         self.event.clear()
