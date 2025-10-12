@@ -37,9 +37,8 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def __call__(
-        self,
-        make_request: Callable,
+    def wrap_make_request(
+        self, make_request: Callable,
     ) -> Callable[[RPCEndpoint, Sequence[Any]], Dict[str, Any]]:
         """
         Receive the initial middleware request and return `process_request`.
