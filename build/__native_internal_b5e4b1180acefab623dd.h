@@ -1225,8 +1225,8 @@ extern char CPyDef_middlewares___BrownieMiddlewareABC_____init__(PyObject *cpy_r
 extern PyObject *CPyPy_middlewares___BrownieMiddlewareABC_____init__(PyObject *self, PyObject *args, PyObject *kw);
 extern PyObject *CPyDef_middlewares___BrownieMiddlewareABC___get_layer(PyObject *cpy_r_cls, PyObject *cpy_r_w3, PyObject *cpy_r_network_type);
 extern PyObject *CPyPy_middlewares___BrownieMiddlewareABC___get_layer(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_middlewares___BrownieMiddlewareABC_____call__(PyObject *cpy_r_self, PyObject *cpy_r_make_request);
-extern PyObject *CPyPy_middlewares___BrownieMiddlewareABC_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_middlewares___BrownieMiddlewareABC___wrap_make_request(PyObject *cpy_r_self, PyObject *cpy_r_make_request);
+extern PyObject *CPyPy_middlewares___BrownieMiddlewareABC___wrap_make_request(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_middlewares___BrownieMiddlewareABC___process_request(PyObject *cpy_r_self, PyObject *cpy_r_make_request, PyObject *cpy_r_method, PyObject *cpy_r_params);
 extern PyObject *CPyPy_middlewares___BrownieMiddlewareABC___process_request(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_middlewares___BrownieMiddlewareABC___uninstall(PyObject *cpy_r_cls, PyObject *cpy_r_w3);
