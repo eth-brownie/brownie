@@ -99,10 +99,10 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict[int, List[Type[Browni
         One of "live" or "development".
     """
     middleware_layers: Dict[int, List[Type[BrownieMiddlewareABC]]] = {}
-    for obj in _middlewares:
-        layer = obj.get_layer(web3, network_type)
+    for middleware in _middlewares:
+        layer = middleware.get_layer(web3, network_type)
         if layer is not None:
-            middleware_layers.setdefault(layer, []).append(obj)
+            middleware_layers.setdefault(layer, []).append(middleware)
 
     return middleware_layers
 
