@@ -30,5 +30,5 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
         method: RPCEndpoint,
         params: Sequence[Any],
     ) -> Dict[str, Any]:
-        middleware_fn = ExtraDataToPOAMiddleware(make_request, self.w3)
+        middleware_fn = ExtraDataToPOAMiddleware(self.w3)
         return middleware_fn(method, params)
