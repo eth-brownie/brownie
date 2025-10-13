@@ -3,7 +3,7 @@
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Type
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
@@ -11,7 +11,7 @@ from requests import HTTPError
 from ujson import JSONDecodeError
 from web3 import HTTPProvider, IPCProvider
 from web3 import Web3 as _Web3
-from web3 import WebsocketProvider
+from web3 import WebSocketProvider
 from web3.contract.contract import ContractEvent  # noqa
 from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
@@ -20,7 +20,7 @@ from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
-from brownie.network.middlewares import get_middlewares
+from brownie.network.middlewares import BrownieMiddlewareABC, get_middlewares
 
 _chain_uri_cache: Dict = {}
 
@@ -34,7 +34,7 @@ class Web3(_Web3):
         self._mainnet_w3: Optional[_Web3] = None
         self._genesis_hash: Optional[HexStr] = None
         self._chain_uri: Optional[str] = None
-        self._custom_middleware: Set = set()
+        self._custom_middleware: Set[Type[BrownieMiddlewareABC]] = set()
         self._supports_traces = None
         self._chain_id: Optional[int] = None
 
@@ -44,7 +44,7 @@ class Web3(_Web3):
                 self.middleware_onion.remove(middleware)
             except ValueError:
                 pass
-            middleware.uninstall()
+            middleware.uninstall(self)
         self._custom_middleware.clear()
 
     def connect(self, uri: str, timeout: int = 30) -> None:
@@ -61,7 +61,7 @@ class Web3(_Web3):
 
         if self.provider is None:
             if uri.startswith("ws"):
-                self.provider = WebsocketProvider(uri, {"close_timeout": timeout})
+                self.provider = WebSocketProvider(uri, {"close_timeout": timeout})
             elif uri.startswith("http"):
 
                 self.provider = HTTPProvider(uri, {"timeout": timeout})
@@ -91,16 +91,14 @@ class Web3(_Web3):
         # middlewares with a layer below zero are injected
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
         for layer in to_inject:
-            for obj in middleware_layers[layer]:
-                middleware = obj(self)
+            for middleware in middleware_layers[layer]:
                 self.middleware_onion.inject(middleware, layer=0)
                 self._custom_middleware.add(middleware)
 
         # middlewares with a layer of zero or greater are added
         to_add = sorted(i for i in middleware_layers if i >= 0)
         for layer in to_add:
-            for obj in middleware_layers[layer]:
-                middleware = obj(self)
+            for middleware in middleware_layers[layer]:
                 self.middleware_onion.add(middleware)
                 self._custom_middleware.add(middleware)
 

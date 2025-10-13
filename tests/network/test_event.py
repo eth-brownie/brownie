@@ -5,7 +5,7 @@ import time
 
 import pytest
 from web3.datastructures import AttributeDict
-from web3.exceptions import ABIEventFunctionNotFound
+from web3.exceptions import ABIEventNotFound
 
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
@@ -193,7 +193,7 @@ def test_can_retrieve_specified_events_on_previously_mined_blocks(tester: Contra
 
 
 def test_cannot_subscribe_to_unexisting_event(tester: Contract):
-    with pytest.raises(ABIEventFunctionNotFound):
+    with pytest.raises(ABIEventNotFound):
         tester.events.subscribe("InvalidEventName", callback=(lambda x: x))
 
 

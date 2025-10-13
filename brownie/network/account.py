@@ -20,7 +20,7 @@ from eth_typing import BlockNumber, HexAddress
 from faster_eth_utils import keccak
 from faster_eth_utils.applicators import apply_formatters_to_dict
 from web3 import HTTPProvider, IPCProvider
-from web3.exceptions import InvalidTransaction, TransactionNotFound
+from web3.exceptions import InvalidTransaction, TransactionNotFound, Web3RPCError
 
 from brownie._c_constants import HexBytes, deque, ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
@@ -488,7 +488,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             # https://github.com/ethereum/go-ethereum/pull/23027
             skip_keys = {"gasPrice", "maxFeePerGas", "maxPriorityFeePerGas"}
             web3.eth.call({k: v for k, v in tx.items() if k not in skip_keys and v})
-        except ValueError as exc:
+        except Web3RPCError as exc:
             exc = VirtualMachineError(exc)
             raise ValueError(
                 f"Execution reverted during call: '{exc.revert_msg}'. This transaction will likely "
@@ -618,7 +618,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             tx["gasPrice"] = web3.to_hex(gas_price)
         try:
             return web3.eth.estimate_gas(tx)
-        except ValueError as exc:
+        except Web3RPCError as exc:
             revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
@@ -777,7 +777,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         txid = bytes_to_hexstring(response)
                         if not silent:
                             print(f"\rTransaction sent: {bright_blue}{txid}{color}")
-                except ValueError as e:
+                except Web3RPCError as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
                         if not hasattr(exc, "txid"):
@@ -819,7 +819,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     },
                 },
             }
-            exc = VirtualMachineError(ValueError(error_data))
+            exc = VirtualMachineError(Web3RPCError(error_data))
 
         return receipt, exc
 

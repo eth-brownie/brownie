@@ -37,7 +37,10 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, make_request: Callable, w3: Web3) -> Callable:
+    def wrap_make_request(
+        self,
+        make_request: Callable,
+    ) -> Callable[[RPCEndpoint, Sequence[Any]], Dict[str, Any]]:
         """
         Receive the initial middleware request and return `process_request`.
 
@@ -73,7 +76,8 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def uninstall(self) -> None:
+    @classmethod
+    def uninstall(cls, w3: Web3) -> None:
         """
         Uninstall a middleware.
 
@@ -84,7 +88,7 @@ class BrownieMiddlewareABC(ABC):
         pass
 
 
-def get_middlewares(web3: Web3, network_type: str) -> Dict:
+def get_middlewares(web3: Web3, network_type: str) -> Dict[int, List[Type[BrownieMiddlewareABC]]]:
     """
     Get a list of middlewares to be used for the given web3 object.
 
@@ -96,10 +100,10 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
         One of "live" or "development".
     """
     middleware_layers: Dict[int, List[Type[BrownieMiddlewareABC]]] = {}
-    for obj in _middlewares:
-        layer = obj.get_layer(web3, network_type)
+    for middleware in _middlewares:
+        layer = middleware.get_layer(web3, network_type)
         if layer is not None:
-            middleware_layers.setdefault(layer, []).append(obj)
+            middleware_layers.setdefault(layer, []).append(middleware)
 
     return middleware_layers
 

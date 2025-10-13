@@ -1,10 +1,13 @@
-import faster_hexbytes
 import threading
 import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Final, List, Optional, Sequence, final
+from weakref import WeakKeyDictionary
 
+import faster_hexbytes
 from web3 import Web3
+from web3._utils.filters import Filter
+from web3.datastructures import AttributeDict
 from web3.types import LogReceipt, RPCEndpoint
 
 from brownie._c_constants import HexBytes, ujson_dumps
@@ -96,11 +99,18 @@ def _new_filter(w3: Web3) -> Any:
         return None
 
 
+BlockCache = OrderedDict[AttributeDict, Dict[RPCEndpoint, Dict[str, Any]]]
+
+
 @final
 class RequestCachingMiddleware(BrownieMiddlewareABC):
     """
     Web3 middleware for request caching.
     """
+
+    __is_killed: Final[WeakKeyDictionary[Web3, bool]] = WeakKeyDictionary()
+    __block_cache: Final[WeakKeyDictionary[Web3, BlockCache]] = WeakKeyDictionary()
+    __block_filter: Final[WeakKeyDictionary[Web3, Filter]] = WeakKeyDictionary()
 
     def __init__(self, w3: Web3) -> None:
         super().__init__(w3)
@@ -112,6 +122,30 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.lock: Final = threading.Lock()
         self.event: Final = threading.Event()
         self.start_block_filter_loop()
+
+    @property
+    def block_cache(self) -> BlockCache:
+        return self.__block_cache[self.w3]
+
+    @block_cache.setter
+    def block_cache(self, cache: BlockCache) -> None:
+        self.__block_cache[self.w3] = cache
+
+    @property
+    def block_filter(self) -> Filter:
+        return self.__block_filter[self.w3]
+
+    @block_filter.setter
+    def block_filter(self, filter: Filter) -> None:
+        self.__block_filter[self.w3] = filter
+
+    @property
+    def is_killed(self) -> bool:
+        return self.__is_killed[self.w3]
+
+    @is_killed.setter
+    def is_killed(self, killed: bool) -> None:
+        self.__is_killed[self.w3] = killed
 
     def start_block_filter_loop(self):
         self.event.clear()
@@ -153,12 +187,13 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def block_filter_loop(self) -> None:
         # initialize required state variables within the loop to avoid recursion death
-        latest = self.w3.eth.get_block("latest")
+        w3 = self.w3
+        latest = w3.eth.get_block("latest")
         self.last_block = latest.hash
         self.last_block_seen = latest.timestamp
         self.last_request = time.time()
-        self.block_cache: OrderedDict = OrderedDict()
-        self.block_filter = self.w3.eth.filter("latest")
+        self.block_cache = OrderedDict()
+        self.block_filter = w3.eth.filter("latest")
         self.is_killed = False
         self.event.set()
 
@@ -180,7 +215,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 except (AttributeError, ValueError):
                     # web3 has disconnected, or the filter has expired from inactivity
                     # some public nodes allow a filter initially, but block it several seconds later
-                    block_filter = _new_filter(self.w3)
+                    block_filter = _new_filter(w3)
                     if block_filter is None:
                         return
                     self.block_filter = block_filter
@@ -191,12 +226,13 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 else:
                     should_skip = False
                     if new_blocks:
-                        self.block_cache[new_blocks[-1]] = {}
+                        block_cache = self.block_cache
+                        block_cache[new_blocks[-1]] = {}  # type: ignore [index]
                         self.last_block = new_blocks[-1]
                         self.last_block_seen = time.time()
-                        if len(self.block_cache) > 5:
-                            old_key = list(self.block_cache)[0]
-                            del self.block_cache[old_key]
+                        if len(block_cache) > 5:
+                            old_key = list(block_cache)[0]
+                            del block_cache[old_key]
 
             # continue in try: except: block is not supported by mypyc
             # as of jul 23 2025 so we use this workaround instead.
@@ -220,7 +256,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         method: RPCEndpoint,
         params: Sequence[Any],
     ) -> Dict[str, Any]:
-        if method in (
+        if method in {
             # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",
             "eth_newBlockFilter",
@@ -235,7 +271,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             "eth_getTransactionByHash",
             "eth_getTransactionReceipt",
             "eth_chainId",
-        ):
+        }:
             return make_request(method, params)
 
         # try to return a cached value
@@ -268,8 +304,9 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         # cached value is unavailable, make a request and cache the result
         with self.lock:
             response = make_request(method, params)
-            self.block_cache.setdefault(self.last_block, {}).setdefault(method, {})
-            self.block_cache[self.last_block][method][param_str] = response
+            block_cache = self.block_cache
+            block_cache.setdefault(self.last_block, {}).setdefault(method, {})
+            block_cache[self.last_block][method][param_str] = response
 
         # check if the value can be added to long-term cache
         if "result" in response and method in LONGTERM_CACHE:
@@ -281,8 +318,9 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         return response
 
-    def uninstall(self) -> None:
-        self.is_killed = True
-        self.block_cache.clear()
-        if self.w3.isConnected():
-            self.w3.eth.uninstall_filter(self.block_filter.filter_id)
+    @classmethod
+    def uninstall(cls, w3: Web3) -> None:
+        cls.__is_killed[w3] = True
+        cls.__block_cache[w3].clear()
+        if w3.is_connected():
+            w3.eth.uninstall_filter(cls.__block_filter[w3].filter_id)

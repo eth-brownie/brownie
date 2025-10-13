@@ -1,8 +1,8 @@
-from typing import Any, Callable, Dict, List, Optional, Sequence, final
+from typing import Any, Callable, Dict, Optional, Sequence, final
 
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware  # type: ignore [attr-defined]
 from web3.types import RPCEndpoint
 
 from brownie.network.middlewares import BrownieMiddlewareABC
@@ -30,5 +30,5 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
         method: RPCEndpoint,
         params: Sequence[Any],
     ) -> Dict[str, Any]:
-        middleware_fn = geth_poa_middleware(make_request, self.w3)
+        middleware_fn = ExtraDataToPOAMiddleware(self.w3)
         return middleware_fn(method, params)

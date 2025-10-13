@@ -9,6 +9,7 @@ import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
 from ujson import JSONDecodeError
+from web3.exceptions import Web3RPCError
 
 import brownie
 from brownie._c_constants import HexBytes, ujson_dump, ujson_load
@@ -104,7 +105,7 @@ class VirtualMachineError(Exception):
         The transaction ID that raised the error.
     """
 
-    def __init__(self, exc: ValueError) -> None:
+    def __init__(self, exc: Web3RPCError) -> None:
         self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""

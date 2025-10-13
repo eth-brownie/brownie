@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import pytest
-from web3 import HTTPProvider, IPCProvider, Web3, WebsocketProvider
+from web3 import HTTPProvider, IPCProvider, Web3, WebSocketProvider
 
 from brownie.exceptions import MainnetUndefined
 
@@ -28,7 +28,7 @@ def test_connect_ipc(web3, testdir):
 
 def test_connect_ws(web3):
     web3.connect("ws://localhost")
-    assert type(web3.provider) is WebsocketProvider
+    assert type(web3.provider) is WebSocketProvider
     web3.disconnect()
 
 
