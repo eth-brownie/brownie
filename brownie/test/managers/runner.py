@@ -82,7 +82,7 @@ class RevertContextManager:
             raise AssertionError("Transaction did not revert")
 
         if exc_type is not VirtualMachineError:
-            raise
+            raise exc_value
 
         message = self.dev_revert_msg
         pattern = self.dev_revert_pattern
