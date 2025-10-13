@@ -753,7 +753,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             gas_limit = Wei(gas_limit) or self._gas_limit(
                 to, amount, gas_price or max_fee, gas_buffer, data
             )
-        except Web3RPCError as e:
+        except ValueError as e:
             raise VirtualMachineError(e) from None
 
         with self._lock:
