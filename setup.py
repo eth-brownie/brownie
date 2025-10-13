@@ -29,9 +29,13 @@ except ImportError:
 else:
     # We only compile this library for CPython, other implementations will use it as normal interpreted python code
     # CPython users can also set the BROWNIE_NOCOMPILE env at install time to run brownie in interpreted python mode
-    skip_mypyc = os.environ.get("BROWNIE_NOCOMPILE") or platform.python_implementation() != "CPython" or any(
-        cmd in sys.argv
-        for cmd in ("sdist", "egg_info", "--name", "--version", "--help", "--help-commands")
+    skip_mypyc = (
+        os.environ.get("BROWNIE_NOCOMPILE")
+        or platform.python_implementation() != "CPython"
+        or any(
+            cmd in sys.argv
+            for cmd in ("sdist", "egg_info", "--name", "--version", "--help", "--help-commands")
+        )
     )
 if skip_mypyc:
     ext_modules = []
