@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index"
 
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Union
 
 from semantic_version import Version
 

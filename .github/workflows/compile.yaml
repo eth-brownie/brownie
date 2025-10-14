@@ -31,18 +31,29 @@ jobs:
     
 
     - name: Normalize C files for diffchecking
-        # This makes it much easier to diffcheck changes in the C files
+      # This makes it much easier to diffcheck changes in the C files
       run: |
-          # Insert DIFFCHECK_PLACEHOLDER macro at the top if not present
-          for f in build/*.c; do
-            if ! grep -q 'DIFFCHECK_PLACEHOLDER' "$f"; then
-              sed -i '1i#ifndef DIFFCHECK_PLACEHOLDER\n#define DIFFCHECK_PLACEHOLDER 0\n#endif' "$f"
-            fi
-          done
-          # Replace line number in CPy_AddTraceback with macro
-          sed -i 's/\(CPy_AddTraceback([^,]*, *[^,]*, *\)[0-9]\+\(, *[^)]*)\)/\1DIFFCHECK_PLACEHOLDER\2/g' build/*.c
-          # Replace index in CPyStatics[...] with macro
-          sed -i 's/CPyStatics\[[0-9]\+\]/CPyStatics[DIFFCHECK_PLACEHOLDER]/g' build/*.c
+        # Insert DIFFCHECK_PLACEHOLDER macro at the top if not present
+        for f in build/*.c; do
+          if ! grep -q 'DIFFCHECK_PLACEHOLDER' "$f"; then
+            sed -i '1i#ifndef DIFFCHECK_PLACEHOLDER\n#define DIFFCHECK_PLACEHOLDER 0\n#endif' "$f"
+          fi
+        done
+        # Replace line number in CPy_AddTraceback with macro
+        sed -i 's/\(CPy_AddTraceback([^,]*, *[^,]*, *\)[0-9]\+\(, *[^)]*)\)/\1DIFFCHECK_PLACEHOLDER\2/g' build/*.c
+        # Replace index in CPyStatics[...] with macro
+        sed -i 's/CPyStatics\[[0-9]\+\]/CPyStatics[DIFFCHECK_PLACEHOLDER]/g' build/*.c
+
+    - name: Restore ccache cache
+      id: restore-ccache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+        restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+    - name: Install ccache
+      run: sudo apt-get update && sudo apt-get install -y ccache
 
     - name: Restore ccache cache
       id: restore-ccache
@@ -63,7 +74,7 @@ jobs:
     - name: Save ccache cache
       uses: actions/cache/save@v4
       with:
-        path: ~/.ccache
+        path: ~/.cache/ccache
         key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
     - name: Create Pull Request
