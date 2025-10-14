@@ -106,6 +106,17 @@ jobs:
       - name: Install cibuildwheel
         run: python -m pip install --upgrade pip setuptools wheel cibuildwheel
 
+      - name: Restore ccache cache
+        id: restore-ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+      - name: Install ccache
+        run: sudo apt-get update && sudo apt-get install -y ccache
+
       - name: Build wheels
         env:
           # Skip PyPy
@@ -127,10 +138,9 @@ jobs:
           path: wheelhouse/*.whl
 
       - name: Save ccache cache
-        if: runner.os != 'Windows'
         uses: actions/cache/save@v4
         with:
-          path: ~/.ccache
+          path: ~/.cache/ccache
           key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
   publish_sdist_and_wheels:
