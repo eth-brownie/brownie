@@ -57,27 +57,8 @@ jobs:
         path: .mypy_cache
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
-    - name: Restore ccache cache
-      id: restore-ccache
-      uses: actions/cache/restore@v4
-      with:
-        path: ~/.ccache
-        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
-        restore-key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
-
-    - name: Install ccache
-      run: sudo apt-get update && sudo apt-get install -y ccache
-
     - name: Install Tox
-      env:
-          CC: ccache gcc
       run: pip install tox
-
-    - name: Save ccache cache
-      uses: actions/cache/save@v4
-      with:
-        path: ~/.ccache
-        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
       
     - name: Cache tox environment
       uses: actions/cache@v4
