@@ -37,19 +37,14 @@ jobs:
         sed -i 's/CPyStatics\[[0-9]\+\]/CPyStatics[DIFFCHECK_PLACEHOLDER]/g' build/*.c
 
     - name: Restore ccache cache
-      if: ${{ runner.os != 'Windows' }}
       id: restore-ccache
       uses: actions/cache/restore@v4
       with:
-        path: ~/.ccache
+        path: ~/.cache/ccache
         key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
         restore-key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
 
-    - name: Install ccache (Linux)
-      if: ${{ runner.os == 'Linux' }}
-      run: sudo apt-get update && sudo apt-get install -y ccache
-    - name: Install ccache (MacOS)
-      if: ${{ runner.os == 'Macos' }}
+    - name: Install ccache
       run: sudo apt-get update && sudo apt-get install -y ccache
 
     - name: Compile
@@ -58,7 +53,6 @@ jobs:
       run: pip install .
 
     - name: Save ccache cache
-      if: ${{ runner.os != 'Windows' }}
       uses: actions/cache/save@v4
       with:
         path: ~/.ccache
