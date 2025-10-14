@@ -55,7 +55,7 @@ jobs:
     - name: Save ccache cache
       uses: actions/cache/save@v4
       with:
-        path: ~/.ccache
+        path: ~/.cache/ccache
         key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
     - name: Create Pull Request
