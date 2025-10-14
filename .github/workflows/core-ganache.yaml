@@ -124,7 +124,7 @@ jobs:
         id: restore-ccache
         uses: actions/cache/restore@v4
         with:
-          path: ~/.ccache
+          path: ${{ matrix.ccache-dir }}
           key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
           restore-key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
 
@@ -149,7 +149,7 @@ jobs:
         if: runner.os != 'Windows'
         uses: actions/cache/save@v4
         with:
-          path: ~/.ccache
+          path: ${{ matrix.ccache-dir }}
           key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
       - name: Upload coverage to Codecov
