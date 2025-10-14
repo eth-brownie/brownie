@@ -134,6 +134,10 @@ jobs:
       - name: Install ccache (Macos)
         if: runner.os == 'MacOs'
         run: brew install -y ccache
+        
+      - name: Show ccache config and stats before build
+        if: runner.os != 'Windows'
+        run: ccache --version && ccache -p -s
 
       - name: Run Tox
         shell: bash
@@ -144,6 +148,10 @@ jobs:
           toxenv="py${{ matrix.python-version }}"
           toxenv="${toxenv//./}"
           tox -e "$toxenv"
+          
+      - name: Show ccache stats after build
+        if: always() && runner.os != 'Windows'
+        run: ccache -s
 
       - name: Save ccache cache
         if: always() && runner.os != 'Windows'
