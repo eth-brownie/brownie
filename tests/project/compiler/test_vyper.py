@@ -24,7 +24,7 @@ def test_generate_input_json(vysource):
 
 def test_generate_input_json_evm(vysource):
     fn = functools.partial(compiler.generate_input_json, {"path.vy": vysource}, language="Vyper")
-    assert fn()["settings"]["evmVersion"] == "paris"
+    assert fn()["settings"]["evmVersion"] == "istanbul"
 
     all_known_evm_versions = {v[0] for v in solidity.EVM_VERSION_MAPPING + vyper.EVM_VERSION_MAPPING}
     for evm_version in all_known_evm_versions:
