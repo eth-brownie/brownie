@@ -61,6 +61,12 @@ jobs:
           requirements-dev.in
           requirements-dev.txt
 
+    - name: Cache .mypy_cache
+      uses: actions/cache@v4
+      with:
+        path: .mypy_cache
+        key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
+
     - name: Install Tox
       run: pip install tox
 
