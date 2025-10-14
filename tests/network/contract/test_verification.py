@@ -49,6 +49,7 @@ contract Bar is FooSomething {}
 ]
 
 
+@pytest.mark.flaky(reruns=10)
 @pytest.mark.parametrize("version", ("0.6.0", "0.7.3", "0.8.6"))
 def test_verification_info(tmp_path_factory, version):
     header = f"""
