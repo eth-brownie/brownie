@@ -104,8 +104,27 @@ jobs:
             requirements-dev.in
             requirements-dev.txt
 
+      - name: Restore ccache cache
+        id: restore-ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          restore-key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+      - name: Install ccache
+        run: sudo apt-get update && sudo apt-get install -y ccache
+
       - name: Install Tox
+        env:
+          CC: ccache gcc
         run: python -m pip install --upgrade tox
+
+      - name: Save ccache cache
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
       - name: Cache tox environment and hypothesis examples
         uses: actions/cache@v4
