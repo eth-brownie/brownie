@@ -125,8 +125,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ matrix.ccache-dir }}
-          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
-          restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+          key: ccache-${{ runner.os }}-${{ matrix.python-version}}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          restore-keys: ccache-${{ runner.os }}-${{ matrix.python-version}}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
 
       - name: Install ccache (Linux)
         if: runner.os == 'Linux'
@@ -158,7 +158,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ matrix.ccache-dir }}
-          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          key: ccache-${{ runner.os }}-${{ matrix.python-version}}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
