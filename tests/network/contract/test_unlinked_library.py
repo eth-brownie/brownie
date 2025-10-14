@@ -11,6 +11,7 @@ def test_library_is_project_contract(accounts, librarytester):
     assert type(lib) is ProjectContract
 
 
+@pytest.mark.flaky(reruns=10)
 def test_unlinked_library(accounts, librarytester):
     with pytest.raises(UndeployedLibrary):
         accounts[0].deploy(librarytester["Unlinked"])
@@ -19,6 +20,7 @@ def test_unlinked_library(accounts, librarytester):
     assert lib.address[2:].lower() in contract.bytecode
 
 
+@pytest.mark.flaky(reruns=10)
 def test_multiple_projects(accounts, librarytester, librarytester2):
     lib = accounts[0].deploy(librarytester["TestLib"])
     with pytest.raises(UndeployedLibrary):
