@@ -27,9 +27,7 @@ jobs:
       with:
         path: .mypy_cache
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
-
-    
-
+        
     - name: Normalize C files for diffchecking
       # This makes it much easier to diffcheck changes in the C files
       run: |
@@ -43,17 +41,6 @@ jobs:
         sed -i 's/\(CPy_AddTraceback([^,]*, *[^,]*, *\)[0-9]\+\(, *[^)]*)\)/\1DIFFCHECK_PLACEHOLDER\2/g' build/*.c
         # Replace index in CPyStatics[...] with macro
         sed -i 's/CPyStatics\[[0-9]\+\]/CPyStatics[DIFFCHECK_PLACEHOLDER]/g' build/*.c
-
-    - name: Restore ccache cache
-      id: restore-ccache
-      uses: actions/cache/restore@v4
-      with:
-        path: ~/.cache/ccache
-        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
-        restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
-
-    - name: Install ccache
-      run: sudo apt-get update && sudo apt-get install -y ccache
 
     - name: Restore ccache cache
       id: restore-ccache
