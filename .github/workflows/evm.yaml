@@ -68,6 +68,8 @@ jobs:
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
     - name: Install Tox
+      env:
+        CC: ccache gcc
       run: pip install tox
       
     - name: Cache tox environment

@@ -68,6 +68,8 @@ jobs:
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
     - name: Install Tox
+      env:
+         CC: ccache gcc
       run: pip install tox
       
     - name: Cache tox environment
@@ -86,6 +88,12 @@ jobs:
 
     - name: Install ccache
       run: sudo apt-get update && sudo apt-get install -y ccache
+
+    - name: Save ccache cache
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.ccache
+        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
     - name: Run Tox
       env:
