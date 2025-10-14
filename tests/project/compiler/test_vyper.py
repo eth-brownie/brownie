@@ -23,9 +23,17 @@ def test_generate_input_json(vysource):
 
 def test_generate_input_json_evm(vysource):
     fn = functools.partial(compiler.generate_input_json, {"path.vy": vysource}, language="Vyper")
-    assert fn()["settings"]["evmVersion"] == "paris"
-    assert fn(evm_version="byzantium")["settings"]["evmVersion"] == "byzantium"
-    assert fn(evm_version="petersburg")["settings"]["evmVersion"] == "petersburg"
+    from brownie.project.compiler import solidity, vyper
+
+all_known_evm_versions = {v[0] for v in solidity.EVM_VERSION_MAPPING + vyper.EVM_VERSION_MAPPING}
+
+# the stuff above this comment goes up top of file, the stuff below goes in test_generate_input_json_evm
+
+
+assert fn()["settings"]["evmVersion"] == "paris"
+
+for evm_version in unique_evm_versions:
+    assert fn(evm_version=evm_version)["settings"]["evmVersion"] == evm_version
 
 
 def test_compile_input_json(vyjson):
