@@ -63,9 +63,34 @@ jobs:
 
     - name: Install Tox
       run: pip install tox
+      
+    - name: Cache tox environment
+      uses: actions/cache@v4
+      with:
+        path: .tox
+        key: ${{ runner.os }}-${{ matrix.job }}-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+
+    - name: Restore ccache cache
+      id: restore-ccache
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+        restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+    - name: Install ccache
+      run: sudo apt-get update && sudo apt-get install -y ccache
 
     - name: Run Tox
+      env:
+         CC: ccache gcc
       run: tox -e pmtest
+
+    - name: Save ccache cache
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
