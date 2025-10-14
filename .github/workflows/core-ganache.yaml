@@ -133,7 +133,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ccache
       - name: Install ccache (Macos)
         if: runner.os == 'MacOs'
-        run: brew install -y ccache
+        run: brew install ccache
         
       - name: Show ccache config and stats before build
         if: runner.os != 'Windows'
