@@ -66,7 +66,6 @@ from brownie.typing import (
     CompilerConfig,
     ContractBuildJson,
     ContractName,
-    EvmVersion,
     InterfaceBuildJson,
     Language,
     SolcConfig,
