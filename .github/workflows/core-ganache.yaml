@@ -146,7 +146,7 @@ jobs:
           tox -e "$toxenv"
 
       - name: Save ccache cache
-        if: runner.os != 'Windows'
+        if: always() && runner.os != 'Windows'
         uses: actions/cache/save@v4
         with:
           path: ${{ matrix.ccache-dir }}
