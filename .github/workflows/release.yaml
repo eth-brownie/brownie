@@ -92,14 +92,19 @@ jobs:
 
       - name: Restore ccache cache
         id: restore-ccache
+        if: runner.os != 'Windows'
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ccache
           key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
           restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
 
-      - name: Install ccache
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y ccache
+      - name: Install ccache (MacOS)
+        if: runner.os == 'MacOS'
+        run: brew install ccache
 
       - name: Build wheels
         env:
@@ -122,6 +127,7 @@ jobs:
           path: wheelhouse/*.whl
 
       - name: Save ccache cache
+        if: runner.os != 'Windows'
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/ccache
