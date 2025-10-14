@@ -64,6 +64,10 @@ jobs:
             infura-key: 1668fecbc9c242d58253476103a42ce9
           - python-version: "3.14t"
             infura-key: 21317ddb5ded42ce8d40c7d78f90474f
+          - os: ubuntu-latest
+            ccache-dir: ~/.cache/ccache
+          - os: macos-latest
+            ccache-dir: /Users/runner/Library/Caches/ccache
 
     steps:
       - uses: actions/checkout@v4
@@ -104,27 +108,8 @@ jobs:
             requirements-dev.in
             requirements-dev.txt
 
-      - name: Restore ccache cache
-        id: restore-ccache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
-          restore-key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
-
-      - name: Install ccache
-        run: sudo apt-get update && sudo apt-get install -y ccache
-
       - name: Install Tox
-        env:
-          CC: ccache gcc
         run: python -m pip install --upgrade tox
-
-      - name: Save ccache cache
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ccache
-          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
       - name: Cache tox environment and hypothesis examples
         uses: actions/cache@v4
@@ -134,14 +119,38 @@ jobs:
             .hypothesis
           key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
 
+      - name: Restore ccache cache
+        if: runner.os != 'Windows'
+        id: restore-ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          restore-key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ccache
+      - name: Install ccache (Macos)
+        if: runner.os == 'MacOs'
+        run: brew install -y ccache
+
       - name: Run Tox
         shell: bash
         env:
           WEB3_INFURA_PROJECT_ID: ${{ matrix.infura-key }}
+          CC: ccache gcc
         run: |
           toxenv="py${{ matrix.python-version }}"
           toxenv="${toxenv//./}"
           tox -e "$toxenv"
+
+      - name: Save ccache cache
+        if: runner.os != 'Windows'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
