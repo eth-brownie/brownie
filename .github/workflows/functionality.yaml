@@ -87,12 +87,6 @@ jobs:
     - name: Install ccache
       run: sudo apt-get update && sudo apt-get install -y ccache
 
-    - name: Save ccache cache
-      uses: actions/cache/save@v4
-      with:
-        path: ~/.ccache
-        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
-
     - name: Run Tox
       env:
          CC: ccache gcc
