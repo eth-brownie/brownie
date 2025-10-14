@@ -2,14 +2,12 @@
 # mypy: disable-error-code="index"
 
 from typing import (
-    Any,
     Dict,
     Final,
     List,
     Literal,
     Optional,
     Tuple,
-    Union,
     final,
 )
 
