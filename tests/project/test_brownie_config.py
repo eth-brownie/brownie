@@ -59,14 +59,20 @@ def test_load_project_cmd_settings(config, testproject, project_settings):
     cmd_settings_config = config.networks["development"]["cmd_settings"]
     for k, v in cmd_settings_config.items():
         if k != "port":
-            assert cmd_settings_network_raw[k] == v
+            try:
+                assert cmd_settings_network_raw[k] == v
+            except KeyError as e:
+                raise KeyError(*e.args, cmd_settings_network_raw) from e
 
     # Load the project with its project specific settings and assert that the CONFIG was updated
     testproject.load_config()
     cmd_settings_config = config.networks["development"]["cmd_settings"]
     for k, v in project_settings["cmd_settings"].items():
         if k != "port":
-            assert cmd_settings_config[k] == v
+            try:
+                assert cmd_settings_network_raw[k] == v
+            except KeyError as e:
+                raise KeyError(*e.args, cmd_settings_network_raw) from e
 
 
 def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_settings, network_name):
