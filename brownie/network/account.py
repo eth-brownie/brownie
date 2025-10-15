@@ -466,7 +466,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
             if isinstance(value, Iterator):
-                # if `get_gas_price` returns an interator, this is a gas strategy
+                # if `get_gas_price` returns an iterator, this is a gas strategy
                 # intended for rebroadcasting. we need to retain both the strategy
                 # object and the active gas price iterator
                 return Wei(next(value)), gas_price, value

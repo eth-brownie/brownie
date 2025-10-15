@@ -395,7 +395,7 @@ class EventWatcher(metaclass=_Singleton):
         to its initial state. If that is your goal, check the 'reset' method.
 
         Args:
-            wait (bool, optional): Wether to wait for thread to join within the function.
+            wait (bool, optional): Whether to wait for thread to join within the function.
                 Defaults to True.
         """
         self._kill = True
@@ -424,7 +424,7 @@ class EventWatcher(metaclass=_Singleton):
                 when a new 'event' is detected.
             delay (float, optional): The delay between each check for new 'event'(s).
                 Defaults to 2.0.
-            repeat (bool, optional): Wether to repeat the callback or not (if False,
+            repeat (bool, optional): Whether to repeat the callback or not (if False,
                 the callback will be called once only). Defaults to True.
 
         Raises:
