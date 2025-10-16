@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Various typos in API and core documentation for readability
 
 ### Changed
-- Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
+- Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875) and others)
 - Support Python3.14 and 3.14t ([#2008](https://github.com/eth-brownie/brownie/pull/2008))
 - Replace [eth-utils](https://github.com/ethereum/eth-utils) with [faster-eth-utils](https://github.com/BobTheBuidler/faster-eth-utils) ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
 - Replace [eth-abi](https://github.com/ethereum/eth-abi/) with [faster-eth-abi](https://github.com/BobTheBuidler/faster-eth-abi) ([#1977](https://github.com/eth-brownie/brownie/pull/1977))
