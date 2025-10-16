@@ -10,29 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - typing for *args and **kwargs ([#1870](https://github.com/eth-brownie/brownie/pull/1870))
 - singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
 - various other minor typing issues
-
-### Changed
-- compile half of the libarary to C with mypyc ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
-- optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
-- implement faster-eth-utils ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
-- support eth-utils v5 ([#1872](https://github.com/eth-brownie/brownie/pull/1872))
-
-## 1.22.0dev0
-### Fixed
 - Various typos in API and core documentation for readability
-- Tons of Mypy implementation fixes and improvements for improved type hinting accross the board
 
 ### Changed
-- Implementation of ([faster-eth-utils](https://github.com/BobTheBuidler/faster-eth-utils)) ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
-- Library compiled to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
-- Imported web3 and eth-typing hints for improved annotation ([#1912](https://github.com/eth-brownie/brownie/pull/1912))
-- Improved type hinting for readability ([#1921](https://github.com/eth-brownie/brownie/pull/1921))
-- Environment microoptimizations ([#1940](https://github.com/eth-brownie/brownie/pull/1940))
-- Terminal color formatting is now microoptimized for faster and prettier vibes ([#1976](https://github.com/eth-brownie/brownie/pull/1976))
-- Implementation of ([faster-eth-abi](https://github.com/BobTheBuidler/faster-eth-abi)) ([#1977](https://github.com/eth-brownie/brownie/pull/1977))
-- Replaced ([hexbytes](https://github.com/ethereum/hexbytes)) with ([faster-hexbytes](https://github.com/BobTheBuidler/faster-hexbytes)) for faster decoding ([#2004](https://github.com/eth-brownie/brownie/pull/2004))
-- Replaced built in json with ([ujson](https://github.com/ultrajson/ultrajson)) for 4x encoding/decoding speed improvements ([#2005](https://github.com/eth-brownie/brownie/pull/2005))
-- Implemented new test runners for Python 3.13, 3.14, and 3.14t to optimize code testing processes ([#2008](https://github.com/eth-brownie/brownie/pull/2008))
+- Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
+- Support Python3.14 and 3.14t ([#2008](https://github.com/eth-brownie/brownie/pull/2008))
+- Replace [eth-utils](https://github.com/ethereum/eth-utils) with [faster-eth-utils](https://github.com/BobTheBuidler/faster-eth-utils) ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
+- Replace [eth-abi](https://github.com/ethereum/eth-abi/) with [faster-eth-abi](https://github.com/BobTheBuidler/faster-eth-abi) ([#1977](https://github.com/eth-brownie/brownie/pull/1977))
+- Replace [hexbytes](https://github.com/ethereum/hexbytes) with [faster-hexbytes](https://github.com/BobTheBuidler/faster-hexbytes) ([#2004](https://github.com/eth-brownie/brownie/pull/2004))
+- Replaced builtin json with ([ujson](https://github.com/ultrajson/ultrajson)) for 4x encoding/decoding speed improvements ([#2005](https://github.com/eth-brownie/brownie/pull/2005))
+- Support eth-utils v5 ([#1872](https://github.com/eth-brownie/brownie/pull/1872))
+- optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
+- Various TypedDict definitions and other typing improvements
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
