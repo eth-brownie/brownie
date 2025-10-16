@@ -68,7 +68,7 @@ def is_cacheable_bytecode(web3: Web3, bytecode: faster_hexbytes.HexBytes) -> boo
             # the target was not hardcoded and we cannot cache
             return False
 
-    # check if the target code of each delegatecall is also cachable
+    # check if the target code of each delegatecall is also cacheable
     # if yes then we can cache this contract as well
     push20_indexes = (
         i
