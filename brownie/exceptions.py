@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import sys
-from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Type, final
 
 import psutil
@@ -12,7 +11,7 @@ from ujson import JSONDecodeError
 
 import brownie
 from brownie._c_constants import HexBytes, ujson_dump, ujson_load
-from brownie._config import _get_data_folder
+from brownie._config import DATA_FOLDER
 from brownie.convert.utils import build_function_selector, get_type_strings
 
 # network
@@ -33,6 +32,8 @@ SOLIDITY_ERROR_CODES: Final = {
     65: "Attempted to allocate too much memory",
     81: "Call to zero-initialized variable of internal function type",
 }
+
+_ERRORS_JSON: Final = DATA_FOLDER.joinpath("errors.json")
 
 
 @final
@@ -292,10 +293,6 @@ class BrownieConfigWarning(Warning):
     pass
 
 
-def __get_path() -> Path:
-    return _get_data_folder().joinpath("errors.json")
-
-
 def parse_errors_from_abi(abi: List[ABIElement]):
     updated = False
     for item in abi:
@@ -307,7 +304,7 @@ def parse_errors_from_abi(abi: List[ABIElement]):
             _errors[selector] = item  # type: ignore [assignment]
 
     if updated:
-        with __get_path().open("w") as fp:
+        with _ERRORS_JSON.open("w") as fp:
             ujson_dump(_errors, fp, sort_keys=True, indent=2)
 
 
@@ -317,7 +314,7 @@ _errors: Dict[HexStr, ABIError] = {
 
 
 try:
-    with __get_path().open() as fp:
+    with _ERRORS_JSON.open() as fp:
         _errors.update(ujson_load(fp))
 except (FileNotFoundError, JSONDecodeError):
     pass

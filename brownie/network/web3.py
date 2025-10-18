@@ -3,7 +3,7 @@
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Final, Optional, Set, final
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
@@ -17,14 +17,16 @@ from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
 from brownie._c_constants import ujson_dump, ujson_load
-from brownie._config import CONFIG, _get_data_folder
+from brownie._config import CONFIG, DATA_FOLDER
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 from brownie.network.middlewares import get_middlewares
 
-_chain_uri_cache: Dict = {}
+_ENS_JSON: Final = DATA_FOLDER.joinpath("ens.json")
+_chain_uri_cache: Final[Dict] = {}
 
 
+@final
 class Web3(_Web3):
     """Brownie Web3 subclass"""
 
@@ -194,10 +196,6 @@ def _expand_environment_vars(uri: str) -> str:
     raise ValueError(f"Unable to expand environment variable in host setting: '{uri}'")
 
 
-def _get_path() -> Path:
-    return _get_data_folder().joinpath("ens.json")
-
-
 def _resolve_address(domain: str) -> ChecksumAddress:
     # convert ENS domain to address
     if not isinstance(domain, str) or "." not in domain:
@@ -210,7 +208,7 @@ def _resolve_address(domain: str) -> ChecksumAddress:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)
         _ens_cache[domain] = [address, int(time.time())]
-        with _get_path().open("w") as fp:
+        with _ENS_JSON.open("w") as fp:
             ujson_dump(_ens_cache, fp)
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
@@ -221,7 +219,7 @@ web3 = Web3()
 web3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
 
 try:
-    with _get_path().open() as fp:
+    with _ENS_JSON.open() as fp:
         _ens_cache: Dict = ujson_load(fp)
 except (FileNotFoundError, JSONDecodeError):
     _ens_cache = {}
