@@ -71,7 +71,8 @@ else:
             # "--strict",
             "--pretty",
             "--check-untyped-defs",
-        ]
+        ],
+        group_name="eth_brownie",
     )
 
 
