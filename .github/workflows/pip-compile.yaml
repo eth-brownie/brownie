@@ -53,6 +53,9 @@ jobs:
         pip install -U types-PyYAML
         pip install -r requirements.txt
 
+    - name: Delete existing build files
+      run: rm -rf build
+      
     - name: Compile
       run: pip install .
     
