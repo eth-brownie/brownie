@@ -4,6 +4,7 @@
 #
 #    pip-compile
 #
+
 aiohappyeyeballs==2.6.1
     # via aiohttp
 aiohttp==3.13.2
