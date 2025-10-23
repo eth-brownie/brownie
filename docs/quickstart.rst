@@ -67,7 +67,7 @@ You will see the following output:
     - SafeMath.sol...
     Brownie project has been compiled at token/build/contracts
 
-You can change the compiler version and optimization settings by editting the :ref:`config file <config-solc>`.
+You can change the compiler version and optimization settings by editing the :ref:`config file <config-solc>`.
 
 .. note::
 
@@ -99,7 +99,7 @@ Accounts
 
 Access to local accounts is through :func:`accounts <brownie.network.account.Accounts>`, a list-like object that contains :func:`Account <brownie.network.account.Account>` objects capable of making transactions.
 
-Here is an example of checking a balance and transfering some ether:
+Here is an example of checking a balance and transferring some ether:
 
 .. code-block:: python
 
@@ -145,7 +145,7 @@ Brownie provides a :func:`ContractContainer <brownie.network.contract.ContractCo
 
 When a contact is deployed you are returned a :func:`Contract <brownie.network.contract.ProjectContract>` object that can be used to interact with it. This object is also added to the :func:`ContractContainer <brownie.network.contract.ContractContainer>`.
 
-:func:`Contract <brownie.network.contract.ProjectContract>` objects contain class methods for performing calls and transactions. In this example we are checking a token balance and transfering tokens:
+:func:`Contract <brownie.network.contract.ProjectContract>` objects contain class methods for performing calls and transactions. In this example we are checking a token balance and transferring tokens:
 
 .. code-block:: python
 
