@@ -378,7 +378,7 @@ class ReturnValue(tuple):
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
     
-    @overload
+    @overload  # type: ignore [override]
     def __getitem__(self, key: int) -> Any: ...
     @overload
     def __getitem__(self, key: str) -> Any: ...
@@ -387,7 +387,7 @@ class ReturnValue(tuple):
         self,
         key: "slice[Optional[int], Optional[int], Optional[int]]",
     ) -> "ReturnValue": ...
-    def __getitem__(  # type: ignore [override]
+    def __getitem__(
         self,
         key: Union[str, int, "slice[Optional[int], Optional[int], Optional[int]]"],
     ) -> Any:
