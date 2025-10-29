@@ -28,6 +28,7 @@ from brownie.typing import (
     InputJsonVyper,
     Offset,
     PcList,
+    PCMap,
     ProgramCounter,
     StatementMap,
     Statements,
