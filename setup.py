@@ -73,6 +73,7 @@ else:
             "--check-untyped-defs",
         ],
         group_name="eth_brownie",
+        strict_dunder_typing=True,
     )
 
 
