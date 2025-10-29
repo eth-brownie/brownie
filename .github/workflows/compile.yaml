@@ -39,6 +39,9 @@ jobs:
     - name: Install ccache
       run: sudo apt-get update && sudo apt-get install -y ccache
 
+    - name: Delete old build files
+      run: rm -rf build
+      
     - name: Compile
       env:
         CC: ccache gcc
