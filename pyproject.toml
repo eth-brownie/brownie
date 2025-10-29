@@ -17,6 +17,7 @@ requires = [
     "faster-hexbytes==1.3.3",
     "prompt-toolkit==3.0.52",
 	"py-solc-ast==1.2.10",
+	"py-solc-x==1.1.1",
 ]
 
 
