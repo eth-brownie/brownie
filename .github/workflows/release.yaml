@@ -151,10 +151,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine mypy[mypyc]==1.18.2 pony-stubs types-cachetools types-python-dateutil types-requests
+          pip install setuptools wheel twine
+    
+      - name: Drop build folder to prevent shadowing issues w/ the PyPA “build” module
+        run: rm -rf build
+
+      - name: Install PyPA “build” module
+        run: pip install -U build
 
       - name: Build sdist
-        run: python setup.py sdist
+        run: python -m build --sdist
 
       # ----------------------------------------------------
       # Download wheels built on each runner
