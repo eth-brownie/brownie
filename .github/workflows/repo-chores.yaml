@@ -48,6 +48,9 @@ jobs:
     - name: Run Pip Compile for Dev Deps
       run: pip-compile -U requirements-dev.in --no-strip-extras
 
+    - name: Delete existing build files
+      run: rm -rf build
+      
     - name: Compile
       run: pip install .
         

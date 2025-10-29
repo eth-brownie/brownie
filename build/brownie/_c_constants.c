@@ -4,11 +4,11 @@ PyMODINIT_FUNC
 PyInit__c_constants(void)
 {
     PyObject *tmp;
-    if (!(tmp = PyImport_ImportModule("b5e4b1180acefab623dd__mypyc"))) return NULL;
+    if (!(tmp = PyImport_ImportModule("eth_brownie__mypyc"))) return NULL;
     PyObject *capsule = PyObject_GetAttrString(tmp, "init_brownie____c_constants");
     Py_DECREF(tmp);
     if (capsule == NULL) return NULL;
-    void *init_func = PyCapsule_GetPointer(capsule, "b5e4b1180acefab623dd__mypyc.init_brownie____c_constants");
+    void *init_func = PyCapsule_GetPointer(capsule, "eth_brownie__mypyc.init_brownie____c_constants");
     Py_DECREF(capsule);
     if (!init_func) {
         return NULL;
