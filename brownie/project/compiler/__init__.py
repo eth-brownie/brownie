@@ -382,7 +382,7 @@ def generate_build_json(
                     path_str,
                     contract_alias,
                     ast,
-                    (0, len(source)),
+                    Offset((Start(0), Stop(len(source)))),
                 )
 
             build_json[contract_alias].update(
