@@ -175,7 +175,7 @@ def generate_input_json(
     contract_sources: Dict[str, str],
     optimize: bool = True,
     runs: int = 200,
-    evm_version: Optional[str] = None,
+    evm_version: Optional[EvmVersion] = None,
     language: Language = "Solidity",
     interface_sources: Optional[Dict[str, str]] = None,
     remappings: Optional[Union[List[str], str]] = None,
