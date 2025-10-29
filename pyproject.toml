@@ -8,8 +8,9 @@ requires = [
     "types-ujson",
 	# pydantic-core (installed with faster-eth-utils, which is installed with eth-event) is unable
     # to build on Python3.14 on 32-bit Linux distros so we exclude it in that one specific case
-	"eth-event>=1.4.3,<2; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
-    "eth-typing>=5,<6",
+	"eth-event==1.4.4; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
+    "eth-typing==5.2.1",
+    "faster-eth-abi==5.2.13; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
     "faster-hexbytes==1.3.3",
     "prompt-toolkit==3.0.52",
 ]
