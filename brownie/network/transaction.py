@@ -1388,6 +1388,10 @@ def _convert_0x_to_empty_bytes(value: Any) -> Any:
 
 def _format(value: Any) -> str:
     if isinstance(value, (list, tuple)):
+        try:
+            import black
+        except ImportError:
+            raise ImportError("You must `pip install black>=20.8b1` to use this feature")
         value = _convert_0x_to_empty_bytes(value)
         mode = black.FileMode(line_length=60)
         value = black.format_str(str(value), mode=mode).replace('b""', "0x")
