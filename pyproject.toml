@@ -6,6 +6,7 @@ requires = [
     "types-pyyaml",
     "types-requests",
     "types-ujson",
+    "eip712==0.2.14",
 	# pydantic-core (installed with faster-eth-utils, which is installed with eth-event) is unable
     # to build on Python3.14 on 32-bit Linux distros so we exclude it in that one specific case
     "eth-account==0.13.7",
