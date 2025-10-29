@@ -16,6 +16,7 @@ requires = [
     "faster-eth-utils==5.3.16; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
     "faster-hexbytes==1.3.3",
     "prompt-toolkit==3.0.52",
+	"py-solc-ast==1.2.10",
 ]
 
 
