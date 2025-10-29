@@ -13,7 +13,6 @@ on:
     paths:
       - '**.py'
       - '.github/workflows/black.yaml'
-    
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
