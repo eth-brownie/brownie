@@ -10,6 +10,7 @@ requires = [
     # to build on Python3.14 on 32-bit Linux distros so we exclude it in that one specific case
 	"eth-event>=1.4.3,<2; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
     "eth-typing>=5,<6",
+	"py-solc-x==1.1.1",
 ]
 
 
