@@ -332,8 +332,9 @@ def _generate_coverage_data(
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,
-) -> Tuple[Dict[int, ProgramCounter], StatementMap, BranchMap]:
+) -> Tuple[PCMap, StatementMap, BranchMap]:
     if not opcodes_str:
+        return PCMap({}), {}, {}
         return {}, {}, {}
 
     source_map = deque(expand_source_map(source_map_str))
@@ -461,7 +462,7 @@ def _generate_coverage_data(
     if revert_pc != -1:
         this["optimizer_revert"] = True
 
-    pc_map = {i.pop("pc"): i for i in pc_list}
+    pc_map = PCMap({i.pop("pc"): i for i in pc_list})
 
     return pc_map, {"0": statement_map}, {"0": branch_map}
 

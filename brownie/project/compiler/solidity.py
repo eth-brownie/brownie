@@ -27,6 +27,7 @@ from brownie.typing import (
     InputJsonSolc,
     Offset,
     PcList,
+    PCMap,
     ProgramCounter,
     SolidityBuildJson,
     Source,
@@ -344,9 +345,10 @@ def _generate_coverage_data(
     branch_nodes: BranchNodes,
     has_fallback: bool,
     instruction_count: int,
-) -> Tuple[PcMap, StatementMap, BranchMap]:
+) -> Tuple[PCMap, StatementMap, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
+        return PCMap({}), {}, {}
         return {}, {}, {}
 
     source_map = deque(expand_source_map(source_map_str))
@@ -547,7 +549,7 @@ def _generate_coverage_data(
                 branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)  # type: ignore [arg-type]
                 count += 1
 
-    pc_map: PcMap = {i.pop("pc"): i for i in pc_list}
+    pc_map = PCMap({i.pop("pc"): i for i in pc_list})
     return pc_map, statement_map, branch_map
 
 
