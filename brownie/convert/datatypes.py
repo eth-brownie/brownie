@@ -14,6 +14,7 @@ from typing import (
     TypeVar,
     Union,
     final,
+    overload,
 )
 
 try:
@@ -376,10 +377,19 @@ class ReturnValue(tuple):
 
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
-
+    
+    @overload
+    def __getitem__(self, key: int) -> Any: ...
+    @overload
+    def __getitem__(self, key: str) -> Any: ...
+    @overload
+    def __getitem__(
+        self,
+        key: "slice[Optional[int], Optional[int], Optional[int]]",
+    ) -> "ReturnValue": ...
     def __getitem__(  # type: ignore [override]
         self,
-        key: Union[str, int, "slice[int, int, int]"],
+        key: Union[str, int, "slice[Optional[int], Optional[int], Optional[int]]"],
     ) -> Any:
         if type(key) is slice:
             abi = self._abi
