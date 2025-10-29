@@ -2,7 +2,7 @@
 
 import pathlib
 import warnings
-from typing import Any, Dict, Final, List, Optional, Set, Tuple
+from typing import Any, Dict, Final, List, Optional, Set, Tuple, cast
 
 from brownie._c_constants import Path, ujson_dump, ujson_dumps, ujson_loads
 from brownie._config import CONFIG
@@ -10,7 +10,7 @@ from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.project.build import Build
-from brownie.typing import ContractName, CoverageMap
+from brownie.typing import BranchMap, ContractBuildJson, ContractName, CoverageMap, IntegerString, StatementMap
 from brownie.utils import color
 from brownie.utils._color import bright_green, bright_magenta, bright_red, bright_yellow
 
@@ -206,7 +206,7 @@ def _get_totals(
             del results[contract_name]
             continue
         try:
-            coverage_map = build.get(contract_name)["coverageMap"]  # type: ignore [typeddict-item]
+            coverage_map = cast(ContractBuildJson, build.get(contract_name))["coverageMap"]
         except KeyError:
             del results[contract_name]
             continue
@@ -223,9 +223,8 @@ def _get_totals(
 
 
 def _split_by_fn(
-    build: Build,
-    coverage_eval: Dict[ContractName, Dict[str, Dict[int, Set[int]]]],
-) -> Dict[ContractName, Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]]]:
+    build: Build, coverage_eval: CoverageEval
+) -> Dict[ContractName, Dict[IntegerString, Dict[str, Tuple[List[int], List[int], List[int]]]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
     results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
         i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval
@@ -236,13 +235,13 @@ def _split_by_fn(
             results[name] = {k: _split(v, map_, k) for k, v in coverage_eval[name].items()}
         except KeyError:
             del results[name]
-    return results
+    return results  # type: ignore [return-value]
 
 
 def _split(
     coverage_eval: Dict[int, Set[int]],
     coverage_map: CoverageMap,
-    key: str,
+    key: IntegerString,
 ) -> Dict[str, Tuple[List[int], List[int], List[int]]]:
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
@@ -261,9 +260,9 @@ def _split(
 
 
 def _statement_totals(
-    coverage_eval: Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]],
-    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
-    exclude_contracts,
+    coverage_eval: Dict[IntegerString, Dict[str, Tuple[List[int], List[int], List[int]]]],
+    coverage_map: StatementMap,
+    exclude_contracts: List[str],
 ) -> Tuple[Dict[str, Tuple[int, int]], Tuple[int, int]]:
     result: Dict[str, Tuple[int, int]] = {}
     count, total = 0, 0
@@ -282,8 +281,8 @@ def _statement_totals(
 
 
 def _branch_totals(
-    coverage_eval: Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]],
-    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
+    coverage_eval: Dict[IntegerString, Dict[str, Tuple[List[int], List[int], List[int]]]],
+    coverage_map: BranchMap,
     exclude_contracts: List[str],
 ) -> Tuple[Dict[str, Tuple[int, int, int]], Tuple[int, int, int]]:
     result: Dict[str, Tuple[int, int, int]] = {}

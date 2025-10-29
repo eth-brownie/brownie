@@ -416,7 +416,7 @@ def generate_build_json(
 
 
 def _sources_dict(original: Dict[str, Any], language: Language) -> SourcesDict:
-    result: SourcesDict = {}
+    result = SourcesDict({})
     for key, value in original.items():
         if Path(key).suffix == ".json":
             if isinstance(value, str):

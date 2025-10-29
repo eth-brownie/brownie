@@ -77,14 +77,14 @@ class InterfaceBuildJson(_BuildJsonBase):
     ast: NotRequired[List[Dict]]
 
 
-IntegerString = str
+IntegerString = NewType("IntegerString", str)
 """An integer cast as a string, as in: ``str(123)``"""
 
-Statements = Dict[str, Dict["Count", Offset]]
-StatementMap = Dict[IntegerString, Statements]
+Statements = NewType("Statements", Dict[str, Dict["Count", Offset]])
+StatementMap = NewType("StatementMap", Dict[IntegerString, Statements])
 
-Branches = Dict[str, Dict["Count", Tuple[int, int, bool]]]
-BranchMap = Dict[IntegerString, Branches]
+Branches = NewType("Branches", Dict[str, Dict["Count", Tuple[int, int, bool]]])
+BranchMap = NewType("BranchMap", Dict[IntegerString, Branches])
 
 
 class CoverageMap(TypedDict):
@@ -102,7 +102,7 @@ class _ContractBuildJson(_BuildJsonBase):
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
     coverageMap: CoverageMap
-    pcMap: Dict[int, "ProgramCounter"]
+    pcMap: "PCMap"
     compiler: NotRequired["CompilerConfig"]
     ast: NotRequired[List]
 
@@ -129,7 +129,9 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 # Compiler
 Language = Literal["Solidity", "Vyper"]
 EvmVersion = NewType("EvmVersion", str)
-Source = Tuple[Start, Stop, ContractName, str]
+ContractId = NewType("ContractId", int)
+JumpCode = NewType("JumpCode", int)
+Source = NewType("Source", Tuple[Start, Stop, ContractId | Literal[-1], JumpCode])
 
 
 class ContractSource(TypedDict):
@@ -140,8 +142,8 @@ class InterfaceSource(TypedDict):
     abi: List[ABIElement]
 
 
-SourcesDict = Dict[str, ContractSource | InterfaceSource]
-InterfaceSources = Dict[str, InterfaceSource]
+SourcesDict = NewType("SourcesDict", Dict[str, ContractSource | InterfaceSource])
+InterfaceSources = NewType("InterfaceSources", Dict[str, InterfaceSource])
 
 
 @final
@@ -176,7 +178,7 @@ class CompilerConfig(TypedDict):
     optimizer: NotRequired[OptimizerSettings]
 
 
-OutputSelection = Dict[str, Dict[str, List[str]]]
+OutputSelection = NewType("OutputSelection", Dict[str, Dict[str, List[str]]])
 
 
 class _CompilerSettings(TypedDict):
@@ -219,18 +221,18 @@ class InputJsonVyper(_InputJsonBase, total=False):
 InputJson = InputJsonSolc | InputJsonVyper
 
 
-Count = int
+Count = NewType("Count", int)
 
 
 class ProgramCounter(TypedDict):
     count: Count
     op: str
     fn: NotRequired[Optional[str]]
-    path: NotRequired[str]
+    path: NotRequired[IntegerString]
     value: NotRequired[str]
-    pc: NotRequired[int]
+    pc: NotRequired[Count]
     branch: NotRequired[Count]
-    jump: NotRequired[str]
+    jump: NotRequired[JumpCode]
     dev: NotRequired[str]
     offset: NotRequired[Offset]
     optimizer_revert: NotRequired[Literal[True]]
@@ -239,8 +241,8 @@ class ProgramCounter(TypedDict):
     statement: NotRequired[Count]
 
 
-PcList = List[ProgramCounter]
-PCMap = NewType("PCMap", Dict[int, ProgramCounter])
+PCList = NewType("PCList", List[ProgramCounter])
+PCMap = NewType("PCMap", Dict[Count, ProgramCounter])
 
 
 class VyperAstNode(TypedDict):
@@ -256,4 +258,4 @@ class VyperAstNode(TypedDict):
     test: Dict
 
 
-VyperAstJson = List[VyperAstNode]
+VyperAstJson = NewType("VyperAstJson", List[VyperAstNode])

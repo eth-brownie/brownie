@@ -15,7 +15,7 @@ VersionList = List[Version]
 
 
 def expand_source_map(source_map_str: str | dict) -> List[Source]:
-    """Expand the compressed sourceMap supplied by solc into a list of Tuple[Start, Stop, ContractName, str]."""
+    """Expand the compressed sourceMap supplied by solc into a list of Tuple[Start, Stop, ContractId, JumpCode]."""
 
     if isinstance(source_map_str, dict):
         # NOTE: vyper >= 0.4 gives us a dict that contains the source map

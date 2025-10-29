@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Dict, Final, List, Optional, Set, Tuple, Union
+from typing import Dict, Final, List, Optional, Set, Tuple, Union, cast
 
 import semantic_version
 import vvm
@@ -25,11 +25,15 @@ from brownie.typing import (
     Branches,
     BranchMap,
     ContractName,
+    Count,
     InputJsonVyper,
+    IntegerString,
     Offset,
-    PcList,
+    OutputSelection,
+    PCList,
     PCMap,
     ProgramCounter,
+    SourcesDict,
     Start,
     StatementMap,
     Statements,
@@ -95,8 +99,8 @@ def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List
     """
     input_json: InputJsonVyper = {  # type: ignore [typeddict-item]
         "language": "Vyper",
-        "sources": {name: {"content": contract_source}},
-        "settings": {"outputSelection": {"*": {"*": ["abi"]}}},
+        "sources": SourcesDict({name: {"content": contract_source}}),
+        "settings": {"outputSelection": OutputSelection({"*": {"*": ["abi"]}})},
     }
     if _active_version == Version(vyper.__version__):
         try:
@@ -286,11 +290,11 @@ def _get_unique_build_json(
     output_evm: Dict,
     path_str: str,
     contract_name: ContractName,
-    ast_json: Union[Dict, List],
+    ast_json: Union[Dict, VyperAstJson],
     offset: Offset,
 ) -> VyperBuildJson:
 
-    ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json
+    ast = VyperAstJson(ast_json["body"]) if isinstance(ast_json, dict) else ast_json
     deployed_bytecode: dict = output_evm["deployedBytecode"]
     pc_map, statement_map, branch_map = _generate_coverage_data(
         deployed_bytecode["sourceMap"],
@@ -314,18 +318,18 @@ def _get_unique_build_json(
     }
 
 
-def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
+def _get_dependencies(ast_json: VyperAstJson) -> List[ContractName]:
     return sorted(
         {
-            i["name"].split(".")[-1]
+            ContractName(i["name"].split(".")[-1])
             for i in ast_json
-            if i["ast_type"] == "Import"
-            or (i["ast_type"] == "ImportFrom" and i["module"] != "vyper.interfaces")
+            if (ast_type := i["ast_type"]) == "Import"
+            or (ast_type == "ImportFrom" and i["module"] != "vyper.interfaces")
         }
     )
 
 
-def _is_revert_jump(pc_list: PcList, revert_pc: int) -> bool:
+def _is_revert_jump(pc_list: PCList, revert_pc: int) -> bool:
     return pc_list[-1]["op"] == "JUMPI" and int(pc_list[-2].get("value", "0"), 16) == revert_pc
 
 
@@ -336,21 +340,20 @@ def _generate_coverage_data(
     ast_json: VyperAstJson,
 ) -> Tuple[PCMap, StatementMap, BranchMap]:
     if not opcodes_str:
-        return PCMap({}), {}, {}
-        return {}, {}, {}
+        return PCMap({}), StatementMap({}), BranchMap({})
 
     source_map = deque(expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
 
-    fn_nodes = [i for i in ast_json if i["ast_type"] == "FunctionDef"]
+    fn_nodes = VyperAstJson([i for i in ast_json if i["ast_type"] == "FunctionDef"])
     fn_offsets = {i["name"]: _convert_src(i["src"]) for i in fn_nodes}
     stmt_nodes = {_convert_src(i["src"]) for i in _get_statement_nodes(fn_nodes)}
 
-    statement_map: Statements = {}
-    branch_map: Branches = {}
+    statement_map = Statements({})
+    branch_map = Branches({})
 
-    pc_list: PcList = []
-    count, pc = 0, 0
+    pc_list = PCList([])
+    count, pc = Count(0), 0
 
     revert_pc = -1
     if opcodes[-5] == "JUMPDEST" and opcodes[-1] == "REVERT":
@@ -382,7 +385,7 @@ def _generate_coverage_data(
             if (len(pc_list) > 6 and pc_list[-7]["op"] == "CALLVALUE" and op == "REVERT") or (
                 len(pc_list) > 2
                 and pc_list[-3]["op"] == "CALLVALUE"
-                and _is_revert_jump(pc_list[-2:], revert_pc)
+                and _is_revert_jump(PCList(pc_list[-2:]), revert_pc)
             ):
                 # special case - initial nonpayable check on vyper >=0.2.5
                 this["dev"] = "Cannot send ether to nonpayable function"
@@ -396,7 +399,7 @@ def _generate_coverage_data(
             continue
 
         offset: Offset = (start, start + stop)  # type: ignore [assignment]
-        this["path"] = "0"
+        this["path"] = IntegerString("0")
         this["offset"] = offset
 
         try:
@@ -410,7 +413,7 @@ def _generate_coverage_data(
                 stmt_nodes.remove(stmt_offset)
                 statement_map.setdefault(this_fn, {})[count] = stmt_offset
                 this["statement"] = count
-                count += 1
+                count = Count(count + 1)
         except (KeyError, IndexError, StopIteration):
             pass
 
@@ -422,7 +425,7 @@ def _generate_coverage_data(
             continue
 
         node_ast_type = node["ast_type"]
-        if op == "REVERT" or _is_revert_jump(pc_list[-2:], revert_pc):
+        if op == "REVERT" or _is_revert_jump(PCList(pc_list[-2:]), revert_pc):
             # custom revert error strings
             if node_ast_type == "FunctionDef":
                 if (op == "REVERT" and pc_list[-7]["op"] == "CALLVALUE") or (
@@ -456,17 +459,19 @@ def _generate_coverage_data(
                 branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)  # type: ignore [index]
             else:
                 branch_map[this_fn][count] = offset + (True,)  # type: ignore [index]
-            count += 1
+            count = Count(count + 1)
 
     first = pc_list[0]
-    first["path"] = "0"
+    first["path"] = IntegerString("0")
     first["offset"] = Offset((Start(0), _convert_src(ast_json[-1]["src"])[1]))
     if revert_pc != -1:
-        this["optimizer_revert"] = True
+        this["optimizer_revert"] = True    
 
-    pc_map = PCMap({i.pop("pc"): i for i in pc_list})
-
-    return pc_map, {"0": statement_map}, {"0": branch_map}
+    return (
+        PCMap({i.pop("pc"): i for i in pc_list}),
+        StatementMap({IntegerString("0"): statement_map}),
+        BranchMap({IntegerString("0"): branch_map}),
+    )
 
 
 def _convert_src(src: str) -> Offset:
@@ -484,25 +489,28 @@ def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> Optional[Vyp
         if is_inside_offset(offset, converted_src):
             if converted_src == offset:
                 return node
-            node_list: VyperAstJson = [
-                i for i in node.values() if isinstance(i, dict) and "ast_type" in i  # type: ignore [misc]
-            ]
+            node_list = VyperAstJson(
+                [cast(VyperAstNode, i) for i in node.values() if isinstance(i, dict) and "ast_type" in i]
+            )
             for v in node.values():
                 if isinstance(v, list):
                     node_list.extend(v)
             if node_list:
                 result = _find_node_by_offset(node_list, offset)
             else:
-                result = _find_node_by_offset(ast_json[ast_json.index(node) + 1 :], offset)
+                result = _find_node_by_offset(
+                    VyperAstJson(ast_json[ast_json.index(node) + 1 :]),
+                    offset,
+                )
             if result is not None:
                 return result
     return None
 
 
 def _get_statement_nodes(ast_json: VyperAstJson) -> VyperAstJson:
-    stmt_nodes = []
+    stmt_nodes = VyperAstJson([])
     for node in ast_json:
-        if children := [x for v in node.values() if isinstance(v, list) for x in v]:
+        if children := VyperAstJson([x for v in node.values() if isinstance(v, list) for x in v]):
             stmt_nodes += _get_statement_nodes(children)
         else:
             stmt_nodes.append(node)

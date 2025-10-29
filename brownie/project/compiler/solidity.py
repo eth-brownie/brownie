@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
+from typing import Any, Deque, Dict, Final, List, NewType, Optional, Set, Tuple, cast
 
 import semantic_version
 import solcast
@@ -12,7 +12,7 @@ from solcast.nodes import NodeBase, is_inside_offset
 
 from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
-from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import (
     VersionList,
     VersionSpec,
@@ -20,18 +20,21 @@ from brownie.project.compiler.utils import (
     expand_source_map,
 )
 from brownie.typing import (
+    Branches,
     BranchMap,
     BytecodeJson,
     Count,
     DeployedBytecodeJson,
     InputJsonSolc,
+    IntegerString,
     Offset,
-    PcList,
+    PCList,
     PCMap,
     ProgramCounter,
     SolidityBuildJson,
     Source,
     StatementMap,
+    Statements,
 )
 
 from . import sources
@@ -57,9 +60,8 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-PcMap = Dict[Count, ProgramCounter]
-StatementNodes = Dict[str, Set[Offset]]
-BranchNodes = Dict[str, Set[NodeBase]]
+StatementNodes = NewType("StatementNodes", Dict[str, Set[Offset]])
+BranchNodes = NewType("BranchNodes", Dict[str, Set[NodeBase]])
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
@@ -340,7 +342,7 @@ def _remove_metadata(bytecode: HexStr) -> HexStr:
 def _generate_coverage_data(
     source_map_str: str,
     opcodes_str: str,
-    contract_node: Any,
+    contract_node: NodeBase,
     stmt_nodes: StatementNodes,
     branch_nodes: BranchNodes,
     has_fallback: bool,
@@ -348,29 +350,31 @@ def _generate_coverage_data(
 ) -> Tuple[PCMap, StatementMap, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
-        return PCMap({}), {}, {}
-        return {}, {}, {}
+        return PCMap({}), StatementMap({}), BranchMap({})
 
     source_map = deque(expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
 
-    contract_nodes = [contract_node] + contract_node.dependencies
-    source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
+    contract_nodes: List[NodeBase] = [contract_node] + contract_node.dependencies
+    source_nodes: Dict[IntegerString, NodeBase] = {
+        IntegerString(str(i.contract_id)): i.parent()
+        for i in contract_nodes
+    }
 
-    stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
-    statement_map: StatementMap = {i: {} for i in source_nodes}
+    stmt_nodes = StatementNodes({i: stmt_nodes[i].copy() for i in source_nodes})
+    statement_map = StatementMap({i: Statements({}) for i in source_nodes})
 
     # possible branch offsets
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
-    branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
+    branch_nodes = BranchNodes({i: {i.offset for i in branch_nodes[i]} for i in source_nodes})
     # currently active branches, awaiting a jumpi
     branch_active: Dict[str, Dict[Offset, int]] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict[str, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
+    branch_set: Dict[IntegerString, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
 
-    count, pc = 0, 0
-    pc_list: PcList = []
-    revert_map: Dict[Tuple[str, Offset], List[int]] = {}
+    count, pc = Count(0), 0
+    pc_list = PCList([])
+    revert_map: Dict[Tuple[IntegerString, Offset], List[int]] = {}
     fallback_hexstr: str = "unassigned"
 
     optimizer_revert = get_version() < Version("0.8.0")
@@ -423,7 +427,7 @@ def _generate_coverage_data(
             continue
 
         # set contract path (-1 means none)
-        contract_id = str(source[2])
+        contract_id = IntegerString(str(source[2]))
         if contract_id not in source_nodes:
             # In Solidity >=0.7.2 contract ID can reference an AST within the YUL-optimization
             # "generatedSources". Brownie does not support coverage evaluation within these
@@ -491,7 +495,7 @@ def _generate_coverage_data(
                 stmt_nodes[contract_id].discard(stmt_offset)
                 statement_map[contract_id].setdefault(active_fn_name, {})[count] = stmt_offset
                 this["statement"] = count
-                count += 1
+                count = Count(count + 1)
         except (KeyError, IndexError, StopIteration):
             pass
 
@@ -536,25 +540,25 @@ def _generate_coverage_data(
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map: BranchMap = {i: {} for i in source_nodes}
+    branch_map = BranchMap({i: Branches({}) for i in source_nodes})
     for path, markers in branch_set.items():
         for offset, idx in markers.items():
             # for branch to be hit, need an op relating to the source and the next JUMPI
             # this is because of how the compiler optimizes nested BinaryOperations
             if "fn" in pc_list[idx[0]]:
-                fn = pc_list[idx[0]]["fn"]
+                fn = cast(str, pc_list[idx[0]]["fn"])
                 pc_list[idx[0]]["branch"] = count
                 pc_list[idx[1]]["branch"] = count
                 node = next(i for i in branch_original[path] if i.offset == offset)
-                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)  # type: ignore [arg-type]
-                count += 1
+                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
+                count = Count(count + 1)
 
     pc_map = PCMap({i.pop("pc"): i for i in pc_list})
     return pc_map, statement_map, branch_map
 
 
 def _find_revert_offset(
-    pc_list: PcList,
+    pc_list: PCList,
     source_map: Deque[Source],
     source_node: NodeBase,
     fn_node: NodeBase,
@@ -580,8 +584,10 @@ def _find_revert_offset(
 
     # get the offset of the next instruction
     next_offset = None
-    if source_map and source_map[0][2] != -1:
-        next_offset = (source_map[0][0], source_map[0][0] + source_map[0][1])
+    if source_map:
+        next_instruction = source_map[0]
+        if next_instruction[2] != -1:
+            next_offset = (next_instruction[0], next_instruction[0] + next_instruction[1])
 
     # if the next instruction offset is not equal to the offset of the active function,
     # but IS contained within the active function, apply this offset to the current
@@ -654,23 +660,25 @@ def _get_nodes(output_json: Dict) -> Tuple[List[NodeBase], StatementNodes, Branc
 
 def _get_statement_nodes(source_nodes: List[NodeBase]) -> StatementNodes:
     # Given a list of source nodes, returns a dict of lists of statement nodes
-    return {
-        str(node.contract_id): {
-            i.offset
-            for i in node.children(
-                include_parents=False,
-                filters={"baseNodeType": "Statement"},
-                exclude_filter={"isConstructor": True},
-            )
+    return StatementNodes(
+        {
+            str(node.contract_id): {
+                i.offset
+                for i in node.children(
+                    include_parents=False,
+                    filters={"baseNodeType": "Statement"},
+                    exclude_filter={"isConstructor": True},
+                )
+            }
+            for node in source_nodes
         }
-        for node in source_nodes
-    }
+    )
 
 
 def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
     # Given a list of source nodes, returns a dict of lists of nodes corresponding
     # to possible branches in the code
-    branches: BranchNodes = {}
+    branches = BranchNodes({})
     for node in source_nodes:
         contract_branches: Set[NodeBase] = set()
         branches[str(node.contract_id)] = contract_branches
