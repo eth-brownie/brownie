@@ -704,7 +704,7 @@ def _get_recursive_branches(base_node: NodeBase) -> Set[NodeBase]:
         # if node is FunctionCall, look at the first argument
         if node_type == "FunctionCall":
             node = node.arguments[0]
-        # some versions of solc do not map IfStatement unary opertions to bytecode
+        # some versions of solc do not map IfStatement unary operations to bytecode
         elif node.nodeType == "UnaryOperation":
             node = node.subExpression
         node.jump = jump_is_truthful

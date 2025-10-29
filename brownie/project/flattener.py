@@ -10,7 +10,7 @@ from brownie._c_constants import (
 )
 from brownie.utils.toposort import toposort_flatten
 
-# Patten matching Solidity `import-directive`, capturing path component
+# Pattern matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
 IMPORT_PATTERN: Final = regex_compile(
     r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"

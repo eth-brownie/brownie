@@ -20,7 +20,7 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
     ) -> Dict[str, Any]:
         result = make_request(method, params)
 
-        # reformat failed eth_call / eth_sendTransaction output to mimick that of Ganache 6.x
+        # reformat failed eth_call / eth_sendTransaction output to mimic that of Ganache 6.x
         # yes, this is hacky and awful and in the future we should stop supporting
         # the older version of ganache. but doing so will cause unexpected issues
         # in projects that are still pinned to the old version, so for now we support

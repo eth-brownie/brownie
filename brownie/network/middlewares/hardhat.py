@@ -24,7 +24,7 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
     ) -> Dict[str, Any]:
         result = make_request(method, params)
 
-        # modify Hardhat transaction error to mimick the format that Ganache uses
+        # modify Hardhat transaction error to mimic the format that Ganache uses
         if (
             method in {"eth_call", "eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
@@ -36,7 +36,7 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
             ):
                 if method == "eth_call":
                     # ganache returns a txid even on a failed eth_call, which is weird,
-                    # but we still mimick it here for the sake of consistency
+                    # but we still mimic it here for the sake of consistency
                     txid = "0x"
                 else:
                     txid = error["data"]["txHash"]
