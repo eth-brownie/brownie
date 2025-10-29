@@ -31,7 +31,7 @@ from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
 from brownie.project.build import DEPLOYMENT_KEYS
-from brownie.typing import ContractBuildJson, ContractName, ProgramCounter
+from brownie.typing import ContractBuildJson, ContractName, Count, PCMap, ProgramCounter
 from brownie.utils import bytes_to_hexstring
 from brownie.utils.sql import Cursor
 
@@ -653,7 +653,7 @@ def _get_deployment(
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
     pc_map: Optional[Dict[int | str, ProgramCounter]] = build_json.get("pcMap")  # type: ignore [assignment]
     if isinstance(pc_map, dict):
-        build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
+        build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
 
     return build_json, sources
 

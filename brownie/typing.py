@@ -240,6 +240,7 @@ class ProgramCounter(TypedDict):
 
 
 PcList = List[ProgramCounter]
+PCMap = NewType("PCMap", Dict[int, ProgramCounter])
 
 
 class VyperAstNode(TypedDict):

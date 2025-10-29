@@ -15,9 +15,11 @@ from brownie.typing import (
     BuildJson,
     ContractBuildJson,
     ContractName,
+    Count,
     InterfaceBuildJson,
     Language,
     Offset,
+    PCMap,
     ProgramCounter,
 )
 
@@ -82,7 +84,7 @@ class Build:
 
         pc_map: Dict[int | str, ProgramCounter] = build_json["pcMap"]  # type: ignore [assignment]
         if "0" in pc_map:
-            build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
+            build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
         self._generate_revert_map(pc_map, build_json["allSourcePaths"], build_json["language"])
 
     def _add_interface(self, build_json: InterfaceBuildJson) -> None:
