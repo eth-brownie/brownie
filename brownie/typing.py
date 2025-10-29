@@ -45,8 +45,8 @@ TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionRec
 
 
 # PROJECT
-Start = int
-Stop = int
+Start = NewType("Start", int)
+Stop = NewType("Stop", int)
 Offset = Tuple[Start, Stop]
 
 
