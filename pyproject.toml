@@ -9,8 +9,8 @@ requires = [
     # ckzg (installed with eth-account and eip712) is unable to build on Python3.10 for Windows
 	# pydantic-core (installed with eth-account, eip712, and faster-eth-utils - which is installed with eth-event) is unable
     # to build on Python3.14 on 32-bit Linux distros so we exclude it in that one specific case
-    "eip712==0.2.14; platform_system == 'MacOS' platform_system == 'Windows' or (platform_system == 'Linux' and python_version != '3.14')",
-    "eth-account==0.13.7; platform_system == 'MacOS' platform_system == 'Windows' or (platform_system == 'Linux' and python_version != '3.14')",
+    "eip712==0.2.14; platform_system == 'MacOS' or platform_system == 'Windows' or (platform_system == 'Linux' and python_version != '3.14')",
+    "eth-account==0.13.7; platform_system == 'MacOS' or platform_system == 'Windows' or (platform_system == 'Linux' and python_version != '3.14')",
 	"eth-event==1.4.5; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
     "eth-keys==0.7.0",
     "eth-typing==5.2.1",
