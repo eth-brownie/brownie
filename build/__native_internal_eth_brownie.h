@@ -1747,7 +1747,7 @@ extern PyObject *CPyDef_vyper___find_best_vyper_version(PyObject *cpy_r_contract
 extern PyObject *CPyPy_vyper___find_best_vyper_version(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper___compile_from_input_json(PyObject *cpy_r_input_json, char cpy_r_silent, PyObject *cpy_r_allow_paths);
 extern PyObject *CPyPy_vyper___compile_from_input_json(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_vyper____get_unique_build_json(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, tuple_T2II cpy_r_offset);
+extern PyObject *CPyDef_vyper____get_unique_build_json(PyObject *cpy_r_output_evm, PyObject *cpy_r_path_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
 extern PyObject *CPyPy_vyper____get_unique_build_json(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper____get_dependencies(PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____get_dependencies(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
@@ -1755,9 +1755,9 @@ extern char CPyDef_vyper____is_revert_jump(PyObject *cpy_r_pc_list, CPyTagged cp
 extern PyObject *CPyPy_vyper____is_revert_jump(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern tuple_T3OOO CPyDef_vyper____generate_coverage_data(PyObject *cpy_r_source_map_str, PyObject *cpy_r_opcodes_str, PyObject *cpy_r_contract_name, PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____generate_coverage_data(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern tuple_T2II CPyDef_vyper____convert_src(PyObject *cpy_r_src);
+extern PyObject *CPyDef_vyper____convert_src(PyObject *cpy_r_src);
 extern PyObject *CPyPy_vyper____convert_src(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_vyper____find_node_by_offset(PyObject *cpy_r_ast_json, tuple_T2II cpy_r_offset);
+extern PyObject *CPyDef_vyper____find_node_by_offset(PyObject *cpy_r_ast_json, PyObject *cpy_r_offset);
 extern PyObject *CPyPy_vyper____find_node_by_offset(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper____get_statement_nodes(PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____get_statement_nodes(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
@@ -2166,9 +2166,9 @@ extern PyObject *CPyDef_sources___Sources___get_interface_sources(PyObject *cpy_
 extern PyObject *CPyPy_sources___Sources___get_interface_sources(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_sources___Sources___get_source_path(PyObject *cpy_r_self, PyObject *cpy_r_contract_name, char cpy_r_is_interface);
 extern PyObject *CPyPy_sources___Sources___get_source_path(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern char CPyDef_sources___is_inside_offset(tuple_T2II cpy_r_inner, tuple_T2II cpy_r_outer);
+extern char CPyDef_sources___is_inside_offset(PyObject *cpy_r_inner, PyObject *cpy_r_outer);
 extern PyObject *CPyPy_sources___is_inside_offset(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern tuple_T2OO CPyDef_sources___highlight_source(PyObject *cpy_r_source, tuple_T2II cpy_r_offset, CPyTagged cpy_r_pad);
+extern tuple_T2OO CPyDef_sources___highlight_source(PyObject *cpy_r_source, PyObject *cpy_r_offset, CPyTagged cpy_r_pad);
 extern PyObject *CPyPy_sources___highlight_source(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_sources___get_contract_names(PyObject *cpy_r_full_source);
 extern PyObject *CPyPy_sources___get_contract_names(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
