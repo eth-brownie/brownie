@@ -128,7 +128,7 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 
 # Compiler
 Language = Literal["Solidity", "Vyper"]
-EvmVersion = str
+EvmVersion = NewType("EvmVersion", str)
 Source = Tuple[Start, Stop, ContractName, str]
 
 

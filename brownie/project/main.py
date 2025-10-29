@@ -66,6 +66,7 @@ from brownie.typing import (
     CompilerConfig,
     ContractBuildJson,
     ContractName,
+    EvmVersion,
     InterfaceBuildJson,
     Language,
     SolcConfig,
@@ -123,7 +124,7 @@ class _ProjectBase:
             vyper_config = compiler_config["vyper"]
 
             project_evm_version = compiler_config["evm_version"]
-            evm_version: Dict[Language, Optional[str]] = {
+            evm_version: Dict[Language, Optional[EvmVersion]] = {
                 "Solidity": solc_config.get("evm_version", project_evm_version),
                 "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
@@ -739,7 +740,7 @@ def compile_source(
     vyper_version: Optional[str] = None,
     optimize: bool = True,
     runs: Optional[int] = 200,
-    evm_version: Optional[str] = None,
+    evm_version: Optional[EvmVersion] = None,
 ) -> "TempProject":
     """
     Compile the given source code string and return a TempProject container with

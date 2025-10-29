@@ -16,6 +16,7 @@ from mypy_extensions import mypyc_attr
 from brownie._c_constants import Path, deepcopy, defaultdict, regex_sub, ujson_loads
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
+from brownie.typing import EvmVersion
 
 __version__: Final = "1.22.0"
 
@@ -24,7 +25,10 @@ DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = "accounts", "packages"
 
-EVM_EQUIVALENTS: Final = {"atlantis": "byzantium", "agharta": "petersburg"}
+EVM_EQUIVALENTS: Final[Dict[EvmVersion, EvmVersion]] = {
+    EvmVersion("atlantis"): EvmVersion("byzantium"),
+    EvmVersion("agharta"): EvmVersion("petersburg"),
+}
 
 python_version: Final = (
     f"{sys.version_info.major}.{sys.version_info.minor}"
