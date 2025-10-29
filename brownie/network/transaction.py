@@ -21,7 +21,6 @@ from typing import (
 )
 from warnings import warn
 
-import black
 import requests
 from eth_typing import BlockNumber, ChecksumAddress
 from faster_eth_abi import decode
