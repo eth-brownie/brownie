@@ -1,4 +1,4 @@
-name: Repo Chores
+name: format files, update deps and C source
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
+  repo-chores:
     runs-on: ubuntu-latest
 
     steps:
