@@ -19,9 +19,9 @@ requires = [
 	"py-solc-ast==1.2.10",
 	"py-solc-x==1.1.1",
     "vvm==0.2.1",
+    "vyper==0.4.3",
     "websockets==15.0.1",
 ]
-
 
 # Brownie configuration for Black.
 
