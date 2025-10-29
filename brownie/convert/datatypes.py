@@ -377,7 +377,7 @@ class ReturnValue(tuple):
 
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
-    
+
     @overload  # type: ignore [override]
     def __getitem__(self, key: int) -> Any: ...
     @overload

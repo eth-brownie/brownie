@@ -83,7 +83,7 @@ eth-account==0.13.7
     #   -r requirements.txt
     #   eip712
     #   web3
-eth-event==1.4.4
+eth-event==1.4.5
     # via -r requirements.txt
 eth-hash[pycryptodome]==0.7.1
     # via
