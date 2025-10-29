@@ -47,11 +47,6 @@ jobs:
 
     - name: Run Pip Compile for Dev Deps
       run: pip-compile -U requirements-dev.in
-    
-    - name: Install Mypyc and Deps
-      run: |
-        pip install -U types-PyYAML
-        pip install -r requirements.txt
 
     - name: Compile
       run: pip install .
