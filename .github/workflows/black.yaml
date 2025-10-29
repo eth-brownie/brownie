@@ -24,7 +24,7 @@ jobs:
     env:
       PUSH_TO: master
       COMMIT_MSG: "chore: run black formatter `black .`"
-      PR_BODY: "This PR was created automatically by GitHub Actions in response to recent changes on ${{ env.PUSH_TO }} branch."
+      PR_BODY: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
 
     steps:
     - name: Checkout code
