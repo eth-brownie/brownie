@@ -30,6 +30,7 @@ from brownie.typing import (
     PcList,
     PCMap,
     ProgramCounter,
+    Start,
     StatementMap,
     Statements,
     VyperAstJson,
@@ -459,7 +460,7 @@ def _generate_coverage_data(
 
     first = pc_list[0]
     first["path"] = "0"
-    first["offset"] = (0, _convert_src(ast_json[-1]["src"])[1])
+    first["offset"] = Offset((Start(0), _convert_src(ast_json[-1]["src"])[1]))
     if revert_pc != -1:
         this["optimizer_revert"] = True
 

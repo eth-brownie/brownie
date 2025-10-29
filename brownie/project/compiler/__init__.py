@@ -26,8 +26,11 @@ from brownie.typing import (
     InputJson,
     InterfaceBuildJson,
     Language,
+    Offset,
     OptimizerSettings,
     SourcesDict,
+    Start,
+    Stop,
 )
 from brownie.utils import notify
 
@@ -481,7 +484,7 @@ def get_abi(
                 "contractName": name,
                 "type": "interface",
                 "source": source,
-                "offset": (0, len(source)),
+                "offset": Offset((Start(0), Stop(len(source)))),
                 "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
             }
 
