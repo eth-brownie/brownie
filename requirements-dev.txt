@@ -103,7 +103,7 @@ mypy-extensions==1.1.0
     # via
     #   -c requirements.txt
     #   black
-nh3==0.3.1
+nh3==0.3.2
     # via readme-renderer
 packaging==23.2
     # via
