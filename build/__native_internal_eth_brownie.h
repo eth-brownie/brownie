@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2449];
+extern PyObject *CPyStatics[2448];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -523,7 +523,6 @@ extern PyObject *CPyDef_test___main(void);
 extern PyObject *CPyPy_test___main(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_test_____top_level__(void);
 extern PyObject *CPyStatic__config___BROWNIE_FOLDER;
-extern PyObject *CPyStatic__config___DATA_FOLDER;
 extern tuple_T2OO CPyStatic__config___DATA_SUBFOLDERS;
 extern PyObject *CPyStatic__config___EVM_EQUIVALENTS;
 extern PyObject *CPyStatic__config___python_version;
