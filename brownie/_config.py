@@ -331,6 +331,10 @@ def _update_argv_from_docopt(args: Dict[str, Any]) -> None:
 
 
 def _get_data_folder() -> pathlib.Path:
+    # NOTE When we use a constant here is breaks the test suite
+    # since pytest gives each test its own temporary home directory
+    # and some of our tests depend on that behavior.
+    # Do not refactor this into a constant.
     return Path.home().joinpath(".brownie")
 
 
