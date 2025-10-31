@@ -21,7 +21,6 @@ from brownie.typing import EvmVersion
 __version__: Final = "1.22.0"
 
 BROWNIE_FOLDER: Final = Path(sys.modules["brownie"].__file__).parent  # type: ignore [arg-type]
-DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = "accounts", "packages"
 
@@ -332,7 +331,11 @@ def _update_argv_from_docopt(args: Dict[str, Any]) -> None:
 
 
 def _get_data_folder() -> pathlib.Path:
-    return DATA_FOLDER
+    # NOTE When we use a constant here is breaks the test suite
+    # since pytest gives each test its own temporary home directory
+    # and some of our tests depend on that behavior.
+    # Do not refactor this into a constant.
+    return Path.home().joinpath(".brownie")
 
 
 def _make_data_folders(data_folder: pathlib.Path) -> None:
@@ -361,6 +364,6 @@ def _None_factory() -> None:
 warnings.filterwarnings("once", category=DeprecationWarning, module="brownie")
 
 # create data folders
-_make_data_folders(DATA_FOLDER)
+_make_data_folders(_get_data_folder())
 
 CONFIG: Final = Config()
