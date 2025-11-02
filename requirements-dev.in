@@ -10,8 +10,6 @@ pip-tools
 pygments-lexer-solidity
 pytest-cov
 pytest-mock
-sphinx
-sphinx_rtd_theme
 tox
 twine
 wheel
