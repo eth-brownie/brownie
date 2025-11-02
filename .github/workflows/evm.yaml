@@ -20,8 +20,31 @@ env:
   WEB3_INFURA_PROJECT_ID: 44c6300c5e5b4b2da5fc42b06bf18a8e
 
 jobs:
+  build-wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build wheel with mypycify
+        id: wheel
+        uses: BobTheBuidler/mypycify@v0.0.1
+        with:
+          python-version: "3.10"
+          hash-key: |
+            brownie/**/*.py
+            pyproject.toml
+            setup.py
+            requirements.txt
+          ccache: true
+          pip-cache-dependency-path: |
+            pyproject.toml
+            setup.py
+            requirements.txt
+            requirements-dev.txt
+            requirements-windows.txt
 
   evm:
+    needs: build-wheel
     runs-on: ubuntu-latest
 
     strategy:
@@ -46,7 +69,7 @@ jobs:
     - name: Install Ganache
       run: npm install -g ganache@7.9.2
 
-    - name: Setup Python 3.10
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
@@ -69,34 +92,22 @@ jobs:
 
     - name: Install Tox
       run: pip install tox
-      
+
     - name: Cache tox environment
       uses: actions/cache@v4
       with:
         path: .tox
-        key: ${{ runner.os }}-${{ matrix.job }}-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
 
-    - name: Restore ccache cache
-      id: restore-ccache
-      uses: actions/cache/restore@v4
+    # Download the wheel artifact built by mypycify
+    - name: Download wheel
+      uses: actions/download-artifact@v4
       with:
-        path: ~/.cache/ccache
-        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
-        restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+        path: .
+        name: ${{ steps.wheel.outputs.artifact-name }}
 
-    - name: Install ccache
-      run: sudo apt-get update && sudo apt-get install -y ccache
-
-    - name: Run Tox
-      env:
-        CC: ccache gcc
-      run: tox -e ${{ matrix.job }}
-
-    - name: Save ccache cache
-      uses: actions/cache/save@v4
-      with:
-        path: ~/.cache/ccache
-        key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+    - name: Run Tox with prebuilt wheel
+      run: python -m tox run -e ${{ matrix.job }} --installpkg${{ steps.wheel.outputs.artifact-name }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
