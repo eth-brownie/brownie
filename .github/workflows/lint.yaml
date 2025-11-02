@@ -94,10 +94,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: .
-        pattern: BobTheBuidler_mypycified_wheel-Linux-py3.13-${{ steps.wheel.outputs.artifact-name }}
+        pattern: ${{ needs.build-wheel.outputs.artifact-name }}
 
     - name: Run Tox
       env:
           CC: ccache gcc
-      run: tox -e ${{ matrix.job }}
+      run: tox -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
       continue-on-error: ${{ matrix.experimental }}
