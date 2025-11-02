@@ -10,6 +10,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+import eth_retry
 import pytest
 import solcx
 from _pytest.monkeypatch import MonkeyPatch
@@ -433,6 +434,7 @@ def console():
     sys.argv = argv
 
 
+@eth_retry.auto_retry(min_sleep_time=2, max_sleep_time=5)
 def _load_project(project, path: Path, name: str, **kwargs: Any):
     for _ in range(5):
         try:
