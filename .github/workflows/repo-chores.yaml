@@ -30,8 +30,11 @@ jobs:
         path: .mypy_cache
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
+    - name: Pin pip to <25.0 for pip-tools compatibility
+      run: pip install "pip<25.0"
+
     - name: Install Pip Tools
-      run: pip install pip-tools
+      run: pip install -U pip-tools
       
     - name: Run Pip Compile
       run: pip-compile -U --no-strip-extras
