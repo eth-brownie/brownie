@@ -31,7 +31,9 @@ jobs:
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
     - name: Install Pip Tools
-      run: pip install pip-tools
+      run: 
+        pip install -U pip
+        pip install -U pip-tools
       
     - name: Run Pip Compile
       run: pip-compile -U --no-strip-extras
