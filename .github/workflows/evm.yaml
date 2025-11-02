@@ -22,6 +22,8 @@ env:
 jobs:
   build-wheel:
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.wheel.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -104,10 +106,10 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: .
-        name: ${{ steps.wheel.outputs.artifact-name }}
+        name: ${{ needs.build-wheel.outputs.artifact-name }}
 
     - name: Run Tox with prebuilt wheel
-      run: python -m tox run -e ${{ matrix.job }} --installpkg${{ steps.wheel.outputs.artifact-name }}
+      run: python -m tox run -e ${{ matrix.job }} --installpkg=${{ needs.build-wheel.outputs.artifact-name }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
