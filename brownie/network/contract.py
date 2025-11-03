@@ -450,8 +450,10 @@ class ContractContainer(_ContractBase):
             "compilerversion": f"v{contract_info['compiler_version']}",
             "optimizationUsed": 1 if contract_info["optimizer_enabled"] else 0,
             "runs": contract_info["optimizer_runs"],
-            # NOTE: This typo is intentional. https://docs.etherscan.io/etherscan-v2/common-verification-errors
-            # "There is an easter egg 🐣 on the constructorArguements field spelling, using it as the "correct" spelling may miss your submission!"
+            # NOTE: This typo is intentional.
+            # https://docs.etherscan.io/etherscan-v2/common-verification-errors
+            # "There is an easter egg 🐣 on the constructorArguements field spelling,
+            # using it as the "correct" spelling may miss your submission!"
             "constructorArguements": constructor_arguments,
             "licenseType": license_code,
         }

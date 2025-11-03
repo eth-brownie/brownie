@@ -8,6 +8,7 @@ your hexbytes version .
 from importlib.metadata import version
 from typing import Final
 
+import hexbytes
 from eth_typing import HexStr
 
 from brownie._c_constants import HexBytes
@@ -25,7 +26,7 @@ either version.
 """
 
 
-def hexbytes_to_hexstring(value: HexBytes) -> HexStr:
+def hexbytes_to_hexstring(value: hexbytes.HexBytes) -> HexStr:
     """Convert a HexBytes object to a hex string."""
     # NOTE: this is just a stub for mypy, the func is conditionally
     # defined below based on your hexbytes version
