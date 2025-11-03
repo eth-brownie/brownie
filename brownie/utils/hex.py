@@ -26,7 +26,7 @@ either version.
 """
 
 
-def hexbytes_to_hexstring(value: hexbytes.HexBytes) -> HexStr:  # noqa: F401
+def hexbytes_to_hexstring(value: hexbytes.HexBytes) -> HexStr:
     """Convert a HexBytes object to a hex string."""
     # NOTE: this is just a stub for mypy, the func is conditionally
     # defined below based on your hexbytes version
