@@ -105,6 +105,6 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
 
 
 # this must go down here to prevent a circ import issue
-from brownie.network.middlewares._setup import load_middlewares
+from brownie.network.middlewares._setup import load_middlewares  # noqa: E402
 
 _middlewares: Final = load_middlewares()
