@@ -946,9 +946,7 @@ class TransactionReceipt:
             # If the function signature is available this will be overridden by setting
             # `return_value` a few lines below.
             if trace[i]["depth"] and opcode == "RETURN":
-                subcall: dict = next(
-                    i for i in self._subcalls[::-1] if i["to"] == last["address"]
-                )
+                subcall: dict = next(i for i in self._subcalls[::-1] if i["to"] == last["address"])
 
                 if opcode == "RETURN":
                     returndata = _get_memory(trace[i], -1)
@@ -962,9 +960,7 @@ class TransactionReceipt:
                 continue
 
             if trace[i]["depth"] and opcode in ("RETURN", "REVERT", "INVALID", "SELFDESTRUCT"):
-                subcall: dict = next(
-                    i for i in self._subcalls[::-1] if i["to"] == last["address"]
-                )
+                subcall: dict = next(i for i in self._subcalls[::-1] if i["to"] == last["address"])
 
                 if opcode == "RETURN":
                     returndata = _get_memory(trace[i], -1)
