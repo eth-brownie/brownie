@@ -8,6 +8,7 @@ from typing import (
     Literal,
     Optional,
     Tuple,
+    cast,
     final,
 )
 
@@ -199,7 +200,7 @@ def _get_error_source_from_pc(
     # to revert, returns the highlighted relevant source code and the method name.
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
-    revert: Tuple[str, Offset, str, str, Sources] = _revert_map[pc]  # type: ignore [assignment]
-    source = revert[4].get(revert[0])  # type: ignore [index]
+    revert = cast(Tuple[str, Offset, str, str, Sources], _revert_map[pc])
+    source = revert[4].get(revert[0])
     highlight, linenos = highlight_source(source, revert[1], pad=pad)
-    return highlight, linenos, revert[0], revert[2]  # type: ignore [index]
+    return highlight, linenos, revert[0], revert[2]
