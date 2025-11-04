@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index,typeddict-unknown-key"
 
-from typing import Any, Dict, Final, List, Optional, Union
+from typing import Any, Dict, Final, List, Optional, Union, cast
 
 import solcast
 from eth_typing import ABIElement, HexStr
@@ -24,9 +24,13 @@ from brownie.typing import (
     ContractName,
     EvmVersion,
     InputJson,
+    InputJsonSolc,
+    InputJsonVyper,
     InterfaceBuildJson,
+    InterfaceSource,
     Language,
     OptimizerSettings,
+    SettingsSolc,
     SourcesDict,
 )
 from brownie.utils import notify
@@ -227,7 +231,10 @@ def generate_input_json(
         if language == "Solidity":
             input_sources.update(_sources_dict(interface_sources, language))
         else:
-            input_json["interfaces"] = _sources_dict(interface_sources, language)  # type: ignore [arg-type]
+            input_json["interfaces"] = cast(
+                Dict[str, InterfaceSource],
+                _sources_dict(interface_sources, language),
+            )
 
     return input_json
 
@@ -282,13 +289,14 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    language: Language = input_json["language"]  # type: ignore [assignment]
+    language = cast(Language, input_json["language"])
     if language == "Vyper":
-        return vyper.compile_from_input_json(input_json, silent, allow_paths)  # type: ignore [arg-type]
+        return vyper.compile_from_input_json(cast(InputJsonVyper, input_json), silent, allow_paths)
 
     if language == "Solidity":
-        allow_paths = _get_allow_paths(allow_paths, input_json["settings"]["remappings"])  # type: ignore [typeddict-item]
-        return solidity.compile_from_input_json(input_json, silent, allow_paths)  # type: ignore [arg-type]
+        settings = cast(SettingsSolc, input_json["settings"])
+        allow_paths = _get_allow_paths(allow_paths, settings["remappings"])
+        return solidity.compile_from_input_json(cast(InputJsonSolc, input_json), silent, allow_paths)
 
     raise UnsupportedLanguage(language)
 
@@ -403,7 +411,8 @@ def generate_build_json(
             if size > 24577:
                 notify(
                     "WARNING",
-                    f"deployed size of {contract_name} is {size} bytes, exceeds EIP-170 limit of 24577",
+                    f"deployed size of {contract_name} is {size} bytes, "
+                    "exceeds EIP-170 limit of 24577",
                 )
 
     if not silent:
@@ -453,21 +462,21 @@ def get_abi(
     """
 
     final_output: Dict[ContractName, InterfaceBuildJson] = {
-        Path(k).stem: {  # type: ignore [misc]
+        ContractName(stem := p.stem): {
             "abi": ujson_loads(v),
-            "contractName": Path(k).stem,  # type: ignore [typeddict-item]
+            "contractName": ContractName(stem),
             "type": "interface",
             "source": None,
             "offset": None,
-            "sha1": sha1(v.encode()).hexdigest(),  # type: ignore [typeddict-item]
+            "sha1": HexStr(sha1(v.encode()).hexdigest()),
         }
         for k, v in contract_sources.items()
-        if Path(k).suffix == ".json"
+        if (p := Path(k)).suffix == ".json"
     }
 
     for path, source in contract_sources.items():
         if Path(path).suffix == ".vy":
-            input_json = generate_input_json({path: source}, language="Vyper")  # type: ignore [assignment]
+            input_json = generate_input_json({path: source}, language="Vyper")
             input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"]}
             try:
                 output_json = compile_from_input_json(input_json, silent, allow_paths)
@@ -475,14 +484,14 @@ def get_abi(
                 # vyper interfaces do not convert to ABIs
                 # https://github.com/vyperlang/vyper/issues/1944
                 continue
-            name: ContractName = Path(path).stem  # type: ignore [assignment]
+            name = ContractName(Path(path).stem)
             final_output[name] = {
                 "abi": output_json["contracts"][path][name]["abi"],
                 "contractName": name,
                 "type": "interface",
                 "source": source,
                 "offset": (0, len(source)),
-                "sha1": sha1(contract_sources[path].encode()).hexdigest(),  # type: ignore [typeddict-item]
+                "sha1": HexStr(sha1(contract_sources[path].encode()).hexdigest()),
             }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
@@ -499,7 +508,7 @@ def get_abi(
         to_compile = {k: v for k, v in contract_sources.items() if k in path_list}
 
         set_solc_version(version)
-        input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)  # type: ignore [assignment]
+        input_json = generate_input_json(to_compile, language="Solidity", remappings=remappings)
         input_json["settings"]["outputSelection"]["*"] = {"*": ["abi"], "": ["ast"]}
 
         output_json = compile_from_input_json(input_json, silent, allow_paths)
