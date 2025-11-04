@@ -239,7 +239,7 @@ class _EventItem(Generic[_TData]):
         data = self._ordered
         if len(data) == 1:
             return str(data[0])
-        return str([i[0] for i in data])
+        return str([i[0] for i in data])  # type: ignore [index]
 
     def __iter__(self) -> Iterator[_TData]:
         return iter(self._ordered)
