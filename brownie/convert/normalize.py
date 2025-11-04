@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, List, Optional, Sequence, Tuple
+from typing import Any, Final, List, Optional, Sequence, Tuple, cast
 
 from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
@@ -60,11 +60,15 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
         if not e["decoded"]:
             e["type"] = "bytes32"
             e["name"] += " (indexed)"
-    abi_types = _get_abi_types(data)  # type: ignore [arg-type]
-    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)  # type: ignore [arg-type]
+    abi_types = _get_abi_types(cast(Sequence[ABIComponent], data))
+    event_values = [i["value"] for i in data]
+    values = ReturnValue(
+        _format_tuple(abi_types, event_values),
+        cast(Sequence[ABIComponent], data),
+    )
     for e, value in zip(data, values):
         e["value"] = value
-    return event  # type: ignore [return-value]
+    return cast(FormattedEvent, event)
 
 
 def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[Any]:
@@ -84,7 +88,9 @@ def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[
 
 
 def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> List[Any]:
-    _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)  # type: ignore [arg-type, index]
+    arrlist = cast(Tuple[Tuple[int, ...], ...], abi_type.arrlist)
+    arrlast = arrlist[-1]
+    _check_array(values, arrlast[0] if arrlast else None)
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
@@ -126,5 +132,5 @@ def _get_abi_types(abi_params: Sequence[ABIComponent]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
-    tuple_type = _parse(type_str)
+    tuple_type = cast(TupleType, _parse(type_str))
     return tuple_type.components

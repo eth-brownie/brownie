@@ -132,7 +132,7 @@ execnet==2.1.1
     # via
     #   -r requirements.txt
     #   pytest-xdist
-faster-eth-abi==5.2.16
+faster-eth-abi==5.2.17
     # via
     #   -r requirements.txt
     #   eth-event
