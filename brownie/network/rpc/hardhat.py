@@ -76,12 +76,12 @@ def launch(cmd: str, **kwargs: Dict) -> None:
 
 def on_connection() -> None:
     gas_limit = web3.eth.get_block("latest").gasLimit
-    web3.provider.make_request("evm_setBlockGasLimit", [hex(gas_limit)])  # type: ignore
+    web3.provider.make_request("evm_setBlockGasLimit", [hex(gas_limit)])
 
 
 def _request(method: str, args: List) -> int:
     try:
-        response = web3.provider.make_request(method, args)  # type: ignore
+        response = web3.provider.make_request(method, args)
         if "result" in response:
             return response["result"]
     except (AttributeError, RequestsConnectionError):
@@ -107,4 +107,4 @@ def revert(snapshot_id: int) -> None:
 
 
 def unlock_account(address: str) -> None:
-    web3.provider.make_request("hardhat_impersonateAccount", [address])  # type: ignore
+    web3.provider.make_request("hardhat_impersonateAccount", [address])

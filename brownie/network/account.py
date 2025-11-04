@@ -771,7 +771,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid = None
             while True:
                 try:
-                    response = self._transact(tx, allow_revert)  # type: ignore
+                    response = self._transact(tx, allow_revert)
                     exc, revert_data = None, None
                     if txid is None:
                         txid = bytes_to_hexstring(response)
@@ -794,7 +794,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         is_blocking=False,
                         name=fn_name,
                         revert_data=revert_data,
-                    )  # type: ignore
+                    )
                     break
                 except (TransactionNotFound, ValueError):
                     if not silent:
@@ -835,7 +835,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         history._add_tx(receipt)
 
         if gas_strategy is not None:
-            gas_strategy.run(receipt, gas_iter)  # type: ignore
+            gas_strategy.run(receipt, gas_iter)
 
         if required_confs == 0:
             # set 0-conf tx's as silent to hide the confirmation output
@@ -1007,9 +1007,9 @@ class LocalAccount(_PrivateKeyAccount):
         tx["chainId"] = web3.chain_id
         signed = self._acct.sign_transaction(tx)
         return web3.eth.send_raw_transaction(
-            signed.rawTransaction  # type: ignore
+            signed.rawTransaction
             if ETH_ACCOUNT_LT_0_13_0
-            else signed.raw_transaction  # type: ignore
+            else signed.raw_transaction
         )
 
 

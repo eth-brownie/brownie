@@ -199,7 +199,7 @@ def test_cannot_subscribe_to_unexisting_event(tester: Contract):
 
 def test_cannot_subscribe_to_event_with_invalid_callback(tester: Contract):
     with pytest.raises(TypeError):
-        tester.events.subscribe("Debug", callback=None)  # type: ignore
+        tester.events.subscribe("Debug", callback=None)
 
 
 class TestEventWatcher:

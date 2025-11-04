@@ -176,7 +176,7 @@ class VirtualMachineError(Exception):
         for key, value in kwargs.items():
             setattr(self, key, value)
         if self.revert_msg == "Failed assertion":
-            self.revert_msg = self.dev_revert_msg or self.revert_msg  # type: ignore
+            self.revert_msg = self.dev_revert_msg or self.revert_msg
         return self
 
 

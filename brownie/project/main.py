@@ -441,7 +441,7 @@ class Project(_ProjectBase):
             if "pcMap" in build:
                 contract = ProjectContract(self, build, build_json.stem)
             else:
-                contract = Contract.from_abi(  # type: ignore
+                contract = Contract.from_abi(  # type: ignore [assignment]
                     contract_name, build_json.stem, build["abi"]
                 )
                 contract._project = self
@@ -560,8 +560,8 @@ class Project(_ProjectBase):
         self._remove_from_main_namespace()
         name = self._name
         del sys.modules[f"brownie.project.{name}"]
-        sys.modules["brownie.project"].__all__.remove(name)  # type: ignore
-        sys.modules["brownie.project"].__console_dir__.remove(name)  # type: ignore
+        sys.modules["brownie.project"].__all__.remove(name)
+        sys.modules["brownie.project"].__console_dir__.remove(name)
         self._active = False
         _loaded_projects.remove(self)
 
@@ -1067,7 +1067,7 @@ def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) 
             source = fp.read()
 
         if hasattr(hooks, "brownie_load_source"):
-            source = hooks.brownie_load_source(path, source)  # type: ignore
+            source = hooks.brownie_load_source(path, source)
 
         path_str: str = path.relative_to(project_path).as_posix()
         contract_sources[path_str] = source

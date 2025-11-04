@@ -94,7 +94,7 @@ def gas_limit(*args: Union[int, str, bool, None]) -> Union[int, bool]:
             CONFIG.active_network["settings"]["gas_limit"] = False
         else:
             try:
-                limit: int = int(args[0])  # type: ignore
+                limit: int = int(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:

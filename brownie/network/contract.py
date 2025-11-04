@@ -207,7 +207,7 @@ class ContractContainer(_ContractBase):
 
         # messes with tests if it is created on init
         # instead we create when it's requested, but still define it here
-        self._flattener: Flattener = None  # type: ignore
+        self._flattener: Flattener = None
 
     def __iter__(self) -> Iterator["ProjectContract"]:
         return iter(self._contracts)
@@ -952,7 +952,7 @@ class Contract(_DeployedContractBase):
             raise TypeError("Address cannot be None unless creating object from manifest")
 
         build = {"abi": abi, "contractName": name, "type": "contract"}
-        _ContractBase.__init__(self, None, build, {})  # type: ignore
+        _ContractBase.__init__(self, None, build, {})
         _DeployedContractBase.__init__(self, address, owner, None)
 
     @classmethod
@@ -990,7 +990,7 @@ class Contract(_DeployedContractBase):
         }
 
         self = cls.__new__(cls)
-        _ContractBase.__init__(self, None, build, {})  # type: ignore
+        _ContractBase.__init__(self, None, build, {})
         _DeployedContractBase.__init__(self, address, owner, None)
         if persist:
             _add_deployment(self)
@@ -1183,7 +1183,7 @@ class Contract(_DeployedContractBase):
             del build_json["pcMap"]
 
         self = cls.__new__(cls)
-        _ContractBase.__init__(self, None, build_json, sources)  # type: ignore
+        _ContractBase.__init__(self, None, build_json, sources)
         _DeployedContractBase.__init__(self, address, owner)
         if persist:
             _add_deployment(self)
@@ -1292,7 +1292,7 @@ class ContractEvents(_ContractEvents):
         self.linked_contract = contract
 
         # Ignoring type since ChecksumAddress type is an alias for string
-        _ContractEvents.__init__(self, contract.abi, web3, contract.address)  # type: ignore
+        _ContractEvents.__init__(self, contract.abi, web3, contract.address)
 
     def subscribe(
         self, event_name: str, callback: Callable[[AttributeDict], None], delay: float = 2.0
@@ -1306,7 +1306,7 @@ class ContractEvents(_ContractEvents):
             callback (Callable[[AttributeDict], None]): Function called whenever an event occurs.
             delay (float, optional): Delay between each check for new events. Defaults to 2.0.
         """
-        target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
+        target_event: ContractEvent = self.__getitem__(event_name)
         event_watcher.add_event_callback(event=target_event, callback=callback, delay=delay)
 
     def get_sequence(
@@ -1339,7 +1339,7 @@ class ContractEvents(_ContractEvents):
         if event_type is not None:
             if isinstance(event_type, str):
                 # If 'event_type' is a string, search for an event with a name matching it.
-                event_type: ContractEvent = self.__getitem__(event_type)  # type: ignore
+                event_type: ContractEvent = self.__getitem__(event_type)
             return self._retrieve_contract_events(event_type, from_block, to_block)
 
         return AttributeDict(
@@ -1393,7 +1393,7 @@ class ContractEvents(_ContractEvents):
                 await asyncio.sleep(0.05)
             return AttributeDict({"event_data": _received_data, "timed_out": timed_out})
 
-        target_event: ContractEvent = self.__getitem__(event_name)  # type: ignore
+        target_event: ContractEvent = self.__getitem__(event_name)
         event_watcher.add_event_callback(
             event=target_event, callback=_event_callback, delay=0.2, repeat=False
         )
@@ -1465,7 +1465,7 @@ class OverloadedMethod:
         fn = self._get_fn_from_args(args)
         kwargs = {"block_identifier": block_identifier, "override": override}
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        return fn(*args, **kwargs)  # type: ignore
+        return fn(*args, **kwargs)
 
     def call(
         self, *args: Any, block_identifier: Union[int, str, bytes] = None, override: Dict = None
