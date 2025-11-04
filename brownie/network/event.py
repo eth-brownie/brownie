@@ -592,12 +592,14 @@ def _decode_ds_note(
 ) -> Optional[DecodedEvent]:
     # ds-note encodes function selector as the first topic
     # TODO double check typing for `log` input
-    selector, tail = log.topics[0][:4], log.topics[0][4:]
+    topic0 = log.topics[0]
+    selector, tail = topic0[:4], topic0[4:]
     selector_hexstr = Selector(hexbytes_to_hexstring(selector))
     if selector_hexstr not in contract.selectors or sum(tail):
         return None
     name = contract.selectors[selector_hexstr]
-    data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data
+    log_data = log.data
+    data = bytes.fromhex(log_data[2:]) if isinstance(log_data, str) else log_data
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
     # instead of trying them all, assume the payload starts from selector
     try:
