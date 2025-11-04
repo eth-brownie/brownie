@@ -131,5 +131,5 @@ def _get_abi_types(abi_params: Sequence[ABIComponent]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
-    tuple_type = _parse(type_str)
+    tuple_type = cast(TupleType, _parse(type_str))
     return tuple_type.components
