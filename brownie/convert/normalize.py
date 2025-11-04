@@ -88,7 +88,7 @@ def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[
 
 
 def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> List[Any]:
-    arrlist = cast(Tuple[int | Tuple[int, ...], ...], abi_type.arrlist)
+    arrlist = cast(Tuple[Tuple[int, ...], ...], abi_type.arrlist)
     arrlast = arrlist[-1]
     _check_array(values, arrlast[0] if arrlast else None)
     item_type = abi_type.item_type
