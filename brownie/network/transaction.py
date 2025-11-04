@@ -263,13 +263,13 @@ class TransactionReceipt:
                 # relay contract map so we can decode ds-note logs
                 addrs = {log.address for log in self.logs} if self.logs else set()
                 contracts = {addr: state._find_contract(addr) for addr in addrs}
-                self._events = _decode_logs(self.logs, contracts=contracts)  # type: ignore
+                self._events = _decode_logs(self.logs, contracts=contracts)
             else:
                 self._get_trace()
                 # get events from the trace - handled lazily so that other
                 # trace operations are not blocked in case of a decoding error
                 initial_address = str(self.receiver or self.contract_address)
-                self._events = _decode_trace(self._raw_trace, initial_address)  # type: ignore
+                self._events = _decode_trace(self._raw_trace, initial_address)
         return self._events
 
     @trace_property
@@ -327,7 +327,7 @@ class TransactionReceipt:
     def subcalls(self) -> Optional[List]:
         if self._subcalls is None:
             self._expand_trace()
-        subcalls = filter(lambda s: not _is_call_to_precompile(s), self._subcalls)  # type: ignore
+        subcalls = filter(lambda s: not _is_call_to_precompile(s), self._subcalls)
         return list(subcalls)
 
     @trace_property
@@ -410,7 +410,7 @@ class TransactionReceipt:
             else:
                 raise ValueError("Sender address not in `accounts`")
 
-        return sender.transfer(  # type: ignore
+        return sender.transfer(
             self.receiver,
             self.value,
             gas_limit=self.gas_limit,
@@ -502,7 +502,7 @@ class TransactionReceipt:
             # continuation of the nonce logic 2 sections prior. we must check the receipt
             # after querying the nonce, because in the other order there is a chance that
             # the tx would confirm after checking the receipt but before checking the nonce
-            if sender_nonce > self.nonce:  # type: ignore
+            if sender_nonce > self.nonce:
                 self.status = Status(-2)
                 self._confirmed.set()
                 return
@@ -661,7 +661,7 @@ class TransactionReceipt:
         if not web3.supports_traces:
             raise RPCRequestError("Node client does not support `debug_traceTransaction`")
         try:
-            trace = web3.provider.make_request(  # type: ignore
+            trace = web3.provider.make_request(
                 # Set enableMemory to all RPC as anvil return the memory key
                 "debug_traceTransaction",
                 (self.txid, {"disableStorage": CONFIG.mode != "console", "enableMemory": True}),
@@ -872,7 +872,7 @@ class TransactionReceipt:
                 self._call_cost = self.gas_used - trace[0]["gas"] + trace[-1]["gas"]
 
         # last_map gives a quick reference of previous values at each depth
-        last_map = {0: _get_last_map(self.receiver, self.input[:10])}  # type: ignore
+        last_map = {0: _get_last_map(self.receiver, self.input[:10])}
         coverage_eval: Dict = {last_map[0]["name"]: {}}
         precompile_contract = regex_compile(r"0x0{38}(?:0[1-9]|1[0-8])")
         call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
@@ -914,7 +914,7 @@ class TransactionReceipt:
                     self._subcalls[-1]["function"] = fn._input_sig
                     try:
                         zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
-                        inputs = {i[0]["name"]: i[1] for i in zip_}  # type: ignore
+                        inputs = {i[0]["name"]: i[1] for i in zip_}
                         self._subcalls[-1]["inputs"] = inputs
                     except Exception:
                         self._subcalls[-1]["calldata"] = hexbytes_to_hexstring(calldata)
@@ -947,7 +947,7 @@ class TransactionReceipt:
             # `return_value` a few lines below.
             if trace[i]["depth"] and opcode == "RETURN":
                 subcall: dict = next(
-                    i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                    i for i in self._subcalls[::-1] if i["to"] == last["address"]
                 )
 
                 if opcode == "RETURN":
@@ -963,7 +963,7 @@ class TransactionReceipt:
 
             if trace[i]["depth"] and opcode in ("RETURN", "REVERT", "INVALID", "SELFDESTRUCT"):
                 subcall: dict = next(
-                    i for i in self._subcalls[::-1] if i["to"] == last["address"]  # type: ignore
+                    i for i in self._subcalls[::-1] if i["to"] == last["address"]
                 )
 
                 if opcode == "RETURN":
@@ -1038,7 +1038,7 @@ class TransactionReceipt:
         if not value.startswith("0x"):
             value = f"0x{value}"
 
-        self._internal_transfers.append(  # type: ignore
+        self._internal_transfers.append(
             {"from": EthAddress(from_), "to": EthAddress(to), "value": Wei(value)}
         )
 

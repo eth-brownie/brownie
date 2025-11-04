@@ -50,8 +50,8 @@ class Multicall:
     def __init__(self) -> None:
         self.address = None
         self.default_verbose = False
-        self._block_number = defaultdict(lambda: None)  # type: ignore
-        self._verbose = defaultdict(lambda: None)  # type: ignore
+        self._block_number = defaultdict(lambda: None)
+        self._verbose = defaultdict(lambda: None)
         self._contract = None
         self._pending_calls: Dict[int, List[Call]] = defaultdict(list)
 
@@ -70,8 +70,8 @@ class Multicall:
         block_identifier: Union[str, bytes, int, None] = None,
         verbose: Optional[bool] = None,
     ) -> "Multicall":
-        self.address = address  # type: ignore
-        self._block_number[get_ident()] = block_identifier  # type: ignore
+        self.address = address
+        self._block_number[get_ident()] = block_identifier
         self._verbose[get_ident()] = verbose if verbose is not None else self.default_verbose
         return self
 
@@ -98,7 +98,7 @@ class Multicall:
 
             ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
             try:
-                results = self._contract.tryAggregate(  # type: ignore
+                results = self._contract.tryAggregate(
                     False,
                     [_call.calldata for _call in pending_calls],
                     block_identifier=self._block_number[get_ident()],
@@ -107,7 +107,7 @@ class Multicall:
                 ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
 
         for _call, result in zip(pending_calls, results):
-            _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
+            _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None
 
         return future_result
 
@@ -117,9 +117,9 @@ class Multicall:
 
     def _call_contract(self, call: ContractCall, *args: Any, **kwargs: Any) -> Proxy:
         """Add a call to the buffer of calls to be made"""
-        calldata = (call._address, call.encode_input(*args, **kwargs))  # type: ignore
+        calldata = (call._address, call.encode_input(*args, **kwargs))
         readable = f"{call._name}({', '.join(str(i) for i in args)})"
-        call_obj = Call(calldata, call.decode_output, readable)  # type: ignore
+        call_obj = Call(calldata, call.decode_output, readable)
         # future result
         result = Result(call_obj)
         self._pending_calls[get_ident()].append(result)
@@ -135,7 +135,7 @@ class Multicall:
         # standard call we let pass through
         ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
         try:
-            result = ContractCall.__call__(*args, **kwargs)  # type: ignore
+            result = ContractCall.__call__(*args, **kwargs)
         finally:
             ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         return result
@@ -150,8 +150,8 @@ class Multicall:
             self.address = active_network["multicall2"]
         elif "cmd" in active_network:
             deployment = self.deploy({"from": accounts[0]})
-            self.address = deployment.address  # type: ignore
-            self._block_number[get_ident()] = deployment.tx.block_number  # type: ignore
+            self.address = deployment.address
+            self._block_number[get_ident()] = deployment.tx.block_number
 
         self._block_number[get_ident()] = (
             self._block_number[get_ident()] or web3.eth.get_block_number()
@@ -186,6 +186,6 @@ class Multicall:
                 container.
         """
         project = compile_source(MULTICALL2_SOURCE)
-        deployment = project.Multicall2.deploy(tx_params)  # type: ignore
+        deployment = project.Multicall2.deploy(tx_params)
         CONFIG.active_network["multicall2"] = deployment.address
         return deployment

@@ -205,7 +205,7 @@ class GethMempoolStrategy(BlockGasStrategy):
         super().__init__(block_duration)
         self.position = position
         if graphql_endpoint is None:
-            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
+            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"
         self.graphql_endpoint = graphql_endpoint
         self.max_gas_price = Wei(max_gas_price) or 2**256 - 1
 

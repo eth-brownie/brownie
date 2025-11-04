@@ -203,7 +203,7 @@ def _array_strategy(
     strat = st.lists(base_strategy, min_size=min_len, max_size=max_len, unique=unique)
     # swap 'size' for 'length' in the repr
     repr_ = "length".join(strat.__repr__().rsplit("size", maxsplit=2))
-    strat._LazyStrategy__representation = repr_  # type: ignore
+    strat._LazyStrategy__representation = repr_
     return strat
 
 
@@ -246,7 +246,7 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if type_str == "address":
         return _address_strategy(**kwargs)
     if type_str == "bool":
-        return st.booleans(**kwargs)  # type: ignore
+        return st.booleans(**kwargs)
     if type_str == "string":
         return _string_strategy(**kwargs)
 
@@ -254,7 +254,7 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if abi_type.is_array:
         return _array_strategy(abi_type, **kwargs)
     if isinstance(abi_type, TupleType):
-        return _tuple_strategy(abi_type, **kwargs)  # type: ignore
+        return _tuple_strategy(abi_type, **kwargs)
 
     base = abi_type.base
     if base in ("int", "uint"):
