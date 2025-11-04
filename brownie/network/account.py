@@ -1007,9 +1007,7 @@ class LocalAccount(_PrivateKeyAccount):
         tx["chainId"] = web3.chain_id
         signed = self._acct.sign_transaction(tx)
         return web3.eth.send_raw_transaction(
-            signed.rawTransaction
-            if ETH_ACCOUNT_LT_0_13_0
-            else signed.raw_transaction
+            signed.rawTransaction if ETH_ACCOUNT_LT_0_13_0 else signed.raw_transaction
         )
 
 
