@@ -441,7 +441,7 @@ class Project(_ProjectBase):
             if "pcMap" in build:
                 contract = ProjectContract(self, build, build_json.stem)
             else:
-                contract = Contract.from_abi(
+                contract = Contract.from_abi(  # type: ignore [assignment]
                     contract_name, build_json.stem, build["abi"]
                 )
                 contract._project = self
