@@ -23,6 +23,7 @@ from typing import (
     TypeVar,
     Union,
     ValuesView,
+    cast,
     final,
     overload,
 )
@@ -238,7 +239,7 @@ class _EventItem(Generic[_TData]):
         data = self._ordered
         if len(data) == 1:
             return str(data[0])
-        return str([i[0] for i in data])  # type: ignore [index]
+        return str([i[0] for i in data])
 
     def __iter__(self) -> Iterator[_TData]:
         return iter(self._ordered)
@@ -556,7 +557,9 @@ def _decode_logs(
     while True:
         address: ChecksumAddress = logs[idx]["address"]
         try:
-            new_idx = logs.index(next(i for i in logs[idx:] if i["address"] != address))  # type: ignore [arg-type, misc]
+            new_idx = logs.index(
+                next(i for i in logs[idx:] if i["address"] != address)  # type: ignore [misc]
+            )
             log_slice = logs[idx:new_idx]
             idx = new_idx
         except StopIteration:
@@ -567,12 +570,14 @@ def _decode_logs(
             if contracts:
                 contract = contracts[address]
                 if contract is not None:
-                    note = _decode_ds_note(item, contract)  # type: ignore [arg-type]
+                    note = _decode_ds_note(item, contract)
                     if note is not None:
                         events.append(note)
                         continue
             try:
-                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))  # type: ignore [call-overload]
+                events.extend(
+                    eth_event.decode_logs([item], topics_map, allow_undecoded=True)  # type: ignore [call-overload]
+                )
             except EventError as exc:
                 warnings.warn(f"{address}: {exc}")
 
@@ -587,12 +592,12 @@ def _decode_ds_note(
 ) -> Optional[DecodedEvent]:
     # ds-note encodes function selector as the first topic
     # TODO double check typing for `log` input
-    selector, tail = log.topics[0][:4], log.topics[0][4:]  # type: ignore [attr-defined]
+    selector, tail = log.topics[0][:4], log.topics[0][4:]
     selector_hexstr = Selector(hexbytes_to_hexstring(selector))
     if selector_hexstr not in contract.selectors or sum(tail):
         return None
     name = contract.selectors[selector_hexstr]
-    data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data  # type: ignore [attr-defined]
+    data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
     # instead of trying them all, assume the payload starts from selector
     try:
@@ -600,16 +605,16 @@ def _decode_ds_note(
     except ValueError:
         return None
     selector_hexstr = Selector(hexbytes_to_hexstring(selector))
-    inputs = contract.get_method_object(selector_hexstr).abi["inputs"]  # type: ignore [union-attr]
-    return {  # type: ignore [return-value]
-        "name": name,
-        "address": log.address,  # type: ignore [attr-defined, typeddict-item]
-        "decoded": True,
-        "data": [
+    inputs = contract.get_method_object(selector_hexstr).abi["inputs"]
+    return DecodedEvent(
+        name=name,
+        address=cast(ChecksumAddress, log.address),
+        decoded=True,
+        data=[
             {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}
             for arg, abi in zip(args, inputs)
         ],
-    }
+    )
 
 
 def _decode_trace(trace: Sequence[_TraceStep], initial_address: AnyAddress) -> EventDict:
