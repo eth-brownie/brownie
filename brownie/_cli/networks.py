@@ -2,8 +2,7 @@
 
 import shutil
 import sys
-from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Final, Tuple, cast
 
 import yaml
 
@@ -44,29 +43,31 @@ Use `brownie networks list true` to see a detailed view of available networks
 as well as possible data fields when declaring new networks."""
 
 
-DEV_REQUIRED = ("id", "host", "cmd", "cmd_settings")
-PROD_REQUIRED = ("id", "host", "chainid")
-OPTIONAL = ("name", "explorer", "timeout", "multicall2", "provider")
+DEV_REQUIRED: Final = ("id", "host", "cmd", "cmd_settings")
+PROD_REQUIRED: Final = ("id", "host", "chainid")
+OPTIONAL: Final = ("name", "explorer", "timeout", "multicall2", "provider")
 
-DEV_CMD_SETTINGS = (
-    "port",
-    "gas_limit",
-    "accounts",
-    "evm_version",
-    "fork",
-    "disable_cache",
-    "mnemonic",
-    "account_keys_path",
-    "block_time",
-    "default_balance",
-    "time",
-    "network_id",
-    "chain_id",
-    "unlimited_contract_size",
+DEV_CMD_SETTINGS: Final = frozenset(
+    [
+        "port",
+        "gas_limit",
+        "accounts",
+        "evm_version",
+        "fork",
+        "disable_cache",
+        "mnemonic",
+        "account_keys_path",
+        "block_time",
+        "default_balance",
+        "time",
+        "network_id",
+        "chain_id",
+        "unlimited_contract_size",
+    ]
 )
 
 
-def main():
+def main() -> None:
     args = docopt(__doc__)
     try:
         fn = getattr(sys.modules[__name__], f"_{args['<command>']}")
@@ -80,10 +81,10 @@ def main():
         return
 
 
-def _list(verbose=False):
+def _list(verbose: bool | str = False):
     if isinstance(verbose, str):
         try:
-            verbose = eval(verbose.capitalize())
+            verbose = cast(bool, eval(verbose.capitalize()))
         except (NameError, SyntaxError) as e:
             print("Please pass 'True' or 'False'.")
             raise e
@@ -95,20 +96,22 @@ def _list(verbose=False):
 
     for chain in networks["live"]:
         print(f"\n{chain['name']}")
-        for value in chain["networks"]:
-            is_last = value == chain["networks"][-1]
+        chain_networks = chain["networks"]
+        for value in chain_networks:
+            is_last = value == chain_networks[-1]
             if verbose:
                 _print_verbose_network_description(value, is_last)
             else:
                 _print_simple_network_description(value, is_last)
 
     print("\nDevelopment")
-    for value in networks["development"]:
-        is_last = value == networks["development"][-1]
+    dev_networks = networks["development"]
+    for value in dev_networks:
+        is_last = value == dev_networks[-1]
         if verbose:
             settings = value.pop("cmd_settings")
-            _print_verbose_network_description(value, value == networks["development"][-1])
-            _print_verbose_network_description(settings, value == networks["development"][-1], 2)
+            _print_verbose_network_description(value, is_last)
+            _print_verbose_network_description(settings, is_last, 2)
         else:
             _print_simple_network_description(value, is_last)
 
@@ -156,7 +159,7 @@ def _add(env, id_, *args):
     _print_verbose_network_description(new, True)
 
 
-def _modify(id_, *args):
+def _modify(id_: str, *args: str):
     if id_ not in CONFIG.networks:
         raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
@@ -193,7 +196,7 @@ def _modify(id_, *args):
     _print_verbose_network_description(target, True)
 
 
-def _delete(id_):
+def _delete(id_: str) -> None:
     if id_ not in CONFIG.networks:
         raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
@@ -213,7 +216,7 @@ def _delete(id_):
     notify("SUCCESS", f"Network '{bright_magenta}{id_}{color}' has been deleted")
 
 
-def _import(path_str, replace=False):
+def _import(path_str: str, replace: bool = False) -> None:
     if isinstance(replace, str):
         replace = eval(replace.capitalize())
 
@@ -263,7 +266,7 @@ def _import(path_str, replace=False):
     notify("SUCCESS", f"Network settings imported from '{bright_magenta}{path}{color}'")
 
 
-def _export(path_str):
+def _export(path_str: str) -> None:
     path = Path(path_str)
     if path.exists():
         if path.is_dir():
@@ -277,7 +280,7 @@ def _export(path_str):
     notify("SUCCESS", f"Network settings exported as '{bright_magenta}{path}{color}'")
 
 
-def _update_provider(name, url):
+def _update_provider(name: str, url: str) -> None:
     with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
         providers = yaml.safe_load(fp)
 
@@ -289,7 +292,7 @@ def _update_provider(name, url):
     notify("SUCCESS", f"Provider '{bright_magenta}{name}{color}' has been updated")
 
 
-def _delete_provider(name):
+def _delete_provider(name: str) -> None:
     with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
         providers = yaml.safe_load(fp)
 
@@ -304,7 +307,7 @@ def _delete_provider(name):
     notify("SUCCESS", f"Provider '{bright_magenta}{name}{color}' has been deleted")
 
 
-def _set_provider(name):
+def _set_provider(name: str) -> None:
     with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
         providers = yaml.safe_load(fp)
 
@@ -330,16 +333,16 @@ def _set_provider(name):
                 )
 
 
-def _list_providers(verbose=False):
+def _list_providers(verbose: bool | str = False):
     if isinstance(verbose, str):
         try:
-            verbose = eval(verbose.capitalize())
+            verbose = cast(bool, eval(verbose.capitalize()))
         except (NameError, SyntaxError) as e:
             print("Please pass 'True' or 'False'.")
             raise e
 
     with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
-        providers = yaml.safe_load(fp)
+        providers: Dict[str, Any] = yaml.safe_load(fp)
 
     print("The following providers are declared:")
     if verbose:
@@ -363,19 +366,19 @@ def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
     return parsed
 
 
-def _print_verbose_providers_description(providers) -> None:
+def _print_verbose_providers_description(providers: Dict[str, Any]) -> None:
     u = "\u251c"
     for provider in providers:
         print(f"{bright_black}  {u}\u2500{color}provider: {provider}:")
         print(f"{bright_black}  {u}\u2500{color}   host: {providers[provider]}:")
 
 
-def _print_simple_providers_description(providers) -> None:
+def _print_simple_providers_description(providers: Dict[str, Any]) -> None:
     u = "\u251c"
     print(f"{bright_black}  {u}\u2500{color}{providers.keys()}:")
 
 
-def _print_simple_network_description(network_dict, is_last) -> None:
+def _print_simple_network_description(network_dict: Dict[str, Any], is_last: bool) -> None:
     u = "\u2514" if is_last else "\u251c"
     print(
         f"{bright_black}  {u}\u2500{color}{network_dict['name']}:"
@@ -383,9 +386,13 @@ def _print_simple_network_description(network_dict, is_last) -> None:
     )
 
 
-def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
-    u = "\u2514" if is_last else "\u251c"
-    v = " " if is_last else "\u2502"
+def _print_verbose_network_description(network_dict: Dict[str, Any], is_last: bool, indent: int = 0) -> None:
+    if is_last:
+        u = "\u2514"
+        v = " "
+    else:
+        u = "\u251c"
+        v = "\u2502"
     if "name" in network_dict:
         print(f"{bright_black}  {u}\u2500{color}{network_dict.pop('name')}")
 
@@ -404,7 +411,7 @@ def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
         print(f"{bright_black}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
-def _validate_network(network, required) -> None:
+def _validate_network(network: Dict[str, Any], required: Tuple[str, ...]) -> None:
     if missing := [i for i in required if i not in network]:
         raise ValueError(f"Network is missing required field(s): {', '.join(missing)}")
 

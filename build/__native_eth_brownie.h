@@ -94,24 +94,13 @@ typedef struct tuple_T4OOOO {
 } tuple_T4OOOO;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T14OOOOOOOOOOOOOO
-#define MYPYC_DECLARED_tuple_T14OOOOOOOOOOOOOO
-typedef struct tuple_T14OOOOOOOOOOOOOO {
-    PyObject *f0;
-    PyObject *f1;
+#ifndef MYPYC_DECLARED_tuple_T3CIO
+#define MYPYC_DECLARED_tuple_T3CIO
+typedef struct tuple_T3CIO {
+    char f0;
+    CPyTagged f1;
     PyObject *f2;
-    PyObject *f3;
-    PyObject *f4;
-    PyObject *f5;
-    PyObject *f6;
-    PyObject *f7;
-    PyObject *f8;
-    PyObject *f9;
-    PyObject *f10;
-    PyObject *f11;
-    PyObject *f12;
-    PyObject *f13;
-} tuple_T14OOOOOOOOOOOOOO;
+} tuple_T3CIO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T5OOOOO
@@ -123,15 +112,6 @@ typedef struct tuple_T5OOOOO {
     PyObject *f3;
     PyObject *f4;
 } tuple_T5OOOOO;
-#endif
-
-#ifndef MYPYC_DECLARED_tuple_T3CIO
-#define MYPYC_DECLARED_tuple_T3CIO
-typedef struct tuple_T3CIO {
-    char f0;
-    CPyTagged f1;
-    PyObject *f2;
-} tuple_T3CIO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T0
