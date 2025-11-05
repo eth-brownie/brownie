@@ -483,7 +483,7 @@ Brownie is compatible with the `pytest-xdist <https://github.com/pytest-dev/pyte
 
 You may wish to read an overview of `how xdist works <https://github.com/pytest-dev/pytest-xdist/blob/master/OVERVIEW.md>`_ if you are unfamiliar with the plugin.
 
-To run your tests in parralel, include the ``-n`` flag:
+To run your tests in parallel, include the ``-n`` flag:
 
 ::
 
