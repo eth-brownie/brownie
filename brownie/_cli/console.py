@@ -171,6 +171,8 @@ class Console(code.InteractiveConsole):
             locals_dict["Gui"] = Gui
         except ModuleNotFoundError:
             pass
+        except ImportError:
+            pass
 
         if extra_locals:
             locals_dict.update(extra_locals)
