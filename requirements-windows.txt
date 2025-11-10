@@ -40,7 +40,7 @@ cbor2==5.7.1
     # via
     #   -r requirements.txt
     #   vyper
-cchecksum==0.3.3
+cchecksum==0.3.4
     # via
     #   -r requirements.txt
     #   eth-event
@@ -132,11 +132,11 @@ execnet==2.1.1
     # via
     #   -r requirements.txt
     #   pytest-xdist
-faster-eth-abi==5.2.17
+faster-eth-abi==5.2.20
     # via
     #   -r requirements.txt
     #   eth-event
-faster-eth-utils==5.3.16
+faster-eth-utils==5.3.18
     # via
     #   -r requirements.txt
     #   faster-eth-abi
@@ -243,13 +243,13 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.12.3
+pydantic==2.12.4
     # via
     #   -r requirements.txt
     #   eth-account
     #   eth-utils
     #   faster-eth-utils
-pydantic-core==2.41.4
+pydantic-core==2.41.5
     # via
     #   -r requirements.txt
     #   pydantic

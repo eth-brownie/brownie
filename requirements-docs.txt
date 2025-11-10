@@ -18,7 +18,7 @@ charset-normalizer==3.4.4
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   requests
-docutils==0.22.2
+docutils==0.22.3
     # via
     #   -c requirements-dev.txt
     #   sphinx
