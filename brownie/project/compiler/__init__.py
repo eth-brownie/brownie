@@ -296,7 +296,9 @@ def compile_from_input_json(
     if language == "Solidity":
         settings = cast(SettingsSolc, input_json["settings"])
         allow_paths = _get_allow_paths(allow_paths, settings["remappings"])
-        return solidity.compile_from_input_json(cast(InputJsonSolc, input_json), silent, allow_paths)
+        return solidity.compile_from_input_json(
+            cast(InputJsonSolc, input_json), silent, allow_paths
+        )
 
     raise UnsupportedLanguage(language)
 
