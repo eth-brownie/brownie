@@ -25,6 +25,7 @@ from brownie.typing import (
     Count,
     DeployedBytecodeJson,
     InputJsonSolc,
+    IntegerString,
     Offset,
     PcList,
     PCMap,
@@ -349,13 +350,15 @@ def _generate_coverage_data(
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
         return PCMap({}), {}, {}
-        return {}, {}, {}
 
     source_map = deque(expand_source_map(source_map_str))
     opcodes = deque(opcodes_str.split(" "))
 
     contract_nodes = [contract_node] + contract_node.dependencies
-    source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
+    source_nodes: Dict[IntegerString, NodeBase] = {
+        str(i.contract_id): i.parent()
+        for i in contract_nodes
+    }
 
     stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
     statement_map: StatementMap = {i: {} for i in source_nodes}
@@ -366,11 +369,11 @@ def _generate_coverage_data(
     # currently active branches, awaiting a jumpi
     branch_active: Dict[str, Dict[Offset, int]] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict[str, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
+    branch_set: Dict[IntegerString, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
     pc_list: PcList = []
-    revert_map: Dict[Tuple[str, Offset], List[int]] = {}
+    revert_map: Dict[Tuple[IntegerString, Offset], List[int]] = {}
     fallback_hexstr: str = "unassigned"
 
     optimizer_revert = get_version() < Version("0.8.0")
