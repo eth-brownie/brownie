@@ -356,8 +356,7 @@ def _generate_coverage_data(
 
     contract_nodes = [contract_node] + contract_node.dependencies
     source_nodes: Dict[IntegerString, NodeBase] = {
-        str(i.contract_id): i.parent()
-        for i in contract_nodes
+        str(i.contract_id): i.parent() for i in contract_nodes
     }
 
     stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}

@@ -386,7 +386,9 @@ def _print_simple_network_description(network_dict: Dict[str, Any], is_last: boo
     )
 
 
-def _print_verbose_network_description(network_dict: Dict[str, Any], is_last: bool, indent: int = 0) -> None:
+def _print_verbose_network_description(
+    network_dict: Dict[str, Any], is_last: bool, indent: int = 0
+) -> None:
     if is_last:
         u = "\u2514"
         v = " "
