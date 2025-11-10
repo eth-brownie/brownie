@@ -314,7 +314,7 @@ def generate_build_json(
     Args:
         input_json: solc input json used to compile
         output_json: output json returned by compiler
-        compiler_data: additonal data to include under 'compiler' in build json
+        compiler_data: additional data to include under 'compiler' in build json
         silent: verbose reporting
 
     Returns: build json dict"""

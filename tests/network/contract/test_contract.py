@@ -258,7 +258,7 @@ def test_autofetch(config, connect_to_mainnet):
 
 @auto_retry
 def test_autofetch_missing(config, mocker, connect_to_mainnet):
-    # an issue woth pytest-mock prevents spying on Contract.from_explorer,
+    # an issue with pytest-mock prevents spying on Contract.from_explorer,
     # so we watch requests.get which is only called inside Contract.from_explorer
     mocker.spy(requests, "get")
 
