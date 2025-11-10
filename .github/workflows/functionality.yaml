@@ -105,8 +105,6 @@ jobs:
         name: ${{ steps.wheel.outputs.artifact-name }}
 
     - name: Run Tox
-      env:
-         CC: ccache gcc
       run: tox -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
 
     - name: Upload coverage to Codecov
