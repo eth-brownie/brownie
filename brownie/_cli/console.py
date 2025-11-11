@@ -169,7 +169,7 @@ class Console(code.InteractiveConsole):
         try:
             Gui = import_module("brownie._gui").Gui
             locals_dict["Gui"] = Gui
-        except ModuleNotFoundError:
+        except ImportError:
             pass
 
         if extra_locals:
