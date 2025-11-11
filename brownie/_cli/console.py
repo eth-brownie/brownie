@@ -169,8 +169,6 @@ class Console(code.InteractiveConsole):
         try:
             Gui = import_module("brownie._gui").Gui
             locals_dict["Gui"] = Gui
-        except ModuleNotFoundError:
-            pass
         except ImportError:
             pass
 
