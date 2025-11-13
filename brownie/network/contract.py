@@ -30,11 +30,11 @@ from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress,
 from faster_eth_abi import decode as decode_abi
 from faster_eth_abi import encode as encode_abi
 from faster_eth_utils import combomethod
+from faster_web3._utils import filters
+from faster_web3.datastructures import AttributeDict
+from faster_web3.types import LogReceipt
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
-from web3._utils import filters
-from web3.datastructures import AttributeDict
-from web3.types import LogReceipt
 
 from brownie._c_constants import (
     HexBytes,
