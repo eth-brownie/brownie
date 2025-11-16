@@ -1,6 +1,6 @@
 # Development
 
-To get started with working on the Brownie codebaser, use the following steps prepare your local environment:
+To get started with working on the Brownie codebase, use the following steps prepare your local environment:
 
 ```bash
 # clone the github repo and navigate into the folder

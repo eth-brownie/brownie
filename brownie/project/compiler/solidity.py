@@ -416,7 +416,7 @@ def _generate_coverage_data(
             this["value"] = opcodes.popleft()
             pc += int(op[4:])
 
-        # for REVERT opcodes without an source offset, try to infer one
+        # for REVERT opcodes without a source offset, try to infer one
         if (contract_id_int == -1 or source == first_source) and op == "REVERT":
             _find_revert_offset(
                 pc_list, source_map, active_source_node, active_fn_node, active_fn_name
