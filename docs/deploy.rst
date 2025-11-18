@@ -21,7 +21,7 @@ Deployment scripts function in the same way as any other :ref:`Brownie script<sc
     1. Unless you are using your own node you will have to unlock a local account prior to deploying. This is handled within the script by calling :func:`Accounts.load <Accounts.load>`. If you have not yet added a local account to Brownie, read the documentation on :ref:`local account management<local-accounts>`.
     2. Most networks require that you to pay gas to miners. If no values are specified Brownie will calculate the gas price and limit automatically, but in some cases you may wish to manually declare these values.
 
-Here is an small example script that unlocks a local account and uses it to deploy a ``Token`` contract.
+Here is a small example script that unlocks a local account and uses it to deploy a ``Token`` contract.
 
 .. code-block:: python
 
