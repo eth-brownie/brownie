@@ -355,7 +355,7 @@ class SanitizedFileHistory(FileHistory):
 
     def __init__(self, filename: str, local_dict: Dict[str, Any]) -> None:
         self.locals = local_dict
-        super().__init__(filename)
+        FileHistory.__init__(self, filename)
 
     def store_string(self, line: str):
         try:
