@@ -78,13 +78,13 @@ def pytest_configure(config):
 
     if config.getoption("--evm"):
         # reformat evm options - only do this once to avoid repeat queries for latest solc version
-        solc_versions, evm_verions, runs = [i.split(",") for i in config.option.evm]
+        solc_versions, evm_versions, runs = [i.split(",") for i in config.option.evm]
         runs = [int(i) for i in runs]
         if "latest" in solc_versions:
             latest_version = solcx.get_installable_solc_versions()[0]
             solc_versions.remove("latest")
             solc_versions.append(latest_version)
-        config.option.evm = (evm_verions, runs, solc_versions)
+        config.option.evm = (evm_versions, runs, solc_versions)
 
 
 def pytest_generate_tests(metafunc):

@@ -10,6 +10,7 @@ from collections.abc import Iterable
 from io import StringIO
 from typing import Any, Dict, Final, Optional, final
 
+from mypy_extensions import mypyc_attr
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
@@ -169,7 +170,7 @@ class Console(code.InteractiveConsole):
         try:
             Gui = import_module("brownie._gui").Gui
             locals_dict["Gui"] = Gui
-        except ModuleNotFoundError:
+        except ImportError:
             pass
 
         if extra_locals:
@@ -335,6 +336,7 @@ def _dir_color(obj: Any) -> str:
 
 
 @final
+@mypyc_attr(native_class=False)
 class SanitizedFileHistory(FileHistory):
     """
     FileHistory subclass to strip sensitive information prior to writing to disk.

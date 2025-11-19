@@ -413,12 +413,6 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    PyObject *_locals;
-} brownie____cli___console___SanitizedFileHistoryObject;
-
-typedef struct {
-    PyObject_HEAD
-    CPyVTableItem *vtable;
     PyObject *_console;
     PyObject *_locals;
 } brownie____cli___console___ConsoleCompleterObject;
@@ -472,6 +466,18 @@ typedef struct {
     vectorcallfunc vectorcall;
     PyObject *___mypyc_env__;
 } brownie____cli___console_____mypyc_lambda__1__dir_Console_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____cli___console_____init___3_SanitizedFileHistory_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie____cli___console___store_string_SanitizedFileHistory_objObject;
 
 typedef struct {
     PyObject_HEAD

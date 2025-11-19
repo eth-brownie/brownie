@@ -103,7 +103,7 @@ The following optional fields may be given for development networks, which are p
     * ``fork``: If given, the local client will fork from another currently running Ethereum client. The value may be an HTTP location and port of the other client, e.g. ``http://localhost:8545``, or the ID of a production network, e.g. ``mainnet``. See :ref:`Using a Forked Development Network <network-management-fork>`.
     * ``disable_cache``: If true, disables caching of all forking requests.
     * ``block_time``: The time waited between mining blocks. Defaults to instant mining.
-    * ``default_balance``: The starting balance for all unlocked accounts. Can be given as unit string like "1000 ether" or "50 gwei" or as an number **in Ether**. Will default to 100 ether.
+    * ``default_balance``: The starting balance for all unlocked accounts. Can be given as unit string like "1000 ether" or "50 gwei" or as a number **in Ether**. Will default to 100 ether.
     * ``time``: Date (ISO 8601) that the first block should start. Use this feature, along with :func:`Chain.sleep <Chain.sleep>` to test time-dependent code. Defaults to the current time.
     * ``unlock``: A single address or a list of addresses to unlock. These accounts are added to the :func:`Accounts <brownie.network.account.Accounts>` container and can be used as if the private key is known. Also works in combination with ``fork`` to send transactions from any account.
     * ``unlimited_contract_size``: Allows deployed contracts to be over the maximum limit of 24675 bytes. The value should be either `true` or `false`.
@@ -285,7 +285,7 @@ To connect with other non-ethereum networks through alchemy, you'll have to foll
 Using a Forked Development Network
 ==================================
 
-Ganache allows you create a development network by forking from an live network. This is useful for testing interactions between your project and other projects that are deployed on the main-net.
+Ganache allows you create a development network by forking from a live network. This is useful for testing interactions between your project and other projects that are deployed on the main-net.
 
 Brownie's ``mainnet-fork`` network uses Infura to create a development network that forks from the main-net. To connect with the console:
 
