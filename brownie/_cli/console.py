@@ -10,6 +10,7 @@ from collections.abc import Iterable
 from io import StringIO
 from typing import Any, Dict, Final, Optional, final
 
+from mypy_extensions import mypyc_attr
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
@@ -335,6 +336,7 @@ def _dir_color(obj: Any) -> str:
 
 
 @final
+@mypyc_attr(native_class=False)
 class SanitizedFileHistory(FileHistory):
     """
     FileHistory subclass to strip sensitive information prior to writing to disk.
@@ -355,7 +357,7 @@ class SanitizedFileHistory(FileHistory):
 
     def __init__(self, filename: str, local_dict: Dict[str, Any]) -> None:
         self.locals = local_dict
-        FileHistory.__init__(self, filename)
+        super().__init__(filename)
 
     def store_string(self, line: str):
         try:
