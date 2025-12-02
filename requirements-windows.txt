@@ -20,7 +20,7 @@ annotated-types==0.7.0
     # via
     #   -r requirements.txt
     #   pydantic
-asttokens==3.0.0
+asttokens==3.0.1
     # via
     #   -r requirements.txt
     #   vyper
@@ -40,13 +40,12 @@ cbor2==5.7.1
     # via
     #   -r requirements.txt
     #   vyper
-cchecksum==0.3.4
+cchecksum==0.3.7.dev0
     # via
     #   -r requirements.txt
-    #   eth-event
     #   faster-eth-abi
     #   faster-eth-utils
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   -r requirements.txt
     #   requests
@@ -83,11 +82,12 @@ eth-account==0.13.7
     #   -r requirements.txt
     #   eip712
     #   web3
-eth-event==1.4.5
+eth-event==1.4.6
     # via -r requirements.txt
 eth-hash[pycryptodome]==0.7.1
     # via
     #   -r requirements.txt
+    #   cchecksum
     #   eth-event
     #   eth-utils
     #   faster-eth-utils
@@ -128,19 +128,19 @@ eth-utils==5.3.1
     #   faster-eth-utils
     #   rlp
     #   web3
-execnet==2.1.1
+execnet==2.1.2
     # via
     #   -r requirements.txt
     #   pytest-xdist
-faster-eth-abi==5.2.20
+faster-eth-abi==5.2.22
     # via
     #   -r requirements.txt
     #   eth-event
-faster-eth-utils==5.3.18
+faster-eth-utils==5.3.20
     # via
     #   -r requirements.txt
     #   faster-eth-abi
-faster-hexbytes==1.3.3
+faster-hexbytes==1.3.4
     # via
     #   -r requirements.txt
     #   eth-event
@@ -222,7 +222,7 @@ propcache==0.4.1
     #   -r requirements.txt
     #   aiohttp
     #   yarl
-protobuf==6.33.0
+protobuf==6.33.1
     # via
     #   -r requirements.txt
     #   web3
@@ -243,7 +243,7 @@ pycryptodome==3.23.0
     #   eth-hash
     #   eth-keyfile
     #   vyper
-pydantic==2.12.4
+pydantic==2.12.5
     # via
     #   -r requirements.txt
     #   eth-account
@@ -298,7 +298,7 @@ rlp==4.1.0
     #   -r requirements.txt
     #   eth-account
     #   eth-rlp
-rpds-py==0.28.0
+rpds-py==0.30.0
     # via
     #   -r requirements.txt
     #   jsonschema
