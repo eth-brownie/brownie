@@ -16,9 +16,9 @@ bump2version==1.0.1
     # via bumpversion
 bumpversion==0.6.0
     # via -r requirements-dev.in
-cachetools==6.2.1
+cachetools==6.2.2
     # via tox
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   -c requirements.txt
     #   requests
@@ -30,13 +30,13 @@ charset-normalizer==3.4.4
     # via
     #   -c requirements.txt
     #   requests
-click==8.3.0
+click==8.3.1
     # via
     #   black
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.11.3
+coverage[toml]==7.12.0
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -74,7 +74,7 @@ jeepney==0.9.0
     # via
     #   keyring
     #   secretstorage
-keyring==25.6.0
+keyring==25.7.0
     # via twine
 markdown-it-py==4.0.0
     # via rich
@@ -103,7 +103,7 @@ packaging==23.2
     #   twine
 pathspec==0.12.1
     # via black
-pip-tools==7.5.1
+pip-tools==7.5.2
     # via -r requirements-dev.in
 pkginfo==1.12.1.2
     # via twine
@@ -168,7 +168,7 @@ rfc3986==2.0.0
     # via twine
 rich==14.2.0
     # via twine
-secretstorage==3.4.0
+secretstorage==3.5.0
     # via keyring
 toml==0.10.2
     # via

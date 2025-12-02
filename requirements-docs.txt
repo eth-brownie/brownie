@@ -4,11 +4,11 @@
 #
 #    pip-compile --no-strip-extras requirements-docs.in
 #
-alabaster==0.7.16
+alabaster==1.0.0
     # via sphinx
 babel==2.17.0
     # via sphinx
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
@@ -48,9 +48,11 @@ requests==2.32.5
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   sphinx
+roman-numerals==3.1.0
+    # via sphinx
 snowballstemmer==3.0.1
     # via sphinx
-sphinx==3.5.3
+sphinx==9.0.1
     # via
     #   -r requirements-docs.in
     #   sphinx-rtd-theme
@@ -73,6 +75,3 @@ urllib3==2.5.0
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   requests
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
