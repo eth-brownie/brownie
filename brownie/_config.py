@@ -82,7 +82,7 @@ class ConfigContainer:
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = NetworkConfig(deepcopy(self.networks[id_]))  # type: ignore [index]
+        network = NetworkConfig(deepcopy(self.networks[id_]))
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
@@ -209,7 +209,7 @@ def _load_project_config(project_path: pathlib.Path) -> None:
         env_path = project_path.joinpath(config_data["dotenv"])
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
-        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+        config_vars.update(dotenv_values(dotenv_path=env_path))
         load_dotenv(dotenv_path=env_path)
         config_data = expand_posix_vars(config_data, config_vars)
 
@@ -272,7 +272,7 @@ def _load_project_envvars(project_path: pathlib.Path) -> Dict:
         env_path = project_path.joinpath(dotenv_path)
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
-        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+        config_vars.update(dotenv_values(dotenv_path=env_path))
     return config_vars
 
 
@@ -299,7 +299,7 @@ def _load_project_dependencies(project_path: pathlib.Path) -> List[str]:
 def _modify_hypothesis_settings(settings, name, parent=None):
     settings = settings.copy()
     if parent is None:
-        parent = hp_settings._current_profile  # type: ignore [attr-defined]
+        parent = hp_settings._current_profile
 
     if "phases" in settings:
         try:

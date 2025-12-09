@@ -474,7 +474,7 @@ def _convert_src(src: str) -> Offset:
     split = src.split(":")[:2]
     start = int(split[0])
     stop = start + int(split[1])
-    return start, stop  # type: ignore [return-value]
+    return start, stop
 
 
 def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> Optional[VyperAstNode]:
