@@ -14,7 +14,7 @@ import brownie
 from brownie._c_constants import deque
 from brownie.utils._color import red, yellow
 
-sf.__tracebackhide__ = True  # type: ignore [attr-defined]
+sf.__tracebackhide__ = True
 
 marker: Final = deque("-/|\\-/|\\")
 
@@ -28,7 +28,7 @@ class _BrownieStateMachine:
 
     def __init__(self) -> None:
         brownie.chain.revert()
-        sf.RuleBasedStateMachine.__init__(self)  # type: ignore [arg-type]
+        sf.RuleBasedStateMachine.__init__(self)
 
         # pytest capturemanager plugin, added when accessed via the state_manager fixture
         if capman := self._capman:
@@ -39,7 +39,7 @@ class _BrownieStateMachine:
             marker.rotate(1)
 
         if hasattr(self, "setup"):
-            self.setup()  # type: ignore
+            self.setup()
 
     def execute_step(self, step) -> None:
         try:
@@ -86,12 +86,12 @@ def _generate_state_machine(rules_object: type) -> type:
                     varnames[i].append(fn.__defaults__[i])
 
             if _attr_filter(attr, "initialize"):
-                wrapped = sf.initialize(**{key[0]: strategies[key[-1]] for key in varnames})  # type: ignore [call-overload]
+                wrapped = sf.initialize(**{key[0]: strategies[key[-1]] for key in varnames})
                 setattr(machine, attr, wrapped(fn))
             elif _attr_filter(attr, "invariant"):
                 setattr(machine, attr, sf.invariant()(fn))
             elif _attr_filter(attr, "rule"):
-                wrapped = sf.rule(**{key[0]: strategies[key[-1]] for key in varnames})  # type: ignore [call-overload]
+                wrapped = sf.rule(**{key[0]: strategies[key[-1]] for key in varnames})
                 setattr(machine, attr, wrapped(fn))
 
     return machine
@@ -104,7 +104,7 @@ def state_machine(
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
         # __init__ is treated as a class method
-        rules_object.__init__(machine, *args, **kwargs)  # type: ignore
+        rules_object.__init__(machine, *args, **kwargs)
     brownie.chain.snapshot()
 
     try:
@@ -112,4 +112,4 @@ def state_machine(
     finally:
         if hasattr(machine, "teardown_final"):
             # teardown_final is also a class method
-            machine.teardown_final(machine)  # type: ignore
+            machine.teardown_final(machine)
