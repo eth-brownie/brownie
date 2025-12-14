@@ -69,7 +69,7 @@ def _attr_filter(attr: str, pattern: str) -> bool:
     return attr == pattern or attr.startswith(f"{pattern}_")
 
 
-def _generate_state_machine(rules_object: type) -> type:
+def _generate_state_machine(rules_object: type) -> type[_BrownieStateMachine]:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
     machine = type("BrownieStateMachine", bases, {})
@@ -104,7 +104,7 @@ def state_machine(
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
         # __init__ is treated as a class method
-        rules_object.__init__(machine, *args, **kwargs)
+        rules_object.__init__(machine, *args, **kwargs)  # type: ignore [misc]
     brownie.chain.snapshot()
 
     try:
