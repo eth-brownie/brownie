@@ -52,7 +52,7 @@ roman-numerals==3.1.0
     # via sphinx
 snowballstemmer==3.0.1
     # via sphinx
-sphinx==9.0.1
+sphinx==9.0.4
     # via
     #   -r requirements-docs.in
     #   sphinx-rtd-theme
@@ -70,7 +70,7 @@ sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-urllib3==2.5.0
+urllib3==2.6.2
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
