@@ -1,0 +1,172 @@
+name: Core Ganache
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.py'
+      - '.github/workflows/core-ganache.yaml'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'requirements.in'
+      - 'requirements.txt'
+      - 'requirements-windows.in'
+      - 'requirements-windows.txt'
+      - 'requirements-dev.in'
+      - 'requirements-dev.txt'
+      - 'tox.ini'
+  pull_request:
+    paths:
+      - '**.py'
+      - '.github/workflows/core-ganache.yaml'
+      - 'pyproject.toml'
+      - 'setup.py'
+      - 'requirements.in'
+      - 'requirements.txt'
+      - 'requirements-windows.in'
+      - 'requirements-windows.txt'
+      - 'requirements-dev.in'
+      - 'requirements-dev.txt'
+      - 'tox.ini'
+  schedule:
+    - cron: '0 6 * * *'  # Daily 0600 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ETHERSCAN_TOKEN: 9MKURTHE8FNA9NRUUJBHMUEVY6IQ5K1EGY
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  ganache-core:
+    name: Ganache Core (${{ matrix.python-version }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # we can increase concurrency beyond 9 (3 concurrent runners per-key) but we will need more keys first
+      max-parallel: 9
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        include:
+          - python-version: "3.10"
+            infura-key: ddddf0c53f254d36aa76ce4e3a6a390e
+          - python-version: "3.11"
+            infura-key: 1668fecbc9c242d58253476103a42ce9
+          - python-version: "3.12"
+            infura-key: 21317ddb5ded42ce8d40c7d78f90474f
+          - python-version: "3.13"
+            infura-key: ddddf0c53f254d36aa76ce4e3a6a390e
+          - python-version: "3.14"
+            infura-key: 1668fecbc9c242d58253476103a42ce9
+          - python-version: "3.14t"
+            infura-key: 21317ddb5ded42ce8d40c7d78f90474f
+          - os: ubuntu-latest
+            ccache-dir: ~/.cache/ccache
+          - os: macos-latest
+            ccache-dir: /Users/runner/Library/Caches/ccache
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Solidity Installations
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.solcx
+            ~/.vvm
+          # this cache is KEY for the tests to work. if it gets deleted we're screwed.
+          key: ${{ runner.os }}-compiler-cache
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+
+      - name: Install Ganache
+        shell: bash
+        run: |
+          if [[ "${{ matrix.python-version }}" == "3.10" ]]; then
+            npm install -g ganache@7.0.2
+          else
+            npm install -g ganache@7.9.2
+          fi
+        
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            setup.py
+            requirements.in
+            requirements.txt
+            requirements-windows.in
+            requirements-windows.txt
+            requirements-dev.in
+            requirements-dev.txt
+      
+      - name: Cache .mypy_cache
+        uses: actions/cache@v4
+        with:
+          path: .mypy_cache
+          key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
+
+      - name: Install Tox
+        run: python -m pip install --upgrade tox
+
+      - name: Cache tox environment and hypothesis examples
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tox
+            .hypothesis
+          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+
+      - name: Restore ccache cache
+        if: runner.os != 'Windows'
+        id: restore-ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ matrix.ccache-dir }}
+          key: ccache-${{ runner.os }}-${{ matrix.python-version}}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          restore-keys: ccache-${{ runner.os }}-${{ matrix.python-version}}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ccache
+      - name: Install ccache (Macos)
+        if: runner.os == 'MacOs'
+        run: brew install ccache
+        
+      - name: Show ccache config and stats before build
+        if: runner.os != 'Windows'
+        run: ccache --version && ccache -p -s
+
+      - name: Run Tox
+        shell: bash
+        env:
+          WEB3_INFURA_PROJECT_ID: ${{ matrix.infura-key }}
+          CC: ccache gcc
+        run: |
+          toxenv="py${{ matrix.python-version }}"
+          toxenv="${toxenv//./}"
+          tox -e "$toxenv"
+          
+      - name: Show ccache stats after build
+        if: always() && runner.os != 'Windows'
+        run: ccache -s
+
+      - name: Save ccache cache
+        if: always() && runner.os != 'Windows'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.ccache-dir }}
+          key: ccache-${{ runner.os }}-${{ matrix.python-version}}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml

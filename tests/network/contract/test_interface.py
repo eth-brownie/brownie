@@ -24,8 +24,7 @@ def test_interfaceconstructor_call(tester):
     assert contract.abi == [{"type": "foo"}]
 
 
-def test_interface_is_not_persisted(network):
-    network.connect("mainnet")
+def test_interface_is_not_persisted(connect_to_mainnet):
     interface = InterfaceContainer(None)
     interface._add("Test", [{"type": "foo"}])
 

@@ -202,7 +202,7 @@ For example, to create a :func:`Contract <brownie.network.contract.Contract>` ob
     >>> interface.Dai("0x6B175474E89094C44Da98b954EedeAC495271d0F")
     <Dai Contract object '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
 
-You can also use the :func:`Contract.from_abi <Contract.from_abi>` classmethod to instatiate from an ABI as a dictionary:
+You can also use the :func:`Contract.from_abi <Contract.from_abi>` classmethod to instantiate from an ABI as a dictionary:
 
 .. code-block:: python
 

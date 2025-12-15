@@ -1,4 +1,35 @@
-	# Brownie configuration for Black.
+[build-system]
+requires = [
+    "setuptools", 
+    "wheel", 
+    "mypy[mypyc]==1.18.2",
+    "types-pyyaml",
+    "types-requests",
+    "types-ujson",
+    # ckzg (installed with eth-account and eip712) is unable to build on Python3.10 or 3.14 for 64-bit Windows, and unable on 32-bit
+	# Windows entirely. We simply exclude them for Windows installs as it is too difficult to differentiate 32-bit vs 64-bit here.
+	# pydantic-core (installed with eth-account, eip712, and faster-eth-utils - which is installed with eth-event) is unable
+    # to build on Python3.14 on 32-bit Linux distros so we exclude it in that one specific case
+    "eip712==0.2.14; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
+    "eth-account==0.13.7; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
+	"eth-event==1.4.5; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
+    "eth-keys==0.7.0",
+    "eth-typing==5.2.1",
+    "faster-eth-abi==5.2.20; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
+    "faster-eth-utils==5.3.18; platform_system != 'Linux' or python_version != '3.14' or platform_machine != 'i686'",
+    "faster-hexbytes==1.3.3",
+    "hypothesis==6.27.3",
+    "prompt-toolkit==3.0.52",
+	"py-solc-ast==1.2.10",
+	"py-solc-x==1.1.1",
+	# There is failure to resolve "packaging" on MacOS and Windows
+    "vvm==0.2.1; platform_system == 'Linux'",
+    "vyper==0.4.3; platform_system == 'Linux'",
+    "websockets==15.0.1",
+    "web3==6.11.0; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
+]
+
+# Brownie configuration for Black.
 
 # NOTE: you have to use single-quoted strings in TOML for regular expressions.
 # It's the equivalent of r-strings in Python.  Multiline strings are treated as
@@ -7,7 +38,7 @@
 
 [tool.black]
 line-length = 100
-target-version = ['py37', 'py38', 'py39']
+target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
 exclude = '''
 /(

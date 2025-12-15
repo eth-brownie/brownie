@@ -2,11 +2,12 @@
 
 import shutil
 import sys
-from pathlib import Path
 
 from brownie import project
+from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.utils import color, notify
+from brownie.utils._color import blue, bright_black, bright_blue, bright_magenta
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie pm <command> [<arguments> ...] [options]
@@ -47,7 +48,7 @@ def _list():
     for path in _get_data_folder().joinpath("packages").iterdir():
         if not path.is_dir():
             continue
-        elif not list(i for i in path.iterdir() if i.is_dir() and "@" in i.name):
+        elif not [i for i in path.iterdir() if i.is_dir() and "@" in i.name]:
             shutil.rmtree(path)
         else:
             org_names.append(path)
@@ -59,11 +60,11 @@ def _list():
 
     for org_path in org_names:
         packages = list(org_path.iterdir())
-        print(f"\n{color('bright magenta')}{org_path.name}{color}")
+        print(f"\n{bright_magenta}{org_path.name}{color}")
         for path in packages:
             u = "\u2514" if path == packages[-1] else "\u251c"
             name, version = path.name.rsplit("@", maxsplit=1)
-            print(f" {color('bright black')}{u}\u2500{_format_pkg(org_path.name, name, version)}")
+            print(f" {bright_black}{u}\u2500{_format_pkg(org_path.name, name, version)}")
 
 
 def _clone(package_id, path_str="."):
@@ -108,7 +109,4 @@ def _split_id(package_id):
 
 
 def _format_pkg(org, repo, version):
-    return (
-        f"{color('blue')}{org}/{color('bright blue')}{repo}"
-        f"{color('blue')}@{color('bright blue')}{version}{color}"
-    )
+    return f"{blue}{org}/{bright_blue}{repo}{blue}@{bright_blue}{version}{color}"

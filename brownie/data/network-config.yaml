@@ -367,7 +367,7 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: zkevm-main
-  - name: Ganache-CLI Base-Mainnet Fork)
+  - name: Ganache-CLI (Base-Mainnet Fork)
     id: base-main-fork
     cmd: ganache-cli
     host: http://127.0.0.1

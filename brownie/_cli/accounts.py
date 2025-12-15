@@ -1,14 +1,14 @@
 #!/usr/bin/python3
 
-import json
 import shutil
 import sys
-from pathlib import Path
 
 from brownie import accounts
+from brownie._c_constants import Path, ujson_load
 from brownie._config import _get_data_folder
 from brownie.convert import to_address
 from brownie.utils import color, notify
+from brownie.utils._color import bright_black, bright_blue, bright_magenta
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie accounts <command> [<arguments> ...] [options]
@@ -50,10 +50,10 @@ def _list():
     for path in account_paths:
         u = "\u2514" if path == account_paths[-1] else "\u251c"
         with path.open() as fp:
-            data = json.load(fp)
+            data = ujson_load(fp)
         print(
-            f" {color('bright black')}{u}\u2500{color('bright blue')}{path.stem}{color}"
-            f": {color('bright magenta')}{to_address(data['address'])}{color}"
+            f" {bright_black}{u}\u2500{bright_blue}{path.stem}{color}"
+            f": {bright_magenta}{to_address(data['address'])}{color}"
         )
 
 
@@ -63,8 +63,8 @@ def _new(id_):
     a.save(id_)
     notify(
         "SUCCESS",
-        f"A new account '{color('bright magenta')}{a.address}{color}'"
-        f" has been generated with the id '{color('bright blue')}{id_}{color}'",
+        f"A new account '{bright_magenta}{a.address}{color}'"
+        f" has been generated with the id '{bright_blue}{id_}{color}'",
     )
 
 
@@ -74,8 +74,8 @@ def _generate(id_):
     a.save(id_)
     notify(
         "SUCCESS",
-        f"A new account '{color('bright magenta')}{a.address}{color}'"
-        f" has been generated with the id '{color('bright blue')}{id_}{color}'",
+        f"A new account '{bright_magenta}{a.address}{color}'"
+        f" has been generated with the id '{bright_blue}{id_}{color}'",
     )
 
 
@@ -96,8 +96,8 @@ def _import(id_, path):
     shutil.copy(source_path, dest_path)
     notify(
         "SUCCESS",
-        f"Keystore '{color('bright magenta')}{source_path}{color}'"
-        f" has been imported with the id '{color('bright blue')}{id_}{color}'",
+        f"Keystore '{bright_magenta}{source_path}{color}'"
+        f" has been imported with the id '{bright_blue}{id_}{color}'",
     )
 
 
@@ -113,18 +113,18 @@ def _export(id_, path):
     shutil.copy(source_path, dest_path)
     notify(
         "SUCCESS",
-        f"Account with id '{color('bright blue')}{id_}{color}' has been"
-        f" exported to keystore '{color('bright magenta')}{dest_path}{color}'",
+        f"Account with id '{bright_blue}{id_}{color}' has been"
+        f" exported to keystore '{bright_magenta}{dest_path}{color}'",
     )
 
 
 def _password(id_):
     a = accounts.load(id_)
-    a.save(id_, overwrite=True)
-    notify("SUCCESS", f"Password has been changed for account '{color('bright blue')}{id_}{color}'")
+    a.save(id_, overwrite=True)  # type: ignore [union-attr]
+    notify("SUCCESS", f"Password has been changed for account '{bright_blue}{id_}{color}'")
 
 
 def _delete(id_):
     path = _get_data_folder().joinpath(f"accounts/{id_}.json")
     path.unlink()
-    notify("SUCCESS", f"Account '{color('bright blue')}{id_}{color}' has been deleted")
+    notify("SUCCESS", f"Account '{bright_blue}{id_}{color}' has been deleted")

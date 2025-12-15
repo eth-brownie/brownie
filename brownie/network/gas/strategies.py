@@ -115,7 +115,7 @@ class ExponentialScalingStrategy(TimeGasStrategy):
 
 class GasNowStrategy(SimpleGasStrategy):
     """
-    Gas strategy for determing a price using the GasNow API.
+    Gas strategy for determining a price using the GasNow API.
 
     GasNow returns 4 possible prices:
 
@@ -131,7 +131,7 @@ class GasNowStrategy(SimpleGasStrategy):
     """
 
     def __init__(self, speed: str = "fast"):
-        if speed not in ("rapid", "fast", "standard", "slow"):
+        if speed not in {"rapid", "fast", "standard", "slow"}:
             raise ValueError("`speed` must be one of: rapid, fast, standard, slow")
         self.speed = speed
 
@@ -205,7 +205,7 @@ class GethMempoolStrategy(BlockGasStrategy):
         super().__init__(block_duration)
         self.position = position
         if graphql_endpoint is None:
-            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
+            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"
         self.graphql_endpoint = graphql_endpoint
         self.max_gas_price = Wei(max_gas_price) or 2**256 - 1
 

@@ -13,7 +13,7 @@ To run your tests:
 
     $ brownie test
 
-This documentation provides a quick overview of basic pytest usage, with an emphasis on features that are relevent to Brownie. Many components of pytest are only explained partially - or not at all. If you wish to learn more about pytest you should review the official `pytest documentation <https://docs.pytest.org/en/latest/>`_.
+This documentation provides a quick overview of basic pytest usage, with an emphasis on features that are relevant to Brownie. Many components of pytest are only explained partially - or not at all. If you wish to learn more about pytest you should review the official `pytest documentation <https://docs.pytest.org/en/latest/>`_.
 
 Getting Started
 ===============
@@ -135,9 +135,9 @@ Expanding upon our example:
         token.transfer(accounts[1], 100, {'from': accounts[0]})
         assert token.balanceOf(accounts[0]) == 900
 
-By applying a ``module`` scope to the the ``token`` fixture, the contract is only deployed once and the same :func:`Contract <brownie.network.contract.ProjectContract>` instance is used for both ``test_approval`` and ``test_transfer``.
+By applying a ``module`` scope to the ``token`` fixture, the contract is only deployed once and the same :func:`Contract <brownie.network.contract.ProjectContract>` instance is used for both ``test_approval`` and ``test_transfer``.
 
-Fixture of higher-scopes (such as ``session`` or ``module``) are always instantiated before lower-scoped fixtures (such as ``function``). The relative order of fixtures of same scope follows the declared order in the test function and honours dependencies between fixtures. The only exception to this rule is isolation fixtures, which are expained below.
+Fixture of higher-scopes (such as ``session`` or ``module``) are always instantiated before lower-scoped fixtures (such as ``function``). The relative order of fixtures of same scope follows the declared order in the test function and honours dependencies between fixtures. The only exception to this rule is isolation fixtures, which are explained below.
 
 
 .. _pytest-fixtures-isolation:
@@ -284,7 +284,7 @@ Revert string comments must begin with ``// dev:`` in Solidity, or ``# dev:`` in
 
 * Line 2 will use the given revert string ``"is two"``
 * Line 3 will substitute in the string supplied on the comments: ``"dev: is three"``
-* Line 4 will use the given string ``"cannot be four"`` and ignore the subsitution string.
+* Line 4 will use the given string ``"cannot be four"`` and ignore the substitution string.
 * Line 5 will have no revert string. The comment did not begin with ``"dev:"`` and so is ignored.
 
 If the above function is executed in the console:
@@ -384,7 +384,7 @@ Test results are saved at ``build/tests.json``. This file holds the results of e
 Only Running Updated Tests
 --------------------------
 
-After the test suite has been run once, you can use the ``--update`` flag to only repeat tests where changes have occured:
+After the test suite has been run once, you can use the ``--update`` flag to only repeat tests where changes have occurred:
 
 ::
 
@@ -483,7 +483,7 @@ Brownie is compatible with the `pytest-xdist <https://github.com/pytest-dev/pyte
 
 You may wish to read an overview of `how xdist works <https://github.com/pytest-dev/pytest-xdist/blob/master/OVERVIEW.md>`_ if you are unfamiliar with the plugin.
 
-To run your tests in parralel, include the ``-n`` flag:
+To run your tests in parallel, include the ``-n`` flag:
 
 ::
 

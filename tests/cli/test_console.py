@@ -24,7 +24,7 @@ def test_run(testproject, history, console, accounts):
     shell = console(testproject)
     _run_cmd(shell, ['run("token")'])
     assert len(history) == 1
-    assert len(testproject.BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
 
 
 def test_multiple_commands(testproject, accounts, history, console):

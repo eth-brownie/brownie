@@ -1,10 +1,12 @@
 import functools
-import importlib
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Final, List, Optional, Sequence, Type
 
 from web3 import Web3
+from web3.types import RPCEndpoint
+
+
+partial: Final = functools.partial
 
 
 class BrownieMiddlewareABC(ABC):
@@ -22,7 +24,7 @@ class BrownieMiddlewareABC(ABC):
         Subclasses may optionally include this method. It is called only once,
         when the middleware is being added.
         """
-        self.w3 = w3
+        self.w3: Final = w3
 
     @classmethod
     @abstractmethod
@@ -41,10 +43,15 @@ class BrownieMiddlewareABC(ABC):
 
         Subclasses should NOT include this method.
         """
-        return functools.partial(self.process_request, make_request)
+        return partial(self.process_request, make_request)
 
     @abstractmethod
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         """
         Process an RPC request.
 
@@ -88,7 +95,7 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
     network_type : str
         One of "live" or "development".
     """
-    middleware_layers: Dict[int, List] = {}
+    middleware_layers: Dict[int, List[Type[BrownieMiddlewareABC]]] = {}
     for obj in _middlewares:
         layer = obj.get_layer(web3, network_type)
         if layer is not None:
@@ -97,17 +104,7 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
     return middleware_layers
 
 
-_middlewares: List = []
+# this must go down here to prevent a circ import issue
+from brownie.network.middlewares._setup import load_middlewares  # noqa: E402
 
-for path in Path(__file__).parent.glob("[!_]*.py"):
-    # load middleware classes from all modules within `brownie/networks/middlewares/`
-    # to be included the module name must not begin with `_` and the middleware
-    # must subclass `BrownieMiddlewareABC`
-    module = importlib.import_module(f"{__package__}.{path.stem}")
-    _middlewares.extend(
-        obj
-        for obj in module.__dict__.values()
-        if isinstance(obj, type)
-        and obj.__module__ == module.__name__
-        and BrownieMiddlewareABC in obj.mro()
-    )
+_middlewares: Final = load_middlewares()

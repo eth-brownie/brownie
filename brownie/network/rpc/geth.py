@@ -24,7 +24,7 @@ def on_connection() -> None:
 
 def _request(method: str, args: List) -> int:
     try:
-        response = web3.provider.make_request(method, args)  # type: ignore
+        response = web3.provider.make_request(method, args)
         if "result" in response:
             return response["result"]
     except (AttributeError, RequestsConnectionError):

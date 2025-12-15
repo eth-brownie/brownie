@@ -1,22 +1,23 @@
 #!/usr/bin/python3
 
 import builtins
-import json
-import re
 import sys
 import warnings
 from pathlib import Path
 
 import pytest
 from _pytest._io import TerminalWriter
+from eth_utils.toolz import keyfilter
 
 import brownie
+from brownie._c_constants import regex_compile, regex_fullmatch, ujson_dump
 from brownie._cli.console import Console
 from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
 from brownie.utils import color
+from brownie.utils._color import yellow
 
 from .base import PytestBrownieBase
 from .utils import convert_outcome
@@ -57,9 +58,9 @@ class RevertContextManager:
             raise ValueError("Can only use one of `dev_revert_msg` and `dev_revert_pattern`")
 
         if revert_pattern:
-            re.compile(revert_pattern)
+            regex_compile(revert_pattern)
         if dev_revert_pattern:
-            re.compile(dev_revert_pattern)
+            regex_compile(dev_revert_pattern)
 
         self.revert_msg = revert_msg
         self.dev_revert_msg = dev_revert_msg
@@ -83,23 +84,27 @@ class RevertContextManager:
         if exc_type is not VirtualMachineError:
             raise
 
-        if self.dev_revert_msg or self.dev_revert_pattern:
+        message = self.dev_revert_msg
+        pattern = self.dev_revert_pattern
+        if message or pattern:
             actual = exc_value.dev_revert_msg
             if (
                 actual is None
-                or (self.dev_revert_pattern and not re.fullmatch(self.dev_revert_pattern, actual))
-                or (self.dev_revert_msg and self.dev_revert_msg != actual)
+                or (pattern and not regex_fullmatch(pattern, actual))
+                or (message and message != actual)
             ):
                 raise AssertionError(
                     f"Unexpected dev revert string '{actual}'\n{exc_value.source}"
                 ) from None
 
-        if self.revert_msg or self.revert_pattern:
+        message = self.revert_msg
+        pattern = self.revert_pattern
+        if message or pattern:
             actual = exc_value.revert_msg
             if (
                 actual is None
-                or (self.revert_pattern and not re.fullmatch(self.revert_pattern, actual))
-                or (self.revert_msg and self.revert_msg != actual)
+                or (pattern and not regex_fullmatch(pattern, actual))
+                or (message and message != actual)
             ):
                 raise AssertionError(
                     f"Unexpected revert string '{actual}'\n{exc_value.source}"
@@ -128,7 +133,7 @@ class PytestPrinter:
 
         if self.first_line:
             self.first_line = False
-            sys.stdout.write(f"{color('yellow')}RUNNING{color}\n")
+            sys.stdout.write(f"{yellow}RUNNING{color}\n")
         text = f"{sep.join(str(i) for i in values)}{end}"
         sys.stdout.write(text)
         if flush:
@@ -212,7 +217,7 @@ class PytestBrownieRunner(PytestBrownieBase):
             tests.setdefault(path, []).append(i)
 
         isolated_tests = sorted(k for k, v in tests.items() if v)
-        self.isolated = dict((self._path(i), set()) for i in isolated_tests)
+        self.isolated = {p: set() for p in map(self._path, isolated_tests)}
 
         if CONFIG.argv["update"]:
             isolated_tests = sorted(filter(self._check_updated, tests))
@@ -244,7 +249,7 @@ class PytestBrownieRunner(PytestBrownieBase):
 
         This is the final hookpoint that executes prior to running tests. If
         the number of tests collected is > 0 and there is not an active network
-        at this point, Brownie connects to the the default network and launches
+        at this point, Brownie connects to the default network and launches
         the RPC client if required.
 
         Arguments
@@ -354,9 +359,7 @@ class PytestBrownieRunner(PytestBrownieBase):
             txhash = self.tests[path]["txhash"]
 
         # save module test results
-        isolated = False
-        if path in self.isolated:
-            isolated = sorted(self.isolated[path])
+        isolated = sorted(self.isolated[path]) if path in self.isolated else False
         is_cov = CONFIG.argv["coverage"] or (path in self.tests and self.tests[path]["coverage"])
         self.tests[path] = {
             "sha1": self._get_hash(path),
@@ -420,70 +423,72 @@ class PytestBrownieRunner(PytestBrownieBase):
         call : _pytest.runner.CallInfo
             Result/Exception info for the failed test.
         """
-        if self.config.getoption("interactive") and report.failed:
-            location = self._path(report.location[0])
-            if location not in self.node_map:
-                # if the exception happened prior to collection it is likely a
-                # SyntaxError and we cannot open an interactive debugger
-                return
+        if not self.config.getoption("interactive") or not report.failed:
+            return
 
-            capman = self.config.pluginmanager.get_plugin("capturemanager")
-            if capman:
-                capman.suspend_global_capture(in_=True)
+        location = self._path(report.location[0])
+        if location not in self.node_map:
+            # if the exception happened prior to collection it is likely a
+            # SyntaxError and we cannot open an interactive debugger
+            return
 
-            tw = TerminalWriter()
-            report.longrepr.toterminal(tw)
+        capman = self.config.pluginmanager.get_plugin("capturemanager")
+        if capman:
+            capman.suspend_global_capture(in_=True)
 
-            # find the last traceback frame within the active project
-            traceback = call.excinfo.traceback[-1]
-            for tb_frame in call.excinfo.traceback[::-1]:
-                try:
-                    Path(tb_frame.path).relative_to(self.project_path)
-                    traceback = tb_frame
-                    break
-                except ValueError:
-                    pass
+        tw = TerminalWriter()
+        report.longrepr.toterminal(tw)
 
-            # get global namespace
-            globals_dict = traceback.frame.f_globals
-
-            # filter python internals and pytest internals
-            globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
-            globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
-
-            # filter test functions and fixtures
-            test_names = self.node_map[location]
-            globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
-            globals_dict = {
-                k: v for k, v in globals_dict.items() if not hasattr(v, "_pytestfixturefunction")
-            }
-
-            # get local namespace
-            locals_dict = traceback.locals
-            locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
-
-            namespace = {"_callinfo": call, **globals_dict, **locals_dict}
-            if "tx" not in namespace and brownie.history:
-                # make it easier to look at the most recent transaction
-                namespace["tx"] = brownie.history[-1]
-
+        # find the last traceback frame within the active project
+        traceback = call.excinfo.traceback[-1]
+        for tb_frame in call.excinfo.traceback[::-1]:
             try:
-                CONFIG.argv["cli"] = "console"
-                shell = Console(self.project, extra_locals=namespace, exit_on_continue=True)
-                banner = (
-                    "\nInteractive mode enabled. Type `continue` to"
-                    " resume testing or `quit()` to halt execution."
-                )
-                shell.interact(banner=banner, exitmsg="")
-            except SystemExit as exc:
-                if exc.code != "continue":
-                    pytest.exit("Test execution halted due to SystemExit")
-            finally:
-                CONFIG.argv["cli"] = "test"
+                Path(tb_frame.path).relative_to(self.project_path)
+                traceback = tb_frame
+                break
+            except ValueError:
+                pass
 
-            print("Continuing tests...")
-            if capman:
-                capman.resume_global_capture()
+        # get global namespace
+        globals_dict = traceback.frame.f_globals
+
+        # filter python internals and pytest internals
+        globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("__")}
+        globals_dict = {k: v for k, v in globals_dict.items() if not k.startswith("@")}
+
+        # filter test functions and fixtures
+        test_names = self.node_map[location]
+        globals_dict = {k: v for k, v in globals_dict.items() if k not in test_names}
+        globals_dict = {
+            k: v for k, v in globals_dict.items() if not hasattr(v, "_pytestfixturefunction")
+        }
+
+        # get local namespace
+        locals_dict = traceback.locals
+        locals_dict = {k: v for k, v in locals_dict.items() if not k.startswith("@")}
+
+        namespace = {"_callinfo": call, **globals_dict, **locals_dict}
+        if "tx" not in namespace and brownie.history:
+            # make it easier to look at the most recent transaction
+            namespace["tx"] = brownie.history[-1]
+
+        try:
+            CONFIG.argv["cli"] = "console"
+            shell = Console(self.project, extra_locals=namespace, exit_on_continue=True)
+            banner = (
+                "\nInteractive mode enabled. Type `continue` to"
+                " resume testing or `quit()` to halt execution."
+            )
+            shell.interact(banner=banner, exitmsg="")
+        except SystemExit as exc:
+            if exc.code != "continue":
+                pytest.exit("Test execution halted due to SystemExit")
+        finally:
+            CONFIG.argv["cli"] = "test"
+
+        print("Continuing tests...")
+        if capman:
+            capman.resume_global_capture()
 
     def pytest_sessionfinish(self):
         """
@@ -496,12 +501,12 @@ class PytestBrownieRunner(PytestBrownieBase):
 
     def _sessionfinish(self, path):
         # store test results at the given path
-        txhash = set(x for v in self.tests.values() for x in v["txhash"])
-        coverage_eval = dict((k, v) for k, v in coverage.get_coverage_eval().items() if k in txhash)
+        txhash = {x for v in self.tests.values() for x in v["txhash"]}
+        coverage_eval = keyfilter(txhash.__contains__, coverage.get_coverage_eval())
         report = {"tests": self.tests, "contracts": self.contracts, "tx": coverage_eval}
 
         with self.project._build_path.joinpath(path).open("w") as fp:
-            json.dump(report, fp, indent=2, sort_keys=True, default=sorted)
+            ujson_dump(report, fp, indent=2, sort_keys=True, default=sorted)
 
     def pytest_terminal_summary(self, terminalreporter):
         """
@@ -567,5 +572,5 @@ class PytestBrownieXdistRunner(PytestBrownieRunner):
         Stores test results in `build/tests-{workerid}.json`. Each of these files
         is then aggregated in `PytestBrownieMaster.pytest_sessionfinish`.
         """
-        self.tests = dict((k, v) for k, v in self.tests.items() if k in self.results)
+        self.tests = keyfilter(self.results.__contains__, self.tests)
         self._sessionfinish(f"tests-{self.workerid}.json")

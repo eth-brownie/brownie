@@ -1,12 +1,11 @@
 #!/usr/bin/python3
 
-import json
 import sys
 import threading
 import time
-from collections import deque
 from collections.abc import Iterator
 from getpass import getpass
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -17,12 +16,13 @@ from eip712.messages import EIP712Message
 from eth_account._utils.signing import sign_message_hash
 from eth_account.datastructures import SignedMessage
 from eth_account.messages import _hash_eip191_message, defunct_hash_message
-from eth_utils import keccak
-from eth_utils.applicators import apply_formatters_to_dict
-from hexbytes import HexBytes
+from eth_typing import BlockNumber, HexAddress
+from faster_eth_utils import keccak
+from faster_eth_utils.applicators import apply_formatters_to_dict
 from web3 import HTTPProvider, IPCProvider
 from web3.exceptions import InvalidTransaction, TransactionNotFound
 
+from brownie._c_constants import HexBytes, deque, ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
@@ -32,13 +32,20 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import color
+from brownie.utils import bytes_to_hexstring, color
+from brownie.utils._color import bright_blue, bright_cyan
 
 from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
+
+ETH_ACCOUNT_LT_0_13_0 = tuple(map(int, version("eth_account").split("."))) < (
+    0,
+    13,
+    0,
+)
 
 history = TxHistory()
 rpc = Rpc()
@@ -82,7 +89,7 @@ class Accounts(metaclass=_Singleton):
                 unlocked_accounts = [unlocked_accounts]
             for address in unlocked_accounts:
                 if isinstance(address, int):
-                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                    address = bytes_to_hexstring(address.to_bytes(20, "big"))
                 account = Account(address)
                 if account not in self._accounts:
                     self._accounts.append(account)
@@ -92,11 +99,11 @@ class Accounts(metaclass=_Singleton):
         if self.default not in self._accounts:
             self.default = None
 
-    def _revert(self, height: int) -> None:
+    def _revert(self, height: BlockNumber) -> None:
         # must exist for rpc registry callback
         pass
 
-    def __contains__(self, address: str) -> bool:
+    def __contains__(self, address: HexAddress) -> bool:
         try:
             address = to_address(address)
             return address in self._accounts
@@ -137,7 +144,7 @@ class Accounts(metaclass=_Singleton):
         """
         if private_key is None:
             w3account, mnemonic = eth_account.Account.create_with_mnemonic()
-            print(f"mnemonic: '{color('bright cyan')}{mnemonic}{color}'")
+            print(f"mnemonic: '{bright_cyan}{mnemonic}{color}'")
         else:
             w3account = web3.eth.account.from_key(private_key)
 
@@ -183,7 +190,10 @@ class Accounts(metaclass=_Singleton):
         return new_accounts
 
     def load(
-        self, filename: str = None, password: str = None, allow_retry: bool = False
+        self,
+        filename: Optional[Union[str, Path]] = None,
+        password: Optional[str] = None,
+        allow_retry: bool = False,
     ) -> Union[List, "LocalAccount"]:
         """
         Load a local account from a keystore file.
@@ -222,7 +232,7 @@ class Accounts(metaclass=_Singleton):
                     raise FileNotFoundError(f"Cannot find {json_file}")
 
         with json_file.open() as fp:
-            encrypted = json.load(fp)
+            encrypted = ujson_load(fp)
 
         prompt = f'Enter password for "{json_file.stem}": '
         while True:
@@ -456,7 +466,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
             if isinstance(value, Iterator):
-                # if `get_gas_price` returns an interator, this is a gas strategy
+                # if `get_gas_price` returns an iterator, this is a gas strategy
                 # intended for rebroadcasting. we need to retain both the strategy
                 # object and the active gas price iterator
                 return Wei(next(value)), gas_price, value
@@ -488,7 +498,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def deploy(
         self,
         contract: Any,
-        *args: Tuple,
+        *args: Any,
         amount: int = 0,
         gas_limit: Optional[int] = None,
         gas_buffer: Optional[float] = None,
@@ -532,7 +542,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             priority_fee,
             data,
             nonce,
-            contract._name + ".constructor",
+            f"{contract._name}.constructor",
             required_confs,
             allow_revert,
             silent,
@@ -678,7 +688,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 args=(
                     receipt,
                     self.transfer,
-                    [],
+                    (),
                     {
                         "to": to,
                         "amount": amount,
@@ -761,19 +771,19 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid = None
             while True:
                 try:
-                    response = self._transact(tx, allow_revert)  # type: ignore
+                    response = self._transact(tx, allow_revert)
                     exc, revert_data = None, None
                     if txid is None:
-                        txid = HexBytes(response).hex()
+                        txid = bytes_to_hexstring(response)
                         if not silent:
-                            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                            print(f"\rTransaction sent: {bright_blue}{txid}{color}")
                 except ValueError as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
                         if not hasattr(exc, "txid"):
                             raise exc from None
                         txid = exc.txid
-                        print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                        print(f"\rTransaction sent: {bright_blue}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
                 try:
                     receipt = TransactionReceipt(
@@ -784,7 +794,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         is_blocking=False,
                         name=fn_name,
                         revert_data=revert_data,
-                    )  # type: ignore
+                    )
                     break
                 except (TransactionNotFound, ValueError):
                     if not silent:
@@ -825,7 +835,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         history._add_tx(receipt)
 
         if gas_strategy is not None:
-            gas_strategy.run(receipt, gas_iter)  # type: ignore
+            gas_strategy.run(receipt, gas_iter)
 
         if required_confs == 0:
             # set 0-conf tx's as silent to hide the confirmation output
@@ -890,7 +900,7 @@ class LocalAccount(_PrivateKeyAccount):
     def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
         self._acct = account
         if not isinstance(priv_key, str):
-            priv_key = HexBytes(priv_key).hex()
+            priv_key = bytes_to_hexstring(priv_key)
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
@@ -924,7 +934,7 @@ class LocalAccount(_PrivateKeyAccount):
         encrypted = web3.eth.account.encrypt(self.private_key, password)
         encrypted["address"] = encrypted["address"].lower()
         with json_file.open("w") as fp:
-            json.dump(encrypted, fp)
+            ujson_dump(encrypted, fp)
         return str(json_file)
 
     def sign_defunct_message(self, message: str) -> SignedMessage:
@@ -939,13 +949,22 @@ class LocalAccount(_PrivateKeyAccount):
         msg_hash_bytes = defunct_hash_message(text=message)
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
         (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
-        return SignedMessage(
-            messageHash=msg_hash_bytes,
-            r=r,
-            s=s,
-            v=v,
-            signature=HexBytes(eth_signature_bytes),
-        )
+        if ETH_ACCOUNT_LT_0_13_0:
+            return SignedMessage(
+                messageHash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
+        else:
+            return SignedMessage(
+                message_hash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
 
     def sign_message(self, message: EIP712Message) -> SignedMessage:
         """Signs an `EIP712Message` using this account's private key.
@@ -963,13 +982,22 @@ class LocalAccount(_PrivateKeyAccount):
         assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
         (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
-        return SignedMessage(
-            messageHash=msg_hash_bytes,
-            r=r,
-            s=s,
-            v=v,
-            signature=HexBytes(eth_signature_bytes),
-        )
+        if ETH_ACCOUNT_LT_0_13_0:
+            return SignedMessage(
+                messageHash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
+        else:
+            return SignedMessage(
+                message_hash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
 
     def _transact(self, tx: Dict, allow_revert: bool) -> None:
         if allow_revert is None:
@@ -977,8 +1005,10 @@ class LocalAccount(_PrivateKeyAccount):
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
-        signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
-        return web3.eth.send_raw_transaction(signed_tx)
+        signed = self._acct.sign_transaction(tx)
+        return web3.eth.send_raw_transaction(
+            signed.rawTransaction if ETH_ACCOUNT_LT_0_13_0 else signed.raw_transaction
+        )
 
 
 class ClefAccount(_PrivateKeyAccount):

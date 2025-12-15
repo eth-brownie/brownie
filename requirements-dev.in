@@ -1,16 +1,15 @@
 -c requirements.txt
 
-black
+black>=20.8b1
 bumpversion
 coverage
+eth-retry
 flake8
 isort
 pip-tools
 pygments-lexer-solidity
 pytest-cov
 pytest-mock
-sphinx
-sphinx_rtd_theme
 tox
 twine
 wheel

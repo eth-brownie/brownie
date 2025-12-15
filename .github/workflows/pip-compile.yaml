@@ -4,32 +4,50 @@ on:
   pull_request:
     branches:
       - master
-    paths:
-      - 'requirements.in'
-      - 'requirements-windows.in'
-      - 'requirements-dev.in'
+      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  format:
+  pip-compile:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.head_ref }}  # Check out the PR branch
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.13'
+
+    - name: Cache .mypy_cache
+      uses: actions/cache@v4
+      with:
+        path: .mypy_cache
+        key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
+
+    - name: Pin pip to <25.0 for pip-tools compatibility
+      run: pip install "pip<25.0"
 
     - name: Install Pip Tools
-      run: pip install pip-tools
-
+      run: pip install -U pip-tools
+      
     - name: Run Pip Compile
-      run: pip-compile
+      run: pip-compile -U --no-strip-extras
 
+    - name: Run Pip Compile for Windows
+      run: pip-compile -U requirements-windows.in --no-strip-extras
+
+    - name: Run Pip Compile for Dev Deps
+      run: pip-compile -U requirements-dev.in --no-strip-extras
+
+    - name: Run Pip Compile for Docs Deps
+      run: pip-compile -U requirements-docs.in --no-strip-extras
+    
     - name: Check for changes
       id: changes
       run: |

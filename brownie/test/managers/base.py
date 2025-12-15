@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 
-import json
-from hashlib import sha1
+from operator import attrgetter
 from pathlib import Path
 
 import hypothesis
+from eth_utils.toolz import compose, concat
+from ujson import JSONDecodeError
 
 import brownie
+from brownie._c_constants import sha1, ujson_load
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
@@ -35,38 +37,40 @@ class PytestBrownieBase:
         self.node_map = {}
         self.isolated = {}
         self.skip = {}
-        self.contracts = dict(
-            (k, v["bytecodeSha1"]) for k, v in project._build.items() if v.get("bytecode")
-        )
+        self.contracts = {
+            k: v["bytecodeSha1"] for k, v in project._build.items() if v.get("bytecode")
+        }
 
-        glob = self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")
-        self.conf_hashes = dict((self._path(i.parent), _get_ast_hash(i)) for i in glob)
+        glob = list(
+            self.project_path.joinpath(self.project._structure["tests"]).glob("**/conftest.py")
+        )
+        key_func = compose(self._path, attrgetter("parent"))
+        self.conf_hashes = dict(zip(map(key_func, glob), map(_get_ast_hash, glob)))
         try:
             with self.project._build_path.joinpath("tests.json").open() as fp:
-                hashes = json.load(fp)
-        except (FileNotFoundError, json.decoder.JSONDecodeError):
+                hashes = ujson_load(fp)
+        except (FileNotFoundError, JSONDecodeError):
             hashes = {"tests": {}, "contracts": {}, "tx": {}}
 
-        self.tests = dict(
-            (k, v)
+        self.tests = {
+            k: v
             for k, v in hashes["tests"].items()
             if self.project_path.joinpath(k).exists() and self._get_hash(k) == v["sha1"]
-        )
+        }
 
-        changed_contracts = set(
+        if changed_contracts := {
             k
             for k, v in hashes["contracts"].items()
             if k not in self.contracts or v != self.contracts[k]
-        )
-        if changed_contracts:
+        }:
             for txhash, coverage_eval in hashes["tx"].items():
                 if not changed_contracts.intersection(coverage_eval.keys()):
                     coverage._add_cached_transaction(txhash, coverage_eval)
-            self.tests = dict(
-                (k, v)
+            self.tests = {
+                k: v
                 for k, v in self.tests.items()
                 if v["isolated"] is not False and not changed_contracts.intersection(v["isolated"])
-            )
+            }
         else:
             for txhash, coverage_eval in hashes["tx"].items():
                 coverage._add_cached_transaction(txhash, coverage_eval)
@@ -145,11 +149,12 @@ class PytestBrownieBase:
             if next((i for i in ("Falsifying", "Trying", "Traceback") if text.startswith(i)), None):
                 print("")
 
-            lines = [
-                reporter._tw._highlight(i) if not i.lstrip().startswith("\x1b") else f"{i}\n"
+            highlight = reporter._tw._highlight
+
+            text = "".join(
+                f"{i}\n" if i.lstrip().startswith("\x1b") else highlight(i)
                 for i in text.split("\n")
-            ]
-            text = "".join(lines)
+            )
 
             end = "\n" if text.startswith("Traceback") else ""
             print(text, end=end)
@@ -177,9 +182,7 @@ class PytestBrownieBase:
         """
         if report.when == "setup":
             self.skip[report.nodeid] = report.skipped
-            if report.failed:
-                return "error", "E", "ERROR"
-            return "", "", ""
+            return ("error", "E", "ERROR") if report.failed else ("", "", "")
         if report.when == "teardown":
             if report.failed:
                 return "error", "E", "ERROR"
@@ -213,16 +216,15 @@ class PytestBrownieBase:
         if not hasattr(item, "hypothesis_report_information"):
             return
 
-        reporter = self.config.pluginmanager.get_plugin("terminalreporter")
+        highlight = self.config.pluginmanager.get_plugin("terminalreporter")._tw._highlight
 
-        report = [x for i in item.hypothesis_report_information for x in i.split("\n")]
-        report = [self._reduce_path_strings(i) for i in report]
-        report = [
-            reporter._tw._highlight(i).rstrip("\n") if not i.lstrip().startswith("\x1b") else i
-            for i in report
+        item.hypothesis_report_information = [
+            i if i.lstrip().startswith("\x1b") else highlight(i).rstrip("\n")
+            for i in map(
+                self._reduce_path_strings,
+                concat(i.split("\n") for i in item.hypothesis_report_information),
+            )
         ]
-
-        item.hypothesis_report_information = report
 
     def pytest_terminal_summary(self, terminalreporter):
         """

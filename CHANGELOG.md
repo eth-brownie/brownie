@@ -7,10 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 ### Fixed
-- API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix)
+- typing for *args and **kwargs ([#1870](https://github.com/eth-brownie/brownie/pull/1870))
+- singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
+- various other minor typing issues
+- Various typos in API and core documentation for readability
+- API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix) ([#1799](https://github.com/eth-brownie/brownie/pull/1799))
 
 ### Changed
-- replace `eth_utils.to_checksum_address` with `cchecksum.to_checksum_address` for ~2x faster checksumming ([#1796](https://github.com/eth-brownie/brownie/pull/1796))
+- Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875) and others)
+- Support Python3.14 and 3.14t ([#2008](https://github.com/eth-brownie/brownie/pull/2008))
+- Replace [eth-utils](https://github.com/ethereum/eth-utils) with [faster-eth-utils](https://github.com/BobTheBuidler/faster-eth-utils) ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
+- Replace [eth-abi](https://github.com/ethereum/eth-abi/) with [faster-eth-abi](https://github.com/BobTheBuidler/faster-eth-abi) ([#1977](https://github.com/eth-brownie/brownie/pull/1977))
+- Replace [hexbytes](https://github.com/ethereum/hexbytes) with [faster-hexbytes](https://github.com/BobTheBuidler/faster-hexbytes) ([#2004](https://github.com/eth-brownie/brownie/pull/2004))
+- Replaced builtin json with ([ujson](https://github.com/ultrajson/ultrajson)) for 4x encoding/decoding speed improvements ([#2005](https://github.com/eth-brownie/brownie/pull/2005))
+- Support eth-utils v5 ([#1872](https://github.com/eth-brownie/brownie/pull/1872))
+- optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
+- Various TypedDict definitions and other typing improvements
+
+## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
+### Fixed
+- GethPOAMiddleware on Polygon networks with anvil fork ([#1791](https://github.com/eth-brownie/brownie/pull/1791))
+
+### Changed
+- replace `eth_utils.to_checksum_address` with `cchecksum.to_checksum_address` for ~8x faster checksumming ([#1796](https://github.com/eth-brownie/brownie/pull/1796))
+- Use Etherscan v2 API (only uses `ETHERSCAN_TOKEN` env var for all networks) ([#1852](https://github.com/eth-brownie/brownie/pull/1852))
 
 ## [1.20.7](https://github.com/eth-brownie/brownie/tree/v1.20.7) - 2025-01-07
 ### Added
@@ -372,7 +392,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.13.3](https://github.com/eth-brownie/brownie/tree/v1.13.3) - 2021-03-08
 ### Added
-- Option to choose console editting mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
+- Option to choose console editing mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
 
 ### Fixed
 - Strip whitespace from `address_or_alias` ([#978](https://github.com/eth-brownie/brownie/pull/978))
@@ -453,7 +473,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `timedelta` as a kwarg in `chain.mine` ([#856](https://github.com/eth-brownie/brownie/pull/856))
 - `require_network` pytest marker ([#858](https://github.com/eth-brownie/brownie/pull/858))
 - `TransactionReceipt.dev_revert_msg` to access the dev revert string when there is a regular revert message ([#860](https://github.com/eth-brownie/brownie/pull/860))
-- Allow targetting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
+- Allow targeting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
 - Support regex in `brownie.reverts` ([#864](https://github.com/eth-brownie/brownie/pull/864))
 
 ### Changed
@@ -483,7 +503,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Include nonce in `stdout` output when broadcasting a transaction ([#833](https://github.com/eth-brownie/brownie/pull/833))
 
 ### Changed
-- `brownie bake` project names are no longer case sensetive ([#829](https://github.com/eth-brownie/brownie/pull/829))
+- `brownie bake` project names are no longer case sensitive ([#829](https://github.com/eth-brownie/brownie/pull/829))
 
 ### Fixed
 - Handle `str` when looking at traceback paths ([#823](https://github.com/eth-brownie/brownie/pull/823))
