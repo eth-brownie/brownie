@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
 - various other minor typing issues
 - Various typos in API and core documentation for readability
+- API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix) ([#1799](https://github.com/eth-brownie/brownie/pull/1799))
 
 ### Changed
 - Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875) and others)
