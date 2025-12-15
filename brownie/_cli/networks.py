@@ -169,18 +169,22 @@ def _modify(id_: str, *args: str) -> None:
         networks = yaml.safe_load(fp)
 
     is_dev = "cmd" in CONFIG.networks[id_]
-    if is_dev:
-        target = next(i for i in networks["development"] if i["id"] == id_)
-    else:
-        target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-    for key, value in args_dict.items():
-        t = target
-        if key in DEV_CMD_SETTINGS and is_dev:
-            t = target["cmd_settings"]
-        if value is None:
-            del t[key]
+    try:
+        if is_dev:
+            target = next(i for i in networks["development"] if i["id"] == id_)
         else:
-            t[key] = value
+            target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
+        for key, value in args_dict.items():
+            t = target
+            if key in DEV_CMD_SETTINGS and is_dev:
+                t = target["cmd_settings"]
+            if value is None:
+                del t[key]
+            else:
+                t[key] = value
+    except TypeError as e:
+        raise TypeError(*e.args, networks) from e.__cause__
+
     if is_dev:
         _validate_network(target, DEV_REQUIRED)
     else:
@@ -203,12 +207,15 @@ def _delete(id_: str) -> None:
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
 
-    if "cmd" in CONFIG.networks[id_]:
-        networks["development"] = [i for i in networks["development"] if i["id"] != id_]
-    else:
-        target = next(i for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-        target["networks"] = [i for i in target["networks"] if i["id"] != id_]
-        networks["live"] = [i for i in networks["live"] if i["networks"]]
+    try:
+        if "cmd" in CONFIG.networks[id_]:
+            networks["development"] = [i for i in networks["development"] if i["id"] != id_]
+        else:
+            target = next(i for i in networks["live"] for x in i["networks"] if x["id"] == id_)
+            target["networks"] = [i for i in target["networks"] if i["id"] != id_]
+            networks["live"] = [i for i in networks["live"] if i["networks"]]
+    except TypeError as e:
+        raise TypeError(*e.args, networks) from e.__cause__
 
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
