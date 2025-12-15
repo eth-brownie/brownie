@@ -12,7 +12,7 @@ from solcast.nodes import NodeBase, is_inside_offset
 
 from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
-from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import (
     VersionList,
     VersionSpec,
@@ -582,8 +582,12 @@ def _find_revert_offset(
 
     # get the offset of the next instruction
     next_offset = None
-    if source_map and source_map[0][2] != -1:
-        next_offset = (source_map[0][0], source_map[0][0] + source_map[0][1])
+    if source_map:
+        next_instruction = source_map[0]
+        if next_instruction[2] != -1:
+            next_start = next_instruction[0]
+            next_stop = next_start + next_instruction[1]
+            next_offset = (next_start, next_stop)
 
     # if the next instruction offset is not equal to the offset of the active function,
     # but IS contained within the active function, apply this offset to the current

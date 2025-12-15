@@ -27,7 +27,7 @@ jobs:
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
     - name: Build wheel
-      uses: BobTheBuidler/mypycify@v0.2.3
+      uses: BobTheBuidler/mypycify@v0.2.5
       with:
         python-version: '3.13'
         hash-key: |

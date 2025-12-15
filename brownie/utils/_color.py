@@ -2,7 +2,7 @@
 
 import sys
 import traceback
-from typing import Any, Dict, Final, Literal, Optional, Sequence, final
+from typing import Any, Dict, Final, Literal, Optional, Sequence, cast, final
 
 import pygments
 from pygments.formatter import Formatter
@@ -205,12 +205,13 @@ class Color:
         return "\n".join(tb)
 
     def format_syntaxerror(self, exc: SyntaxError) -> str:
-        offset = exc.offset + len(exc.text.lstrip()) - len(exc.text) + 3  # type: ignore
-        exc.filename = exc.filename.replace(base_path, ".")  # type: ignore [union-attr]
+        text = cast(str, exc.text)
+        offset = cast(int, exc.offset) + len(text.lstrip()) - len(text) + 3
+        exc.filename = cast(str, exc.filename).replace(base_path, ".")
         return (
-            f'  {dark_white}File "{bright_magenta}{exc.filename}'  # type: ignore [union-attr]
+            f'  {dark_white}File "{bright_magenta}{exc.filename}'
             f'{dark_white}", line {bright_blue}{exc.lineno}'
-            f"{dark_white},\n{BASE}m    {exc.text.strip()}\n"  # type: ignore [union-attr]
+            f"{dark_white},\n{BASE}m    {text.strip()}\n"
             f"{' '*offset}^\n{bright_red}SyntaxError{BASE}m: {exc.msg}"
         )
 

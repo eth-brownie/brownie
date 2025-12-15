@@ -81,7 +81,7 @@ def main() -> None:
         return
 
 
-def _list(verbose: bool | str = False):
+def _list(verbose: bool | str = False) -> None:
     if isinstance(verbose, str):
         try:
             verbose = cast(bool, eval(verbose.capitalize()))
@@ -116,7 +116,7 @@ def _list(verbose: bool | str = False):
             _print_simple_network_description(value, is_last)
 
 
-def _add(env, id_, *args):
+def _add(env: str, id_: str, *args: str) -> None:
     if id_ in CONFIG.networks:
         raise ValueError(f"Network '{bright_magenta}{id_}{color}' already exists")
 
@@ -159,7 +159,7 @@ def _add(env, id_, *args):
     _print_verbose_network_description(new, True)
 
 
-def _modify(id_: str, *args: str):
+def _modify(id_: str, *args: str) -> None:
     if id_ not in CONFIG.networks:
         raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
@@ -241,24 +241,25 @@ def _import(path_str: str, replace: bool = False) -> None:
         _validate_network(value, DEV_REQUIRED)
         old_networks["development"].append(value)
 
-    for chain, value in [(i, x) for i in new_networks.get("live", []) for x in i["networks"]]:
-        prod = next((i for i in old_networks["live"] if i["name"] == chain["name"]), None)
-        if prod is None:
-            prod = {"name": chain["name"], "networks": []}
-            old_networks["live"].append(prod)
-        id_ = value["id"]
-        if id_ in CONFIG.networks:
-            if not replace:
-                raise ValueError(f"Cannot overwrite existing network {id_}")
-            existing = next((i for i in prod["networks"] if i["id"] == id_), None)
-            if existing is None:
-                raise ValueError(
-                    f"Import file contains live network with id '{id_}',"
-                    " but this is already an existing network on a different environment."
-                )
-            prod["networks"].remove(existing)
-        _validate_network(value, PROD_REQUIRED)
-        prod["networks"].append(value)
+    for chain in new_networks.get("live", []):
+        for value in chain["networks"]:
+            prod = next((i for i in old_networks["live"] if i["name"] == chain["name"]), None)
+            if prod is None:
+                prod = {"name": chain["name"], "networks": []}
+                old_networks["live"].append(prod)
+            id_ = value["id"]
+            if id_ in CONFIG.networks:
+                if not replace:
+                    raise ValueError(f"Cannot overwrite existing network {id_}")
+                existing = next((i for i in prod["networks"] if i["id"] == id_), None)
+                if existing is None:
+                    raise ValueError(
+                        f"Import file contains live network with id '{id_}',"
+                        " but this is already an existing network on a different environment."
+                    )
+                prod["networks"].remove(existing)
+            _validate_network(value, PROD_REQUIRED)
+            prod["networks"].append(value)
 
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(old_networks, fp)

@@ -173,13 +173,13 @@ class Fixed(decimal.Decimal):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __lt__(self, other: Any) -> bool:  # type: ignore
+    def __lt__(self, other: Any) -> bool:
         return super().__lt__(_to_fixed(other))
 
-    def __le__(self, other: Any) -> bool:  # type: ignore
+    def __le__(self, other: Any) -> bool:
         return super().__le__(_to_fixed(other))
 
-    def __eq__(self, other: Any) -> bool:  # type: ignore
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, float):
             raise TypeError("Cannot compare to floating point - use a string instead")
         try:
@@ -195,16 +195,16 @@ class Fixed(decimal.Decimal):
         except TypeError:
             return True
 
-    def __ge__(self, other: Any) -> bool:  # type: ignore
+    def __ge__(self, other: Any) -> bool:
         return super().__ge__(_to_fixed(other))
 
-    def __gt__(self, other: Any) -> bool:  # type: ignore
+    def __gt__(self, other: Any) -> bool:
         return super().__gt__(_to_fixed(other))
 
-    def __add__(self, other: Any) -> "Fixed":  # type: ignore
+    def __add__(self, other: Any) -> "Fixed":
         return Fixed(super().__add__(_to_fixed(other)))
 
-    def __sub__(self, other: Any) -> "Fixed":  # type: ignore
+    def __sub__(self, other: Any) -> "Fixed":
         return Fixed(super().__sub__(_to_fixed(other)))
 
 
@@ -247,7 +247,7 @@ class EthAddress(str):
             converted_value = to_checksum_address(converted_value)
         except ValueError:
             raise ValueError(f"{value!r} is not a valid ETH address") from None
-        return str.__new__(cls, converted_value)  # type: ignore
+        return str.__new__(cls, converted_value)
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -319,12 +319,12 @@ def _to_hex(value: Any) -> HexStr:
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
     if isinstance(value, int):
-        return hex(value)  # type: ignore [return-value]
+        return HexStr(hex(value))
     if isinstance(value, str):
         if value in ("", "0x"):
-            return "0x00"  # type: ignore [return-value]
+            return HexStr("0x00")
         if is_hex(value):
-            return add_0x_prefix(value)  # type: ignore [arg-type]
+            return add_0x_prefix(value)
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
