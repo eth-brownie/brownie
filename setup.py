@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# sourcery skip: merge-list-appends-into-extend
 import os
 import platform
 import sys
@@ -13,11 +14,10 @@ if os.environ.get("BROWNIE_LIB", "0") == "1":
         requirements_filename = "requirements-windows.in"
     else:
         requirements_filename = "requirements.in"
+elif sys.platform == "windows":
+    requirements_filename = "requirements-windows.txt"
 else:
-    if sys.platform == "windows":
-        requirements_filename = "requirements-windows.txt"
-    else:
-        requirements_filename = "requirements.txt"
+    requirements_filename = "requirements.txt"
 
 with open(requirements_filename, "r") as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
@@ -40,6 +40,17 @@ else:
 if skip_mypyc:
     ext_modules = []
 else:
+    flags = [
+        # "--strict",
+        "--pretty",
+        "--check-untyped-defs",
+    ]
+
+    if sys.version_info[:2] == (3, 10):
+        # We only want to enable these flags on the lowest supported Python version
+        flags.append("--enable-error-code=unused-ignore")
+        flags.append("--enable-error-code=redundant-cast")
+
     ext_modules = mypycify(
         [
             "brownie/_c_constants.py",
@@ -68,9 +79,7 @@ else:
             "brownie/utils/output.py",
             "brownie/utils/sql.py",
             "brownie/utils/toposort.py",
-            # "--strict",
-            "--pretty",
-            "--check-untyped-defs",
+            *flags,
         ],
         group_name="eth_brownie",
         strict_dunder_typing=True,
