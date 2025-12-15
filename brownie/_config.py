@@ -272,7 +272,7 @@ def _load_project_envvars(project_path: pathlib.Path) -> Dict:
         env_path = project_path.joinpath(dotenv_path)
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
-        config_vars.update(dotenv_values(dotenv_path=env_path))
+        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore [arg-type]
     return config_vars
 
 
