@@ -4,7 +4,7 @@ import sys
 import warnings
 from pathlib import Path
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
+from typing import Any, List, Optional
 
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -37,7 +37,7 @@ module.exports = {
 }"""
 
 
-def launch(cmd: str, **kwargs: Dict) -> None:
+def launch(cmd: str, **kwargs: Any) -> None:
     """Launches the RPC client.
 
     Args:
