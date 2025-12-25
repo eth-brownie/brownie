@@ -1,6 +1,6 @@
 import pytest
 from eth_retry import auto_retry
-from web3.exceptions import TransactionNotFound
+from faster_web3.exceptions import TransactionNotFound
 
 
 @auto_retry

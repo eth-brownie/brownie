@@ -4,8 +4,8 @@ import asyncio
 import time
 
 import pytest
-from web3.datastructures import AttributeDict
-from web3.exceptions import ABIEventFunctionNotFound
+from faster_web3.datastructures import AttributeDict
+from faster_web3.exceptions import ABIEventFunctionNotFound
 
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError

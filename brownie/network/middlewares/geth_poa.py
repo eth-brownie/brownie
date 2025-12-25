@@ -1,9 +1,9 @@
 from typing import Any, Callable, Dict, Optional, Sequence, final
 
-from web3 import Web3
-from web3.exceptions import ExtraDataLengthError
-from web3.middleware import geth_poa_middleware
-from web3.types import RPCEndpoint
+from faster_web3 import Web3
+from faster_web3.exceptions import ExtraDataLengthError
+from faster_web3.middleware import geth_poa_middleware
+from faster_web3.types import RPCEndpoint
 
 from brownie.network.middlewares import BrownieMiddlewareABC
 
