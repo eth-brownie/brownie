@@ -27,7 +27,7 @@ jobs:
 
       - name: Build wheel with mypycify
         id: wheel
-        uses: BobTheBuidler/mypycify@v0.2.0
+        uses: BobTheBuidler/mypycify@v0.2.6
         with:
           python-version: "3.13"
           hash-key: |
