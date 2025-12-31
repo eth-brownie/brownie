@@ -95,7 +95,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: .tox
-        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+        key: toxenv-${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
 
     # Download the wheel artifact built by mypycify
     - name: Download wheel
