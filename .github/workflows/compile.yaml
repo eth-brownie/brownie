@@ -20,14 +20,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Cache .mypy_cache
-      uses: actions/cache@v4
-      with:
-        path: .mypy_cache
-        key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
-
     - name: Build wheel
-      uses: BobTheBuidler/mypycify@v0.2.5
+      uses: BobTheBuidler/mypycify@v0.2.6
       with:
         python-version: '3.13'
         hash-key: |
