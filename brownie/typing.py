@@ -35,7 +35,7 @@ Selector = NewType("Selector", HexStr)
 @final
 class FormattedEvent(TypedDict):
     name: str | Literal["(anonymous)", "(unknown)"]
-    data: List[EventData]
+    data: list[EventData]
     decoded: bool
     address: ChecksumAddress
 
@@ -47,13 +47,13 @@ TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionRec
 # PROJECT
 Start = int
 Stop = int
-Offset = Tuple[Start, Stop]
+Offset = tuple[Start, Stop]
 
 
 # Build
 class BytecodeJson(TypedDict):
     object: HexStr
-    linkReferences: NotRequired[Dict[str, Dict]]
+    linkReferences: NotRequired[dict[str, dict]]
 
 
 @final
@@ -64,27 +64,27 @@ class DeployedBytecodeJson(BytecodeJson):
 
 class _BuildJsonBase(TypedDict):
     contractName: ContractName
-    abi: List[ABIElement]
+    abi: list[ABIElement]
     sha1: HexStr
-    dependencies: NotRequired[List[ContractName]]
+    dependencies: NotRequired[list[ContractName]]
 
 
 @final
 class InterfaceBuildJson(_BuildJsonBase):
     type: Literal["interface"]
-    source: Optional[str]
-    offset: Optional[Offset]
-    ast: NotRequired[List[Dict]]
+    source: str | None
+    offset: Offset | None
+    ast: NotRequired[list[dict]]
 
 
 IntegerString = str
 """An integer cast as a string, as in: ``str(123)``"""
 
-Statements = Dict[str, Dict["Count", Offset]]
-StatementMap = Dict[IntegerString, Statements]
+Statements = dict[str, dict["Count", Offset]]
+StatementMap = dict[IntegerString, Statements]
 
-Branches = Dict[str, Dict["Count", Tuple[int, int, bool]]]
-BranchMap = Dict[IntegerString, Branches]
+Branches = dict[str, dict["Count", tuple[int, int, bool]]]
+BranchMap = dict[IntegerString, Branches]
 
 
 class CoverageMap(TypedDict):
@@ -95,25 +95,25 @@ class CoverageMap(TypedDict):
 class _ContractBuildJson(_BuildJsonBase):
     source: str
     sourcePath: str
-    natspec: NotRequired[Dict[str, Any]]
-    allSourcePaths: Dict[str, Any]
+    natspec: NotRequired[dict[str, Any]]
+    allSourcePaths: dict[str, Any]
     offset: Offset
     bytecode: HexStr
     bytecodeSha1: HexStr
     deployedBytecode: HexStr
     coverageMap: CoverageMap
-    pcMap: Dict[int, "ProgramCounter"]
+    pcMap: dict[int, "ProgramCounter"]
     compiler: NotRequired["CompilerConfig"]
-    ast: NotRequired[List]
+    ast: NotRequired[list]
 
 
 @final
 class SolidityBuildJson(_ContractBuildJson):
     type: str
     language: Literal["Solidity"]
-    opcodes: NotRequired[List[str]]
-    sourceMap: NotRequired[Dict]  # TODO: define typed dict
-    deployedSourceMap: NotRequired[Dict]  # TODO: define typed dict
+    opcodes: NotRequired[list[str]]
+    sourceMap: NotRequired[dict]  # TODO: define typed dict
+    deployedSourceMap: NotRequired[dict]  # TODO: define typed dict
 
 
 @final
@@ -129,7 +129,7 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 # Compiler
 Language = Literal["Solidity", "Vyper"]
 EvmVersion = NewType("EvmVersion", str)
-Source = Tuple[Start, Stop, ContractName, str]
+Source = tuple[Start, Stop, ContractName, str]
 
 
 class ContractSource(TypedDict):
@@ -137,11 +137,11 @@ class ContractSource(TypedDict):
 
 
 class InterfaceSource(TypedDict):
-    abi: List[ABIElement]
+    abi: list[ABIElement]
 
 
-SourcesDict = Dict[str, ContractSource | InterfaceSource]
-InterfaceSources = Dict[str, InterfaceSource]
+SourcesDict = dict[str, ContractSource | InterfaceSource]
+InterfaceSources = dict[str, InterfaceSource]
 
 
 @final
@@ -152,18 +152,18 @@ class OptimizerSettings(TypedDict):
 
 @final
 class SolcConfig(TypedDict):
-    version: NotRequired[Optional[str]]
+    version: NotRequired[str | None]
     evm_version: NotRequired[EvmVersion]
     optimize: NotRequired[bool]
     runs: NotRequired[int]
-    remappings: NotRequired[List[str] | None]
+    remappings: NotRequired[list[str] | None]
     optimizer: NotRequired[OptimizerSettings]
     viaIR: NotRequired[bool]
 
 
 @final
 class VyperConfig(TypedDict):
-    version: NotRequired[Optional[str]]
+    version: NotRequired[str | None]
     evm_version: NotRequired[EvmVersion]
 
 
@@ -176,7 +176,7 @@ class CompilerConfig(TypedDict):
     optimizer: NotRequired[OptimizerSettings]
 
 
-OutputSelection = Dict[str, Dict[str, List[str]]]
+OutputSelection = dict[str, dict[str, list[str]]]
 
 
 class _CompilerSettings(TypedDict):
@@ -185,8 +185,8 @@ class _CompilerSettings(TypedDict):
 
 @final
 class SettingsSolc(_CompilerSettings):
-    evmVersion: NotRequired[Optional[EvmVersion]]
-    remappings: List[str]
+    evmVersion: NotRequired[EvmVersion | None]
+    remappings: list[str]
     optimizer: NotRequired[OptimizerSettings]
     viaIR: NotRequired[bool]
 
@@ -201,7 +201,7 @@ class _InputJsonBase(TypedDict):
     interfaces: InterfaceSources
 
     # if I add a stub like this does it type check properly for members and fallbacks?
-    def __getitem__(self, name: ContractName) -> Dict[str, Any]: ...  # type: ignore [misc]
+    def __getitem__(self, name: ContractName) -> dict[str, Any]: ...  # type: ignore [misc]
 
 
 @final
@@ -225,7 +225,7 @@ Count = int
 class ProgramCounter(TypedDict):
     count: Count
     op: str
-    fn: NotRequired[Optional[str]]
+    fn: NotRequired[str | None]
     path: NotRequired[str]
     value: NotRequired[str]
     pc: NotRequired[int]
@@ -239,8 +239,8 @@ class ProgramCounter(TypedDict):
     statement: NotRequired[Count]
 
 
-PcList = List[ProgramCounter]
-PCMap = NewType("PCMap", Dict[int, ProgramCounter])
+PcList = list[ProgramCounter]
+PCMap = NewType("PCMap", dict[int, ProgramCounter])
 
 
 class VyperAstNode(TypedDict):
@@ -252,8 +252,8 @@ class VyperAstNode(TypedDict):
     ast_type: str
     src: str
     op: "VyperAstNode"
-    value: Dict
-    test: Dict
+    value: dict
+    test: dict
 
 
-VyperAstJson = List[VyperAstNode]
+VyperAstJson = list[VyperAstNode]

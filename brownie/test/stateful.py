@@ -73,7 +73,7 @@ def _generate_state_machine(rules_object: type) -> type[_BrownieStateMachine]:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
     machine = type("BrownieStateMachine", bases, {})
-    strategies: Dict[str, SearchStrategy] = {
+    strategies: dict[str, SearchStrategy] = {
         k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)
     }
 
@@ -98,7 +98,7 @@ def _generate_state_machine(rules_object: type) -> type[_BrownieStateMachine]:
 
 
 def state_machine(
-    rules_object: type, *args: Any, settings: Optional[dict] = None, **kwargs: Any
+    rules_object: type, *args: Any, settings: dict | None = None, **kwargs: Any
 ) -> None:
 
     machine = _generate_state_machine(rules_object)

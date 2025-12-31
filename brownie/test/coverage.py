@@ -7,33 +7,33 @@ from eth_typing import HexStr
 from brownie._c_constants import deepcopy
 from brownie.typing import ContractName, IntegerString
 
-CoverageEval = NewType("CoverageEval", Dict[ContractName, Dict[IntegerString, Dict[int, Set]]])
+CoverageEval = NewType("CoverageEval", dict[ContractName, dict[IntegerString, dict[int, set]]])
 
 # Coverage evaluation is stored on a per-tx basis. We use a special "coverage hash"
 # with additional inforarmation included to ensure no two transactions will produce
 # the same hash.
 
-_coverage_eval: Final[Dict[str, CoverageEval]] = {}
+_coverage_eval: Final[dict[str, CoverageEval]] = {}
 
 
 # Because querying traces is slow, old coverage data is cached. Prior to evaluating
 # a transaction, a call to `_check_cached` confirms if the transaction was already
 # been evaluated in a previous session.
 
-_cached_coverage_eval: Final[Dict[str, CoverageEval]] = {}
+_cached_coverage_eval: Final[dict[str, CoverageEval]] = {}
 
 # We track coverage hashes for the currently active test module so we know which
 # data to look at in order to determine coverage for that module.
 
-_active_module_coverage_hashes: Final[Set[HexStr]] = set()
+_active_module_coverage_hashes: Final[set[HexStr]] = set()
 
 
-def get_coverage_eval() -> Dict[str, Dict]:
+def get_coverage_eval() -> dict[str, dict]:
     """Returns all coverage data, active and cached."""
     return {**_cached_coverage_eval, **_coverage_eval}
 
 
-def get_merged_coverage_eval(cov_eval: Optional[Dict[str, CoverageEval]] = None) -> CoverageEval:
+def get_merged_coverage_eval(cov_eval: dict[str, CoverageEval] | None = None) -> CoverageEval:
     """Merges and returns all active coverage data as a single dict.
 
     Returns: coverage eval dict.
@@ -87,7 +87,7 @@ def _check_cached(coverage_hash: HexStr, active: bool = True) -> bool:
     return coverage_hash in _coverage_eval
 
 
-def _get_active_txlist() -> List[HexStr]:
+def _get_active_txlist() -> list[HexStr]:
     # Return a list of coverage hashes that are currently marked as active
     return sorted(_active_module_coverage_hashes)
 

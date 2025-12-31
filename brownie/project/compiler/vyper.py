@@ -44,7 +44,7 @@ sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 vvm_logger.addHandler(sh)
 
-AVAILABLE_VYPER_VERSIONS: Optional[VersionList] = None
+AVAILABLE_VYPER_VERSIONS: VersionList | None = None
 _active_version = Version(vyper.__version__)
 
 
@@ -86,7 +86,7 @@ def set_vyper_version(version: VersionSpec) -> str:
     return str(_active_version)
 
 
-def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List[ABIElement]]:
+def get_abi(contract_source: str, name: ContractName) -> dict[ContractName, list[ABIElement]]:
     """
     Given a contract source and name, returns a dict of {name: abi}
 
@@ -111,7 +111,7 @@ def get_abi(contract_source: str, name: ContractName) -> Dict[ContractName, List
     return {name: compiled["contracts"][name][name]["abi"]}
 
 
-def _get_vyper_version_list() -> Tuple[VersionList, VersionList]:
+def _get_vyper_version_list() -> tuple[VersionList, VersionList]:
     global AVAILABLE_VYPER_VERSIONS
     installed_versions = _convert_to_semver(_get_installed_vyper_versions())
     lib_version = Version(vyper.__version__)
@@ -134,11 +134,11 @@ def install_vyper(*versions: str) -> None:
 
 
 def find_vyper_versions(
-    contract_sources: Dict[str, str],
+    contract_sources: dict[str, str],
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     """
     Analyzes contract pragmas and determines which vyper version(s) to use.
 
@@ -155,9 +155,9 @@ def find_vyper_versions(
 
     available_versions, installed_versions = _get_vyper_version_list()
 
-    pragma_specs: Dict[str, semantic_version.NpmSpec] = {}
-    to_install: Set[str] = set()
-    new_versions: Set[str] = set()
+    pragma_specs: dict[str, semantic_version.NpmSpec] = {}
+    to_install: set[str] = set()
+    new_versions: set[str] = set()
 
     for path, source in contract_sources.items():
         pragma_specs[path] = sources.get_vyper_pragma_spec(source, path)
@@ -192,7 +192,7 @@ def find_vyper_versions(
         )
 
     # organize source paths by latest available vyper version
-    compiler_versions: Dict[str, List[str]] = {}
+    compiler_versions: dict[str, list[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
@@ -201,7 +201,7 @@ def find_vyper_versions(
 
 
 def find_best_vyper_version(
-    contract_sources: Dict[str, str],
+    contract_sources: dict[str, str],
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
@@ -245,8 +245,8 @@ def find_best_vyper_version(
 
 
 def compile_from_input_json(
-    input_json: InputJsonVyper, silent: bool = True, allow_paths: Optional[str] = None
-) -> Dict:
+    input_json: InputJsonVyper, silent: bool = True, allow_paths: str | None = None
+) -> dict:
     """
     Compiles contracts from a standard input json.
 
@@ -282,14 +282,14 @@ def compile_from_input_json(
 
 
 def _get_unique_build_json(
-    output_evm: Dict,
+    output_evm: dict,
     path_str: str,
     contract_name: ContractName,
-    ast_json: Union[Dict, List],
+    ast_json: dict | list,
     offset: Offset,
 ) -> VyperBuildJson:
 
-    ast: List = ast_json["body"] if isinstance(ast_json, dict) else ast_json
+    ast: list = ast_json["body"] if isinstance(ast_json, dict) else ast_json
     deployed_bytecode: dict = output_evm["deployedBytecode"]
     pc_map, statement_map, branch_map = _generate_coverage_data(
         deployed_bytecode["sourceMap"],
@@ -313,7 +313,7 @@ def _get_unique_build_json(
     }
 
 
-def _get_dependencies(ast_json: List[dict]) -> List[ContractName]:
+def _get_dependencies(ast_json: list[dict]) -> list[ContractName]:
     return sorted(
         {
             i["name"].split(".")[-1]
@@ -333,7 +333,7 @@ def _generate_coverage_data(
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,
-) -> Tuple[PCMap, StatementMap, BranchMap]:
+) -> tuple[PCMap, StatementMap, BranchMap]:
     if not opcodes_str:
         return PCMap({}), {}, {}
         return {}, {}, {}
@@ -477,7 +477,7 @@ def _convert_src(src: str) -> Offset:
     return start, stop
 
 
-def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> Optional[VyperAstNode]:
+def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> VyperAstNode | None:
     for node in ast_json:
         converted_src = _convert_src(node["src"])
         if is_inside_offset(offset, converted_src):
@@ -508,7 +508,7 @@ def _get_statement_nodes(ast_json: VyperAstJson) -> VyperAstJson:
     return stmt_nodes
 
 
-def _convert_to_semver(versions: List[PVersion]) -> VersionList:
+def _convert_to_semver(versions: list[PVersion]) -> VersionList:
     """
     Converts a list of `packaging.version.Version` objects to a list of
     `semantic_version.Version` objects.

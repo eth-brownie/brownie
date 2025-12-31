@@ -15,9 +15,9 @@ def branch_results(coverage_mode, evmtester):
 
 # organizes branch results based on if they evaluated True or False
 def _get_branch_results(build):
-    branch_false, branch_true = [
+    branch_false, branch_true = (
         sorted(i) for i in list(coverage.get_coverage_eval().values())[0]["EVMTester"]["0"][1:]
-    ]
+    )
     coverage.clear()
     branch_results = {True: [], False: []}
     for i in branch_true:

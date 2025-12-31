@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Any, Callable, Iterable, Literal, Optional, Tuple, Union, overload
+from typing import Any, Literal, Optional, Tuple, Union, overload
+from collections.abc import Callable, Iterable
 
 from faster_eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
@@ -97,7 +98,7 @@ class _DeferredStrategyRepr(DeferredStrategy):
 
 
 def _exclude_filter(fn: Callable) -> Callable:
-    def wrapper(*args: Tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
+    def wrapper(*args: tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
         strat = fn(*args, **kwargs)
         if exclude is None:
             return strat
@@ -116,7 +117,7 @@ def _exclude_filter(fn: Callable) -> Callable:
 
 def _check_numeric_bounds(
     type_str: str, min_value: NumberType, max_value: NumberType, num_class: type
-) -> Tuple:
+) -> tuple:
     lower, upper = get_int_bounds(type_str)
     min_final = lower if min_value is None else num_class(min_value)
     max_final = upper if max_value is None else num_class(max_value)
@@ -131,7 +132,7 @@ def _check_numeric_bounds(
 
 @_exclude_filter
 def _integer_strategy(
-    type_str: str, min_value: Optional[int] = None, max_value: Optional[int] = None
+    type_str: str, min_value: int | None = None, max_value: int | None = None
 ) -> SearchStrategy:
     min_value, max_value = _check_numeric_bounds(type_str, min_value, max_value, Wei)
     return st.integers(min_value=min_value, max_value=max_value)
@@ -146,7 +147,7 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy(length: Optional[int] = None, include: list = []) -> SearchStrategy:
+def _address_strategy(length: int | None = None, include: list = []) -> SearchStrategy:
     return _DeferredStrategyRepr(
         lambda: st.sampled_from(list(network.accounts)[:length] + include), "accounts"
     )
@@ -154,7 +155,7 @@ def _address_strategy(length: Optional[int] = None, include: list = []) -> Searc
 
 @_exclude_filter
 def _bytes_strategy(
-    abi_type: BasicType, min_size: Optional[int] = None, max_size: Optional[int] = None
+    abi_type: BasicType, min_size: int | None = None, max_size: int | None = None
 ) -> SearchStrategy:
     size = abi_type.sub
     if not size:
@@ -226,16 +227,16 @@ def contract_strategy(contract_name: str) -> SearchStrategy:
 @overload
 def strategy(
     type_str: Literal["address"],
-    length: Optional[int] = None,
+    length: int | None = None,
     include: list = [],
 ) -> SearchStrategy: ...
 
 
 @overload
 def strategy(
-    type_str: Union[EvmIntType, EvmUintType],
-    min_value: Optional[int] = None,
-    max_value: Optional[int] = None,
+    type_str: EvmIntType | EvmUintType,
+    min_value: int | None = None,
+    max_value: int | None = None,
 ) -> SearchStrategy: ...
 
 

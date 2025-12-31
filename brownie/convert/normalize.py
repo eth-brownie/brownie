@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, List, Optional, Sequence, Tuple, cast
+from typing import Any, Final, List, Optional, Tuple, cast
+from collections.abc import Sequence
 
 from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
@@ -12,7 +13,7 @@ from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
-AnyListOrTuple = List[Any] | Tuple[Any, ...]
+AnyListOrTuple = list[Any] | tuple[Any, ...]
 
 # Internal C constants
 
@@ -21,7 +22,7 @@ _TupleType: Final = TupleType
 _parse: Final = parse
 
 
-def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> List[Any]:
+def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> list[Any]:
     """Format contract inputs based on ABI types."""
     abi_inputs = abi["inputs"]
     if len(inputs) and not len(abi_inputs):
@@ -71,7 +72,7 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     return cast(FormattedEvent, event)
 
 
-def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[Any]:
+def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> list[Any]:
     result = []
     _check_array(values, len(abi_types))
     for type_, value in zip(abi_types, values):
@@ -87,8 +88,8 @@ def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[
     return result
 
 
-def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> List[Any]:
-    arrlist = cast(Tuple[Tuple[int, ...], ...], abi_type.arrlist)
+def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> list[Any]:
+    arrlist = cast(tuple[tuple[int, ...], ...], abi_type.arrlist)
     arrlast = arrlist[-1]
     _check_array(values, arrlast[0] if arrlast else None)
     item_type = abi_type.item_type
@@ -120,7 +121,7 @@ def _format_single(type_str: str, value: Any) -> Any:
     raise TypeError(f"Unknown type: {type_str}")
 
 
-def _check_array(values: AnyListOrTuple, length: Optional[int]) -> None:
+def _check_array(values: AnyListOrTuple, length: int | None) -> None:
     if not isinstance(values, (list, tuple)):
         # NOTE: we keep this check here in case the user is running in interpreted mode
         raise TypeError(f"Expected list or tuple, got {type(values).__name__}")

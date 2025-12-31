@@ -9,24 +9,19 @@ from threading import Lock, Thread
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Final,
     Generic,
-    Iterable,
-    Iterator,
     List,
-    Mapping,
     Optional,
-    Sequence,
     Tuple,
     TypeVar,
     Union,
-    ValuesView,
     cast,
     final,
     overload,
 )
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, ValuesView
 
 import eth_event
 from eth_event import EventError
@@ -51,8 +46,8 @@ if TYPE_CHECKING:
     from .contract import Contract
 
 
-TopicMap = Dict[HexStr, TopicMapData]
-DeploymentTopics = Dict[ChecksumAddress, TopicMap]
+TopicMap = dict[HexStr, TopicMapData]
+DeploymentTopics = dict[ChecksumAddress, TopicMap]
 
 EventData = OrderedDict[str, Any]
 """An OrderedDict which contains the indexed args for a single on-chain event."""
@@ -64,14 +59,14 @@ class EventDict:
     Dict/list hybrid container, base class for all events fired in a transaction.
     """
 
-    def __init__(self, events: Optional[Iterable[FormattedEvent]] = None) -> None:
+    def __init__(self, events: Iterable[FormattedEvent] | None = None) -> None:
         """Instantiates the class.
 
         Args:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
         events = list(events) if events else []
 
-        ordered: List[Event] = [
+        ordered: list[Event] = [
             _EventItem(
                 i["name"],
                 i["address"],
@@ -115,7 +110,7 @@ class EventDict:
     def __getitem__(self, key: str) -> "Events":
         """returns a _EventItem dict of all events where name == key"""
 
-    def __getitem__(self, key: Union[str, int]) -> Union["Event", "Events"]:
+    def __getitem__(self, key: str | int) -> Union["Event", "Events"]:
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
         if isinstance(key, int):
@@ -147,11 +142,11 @@ class EventDict:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
         return len(self._dict.get(name, ()))
 
-    def items(self) -> List[Tuple[str, "Events"]]:
+    def items(self) -> list[tuple[str, "Events"]]:
         """EventDict.items() -> a list object providing a view on EventDict's items"""
         return list(self._dict.items())
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """EventDict.keys() -> a list object providing a view on EventDict's keys"""
         return list(self._dict.keys())
 
@@ -183,9 +178,9 @@ class _EventItem(Generic[_TData]):
     def __init__(
         self,
         name: str,
-        address: Optional[ChecksumAddress],
-        event_data: List[_TData],
-        pos: Tuple[int, ...],
+        address: ChecksumAddress | None,
+        event_data: list[_TData],
+        pos: tuple[int, ...],
     ) -> None:
         self.name: Final = name
         self.address: Final = address
@@ -200,7 +195,7 @@ class _EventItem(Generic[_TData]):
     def __getitem__(self, key: str) -> Any:
         """returns the value of data field 'key' from the 1st event within the container"""
 
-    def __getitem__(self, key: Union[int, str]) -> Union[_TData, Any]:
+    def __getitem__(self, key: int | str) -> _TData | Any:
         """if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
         within the container"""
@@ -287,7 +282,7 @@ class _EventWatchData:
     ) -> None:
         # Args
         self.event: Final[ContractEvent] = event
-        self._callbacks_list: List[dict] = []
+        self._callbacks_list: list[dict] = []
         self.delay: float = delay
         # Members
         self._event_filter: Final[filters.LogFilter] = event.create_filter(
@@ -297,7 +292,7 @@ class _EventWatchData:
         self.timer = time.time()
         self.add_callback(callback, repeat)
 
-    def get_new_events(self) -> List["filters.LogReceipt"]:
+    def get_new_events(self) -> list["filters.LogReceipt"]:
         """
         Retrieves and return the events that occurred between now and the last function call.
 
@@ -323,7 +318,7 @@ class _EventWatchData:
         """
         self.delay = min(self.delay, new_delay)
 
-    def _trigger_callbacks(self, events_data: List[filters.LogReceipt]) -> List[Thread]:
+    def _trigger_callbacks(self, events_data: list[filters.LogReceipt]) -> list[Thread]:
         """
         Given a list of event as a parameter, creates a thread for each callback
         present in 'self._callbacks_list', stores the thread in a list which is returned.
@@ -334,12 +329,12 @@ class _EventWatchData:
         """
 
         def _map_callback_on_list(
-            callback: Callable, data_to_map: List[filters.LogReceipt]
+            callback: Callable, data_to_map: list[filters.LogReceipt]
         ) -> None:
             list(map(callback, data_to_map))
 
         self.cooldown_time_over = False
-        threads: List[Thread] = []
+        threads: list[Thread] = []
         for callback in self._callbacks_list:
             # Creates a thread for each callback
             threads.append(
@@ -382,7 +377,7 @@ class EventWatcher(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self.target_list_lock: Lock = Lock()
-        self.target_events_watch_data: Dict[str, _EventWatchData] = {}
+        self.target_events_watch_data: dict[str, _EventWatchData] = {}
         self._kill: bool = False
         self._has_started: bool = False
         self._watcher_thread = Thread(target=self._loop, daemon=True)
@@ -475,7 +470,7 @@ class EventWatcher(metaclass=_Singleton):
         '_EventWatchData._trigger_callbacks' function to run the callbacks instructions
         (in separate threads) on the detected events data.
         """
-        workers_list: List[Thread] = []
+        workers_list: list[Thread] = []
 
         while not self._kill:
             try:
@@ -516,7 +511,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("topics.json")
 
 
-def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
+def _get_topics(abi: list[ABIElement]) -> dict[str, HexStr]:
     topic_map = eth_event.get_topic_map(abi)
 
     updated_topics = _topics.copy()
@@ -540,20 +535,20 @@ def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
     return {v["name"]: k for k, v in topic_map.items()}
 
 
-def _add_deployment_topics(address: ChecksumAddress, abi: List[ABIElement]) -> None:
+def _add_deployment_topics(address: ChecksumAddress, abi: list[ABIElement]) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
 def _decode_logs(
     # Mapping is included so we don't break dependent lib ypricemagic with this change
-    logs: List[_EventItem] | List[Mapping[str, Any]],
-    contracts: Optional[Dict[ChecksumAddress, "Contract"]] = None,
+    logs: list[_EventItem] | list[Mapping[str, Any]],
+    contracts: dict[ChecksumAddress, "Contract"] | None = None,
 ) -> EventDict:
     if not logs:
         return EventDict()
 
     idx = 0
-    events: List[DecodedEvent | NonDecodedEvent] = []
+    events: list[DecodedEvent | NonDecodedEvent] = []
     while True:
         address: ChecksumAddress = logs[idx]["address"]
         try:
@@ -589,7 +584,7 @@ def _decode_logs(
 
 def _decode_ds_note(
     log: _EventItem | Mapping[str, Any], contract: "Contract"
-) -> Optional[DecodedEvent]:
+) -> DecodedEvent | None:
     # ds-note encodes function selector as the first topic
     # TODO double check typing for `log` input
     topic0 = log.topics[0]

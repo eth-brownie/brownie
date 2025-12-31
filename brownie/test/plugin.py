@@ -13,7 +13,7 @@ from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, Pyte
 from brownie.utils import color
 
 
-def _get_project_path() -> Optional[Path]:
+def _get_project_path() -> Path | None:
     key = next((i for i in sys.argv if i.startswith("--brownie-project")), "")
     if key == "--brownie-project":
         idx = sys.argv.index(key)

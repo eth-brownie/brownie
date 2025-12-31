@@ -11,10 +11,10 @@ from brownie.typing import ContractName, Source
 
 
 VersionSpec = Union[str, Version]
-VersionList = List[Version]
+VersionList = list[Version]
 
 
-def expand_source_map(source_map_str: str | dict) -> List[Source]:
+def expand_source_map(source_map_str: str | dict) -> list[Source]:
     """Expand the compressed sourceMap supplied by solc into a list of Tuple[Start, Stop, ContractName, str]."""
 
     if isinstance(source_map_str, dict):
@@ -34,9 +34,9 @@ def expand_source_map(source_map_str: str | dict) -> List[Source]:
     return [tuple(_list) for _list in source_map]  # type: ignore [arg-type, misc]
 
 
-def _expand_row(row: str) -> List[str | int | None]:
+def _expand_row(row: str) -> list[str | int | None]:
     """Expand a packed string into a row of params."""
-    result: List[str | int | None] = [None] * 4
+    result: list[str | int | None] = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
@@ -45,9 +45,9 @@ def _expand_row(row: str) -> List[str | int | None]:
 
 
 def merge_natspec(
-    devdoc: Dict[str, Dict[str, Dict]],
-    userdoc: Dict[str, Dict[str, Dict]],
-) -> Dict[str, Dict[str, Dict]]:
+    devdoc: dict[str, dict[str, dict]],
+    userdoc: dict[str, dict[str, dict]],
+) -> dict[str, dict[str, dict]]:
     """
     Merge devdoc and userdoc compiler output to a single dict.
 
@@ -67,7 +67,7 @@ def merge_natspec(
     usermethods = userdoc.get("methods", {})
     devmethods = devdoc.get("methods", {})
 
-    keys: Set[str] = set()
+    keys: set[str] = set()
     keys.update(usermethods)
     keys.update(devmethods)
     for key in keys:

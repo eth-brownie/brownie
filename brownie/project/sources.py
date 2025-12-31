@@ -25,15 +25,15 @@ from brownie.utils._color import dark_white
 class Sources:
     """Methods for accessing and manipulating a project's contract source files."""
 
-    def __init__(self, contract_sources: Dict[str, str], interface_sources: Dict[str, str]) -> None:
-        self._contract_sources: Final[Dict[str, str]] = {}
-        self._contracts: Final[Dict[ContractName, str]] = {}
-        self._interface_sources: Final[Dict[str, str]] = {}
-        self._interfaces: Final[Dict[ContractName, str]] = {}
+    def __init__(self, contract_sources: dict[str, str], interface_sources: dict[str, str]) -> None:
+        self._contract_sources: Final[dict[str, str]] = {}
+        self._contracts: Final[dict[ContractName, str]] = {}
+        self._interface_sources: Final[dict[str, str]] = {}
+        self._interfaces: Final[dict[ContractName, str]] = {}
 
-        contracts: Dict[ContractName, Tuple[str, str]] = {}
-        collisions: Dict[ContractName, Set[str]] = {}
-        contract_names: List[Tuple[ContractName, str]]
+        contracts: dict[ContractName, tuple[str, str]] = {}
+        collisions: dict[ContractName, set[str]] = {}
+        contract_names: list[tuple[ContractName, str]]
         for path, source in contract_sources.items():
             self._contract_sources[path] = source
             if Path(path).suffix != ".sol":
@@ -52,7 +52,7 @@ class Sources:
         for k, v in contracts.items():
             self._contracts[k] = v[0]
 
-        interface_names: List[Tuple[ContractName, str]]
+        interface_names: list[tuple[ContractName, str]]
         for path, source in interface_sources.items():
             self._interface_sources[path] = source
 
@@ -94,26 +94,26 @@ class Sources:
             self._contract_sources[key] = source
             return source
 
-    def get_path_list(self) -> List[str]:
+    def get_path_list(self) -> list[str]:
         """Returns a sorted list of source code file paths for the active project."""
         return sorted(self._contract_sources.keys())
 
-    def get_contract_list(self) -> List[ContractName]:
+    def get_contract_list(self) -> list[ContractName]:
         """Returns a sorted list of contract names for the active project."""
         return sorted(self._contracts.keys())
 
-    def get_interface_list(self) -> List[ContractName]:
+    def get_interface_list(self) -> list[ContractName]:
         """Returns a sorted list of interface names for the active project."""
         return sorted(self._interfaces.keys())
 
-    def get_interface_hashes(self) -> Dict[ContractName, HexStr]:
+    def get_interface_hashes(self) -> dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
         return {
             k: sha1(self._interface_sources[v].encode()).hexdigest()  # type: ignore [misc]
             for k, v in self._interfaces.items()
         }
 
-    def get_interface_sources(self) -> Dict[str, str]:
+    def get_interface_sources(self) -> dict[str, str]:
         """Returns a dict of interfaces sources in the form {path: source}"""
         return {v: self._interface_sources[v] for v in self._interfaces.values()}
 
@@ -139,7 +139,7 @@ def is_inside_offset(inner: Offset, outer: Offset) -> bool:
 
 def highlight_source(
     source: str, offset: Offset, pad: int = 3
-) -> Tuple[Optional[str], Optional[Tuple[int, int]]]:
+) -> tuple[str | None, tuple[int, int] | None]:
     """Returns a highlighted section of source code.
 
     Args:
@@ -183,7 +183,7 @@ def highlight_source(
     return final, ln
 
 
-def get_contract_names(full_source: str) -> List[Tuple[ContractName, str]]:
+def get_contract_names(full_source: str) -> list[tuple[ContractName, str]]:
     """
     Get contract names from Solidity source code.
 
@@ -211,7 +211,7 @@ def get_contract_names(full_source: str) -> List[Tuple[ContractName, str]]:
     return contract_names
 
 
-def get_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version.NpmSpec:
+def get_pragma_spec(source: str, path: str | None = None) -> semantic_version.NpmSpec:
     """
     Extracts pragma information from Solidity source code.
 
@@ -232,7 +232,7 @@ def get_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version
     raise PragmaError("String does not contain a version pragma")
 
 
-def get_vyper_pragma_spec(source: str, path: Optional[str] = None) -> semantic_version.NpmSpec:
+def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_version.NpmSpec:
     """
     Extracts pragma information from Vyper source code.
 

@@ -44,7 +44,7 @@ sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-AVAILABLE_SOLC_VERSIONS: Optional[VersionList] = None
+AVAILABLE_SOLC_VERSIONS: VersionList | None = None
 
 EVM_VERSION_MAPPING: Final = [
     ("prague", Version("0.8.30")),
@@ -58,9 +58,9 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-PcMap = Dict[Count, ProgramCounter]
-StatementNodes = Dict[str, Set[Offset]]
-BranchNodes = Dict[str, Set[NodeBase]]
+PcMap = dict[Count, ProgramCounter]
+StatementNodes = dict[str, set[Offset]]
+BranchNodes = dict[str, set[NodeBase]]
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
@@ -72,8 +72,8 @@ def get_version() -> semantic_version.Version:
 def compile_from_input_json(
     input_json: InputJsonSolc,
     silent: bool = True,
-    allow_paths: Optional[str] = None,
-) -> Dict[str, Any]:
+    allow_paths: str | None = None,
+) -> dict[str, Any]:
     """
     Compiles contracts from a standard input json.
 
@@ -131,7 +131,7 @@ def install_solc(*versions: VersionSpec) -> None:
         solcx.install_solc(version, show_progress=False)
 
 
-def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict[str, List[ABIElement]]:
+def get_abi(contract_source: str, allow_paths: str | None = None) -> dict[str, list[ABIElement]]:
     """
     Given a contract source, returns a dict of {name: abi}
 
@@ -139,18 +139,18 @@ def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict[str
     """
     version = find_best_solc_version({"<stdin>": contract_source})
     set_solc_version(version)
-    compiled: Dict[str, dict] = solcx.compile_source(
+    compiled: dict[str, dict] = solcx.compile_source(
         contract_source, allow_empty=True, allow_paths=allow_paths, output_values=["abi"]
     )
     return {k.rsplit(":")[-1]: v["abi"] for k, v in compiled.items()}
 
 
 def find_solc_versions(
-    contract_sources: Dict[str, str],
+    contract_sources: dict[str, str],
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     """
     Analyzes contract pragmas and determines which solc version(s) to use.
 
@@ -167,7 +167,7 @@ def find_solc_versions(
 
     available_versions, installed_versions = _get_solc_version_list()
 
-    pragma_specs: Dict = {}
+    pragma_specs: dict = {}
     to_install = set()
     new_versions = set()
 
@@ -205,7 +205,7 @@ def find_solc_versions(
         )
 
     # organize source paths by latest available solc version
-    compiler_versions: Dict[str, List[str]] = {}
+    compiler_versions: dict[str, list[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
@@ -214,7 +214,7 @@ def find_solc_versions(
 
 
 def find_best_solc_version(
-    contract_sources: Dict[str, str],
+    contract_sources: dict[str, str],
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
@@ -258,7 +258,7 @@ def find_best_solc_version(
     return str(max(installed_versions))
 
 
-def _get_solc_version_list() -> Tuple[VersionList, VersionList]:
+def _get_solc_version_list() -> tuple[VersionList, VersionList]:
     global AVAILABLE_SOLC_VERSIONS
     installed_versions: VersionList = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:
@@ -272,7 +272,7 @@ def _get_solc_version_list() -> Tuple[VersionList, VersionList]:
 
 
 def _get_unique_build_json(
-    output_evm: Dict,
+    output_evm: dict,
     contract_node: Any,
     stmt_nodes: StatementNodes,
     branch_nodes: BranchNodes,
@@ -323,11 +323,11 @@ def _get_unique_build_json(
     return build_json
 
 
-def _format_link_references(evm: Dict) -> HexStr:
+def _format_link_references(evm: dict) -> HexStr:
     # Standardizes formatting for unlinked libraries within bytecode
     bytecode_json: BytecodeJson = evm["bytecode"]
     bytecode = bytecode_json["object"]
-    link_refs: Dict[str, dict] = bytecode_json.get("linkReferences", {})
+    link_refs: dict[str, dict] = bytecode_json.get("linkReferences", {})
     references = ((k, x) for v in link_refs.values() for k, x in v.items())
     for n, loc in ((i[0], x["start"] * 2) for i in references for x in i[1]):
         bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"  # type: ignore [assignment]
@@ -346,7 +346,7 @@ def _generate_coverage_data(
     branch_nodes: BranchNodes,
     has_fallback: bool,
     instruction_count: int,
-) -> Tuple[PCMap, StatementMap, BranchMap]:
+) -> tuple[PCMap, StatementMap, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
         return PCMap({}), {}, {}
@@ -355,7 +355,7 @@ def _generate_coverage_data(
     opcodes = deque(opcodes_str.split(" "))
 
     contract_nodes = [contract_node] + contract_node.dependencies
-    source_nodes: Dict[IntegerString, NodeBase] = {
+    source_nodes: dict[IntegerString, NodeBase] = {
         str(i.contract_id): i.parent() for i in contract_nodes
     }
 
@@ -366,20 +366,20 @@ def _generate_coverage_data(
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
     branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict[str, Dict[Offset, int]] = {i: {} for i in source_nodes}
+    branch_active: dict[str, dict[Offset, int]] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict[IntegerString, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
+    branch_set: dict[IntegerString, dict[Offset, tuple[int, int]]] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
     pc_list: PcList = []
-    revert_map: Dict[Tuple[IntegerString, Offset], List[int]] = {}
+    revert_map: dict[tuple[IntegerString, Offset], list[int]] = {}
     fallback_hexstr: str = "unassigned"
 
     optimizer_revert = get_version() < Version("0.8.0")
 
-    active_source_node: Optional[NodeBase] = None
-    active_fn_node: Optional[NodeBase] = None
-    active_fn_name: Optional[str] = None
+    active_source_node: NodeBase | None = None
+    active_fn_node: NodeBase | None = None
+    active_fn_name: str | None = None
     first_source = source_map[0]
 
     while source_map and source_map[-1][2] == -1:
@@ -560,7 +560,7 @@ def _find_revert_offset(
     source_map: Deque[Source],
     source_node: NodeBase,
     fn_node: NodeBase,
-    fn_name: Optional[str],
+    fn_name: str | None,
 ) -> None:
     # attempt to infer a source offset for reverts that do not have one
 
@@ -630,7 +630,7 @@ def _set_invalid_error_string(source_node: NodeBase, pc_map: ProgramCounter) -> 
             pc_map["dev"] = "Modulus by zero"
 
 
-def _get_active_fn(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple[NodeBase, str]:
+def _get_active_fn(source_node: NodeBase, offset: tuple[int, int]) -> tuple[NodeBase, str]:
     fn_node = source_node.children(
         depth=2, required_offset=offset, filters={"nodeType": "FunctionDefinition"}
     )[0]
@@ -651,14 +651,14 @@ def _get_active_fn(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple[Node
     return fn_node, f"{fn_node.parent().name}.{name}"
 
 
-def _get_nodes(output_json: Dict) -> Tuple[List[NodeBase], StatementNodes, BranchNodes]:
-    source_nodes: List[NodeBase] = solcast.from_standard_output(output_json)
+def _get_nodes(output_json: dict) -> tuple[list[NodeBase], StatementNodes, BranchNodes]:
+    source_nodes: list[NodeBase] = solcast.from_standard_output(output_json)
     stmt_nodes = _get_statement_nodes(source_nodes)
     branch_nodes = _get_branch_nodes(source_nodes)
     return source_nodes, stmt_nodes, branch_nodes
 
 
-def _get_statement_nodes(source_nodes: List[NodeBase]) -> StatementNodes:
+def _get_statement_nodes(source_nodes: list[NodeBase]) -> StatementNodes:
     # Given a list of source nodes, returns a dict of lists of statement nodes
     return {
         str(node.contract_id): {
@@ -673,12 +673,12 @@ def _get_statement_nodes(source_nodes: List[NodeBase]) -> StatementNodes:
     }
 
 
-def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
+def _get_branch_nodes(source_nodes: list[NodeBase]) -> BranchNodes:
     # Given a list of source nodes, returns a dict of lists of nodes corresponding
     # to possible branches in the code
     branches: BranchNodes = {}
     for node in source_nodes:
-        contract_branches: Set[NodeBase] = set()
+        contract_branches: set[NodeBase] = set()
         branches[str(node.contract_id)] = contract_branches
         for contract_node in node.children(depth=1, filters={"nodeType": "ContractDefinition"}):
             for i in contract_node:
@@ -693,7 +693,7 @@ def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
     return branches
 
 
-def _get_recursive_branches(base_node: NodeBase) -> Set[NodeBase]:
+def _get_recursive_branches(base_node: NodeBase) -> set[NodeBase]:
     node_type = base_node.nodeType
 
     # if node is IfStatement or Conditional, look only at the condition

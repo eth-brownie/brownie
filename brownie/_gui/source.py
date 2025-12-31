@@ -244,7 +244,7 @@ class SourceFrame(tk.Frame):
         return f"{line}.{offset}"
 
     def _coord_to_offset(self, value):
-        row, col = [int(i) for i in value.split(".")]
+        row, col = (int(i) for i in value.split("."))
         text = self._text.get(1.0, "end").split("\n")
         return sum(len(i) + 1 for i in text[: row - 1]) + col
 

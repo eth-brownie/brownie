@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Dict, Final, List, Optional, Sequence, Tuple
+from typing import Dict, Final, List, Optional, Tuple
+from collections.abc import Sequence
 
 import eth_hash.auto
 from eth_typing import ABIComponent, ABIFunction, HexStr
@@ -8,10 +9,10 @@ from eth_typing import ABIComponent, ABIFunction, HexStr
 
 keccak: Final = eth_hash.auto.keccak
 
-_cached_int_bounds: Final[Dict[str, Tuple[int, int]]] = {}
+_cached_int_bounds: Final[dict[str, tuple[int, int]]] = {}
 
 
-def get_int_bounds(type_str: str) -> Tuple[int, int]:
+def get_int_bounds(type_str: str) -> tuple[int, int]:
     """Returns the lower and upper bound for an integer type."""
     try:
         return _cached_int_bounds[type_str]
@@ -36,8 +37,8 @@ def get_int_bounds(type_str: str) -> Tuple[int, int]:
 
 def get_type_strings(
     abi_params: Sequence[ABIComponent],
-    substitutions: Optional[Dict[str, str]] = None,
-) -> List[str]:
+    substitutions: dict[str, str] | None = None,
+) -> list[str]:
     """Converts a list of parameters from an ABI into a list of type strings."""
     types_list = []
     if substitutions is None:

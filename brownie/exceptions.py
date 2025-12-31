@@ -108,9 +108,9 @@ class VirtualMachineError(Exception):
         self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""
-        self.pc: Optional[int] = None
-        self.revert_msg: Optional[str] = None
-        self.dev_revert_msg: Optional[str] = None
+        self.pc: int | None = None
+        self.revert_msg: str | None = None
+        self.dev_revert_msg: str | None = None
 
         try:
             exc = exc.args[0]
@@ -137,7 +137,7 @@ class VirtualMachineError(Exception):
         except StopIteration:
             raise ValueError(exc["message"]) from None
         else:
-            data: Dict[str, Any] = exc_data[txid]
+            data: dict[str, Any] = exc_data[txid]
             self.revert_type = data["error"]
 
         self.txid = txid
@@ -225,10 +225,10 @@ class BadProjectName(Exception):
 
 @final
 class CompilerError(Exception):
-    def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
+    def __init__(self, e: type[psutil.Popen], compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
-        err_json: Dict[str, List[Dict[str, str]]] = yaml.safe_load(e.stdout_data)
+        err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(e.stdout_data)
         err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
         super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 
@@ -296,7 +296,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("errors.json")
 
 
-def parse_errors_from_abi(abi: List[ABIElement]):
+def parse_errors_from_abi(abi: list[ABIElement]):
     updated = False
     for item in abi:
         if item.get("type", "") == "error":
@@ -311,7 +311,7 @@ def parse_errors_from_abi(abi: List[ABIElement]):
             ujson_dump(_errors, fp, sort_keys=True, indent=2)
 
 
-_errors: Dict[HexStr, ABIError] = {
+_errors: dict[HexStr, ABIError] = {
     ERROR_SIG: {"name": "Error", "inputs": [{"name": "", "type": "string"}]}
 }
 
