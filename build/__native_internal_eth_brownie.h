@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2449];
+extern PyObject *CPyStatics[2443];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -481,11 +481,11 @@ extern tuple_T5OOOOO CPyStatic_networks___OPTIONAL;
 extern PyObject *CPyStatic_networks___DEV_CMD_SETTINGS;
 extern char CPyDef_networks___main(void);
 extern PyObject *CPyPy_networks___main(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_networks____list(PyObject *cpy_r_verbose);
+extern char CPyDef_networks____list(PyObject *cpy_r_verbose);
 extern PyObject *CPyPy_networks____list(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_networks____add(PyObject *cpy_r_env, PyObject *cpy_r_id_, PyObject *cpy_r_args);
+extern char CPyDef_networks____add(PyObject *cpy_r_env, PyObject *cpy_r_id_, PyObject *cpy_r_args);
 extern PyObject *CPyPy_networks____add(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_networks____modify(PyObject *cpy_r_id_, PyObject *cpy_r_args);
+extern char CPyDef_networks____modify(PyObject *cpy_r_id_, PyObject *cpy_r_args);
 extern PyObject *CPyPy_networks____modify(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_networks____delete(PyObject *cpy_r_id_);
 extern PyObject *CPyPy_networks____delete(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
