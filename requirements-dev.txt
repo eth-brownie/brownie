@@ -16,7 +16,7 @@ bump2version==1.0.1
     # via bumpversion
 bumpversion==0.6.0
     # via -r requirements-dev.in
-cachetools==6.2.3
+cachetools==6.2.4
     # via tox
 certifi==2025.11.12
     # via
@@ -36,7 +36,7 @@ click==8.3.1
     #   pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.13.0
+coverage[toml]==7.13.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -44,11 +44,11 @@ cryptography==46.0.3
     # via secretstorage
 distlib==0.4.0
     # via virtualenv
-docutils==0.22.3
+docutils==0.22.4
     # via readme-renderer
 eth-retry==0.3.5
     # via -r requirements-dev.in
-filelock==3.20.0
+filelock==3.20.1
     # via
     #   tox
     #   virtualenv
@@ -66,9 +66,9 @@ isort==7.0.0
     # via -r requirements-dev.in
 jaraco-classes==3.4.0
     # via keyring
-jaraco-context==6.0.1
+jaraco-context==6.0.2
     # via keyring
-jaraco-functools==4.3.0
+jaraco-functools==4.4.0
     # via keyring
 jeepney==0.9.0
     # via
