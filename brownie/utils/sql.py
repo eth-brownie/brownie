@@ -3,7 +3,7 @@
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Any, Final, Optional, Tuple, final
+from typing import Any, Final, final
 
 from brownie._c_constants import ujson_dumps, ujson_loads
 

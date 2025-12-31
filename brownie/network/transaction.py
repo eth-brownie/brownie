@@ -9,13 +9,8 @@ from pathlib import Path
 from typing import (
     Any,
     Concatenate,
-    Dict,
-    List,
-    Optional,
     ParamSpec,
-    Tuple,
     TypeVar,
-    Union,
 )
 from collections.abc import Callable, Sequence
 from warnings import warn

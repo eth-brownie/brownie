@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from typing import Dict
 
 
 class _Singleton(type):

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import warnings
-from typing import Final, Optional, Union
+from typing import Final
 
 from brownie import project
 from brownie._config import CONFIG

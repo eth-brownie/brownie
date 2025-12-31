@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Final, List, NewType, Optional, Set
+from typing import Final, NewType
 
 from eth_typing import HexStr
 

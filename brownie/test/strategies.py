@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Literal, Optional, Tuple, Union, overload
+from typing import Any, Literal, Union, overload
 from collections.abc import Callable, Iterable
 
 from faster_eth_abi.grammar import BasicType, TupleType, parse

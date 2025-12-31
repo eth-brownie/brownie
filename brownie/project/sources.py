@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import textwrap
-from typing import Dict, Final, List, Optional, Set, Tuple, final
+from typing import Final, final
 
 import semantic_version
 from eth_typing import HexStr

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, List, Optional, Tuple, cast
+from typing import Any, Final, cast
 from collections.abc import Sequence
 
 from eth_event.main import DecodedEvent, NonDecodedEvent

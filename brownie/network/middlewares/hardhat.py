@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, final
+from typing import Any, final
 from collections.abc import Callable, Sequence
 
 from web3 import Web3

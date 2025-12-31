@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, Union
+from typing import Any, Final
 
 import faster_eth_utils
 from eth_typing import ChecksumAddress

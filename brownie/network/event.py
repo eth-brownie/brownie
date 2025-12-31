@@ -9,12 +9,8 @@ from threading import Lock, Thread
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Final,
     Generic,
-    List,
-    Optional,
-    Tuple,
     TypeVar,
     Union,
     cast,

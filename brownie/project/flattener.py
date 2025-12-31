@@ -1,5 +1,5 @@
 import re
-from typing import Any, DefaultDict, Dict, Final, Set, final
+from typing import Any, DefaultDict, Final, final
 from collections.abc import Iterator
 
 from brownie._c_constants import (

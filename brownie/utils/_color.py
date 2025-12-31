@@ -2,7 +2,7 @@
 
 import sys
 import traceback
-from typing import Any, Dict, Final, Literal, Optional, cast, final
+from typing import Any, Final, Literal, cast, final
 from collections.abc import Sequence
 
 import pygments

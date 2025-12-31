@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Dict, Final, List, Optional, Tuple
+from typing import Final
 from collections.abc import Sequence
 
 import eth_hash.auto

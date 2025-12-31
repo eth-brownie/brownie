@@ -9,7 +9,7 @@ to load any plugins.
 """
 
 import sys
-from typing import Any, Dict, NewType
+from typing import Any, NewType
 
 import eth_typing
 import pytest

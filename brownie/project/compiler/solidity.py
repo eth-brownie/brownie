@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
+from typing import Any, Deque, Final
 
 import semantic_version
 import solcast

@@ -2,7 +2,7 @@ import inspect
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any
 from collections.abc import Generator, Iterator
 
 from brownie.network.web3 import web3

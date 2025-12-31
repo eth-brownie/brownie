@@ -9,11 +9,7 @@ from sqlite3 import OperationalError
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Final,
-    List,
-    Optional,
-    Tuple,
     Union,
     final,
 )

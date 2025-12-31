@@ -1,4 +1,3 @@
-from typing import List, Optional
 from collections.abc import Sequence
 
 

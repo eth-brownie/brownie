@@ -82,7 +82,6 @@ class BrownieMiddlewareABC(ABC):
         when they are removed. Note that you must not assume network connectivity
         when this method is called.
         """
-        pass
 
 
 def get_middlewares(web3: Web3, network_type: str) -> dict:

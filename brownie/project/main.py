@@ -10,7 +10,7 @@ import zipfile
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
-from typing import Any, Dict, Final, List, Literal, Optional, Tuple
+from typing import Any, Final, Literal
 from collections.abc import Iterator, KeysView
 from urllib.parse import quote
 

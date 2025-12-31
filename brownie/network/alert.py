@@ -2,7 +2,7 @@
 
 import time
 from threading import Thread
-from typing import Dict, Final, List, Optional, Set, Tuple, Union
+from typing import Final
 from collections.abc import Callable
 
 from mypy_extensions import mypyc_attr

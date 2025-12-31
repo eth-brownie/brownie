@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from pathlib import Path
-from typing import Dict, List
 
 # -*- coding: utf-8 -*-
 #

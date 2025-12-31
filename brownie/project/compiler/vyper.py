@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Dict, Final, List, Optional, Set, Tuple, Union
+from typing import Final
 
 import semantic_version
 import vvm

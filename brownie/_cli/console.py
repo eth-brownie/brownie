@@ -8,7 +8,7 @@ import sys
 import tokenize
 from collections.abc import Iterable
 from io import StringIO
-from typing import Any, Dict, Final, Optional, final
+from typing import Any, Final, final
 
 from mypy_extensions import mypyc_attr
 from prompt_toolkit import PromptSession

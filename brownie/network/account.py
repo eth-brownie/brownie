@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from getpass import getpass
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import eth_account
 import eth_keys

@@ -11,12 +11,8 @@ from threading import get_ident  # noqa
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Final,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 from collections.abc import Callable, Coroutine, Iterator

@@ -1,4 +1,4 @@
-from typing import Any, Final, Optional, Text, TypeVar, overload
+from typing import Any, Final, TypeVar, overload
 from collections.abc import Mapping
 
 from dotenv.variables import parse_variables

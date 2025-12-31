@@ -2,7 +2,6 @@ import itertools
 import threading
 import time
 import warnings
-from typing import Dict
 from collections.abc import Generator
 
 import requests

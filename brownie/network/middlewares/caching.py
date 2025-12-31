@@ -2,7 +2,7 @@ import faster_hexbytes
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Dict, Final, List, Optional, final
+from typing import Any, Final, final
 from collections.abc import Callable, Sequence
 
 from web3 import Web3

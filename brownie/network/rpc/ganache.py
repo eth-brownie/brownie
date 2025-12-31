@@ -5,7 +5,6 @@ import re
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
 
 import psutil
 from eth_utils.toolz import concat

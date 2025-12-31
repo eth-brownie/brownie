@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, Final, List, Optional, Type, final
+from typing import Any, Final, final
 
 import psutil
 import yaml

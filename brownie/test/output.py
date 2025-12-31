@@ -2,7 +2,7 @@
 
 import pathlib
 import warnings
-from typing import Any, Dict, Final, List, Optional, Set, Tuple
+from typing import Any, Final
 
 from brownie._c_constants import Path, ujson_dump, ujson_dumps, ujson_loads
 from brownie._config import CONFIG

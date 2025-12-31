@@ -2,7 +2,6 @@
 
 import sys
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
 
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError

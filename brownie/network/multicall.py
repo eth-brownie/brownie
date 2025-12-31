@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock, get_ident
 from types import FunctionType, TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
