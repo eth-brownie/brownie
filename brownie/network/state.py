@@ -4,16 +4,10 @@ import gc
 import threading
 import time
 import weakref
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Final,
-    Union,
-    final,
-)
-from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING, Any, Final, Union, final
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3.datastructures import AttributeDict
