@@ -1020,9 +1020,7 @@ class TransactionReceipt:
                 elif last["jumpDepth"] > 0:
                     del last["internal_calls"][-1]
                     last["jumpDepth"] -= 1
-        coverage._add_transaction(
-            self.coverage_hash, {k: v for k, v in coverage_eval.items() if v}
-        )
+        coverage._add_transaction(self.coverage_hash, {k: v for k, v in coverage_eval.items() if v})
 
     def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
         if not value.startswith("0x"):
