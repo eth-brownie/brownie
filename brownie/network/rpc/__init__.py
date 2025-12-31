@@ -6,8 +6,8 @@ import platform
 import socket
 import time
 import warnings
-from typing import Any, Dict, Tuple, Union
 from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlparse
 
 import psutil
@@ -65,7 +65,7 @@ class Rpc(metaclass=_Singleton):
                 self.process.stderr.close()
             self.kill(False)
 
-    def launch(self, cmd: str, **kwargs: dict) -> None:
+    def launch(self, cmd: str, **kwargs: Any) -> None:
         if self.is_active():
             raise SystemError("RPC is already active.")
 
