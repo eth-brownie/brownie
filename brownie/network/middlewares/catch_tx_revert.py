@@ -1,5 +1,5 @@
-from typing import Any, final
 from collections.abc import Callable, Sequence
+from typing import Any, final
 
 from web3 import Web3
 from web3.types import RPCEndpoint
