@@ -156,7 +156,7 @@ class _LeafPattern(_Pattern):
     """Leaf/terminal node of a pattern tree."""
 
     def __repr__(self) -> str:
-        return "{}({!r}, {!r})".format(self.__class__.__name__, self.name, self.value)
+        return f"{self.__class__.__name__}({self.name!r}, {self.value!r})"
 
     def single_match(self, left: list[_LeafPattern]) -> _SingleMatch:
         raise NotImplementedError  # pragma: no cover
