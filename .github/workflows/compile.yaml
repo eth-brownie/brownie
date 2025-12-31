@@ -25,9 +25,9 @@ jobs:
       with:
         python-version: '3.13'
         hash-key: |
-          - '**/*.py'
-          - 'pyproject.toml'
-          - 'setup.py'
+          **/*.py
+          pyproject.toml
+          setup.py
         ccache: 'true'
         push-source: 'true'
         normalize-source: 'true'
