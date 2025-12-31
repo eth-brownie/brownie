@@ -3,7 +3,7 @@
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Any, Final, Optional, Tuple, final
+from typing import Any, Final, final
 
 from brownie._c_constants import ujson_dumps, ujson_loads
 
@@ -34,7 +34,7 @@ class Cursor:
         with self._lock:
             self._execute(cmd, *args)
 
-    def fetchone(self, cmd: str, *args: Any) -> Optional[Tuple[Any, ...]]:
+    def fetchone(self, cmd: str, *args: Any) -> tuple[Any, ...] | None:
         with self._lock:
             self._execute(cmd, *args)
             if result := self._fetchone():

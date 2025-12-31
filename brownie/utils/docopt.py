@@ -26,7 +26,8 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Any, Callable, NamedTuple, Tuple, Type, Union, cast
+from typing import Any, NamedTuple, Union, cast
+from collections.abc import Callable
 
 from brownie._c_constants import regex_findall, regex_match, regex_sub
 
@@ -148,14 +149,14 @@ def _transform(pattern: _BranchPattern) -> _Either:
     return _Either(*(_Required(*e) for e in result))
 
 
-_SingleMatch = Union[Tuple[int, "_LeafPattern"], Tuple[None, None]]
+_SingleMatch = Union[tuple[int, "_LeafPattern"], tuple[None, None]]
 
 
 class _LeafPattern(_Pattern):
     """Leaf/terminal node of a pattern tree."""
 
     def __repr__(self) -> str:
-        return "%s(%r, %r)" % (self.__class__.__name__, self.name, self.value)
+        return f"{self.__class__.__name__}({self.name!r}, {self.value!r})"
 
     def single_match(self, left: list[_LeafPattern]) -> _SingleMatch:
         raise NotImplementedError  # pragma: no cover
@@ -308,7 +309,7 @@ class _Option(_LeafPattern):
         return self.longer or self.short
 
     def __repr__(self) -> str:
-        return "Option(%r, %r, %r, %r)" % (
+        return "Option({!r}, {!r}, {!r}, {!r})".format(
             self.short,
             self.longer,
             self.argcount,
@@ -377,7 +378,7 @@ class _Tokens(list):
     def __init__(
         self,
         source: list[str] | str,
-        error: Type[DocoptExit] | Type[DocoptLanguageError] = DocoptExit,
+        error: type[DocoptExit] | type[DocoptLanguageError] = DocoptExit,
     ) -> None:
         self += source if isinstance(source, list) else source.split()
         self.error = error

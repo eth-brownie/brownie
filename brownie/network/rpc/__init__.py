@@ -6,7 +6,8 @@ import platform
 import socket
 import time
 import warnings
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Dict, Tuple, Union
+from collections.abc import Callable
 from urllib.parse import urlparse
 
 import psutil
@@ -50,7 +51,7 @@ def internal(fn: Callable) -> Callable:
 
 class Rpc(metaclass=_Singleton):
     def __init__(self) -> None:
-        self.process: Union[psutil.Popen, psutil.Process] = None
+        self.process: psutil.Popen | psutil.Process = None
         self.backend: Any = ganache
         atexit.register(self._at_exit)
 
@@ -64,7 +65,7 @@ class Rpc(metaclass=_Singleton):
                 self.process.stderr.close()
             self.kill(False)
 
-    def launch(self, cmd: str, **kwargs: Dict) -> None:
+    def launch(self, cmd: str, **kwargs: dict) -> None:
         if self.is_active():
             raise SystemError("RPC is already active.")
 
@@ -95,7 +96,7 @@ class Rpc(metaclass=_Singleton):
         self.kill(False)
         raise RPCConnectionError(cmd, self.process, uri)
 
-    def attach(self, laddr: Union[str, Tuple]) -> None:
+    def attach(self, laddr: str | tuple) -> None:
         """Attaches to an already running RPC client subprocess.
 
         Args:
@@ -183,7 +184,7 @@ class Rpc(metaclass=_Singleton):
     def unlock_account(self, address: str) -> None:
         self.backend.unlock_account(address)
 
-    def _find_rpc_process_pid(self, laddr: Tuple) -> int:
+    def _find_rpc_process_pid(self, laddr: tuple) -> int:
         try:
             # default case with an already running local RPC process
             return self._get_pid_from_connections(laddr)
@@ -194,7 +195,7 @@ class Rpc(metaclass=_Singleton):
             else:
                 return self._get_pid_from_net_connections(laddr)
 
-    def _check_proc_connections(self, proc: psutil.Process, laddr: Tuple) -> bool:
+    def _check_proc_connections(self, proc: psutil.Process, laddr: tuple) -> bool:
         try:
             return laddr in [i.laddr for i in proc.connections()]
         except psutil.AccessDenied:
@@ -204,7 +205,7 @@ class Rpc(metaclass=_Singleton):
         except psutil.NoSuchProcess:
             return False
 
-    def _check_net_connections(self, connection: Any, laddr: Tuple) -> bool:
+    def _check_net_connections(self, connection: Any, laddr: tuple) -> bool:
         if connection.pid is None:
             return False
         if connection.laddr == laddr:
@@ -214,7 +215,7 @@ class Rpc(metaclass=_Singleton):
         else:
             return False
 
-    def _get_pid_from_connections(self, laddr: Tuple) -> int:
+    def _get_pid_from_connections(self, laddr: tuple) -> int:
         try:
             proc = next(i for i in psutil.process_iter() if self._check_proc_connections(i, laddr))
             return self._get_proc_pid(proc)
@@ -223,7 +224,7 @@ class Rpc(metaclass=_Singleton):
                 "Could not attach to RPC process by querying 'proc.connections()'"
             ) from None
 
-    def _get_pid_from_net_connections(self, laddr: Tuple) -> int:
+    def _get_pid_from_net_connections(self, laddr: tuple) -> int:
         try:
             proc = next(
                 i

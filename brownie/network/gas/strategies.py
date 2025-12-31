@@ -2,7 +2,7 @@ import itertools
 import threading
 import time
 import warnings
-from typing import Dict, Generator
+from collections.abc import Generator
 
 import requests
 
@@ -13,7 +13,7 @@ from brownie.network.web3 import web3
 from .bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
 
 _gasnow_update = 0
-_gasnow_data: Dict[str, int] = {}
+_gasnow_data: dict[str, int] = {}
 _gasnow_lock = threading.Lock()
 
 

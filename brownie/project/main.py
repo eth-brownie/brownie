@@ -10,7 +10,8 @@ import zipfile
 from base64 import b64encode
 from io import BytesIO
 from types import ModuleType
-from typing import Any, Dict, Final, Iterator, KeysView, List, Literal, Optional, Tuple
+from typing import Any, Final, Literal
+from collections.abc import Iterator, KeysView
 from urllib.parse import quote
 
 import requests
@@ -90,24 +91,24 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 """
 
 NamespaceId = ContractName | Literal["interface"]
-ChainDeployments = Dict[ContractName, List[ChecksumAddress]]
-DeploymentMap = Dict[int | str, ChainDeployments]
+ChainDeployments = dict[ContractName, list[ChecksumAddress]]
+DeploymentMap = dict[int | str, ChainDeployments]
 
-_loaded_projects: Final[List["Project"]] = []
+_loaded_projects: Final[list["Project"]] = []
 
 
 # TODO: remove this decorator once weakref support is implemented
 @mypyc_attr(native_class=False)
 class _ProjectBase:
 
-    _path: Optional[pathlib.Path]
-    _build_path: Optional[pathlib.Path]
+    _path: pathlib.Path | None
+    _build_path: pathlib.Path | None
     _sources: Sources
     _build: Build
-    _containers: Dict[ContractName, ContractContainer]
+    _containers: dict[ContractName, ContractContainer]
 
     def _compile(
-        self, contract_sources: Dict, compiler_config: CompilerConfig, silent: bool
+        self, contract_sources: dict, compiler_config: CompilerConfig, silent: bool
     ) -> None:
         compiler_config.setdefault("solc", {})
 
@@ -124,7 +125,7 @@ class _ProjectBase:
             vyper_config = compiler_config["vyper"]
 
             project_evm_version = compiler_config["evm_version"]
-            evm_version: Dict[Language, Optional[EvmVersion]] = {
+            evm_version: dict[Language, EvmVersion | None] = {
                 "Solidity": solc_config.get("evm_version", project_evm_version),
                 "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
@@ -191,7 +192,7 @@ class _ProjectBase:
     def __contains__(self, item: ContractName) -> bool:
         return item in self._containers
 
-    def dict(self) -> Dict[ContractName, ContractContainer]:
+    def dict(self) -> dict[ContractName, ContractContainer]:
         return dict(self._containers)
 
     def keys(self) -> KeysView[ContractName]:
@@ -245,7 +246,7 @@ class Project(_ProjectBase):
         self._build = build
 
         contract_list = sources.get_contract_list()
-        potential_dependencies: List[Tuple[pathlib.Path, ContractBuildJson]] = []
+        potential_dependencies: list[tuple[pathlib.Path, ContractBuildJson]] = []
         build_path = self._build_path
 
         for path in build_path.glob("contracts/*.json"):
@@ -276,7 +277,7 @@ class Project(_ProjectBase):
             else:
                 path.unlink()
 
-        interface_hashes: Dict[str, HexStr] = {}
+        interface_hashes: dict[str, HexStr] = {}
         interface_list = sources.get_interface_list()
 
         for path in build_path.glob("interfaces/*.json"):
@@ -306,12 +307,12 @@ class Project(_ProjectBase):
 
         # add project to namespaces, apply import blackmagic
         name = self._name
-        self.__all__: List[NamespaceId] = list(self._containers) + ["interface"]
+        self.__all__: list[NamespaceId] = list(self._containers) + ["interface"]
         sys.modules[f"brownie.project.{name}"] = self  # type: ignore [assignment]
         sys.modules["brownie.project"].__dict__[name] = self
         sys.modules["brownie.project"].__all__.append(name)
         sys.modules["brownie.project"].__console_dir__.append(name)
-        self._namespaces: List[Dict[NamespaceId, ContractContainer | InterfaceContainer]] = [
+        self._namespaces: list[dict[NamespaceId, ContractContainer | InterfaceContainer]] = [
             sys.modules["__main__"].__dict__,  # type: ignore [list-item]
             sys.modules["brownie.project"].__dict__,  # type: ignore [list-item]
         ]
@@ -322,7 +323,7 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict[str, HexStr]) -> Dict[str, str]:
+    def _get_changed_contracts(self, compiled_hashes: dict[str, HexStr]) -> dict[str, str]:
         # get list of changed interfaces and contracts
         sources = self._sources
         new_hashes = sources.get_interface_hashes()
@@ -373,7 +374,7 @@ class Project(_ProjectBase):
                 return True
         return False
 
-    def _compile_interfaces(self, compiled_hashes: Dict) -> None:
+    def _compile_interfaces(self, compiled_hashes: dict) -> None:
         sources = self._sources
         new_hashes = sources.get_interface_hashes()
         changed_paths = [
@@ -411,7 +412,7 @@ class Project(_ProjectBase):
                     build_json = ujson_load(fp)
                 # json.load turns arrays into python lists but for "offset" we need tuples
                 build_json["offset"] = tuple(build_json["offset"])
-                pc_map: Dict[Any, dict] = build_json["pcMap"]
+                pc_map: dict[Any, dict] = build_json["pcMap"]
                 for counter in pc_map.values():
                     if "offset" in counter:
                         counter["offset"] = tuple(counter["offset"])
@@ -502,7 +503,7 @@ class Project(_ProjectBase):
 
     def _update_and_register(
         self,
-        dict_: Dict[NamespaceId, ContractContainer | InterfaceContainer],
+        dict_: dict[NamespaceId, ContractContainer | InterfaceContainer],
     ) -> None:
         dict_.update(self)  # type: ignore [arg-type]
         if "interface" not in dict_:
@@ -637,7 +638,7 @@ class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
-    def __init__(self, name: str, contract_sources: Dict, compiler_config: CompilerConfig) -> None:
+    def __init__(self, name: str, contract_sources: dict, compiler_config: CompilerConfig) -> None:
         self._path = None
         self._build_path = None
         self._name: Final = name
@@ -650,7 +651,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject '{self._name}'>"
 
 
-def check_for_project(path: pathlib.Path | str = ".") -> Optional[pathlib.Path]:
+def check_for_project(path: pathlib.Path | str = ".") -> pathlib.Path | None:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
@@ -673,7 +674,7 @@ def check_for_project(path: pathlib.Path | str = ".") -> Optional[pathlib.Path]:
     return None
 
 
-def get_loaded_projects() -> List["Project"]:
+def get_loaded_projects() -> list["Project"]:
     """Returns a list of currently loaded Project objects."""
     return _loaded_projects.copy()
 
@@ -702,7 +703,7 @@ def new(
 
 def from_brownie_mix(
     project_name: str,
-    project_path: Optional[pathlib.Path | str] = None,
+    project_path: pathlib.Path | str | None = None,
     ignore_subfolder: bool = False,
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
@@ -736,11 +737,11 @@ def from_brownie_mix(
 
 def compile_source(
     source: str,
-    solc_version: Optional[str] = None,
-    vyper_version: Optional[str] = None,
+    solc_version: str | None = None,
+    vyper_version: str | None = None,
     optimize: bool = True,
-    runs: Optional[int] = 200,
-    evm_version: Optional[EvmVersion] = None,
+    runs: int | None = 200,
+    evm_version: EvmVersion | None = None,
 ) -> "TempProject":
     """
     Compile the given source code string and return a TempProject container with
@@ -793,8 +794,8 @@ def compile_source(
 
 
 def load(
-    project_path: Optional[pathlib.Path | str] = None,
-    name: Optional[str] = None,
+    project_path: pathlib.Path | str | None = None,
+    name: str | None = None,
     raise_if_loaded: bool = True,
     compile: bool = True,
 ) -> "Project":
@@ -877,7 +878,7 @@ def install_package(package_id: str) -> str:
     return _install_from_github(package_id)
 
 
-def _maybe_retrieve_github_auth() -> Dict[str, str]:
+def _maybe_retrieve_github_auth() -> dict[str, str]:
     """Returns appropriate github authorization headers.
 
     Otherwise returns an empty dict if no auth token is present.
@@ -932,7 +933,7 @@ def _install_from_github(package_id: str) -> str:
 
     try:
         if not install_path.joinpath("brownie-config.yaml").exists():
-            brownie_config: Dict = {"project_structure": {}}
+            brownie_config: dict = {"project_structure": {}}
 
             contract_paths = {
                 i.relative_to(install_path).parts[0]
@@ -1027,7 +1028,7 @@ def _add_to_sys_path(project_path: pathlib.Path) -> None:
     sys.path.insert(0, project_path_string)
 
 
-def _compare_settings(left: Dict, right: Dict) -> bool:
+def _compare_settings(left: dict, right: dict) -> bool:
     return any(v and not isinstance(v, dict) and v != right.get(k) for k, v in left.items())
 
 
@@ -1047,14 +1048,14 @@ def _vyper_compiler_equal(config: VyperConfig, build: CompilerConfig) -> bool:
     return config["version"] is None or config["version"] == build["version"]
 
 
-def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) -> Dict:
-    contract_sources: Dict = {}
-    suffixes: Tuple = (".sol", ".vy")
+def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) -> dict:
+    contract_sources: dict = {}
+    suffixes: tuple = (".sol", ".vy")
     if allow_json:
         suffixes = suffixes + (".json",)
 
     # one day this will be a beautiful plugin system
-    hooks: Optional[ModuleType] = None
+    hooks: ModuleType | None = None
     if project_path.joinpath("brownie_hooks.py").exists():
         hooks = import_module("brownie_hooks")
 
@@ -1075,7 +1076,7 @@ def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) 
 
 
 def _stream_download(
-    download_url: str, target_path: str, headers: Dict[str, str] = REQUEST_HEADERS
+    download_url: str, target_path: str, headers: dict[str, str] = REQUEST_HEADERS
 ) -> None:
     response = requests.get(download_url, stream=True, headers=headers)
 
@@ -1092,7 +1093,7 @@ def _stream_download(
 
     total_size = int(response.headers.get("content-length", 0))
     progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
-    content = bytes()
+    content = b''
 
     for data in response.iter_content(1024, decode_unicode=True):
         progress_bar.update(len(data))
@@ -1103,7 +1104,7 @@ def _stream_download(
         zf.extractall(target_path)
 
 
-def _get_mix_default_branch(mix_name: str, headers: Dict[str, str] = REQUEST_HEADERS) -> str:
+def _get_mix_default_branch(mix_name: str, headers: dict[str, str] = REQUEST_HEADERS) -> str:
     """Get the default branch for a brownie-mix repository.
 
     Arguments

@@ -10,7 +10,8 @@ from importlib.machinery import SourceFileLoader
 from importlib.util import find_spec
 from pathlib import WindowsPath
 from types import FunctionType, ModuleType
-from typing import Any, Dict, Final, List, Optional, Sequence, Tuple
+from typing import Any, Final
+from collections.abc import Sequence
 
 from brownie._c_constants import Path, import_module, sha1
 from brownie.exceptions import ProjectNotFound
@@ -35,15 +36,15 @@ _reload: Final = reload
 
 _DOT_PATH: Final = Path(".")
 
-_import_cache: Final[Dict[str, ModuleType]] = {}
+_import_cache: Final[dict[str, ModuleType]] = {}
 
 
 def run(
     script_path: str,
     method_name: str = "main",
-    args: Optional[Sequence[Any]] = None,
-    kwargs: Optional[Dict[str, Any]] = None,
-    project: Optional[Project] = None,
+    args: Sequence[Any] | None = None,
+    kwargs: dict[str, Any] | None = None,
+    project: Project | None = None,
     _include_frame: bool = False,
 ) -> Any:
     """Loads a project script and runs a method in it.
@@ -111,7 +112,7 @@ def run(
         func_ast = _parse(source)
 
         # use the last function with the correct name, consistent with how python handles
-        func_nodes: List = [
+        func_nodes: list = [
             i for i in func_ast.body if isinstance(i, _FunctionDef) and i.name == method_name
         ]
         func_ast.body = func_nodes[-1:]
@@ -124,7 +125,7 @@ def run(
 
         # now we compile the AST into a code object, using the module's `__dict__` as our globals
         # so that we have access to all the required imports and other objects
-        f_locals: Dict = module.__dict__.copy()
+        f_locals: dict = module.__dict__.copy()
         del f_locals[method_name]
         func_code = compile(func_ast, file, "exec")
         exec(func_code, f_locals)
@@ -142,7 +143,7 @@ def run(
             project._remove_from_main_namespace()
 
 
-def _get_path(path_str: str) -> Tuple[pathlib.Path, Optional[Project]]:
+def _get_path(path_str: str) -> tuple[pathlib.Path, Project | None]:
     # Returns path to a python module
     path = Path(path_str).with_suffix(".py")
 

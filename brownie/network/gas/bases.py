@@ -2,7 +2,8 @@ import inspect
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Generator, Iterator, Union
+from typing import Any
+from collections.abc import Generator, Iterator
 
 from brownie.network.web3 import web3
 
@@ -16,7 +17,7 @@ class GasABC(ABC):
     """
 
     @abstractmethod
-    def get_gas_price(self) -> Union[Generator[int, None, None], int]:
+    def get_gas_price(self) -> Generator[int, None, None] | int:
         raise NotImplementedError
 
 

@@ -8,17 +8,11 @@ from enum import IntEnum
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
     Concatenate,
-    Dict,
-    List,
-    Optional,
     ParamSpec,
-    Sequence,
-    Tuple,
     TypeVar,
-    Union,
 )
+from collections.abc import Callable, Sequence
 from warnings import warn
 
 import requests
@@ -143,13 +137,13 @@ class TransactionReceipt:
         modified_state: Boolean, did this contract write to storage?"""
 
     # these are defined as class attributes to expose them in console completion hints
-    block_number: Optional[BlockNumber] = None
-    contract_address: Optional[ChecksumAddress] = None
-    contract_name: Optional[ContractName] = None
-    fn_name: Optional[str] = None
-    gas_used: Optional[int] = None
-    logs: Optional[List] = None
-    nonce: Optional[int] = None
+    block_number: BlockNumber | None = None
+    contract_address: ChecksumAddress | None = None
+    contract_name: ContractName | None = None
+    fn_name: str | None = None
+    gas_used: int | None = None
+    logs: list | None = None
+    nonce: int | None = None
     sender = None
     txid: str
     txindex = None
@@ -157,13 +151,13 @@ class TransactionReceipt:
 
     def __init__(
         self,
-        txid: Union[str, bytes],
+        txid: str | bytes,
         sender: Any = None,
         silent: bool = True,
         required_confs: int = 1,
         is_blocking: bool = True,
         name: str = "",
-        revert_data: Optional[Tuple[str, int, str]] = None,
+        revert_data: tuple[str, int, str] | None = None,
     ) -> None:
         """Instantiates a new TransactionReceipt object.
 
@@ -188,18 +182,18 @@ class TransactionReceipt:
 
         # internal attributes
         self._call_cost = 0
-        self._trace_exc: Optional[Exception] = None
-        self._trace_origin: Optional[str] = None
-        self._raw_trace: Optional[List] = None
-        self._trace: Optional[List] = None
-        self._events: Optional[EventDict] = None
+        self._trace_exc: Exception | None = None
+        self._trace_origin: str | None = None
+        self._raw_trace: list | None = None
+        self._trace: list | None = None
+        self._events: EventDict | None = None
         self._return_value: Any = None
-        self._revert_msg: Optional[str] = None
-        self._dev_revert_msg: Optional[str] = None
-        self._modified_state: Optional[bool] = None
-        self._new_contracts: Optional[List[EthAddress]] = None
-        self._internal_transfers: Optional[List[Dict[str, Any]]] = None
-        self._subcalls: Optional[List[Dict[str, Any]]] = None
+        self._revert_msg: str | None = None
+        self._dev_revert_msg: str | None = None
+        self._modified_state: bool | None = None
+        self._new_contracts: list[EthAddress] | None = None
+        self._internal_transfers: list[dict[str, Any]] | None = None
+        self._subcalls: list[dict[str, Any]] | None = None
 
         # attributes that can be set immediately
         self.sender = sender
@@ -218,7 +212,7 @@ class TransactionReceipt:
         if self._revert_pc is not None:
             self._dev_revert_msg = build._get_dev_revert(self._revert_pc) or None
 
-        tx: Dict = web3.eth.get_transaction(HexBytes(self.txid))
+        tx: dict = web3.eth.get_transaction(HexBytes(self.txid))
         self._set_from_tx(tx)
 
         if not self._silent:
@@ -273,7 +267,7 @@ class TransactionReceipt:
         return self._events
 
     @trace_property
-    def internal_transfers(self) -> List[Dict[str, Any]]:
+    def internal_transfers(self) -> list[dict[str, Any]]:
         if not self.status:
             return []
         if self._internal_transfers is None:
@@ -281,7 +275,7 @@ class TransactionReceipt:
         return self._internal_transfers
 
     @trace_property
-    def modified_state(self) -> Optional[bool]:
+    def modified_state(self) -> bool | None:
         if not self.status:
             self._modified_state = False
         elif self._modified_state is None:
@@ -289,7 +283,7 @@ class TransactionReceipt:
         return self._modified_state
 
     @trace_property
-    def new_contracts(self) -> List[EthAddress]:
+    def new_contracts(self) -> list[EthAddress]:
         if not self.status:
             return []
         if self._new_contracts is None:
@@ -297,7 +291,7 @@ class TransactionReceipt:
         return self._new_contracts
 
     @trace_property
-    def return_value(self) -> Optional[str]:
+    def return_value(self) -> str | None:
         if not self.status:
             return None
         if self._return_value is None:
@@ -305,7 +299,7 @@ class TransactionReceipt:
         return self._return_value
 
     @trace_property
-    def revert_msg(self) -> Optional[str]:
+    def revert_msg(self) -> str | None:
         if self.status:
             return None
         if self._revert_msg is None:
@@ -315,7 +309,7 @@ class TransactionReceipt:
         return self._revert_msg
 
     @trace_property
-    def dev_revert_msg(self) -> Optional[str]:
+    def dev_revert_msg(self) -> str | None:
         if self.status:
             return None
         if self._dev_revert_msg is None:
@@ -324,20 +318,20 @@ class TransactionReceipt:
         return self._dev_revert_msg or None
 
     @trace_property
-    def subcalls(self) -> Optional[List]:
+    def subcalls(self) -> list | None:
         if self._subcalls is None:
             self._expand_trace()
         subcalls = filter(lambda s: not _is_call_to_precompile(s), self._subcalls)
         return list(subcalls)
 
     @trace_property
-    def trace(self) -> Optional[List]:
+    def trace(self) -> list | None:
         if self._trace is None:
             self._expand_trace()
         return self._trace
 
     @property
-    def timestamp(self) -> Optional[int]:
+    def timestamp(self) -> int | None:
         if self.status < 0:
             return None
         return web3.eth.get_block(self.block_number)["timestamp"]
@@ -350,9 +344,9 @@ class TransactionReceipt:
 
     def replace(
         self,
-        increment: Optional[float] = None,
-        gas_price: Optional[Wei] = None,
-        silent: Optional[bool] = None,
+        increment: float | None = None,
+        gas_price: Wei | None = None,
+        silent: bool | None = None,
     ) -> "TransactionReceipt":
         """
         Rebroadcast this transaction with a higher gas price.
@@ -439,7 +433,7 @@ class TransactionReceipt:
 
         while True:
             try:
-                tx: Dict = web3.eth.get_transaction(self.txid)
+                tx: dict = web3.eth.get_transaction(self.txid)
                 break
             except TransactionNotFound:
                 if self.nonce is not None:
@@ -573,7 +567,7 @@ class TransactionReceipt:
             dropped_tx.status = Status(-2)
             dropped_tx._confirmed.set()
 
-    def _set_from_tx(self, tx: Dict) -> None:
+    def _set_from_tx(self, tx: dict) -> None:
         if not self.sender:
             self.sender = EthAddress(tx["from"])
         self.receiver = EthAddress(tx["to"]) if tx.get("to") else None
@@ -873,7 +867,7 @@ class TransactionReceipt:
 
         # last_map gives a quick reference of previous values at each depth
         last_map = {0: _get_last_map(self.receiver, self.input[:10])}
-        coverage_eval: Dict = {last_map[0]["name"]: {}}
+        coverage_eval: dict = {last_map[0]["name"]: {}}
         precompile_contract = regex_compile(r"0x0{38}(?:0[1-9]|1[0-8])")
         call_opcodes = ("CALL", "STATICCALL", "DELEGATECALL")
         for i in range(len(trace)):
@@ -1027,7 +1021,7 @@ class TransactionReceipt:
                     del last["internal_calls"][-1]
                     last["jumpDepth"] -= 1
         coverage._add_transaction(
-            self.coverage_hash, dict((k, v) for k, v in coverage_eval.items() if v)
+            self.coverage_hash, {k: v for k, v in coverage_eval.items() if v}
         )
 
     def _add_internal_xfer(self, from_: str, to: str, value: str) -> None:
@@ -1061,7 +1055,7 @@ class TransactionReceipt:
 
         if self.events:
             events = list(self.events)
-            call_tree: List = ["--------------------------"]
+            call_tree: list = ["--------------------------"]
             while events:
                 idx = next(
                     (events.index(i) for i in events if i.address != events[0].address), len(events)
@@ -1072,7 +1066,7 @@ class TransactionReceipt:
                         name = contract.name()
                     except Exception:
                         name = contract._name
-                    sub_tree: List = [f"{name} ({events[0].address})"]
+                    sub_tree: list = [f"{name} ({events[0].address})"]
                 else:
                     sub_tree = [f"{events[0].address}"]
                 for event in events[:idx]:
@@ -1088,7 +1082,7 @@ class TransactionReceipt:
             status = f"({bright_red}{self.revert_msg or 'reverted'}{color})"
         print(f"Transaction was Mined {status}\n---------------------\n{result}")
 
-    def _get_trace_gas(self, start: int, stop: int) -> Tuple[int, int]:
+    def _get_trace_gas(self, start: int, stop: int) -> tuple[int, int]:
         total_gas = 0
         internal_gas = 0
         is_internal = True
@@ -1154,8 +1148,8 @@ class TransactionReceipt:
             trace[0], trace[-1], 0, len(trace), self._get_trace_gas(0, len(self.trace))
         )
 
-        call_tree: List = [[key]]
-        active_tree: List = [call_tree[0]]
+        call_tree: list = [[key]]
+        active_tree: list = [call_tree[0]]
 
         # (index, depth, jumpDepth) for relevant steps in the trace
         trace_index = [(0, 0, 0)] + [
@@ -1316,7 +1310,7 @@ class TransactionReceipt:
         )
 
 
-def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, fn_name: str) -> str:
+def _format_source(source: str, linenos: tuple, path: Path, pc: int, idx: int, fn_name: str) -> str:
     ln = f" {bright_blue}{linenos[0]}"
     if linenos[1] > linenos[0]:
         ln = f"s{ln}{dark_white}-{bright_blue}{linenos[1]}"
@@ -1328,17 +1322,17 @@ def _format_source(source: str, linenos: Tuple, path: Path, pc: int, idx: int, f
     )
 
 
-def _step_compare(a: Dict, b: Dict) -> bool:
+def _step_compare(a: dict, b: dict) -> bool:
     return a["depth"] == b["depth"] and a["jumpDepth"] == b["jumpDepth"]
 
 
 def _step_internal(
-    step: Dict,
-    last_step: Dict,
-    start: Union[str, int],
-    stop: Union[str, int],
-    gas: Tuple[int, int],
-    subcall: Dict = None,
+    step: dict,
+    last_step: dict,
+    start: str | int,
+    stop: str | int,
+    gas: tuple[int, int],
+    subcall: dict = None,
 ) -> str:
     if last_step["op"] in {"REVERT", "INVALID"} and _step_compare(step, last_step):
         contract_color = color("bright red")
@@ -1394,19 +1388,19 @@ def _format(value: Any) -> str:
 
 
 def _step_external(
-    step: Dict,
-    last_step: Dict,
-    start: Union[str, int],
-    stop: Union[str, int],
-    gas: Tuple[int, int],
-    subcall: Dict,
+    step: dict,
+    last_step: dict,
+    start: str | int,
+    stop: str | int,
+    gas: tuple[int, int],
+    subcall: dict,
     expand: bool,
 ) -> str:
     key = _step_internal(step, last_step, start, stop, gas, subcall)
     if not expand:
         return key
 
-    result: List = [key, f"address: {step['address']}"]
+    result: list = [key, f"address: {step['address']}"]
 
     if "value" in subcall:
         result.append(f"value: {subcall['value']}")
@@ -1437,7 +1431,7 @@ def _step_external(
     return build_tree([result], multiline_pad=0).rstrip()
 
 
-def _get_memory(step: Dict, idx: int) -> HexBytes:
+def _get_memory(step: dict, idx: int) -> HexBytes:
     offset = int(step["stack"][idx], 16)
     length = int(step["stack"][idx - 1], 16)
     data = HexBytes("".join(step["memory"]))[offset : offset + length]
@@ -1446,7 +1440,7 @@ def _get_memory(step: Dict, idx: int) -> HexBytes:
     return data
 
 
-def _get_last_map(address: EthAddress, sig: str) -> Dict:
+def _get_last_map(address: EthAddress, sig: str) -> dict:
     contract = state._find_contract(address)
     last_map = {"address": EthAddress(address), "jumpDepth": 0, "name": None, "coverage": False}
 

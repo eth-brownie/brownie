@@ -78,7 +78,7 @@ def pytest_configure(config):
 
     if config.getoption("--evm"):
         # reformat evm options - only do this once to avoid repeat queries for latest solc version
-        solc_versions, evm_versions, runs = [i.split(",") for i in config.option.evm]
+        solc_versions, evm_versions, runs = (i.split(",") for i in config.option.evm)
         runs = [int(i) for i in runs]
         if "latest" in solc_versions:
             latest_version = solcx.get_installable_solc_versions()[0]

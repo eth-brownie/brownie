@@ -4,21 +4,10 @@ import gc
 import threading
 import time
 import weakref
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Final,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    final,
-)
+from typing import TYPE_CHECKING, Any, Final, Union, final
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3.datastructures import AttributeDict
@@ -41,13 +30,13 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
-PathMap = Dict[str, Tuple[HexStr, str]]
-Deployment = Tuple[ContractBuildJson, Dict[str, Any]]
+PathMap = dict[str, tuple[HexStr, str]]
+Deployment = tuple[ContractBuildJson, dict[str, Any]]
 
 AnyContract = Union["Contract", "ProjectContract"]
 
-_contract_map: Final[Dict[ChecksumAddress, AnyContract]] = {}
-_revert_refs: Final[List[weakref.ReferenceType]] = []
+_contract_map: Final[dict[ChecksumAddress, AnyContract]] = {}
+_revert_refs: Final[list[weakref.ReferenceType]] = []
 
 cur: Final = Cursor(_get_data_folder().joinpath("deployments.db"))
 cur.execute("CREATE TABLE IF NOT EXISTS sources (hash PRIMARY KEY, source)")
@@ -60,8 +49,8 @@ class TxHistory(metaclass=_Singleton):
     added to this container."""
 
     def __init__(self) -> None:
-        self._list: List[TransactionReceipt] = []
-        self.gas_profile: Final[Dict[str, Dict[str, int]]] = {}
+        self._list: list[TransactionReceipt] = []
+        self.gas_profile: Final[dict[str, dict[str, int]]] = {}
         _revert_register(self)
 
     def __repr__(self) -> str:
@@ -71,7 +60,7 @@ class TxHistory(metaclass=_Singleton):
 
     def __getattribute__(self, name: str) -> Any:
         # filter dropped transactions prior to attribute access
-        items: List[TransactionReceipt] = super().__getattribute__("_list")
+        items: list[TransactionReceipt] = super().__getattribute__("_list")
         items = [i for i in items if i.status != -2]
         setattr(self, "_list", items)
         return super().__getattribute__(name)
@@ -115,11 +104,11 @@ class TxHistory(metaclass=_Singleton):
         else:
             self._list.clear()
 
-    def copy(self) -> List[TransactionReceipt]:
+    def copy(self) -> list[TransactionReceipt]:
         """Returns a shallow copy of the object as a list"""
         return self._list.copy()
 
-    def filter(self, key: Optional[Callable] = None, **kwargs: Any) -> List[TransactionReceipt]:
+    def filter(self, key: Callable | None = None, **kwargs: Any) -> list[TransactionReceipt]:
         """
         Return a filtered list of transactions.
 
@@ -142,7 +131,7 @@ class TxHistory(metaclass=_Singleton):
         result = (i for i in self._list if all(getattr(i, k) == v for k, v in kwargs.items()))
         return list(result if key is None else filter(key, result))
 
-    def wait(self, key: Optional[Callable] = None, **kwargs: Any) -> None:
+    def wait(self, key: Callable | None = None, **kwargs: Any) -> None:
         """
         Wait for pending transactions to confirm.
 
@@ -167,15 +156,15 @@ class TxHistory(metaclass=_Singleton):
                 return
             pending._confirmed.wait()
 
-    def from_sender(self, account: str) -> List[TransactionReceipt]:
+    def from_sender(self, account: str) -> list[TransactionReceipt]:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: str) -> List[TransactionReceipt]:
+    def to_receiver(self, account: str) -> list[TransactionReceipt]:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: str) -> List[TransactionReceipt]:
+    def of_address(self, account: str) -> list[TransactionReceipt]:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
@@ -214,13 +203,13 @@ class Chain(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self._time_offset: int = 0
-        self._snapshot_id: Optional[int | str] = None
-        self._reset_id: Optional[int | str] = None
-        self._current_id: Optional[int | str] = None
+        self._snapshot_id: int | str | None = None
+        self._reset_id: int | str | None = None
+        self._current_id: int | str | None = None
         self._undo_lock: Final = threading.Lock()
-        self._undo_buffer: Final[List[Tuple[int | str, Any, Tuple[Any, ...], Dict[str, Any]]]] = []
-        self._redo_buffer: Final[List[Tuple[Any, Tuple[Any, ...], Dict[str, Any]]]] = []
-        self._chainid: Optional[int] = None
+        self._undo_buffer: Final[list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any]]]] = []
+        self._redo_buffer: Final[list[tuple[Any, tuple[Any, ...], dict[str, Any]]]] = []
+        self._chainid: int | None = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
 
@@ -286,7 +275,7 @@ class Chain(metaclass=_Singleton):
         if height_buffer < 0:
             raise ValueError("Buffer cannot be negative")
 
-        last_block: Optional[BlockData | AttributeDict] = None
+        last_block: BlockData | AttributeDict | None = None
         last_height = 0
         last_poll = 0.0
 
@@ -345,7 +334,7 @@ class Chain(metaclass=_Singleton):
         return id_
 
     def _add_to_undo_buffer(
-        self, tx: TransactionReceipt, fn: Any, args: Tuple[Any, ...], kwargs: Dict[str, Any]
+        self, tx: TransactionReceipt, fn: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
@@ -376,7 +365,7 @@ class Chain(metaclass=_Singleton):
         self._chainid = None
         _notify_registry(0)  # type: ignore [arg-type]
 
-    def get_transaction(self, txid: Union[str, bytes]) -> TransactionReceipt:
+    def get_transaction(self, txid: str | bytes) -> TransactionReceipt:
         """
         Return a TransactionReceipt object for the given transaction hash.
         """
@@ -407,7 +396,7 @@ class Chain(metaclass=_Singleton):
             self._current_id = rpc.Rpc().snapshot()
 
     def mine(
-        self, blocks: int = 1, timestamp: Optional[int] = None, timedelta: Optional[int] = None
+        self, blocks: int = 1, timestamp: int | None = None, timedelta: int | None = None
     ) -> BlockNumber:
         """
         Increase the block height within the test RPC.
@@ -439,7 +428,7 @@ class Chain(metaclass=_Singleton):
             timestamp = self.time() + timedelta
 
         if timestamp is None:
-            params: List = [[] for _ in range(blocks)]
+            params: list = [[] for _ in range(blocks)]
         elif blocks == 1:
             params = [[timestamp]]
         else:
@@ -571,7 +560,7 @@ def _revert_register(obj: object) -> None:
     _revert_refs.append(weakref.ref(obj))
 
 
-def _notify_registry(height: Optional[BlockNumber] = None) -> None:
+def _notify_registry(height: BlockNumber | None = None) -> None:
     gc.collect()
     if height is None:
         height = web3.eth.block_number
@@ -585,7 +574,7 @@ def _notify_registry(height: Optional[BlockNumber] = None) -> None:
             obj._reset()
 
 
-def _find_contract(address: Optional[HexAddress]) -> Optional[AnyContract]:
+def _find_contract(address: HexAddress | None) -> AnyContract | None:
     if address is None:
         return None
 
@@ -603,7 +592,7 @@ def _find_contract(address: Optional[HexAddress]) -> Optional[AnyContract]:
         return None
 
 
-def _get_current_dependencies() -> List[ContractName]:
+def _get_current_dependencies() -> list[ContractName]:
     dependencies = {v._name for v in _contract_map.values()}
     for contract in _contract_map.values():
         dependencies.update(contract._build.get("dependencies", []))
@@ -619,9 +608,9 @@ def _remove_contract(contract: AnyContract) -> None:
 
 
 def _get_deployment(
-    address: Optional[HexAddress] = None,
-    alias: Optional[ContractName] = None,
-) -> Deployment | Tuple[None, None]:
+    address: HexAddress | None = None,
+    alias: ContractName | None = None,
+) -> Deployment | tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:
@@ -645,13 +634,13 @@ def _get_deployment(
     build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
     # when we json.dump the path map, the tuples are encoded as lists so we need to make them tuples again.
     path_map: PathMap = {k: tuple(v) for k, v in build_json.pop("paths", {}).items()}  # type: ignore [typeddict-item]
-    sources: Dict[str, Any] = {
+    sources: dict[str, Any] = {
         i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
         for i in path_map.values()
     }
 
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
-    pc_map: Optional[Dict[int | str, ProgramCounter]] = build_json.get("pcMap")  # type: ignore [assignment]
+    pc_map: dict[int | str, ProgramCounter] | None = build_json.get("pcMap")  # type: ignore [assignment]
     if isinstance(pc_map, dict):
         build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
 
@@ -660,7 +649,7 @@ def _get_deployment(
 
 def _add_deployment(
     contract: "Contract",
-    alias: Optional[ContractName] = None,
+    alias: ContractName | None = None,
 ) -> None:
     if "chainid" not in CONFIG.active_network:
         return
@@ -697,9 +686,9 @@ def _add_deployment(
 
 
 def _remove_deployment(
-    address: Optional[HexAddress] = None,
-    alias: Optional[ContractName] = None,
-) -> Deployment | Tuple[None, None]:
+    address: HexAddress | None = None,
+    alias: ContractName | None = None,
+) -> Deployment | tuple[None, None]:
     if address and alias:
         raise ValueError("Passed both params address and alias, should be only one!")
     if address:

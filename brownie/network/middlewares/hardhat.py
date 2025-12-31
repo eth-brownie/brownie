@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Optional, Sequence, final
+from typing import Any, final
+from collections.abc import Callable, Sequence
 
 from web3 import Web3
 from web3.types import RPCEndpoint
@@ -10,7 +11,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 @final
 class HardhatMiddleWare(BrownieMiddlewareABC):
     @classmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         if w3.client_version.lower().startswith("hardhat"):
             return -100
         else:
@@ -21,7 +22,7 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         make_request: Callable,
         method: RPCEndpoint,
         params: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         result = make_request(method, params)
 
         # modify Hardhat transaction error to mimic the format that Ganache uses
@@ -40,7 +41,7 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     txid = "0x"
                 else:
                     txid = error["data"]["txHash"]
-                data: Dict = {}
+                data: dict = {}
                 error["data"] = {txid: data}
                 message = message.split(": ", maxsplit=1)[-1]
                 if message == "Transaction reverted without a reason":

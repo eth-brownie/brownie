@@ -5,7 +5,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     long_description = fh.read()
 
 if os.environ.get("BROWNIE_LIB", "0") == "1":
@@ -19,7 +19,7 @@ else:
     else:
         requirements_filename = "requirements.txt"
 
-with open(requirements_filename, "r") as f:
+with open(requirements_filename) as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
 
 try:

@@ -2,7 +2,7 @@
 
 import shutil
 import sys
-from typing import Any, Dict, Final, Tuple, cast
+from typing import Any, Final, cast
 
 import yaml
 
@@ -343,7 +343,7 @@ def _list_providers(verbose: bool | str = False):
             raise e
 
     with _get_data_folder().joinpath("providers-config.yaml").open() as fp:
-        providers: Dict[str, Any] = yaml.safe_load(fp)
+        providers: dict[str, Any] = yaml.safe_load(fp)
 
     print("The following providers are declared:")
     if verbose:
@@ -352,9 +352,9 @@ def _list_providers(verbose: bool | str = False):
         _print_simple_providers_description(providers)
 
 
-def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
+def _parse_args(args: tuple[str, ...]) -> dict[str, Any]:
     try:
-        parsed: Dict[str, Any] = dict(i.split("=", maxsplit=1) for i in args)
+        parsed: dict[str, Any] = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
         raise ValueError("Arguments must be given as key=value") from None
 
@@ -367,19 +367,19 @@ def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
     return parsed
 
 
-def _print_verbose_providers_description(providers: Dict[str, Any]) -> None:
+def _print_verbose_providers_description(providers: dict[str, Any]) -> None:
     u = "\u251c"
     for provider in providers:
         print(f"{bright_black}  {u}\u2500{color}provider: {provider}:")
         print(f"{bright_black}  {u}\u2500{color}   host: {providers[provider]}:")
 
 
-def _print_simple_providers_description(providers: Dict[str, Any]) -> None:
+def _print_simple_providers_description(providers: dict[str, Any]) -> None:
     u = "\u251c"
     print(f"{bright_black}  {u}\u2500{color}{providers.keys()}:")
 
 
-def _print_simple_network_description(network_dict: Dict[str, Any], is_last: bool) -> None:
+def _print_simple_network_description(network_dict: dict[str, Any], is_last: bool) -> None:
     u = "\u2514" if is_last else "\u251c"
     print(
         f"{bright_black}  {u}\u2500{color}{network_dict['name']}:"
@@ -388,7 +388,7 @@ def _print_simple_network_description(network_dict: Dict[str, Any], is_last: boo
 
 
 def _print_verbose_network_description(
-    network_dict: Dict[str, Any], is_last: bool, indent: int = 0
+    network_dict: dict[str, Any], is_last: bool, indent: int = 0
 ) -> None:
     if is_last:
         u = "\u2514"
@@ -414,7 +414,7 @@ def _print_verbose_network_description(
         print(f"{bright_black}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
-def _validate_network(network: Dict[str, Any], required: Tuple[str, ...]) -> None:
+def _validate_network(network: dict[str, Any], required: tuple[str, ...]) -> None:
     if missing := [i for i in required if i not in network]:
         raise ValueError(f"Network is missing required field(s): {', '.join(missing)}")
 

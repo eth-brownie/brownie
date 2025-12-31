@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock, get_ident
 from types import FunctionType, TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
@@ -23,7 +23,7 @@ MULTICALL2_SOURCE = DATA_DIR.joinpath("contracts", "Multicall2.sol").read_text()
 @dataclass
 class Call:
 
-    calldata: Tuple[str, bytes]
+    calldata: tuple[str, bytes]
     decoder: FunctionType
     readable: str
 
@@ -53,7 +53,7 @@ class Multicall:
         self._block_number = defaultdict(lambda: None)
         self._verbose = defaultdict(lambda: None)
         self._contract = None
-        self._pending_calls: Dict[int, List[Call]] = defaultdict(list)
+        self._pending_calls: dict[int, list[Call]] = defaultdict(list)
 
         setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)
         setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
@@ -66,9 +66,9 @@ class Multicall:
 
     def __call__(
         self,
-        address: Optional[str] = None,
-        block_identifier: Union[str, bytes, int, None] = None,
-        verbose: Optional[bool] = None,
+        address: str | None = None,
+        block_identifier: str | bytes | int | None = None,
+        verbose: bool | None = None,
     ) -> "Multicall":
         self.address = address
         self._block_number[get_ident()] = block_identifier
@@ -178,7 +178,7 @@ class Multicall:
         self._verbose.pop(get_ident(), None)
 
     @staticmethod
-    def deploy(tx_params: Dict) -> Contract:
+    def deploy(tx_params: dict) -> Contract:
         """Deploy an instance of the `Multicall2` contract.
 
         Args:

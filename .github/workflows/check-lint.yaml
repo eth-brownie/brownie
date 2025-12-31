@@ -4,10 +4,10 @@ on:
       - master
   pull_request:
   schedule:
-    - cron: '0 12 * * *'  # Daily 1200 UTC
+    - cron: '0 0 * * *'  # Daily 0000 UTC
   workflow_dispatch:
 
-name: evm tests
+name: linting
 
 # This limits the workflow to 1 active run at any given time for a specific branch
 concurrency:
@@ -22,8 +22,6 @@ env:
 jobs:
   build-wheel:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-name: ${{ steps.wheel.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,7 +29,7 @@ jobs:
         id: wheel
         uses: BobTheBuidler/mypycify@v0.2.6
         with:
-          python-version: "3.10"
+          python-version: "3.13"
           hash-key: |
             brownie/**/*.py
             pyproject.toml
@@ -45,36 +43,26 @@ jobs:
             requirements-dev.txt
             requirements-windows.txt
 
-  evm:
+  linting:
     needs: build-wheel
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        job: [evm-byzantium, evm-petersburg, evm-istanbul, evm-latest]
+        job: [lint, docs-local]
+        experimental: [false]
+        include:
+          - job: docs-external
+            experimental: true
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Cache Solidity Installations
-      uses: actions/cache@v4
+    - name: Setup Python 3.13
+      uses: actions/setup-python@v5
       with:
-        path: |
-          ~/.solcx
-          ~/.vvm
-        key: ${{ runner.os }}-compiler-cache
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-
-    - name: Install Ganache
-      run: npm install -g ganache@7.9.2
-
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
+        python-version: "3.13"
         cache: pip
         cache-dependency-path: |
           pyproject.toml
@@ -99,19 +87,17 @@ jobs:
       uses: actions/cache@v4
       with:
         path: .tox
-        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+        key: ${{ runner.os }}-${{ matrix.job }}-3.13-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
 
     # Download the wheel artifact built by mypycify
     - name: Download wheel
       uses: actions/download-artifact@v4
       with:
         path: .
-        name: ${{ needs.build-wheel.outputs.artifact-name }}
+        pattern: ${{ needs.build-wheel.outputs.artifact-name }}
 
-    - name: Run Tox with prebuilt wheel
-      run: python -m tox run -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
+    - name: Run Tox
+      env:
+          CC: ccache gcc
+      run: tox -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
+      continue-on-error: ${{ matrix.experimental }}

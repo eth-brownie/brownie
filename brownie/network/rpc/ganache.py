@@ -5,7 +5,6 @@ import re
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
 
 import psutil
 from eth_utils.toolz import concat
@@ -57,7 +56,7 @@ EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
 EVM_DEFAULT = "istanbul"
 
 
-def launch(cmd: str, **kwargs: Dict) -> None:
+def launch(cmd: str, **kwargs: dict) -> None:
     """Launches the RPC client.
 
     Args:
@@ -120,7 +119,7 @@ def on_connection() -> None:
     pass
 
 
-def _request(method: str, args: List) -> int:
+def _request(method: str, args: list) -> int:
     try:
         response = web3.provider.make_request(method, args)
         if "result" in response:
@@ -134,7 +133,7 @@ def sleep(seconds: int) -> int:
     return _request("evm_increaseTime", [seconds])
 
 
-def mine(timestamp: Optional[int] = None) -> None:
+def mine(timestamp: int | None = None) -> None:
     params = [timestamp] if timestamp else []
     _request("evm_mine", params)
     if timestamp and web3.client_version.lower().startswith("ganache/v7"):

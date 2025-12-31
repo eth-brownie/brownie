@@ -4,7 +4,6 @@ import sys
 import warnings
 from pathlib import Path
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
 
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -37,7 +36,7 @@ module.exports = {
 }"""
 
 
-def launch(cmd: str, **kwargs: Dict) -> None:
+def launch(cmd: str, **kwargs: dict) -> None:
     """Launches the RPC client.
 
     Args:
@@ -79,7 +78,7 @@ def on_connection() -> None:
     web3.provider.make_request("evm_setBlockGasLimit", [hex(gas_limit)])
 
 
-def _request(method: str, args: List) -> int:
+def _request(method: str, args: list) -> int:
     try:
         response = web3.provider.make_request(method, args)
         if "result" in response:
@@ -93,7 +92,7 @@ def sleep(seconds: int) -> int:
     return _request("evm_increaseTime", [seconds])
 
 
-def mine(timestamp: Optional[int] = None) -> None:
+def mine(timestamp: int | None = None) -> None:
     params = [timestamp] if timestamp else []
     _request("evm_mine", params)
 

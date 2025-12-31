@@ -52,7 +52,7 @@ STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     },
 }
 
-EvmVersionSpec = Union[EvmVersion, Dict[Language, EvmVersion | None]]
+EvmVersionSpec = Union[EvmVersion, dict[Language, EvmVersion | None]]
 
 
 # C constants
@@ -60,19 +60,19 @@ _from_standard_output: Final = solcast.from_standard_output
 
 
 def compile_and_format(
-    contract_sources: Dict[str, str],
-    solc_version: Optional[str] = None,
-    vyper_version: Optional[str] = None,
-    optimize: Optional[bool] = True,
-    runs: Optional[int] = 200,
-    evm_version: Optional[EvmVersionSpec] = None,
+    contract_sources: dict[str, str],
+    solc_version: str | None = None,
+    vyper_version: str | None = None,
+    optimize: bool | None = True,
+    runs: int | None = 200,
+    evm_version: EvmVersionSpec | None = None,
     silent: bool = True,
-    allow_paths: Optional[str] = None,
-    interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[Union[List[str], str]] = None,
-    optimizer: Optional[OptimizerSettings] = None,
-    viaIR: Optional[bool] = None,
-) -> Dict[ContractName, ContractBuildJson]:
+    allow_paths: str | None = None,
+    interface_sources: dict[str, str] | None = None,
+    remappings: list[str] | str | None = None,
+    optimizer: OptimizerSettings | None = None,
+    viaIR: bool | None = None,
+) -> dict[ContractName, ContractBuildJson]:
     """Compiles contracts and returns build data.
 
     Args:
@@ -101,7 +101,7 @@ def compile_and_format(
     if [i for i in interface_sources if Path(i).suffix not in (".sol", ".vy", ".json")]:
         raise UnsupportedLanguage("Interface suffixes must be one of ('.sol', '.vy', '.json')")
 
-    build_json: Dict[ContractName, ContractBuildJson] = {}
+    build_json: dict[ContractName, ContractBuildJson] = {}
     compiler_targets = {}
 
     vyper_sources = {
@@ -176,15 +176,15 @@ def compile_and_format(
 
 
 def generate_input_json(
-    contract_sources: Dict[str, str],
+    contract_sources: dict[str, str],
     optimize: bool = True,
     runs: int = 200,
-    evm_version: Optional[EvmVersion] = None,
+    evm_version: EvmVersion | None = None,
     language: Language = "Solidity",
-    interface_sources: Optional[Dict[str, str]] = None,
-    remappings: Optional[Union[List[str], str]] = None,
-    optimizer: Optional[OptimizerSettings] = None,
-    viaIR: Optional[bool] = None,
+    interface_sources: dict[str, str] | None = None,
+    remappings: list[str] | str | None = None,
+    optimizer: OptimizerSettings | None = None,
+    viaIR: bool | None = None,
 ) -> InputJson:
     """Formats contracts to the standard solc input json.
 
@@ -232,22 +232,22 @@ def generate_input_json(
             input_sources.update(_sources_dict(interface_sources, language))
         else:
             input_json["interfaces"] = cast(
-                Dict[str, InterfaceSource],
+                dict[str, InterfaceSource],
                 _sources_dict(interface_sources, language),
             )
 
     return input_json
 
 
-def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[str]:
-    remap_dict: Dict[str, str]
+def _get_solc_remappings(remappings: list[str] | str | None) -> list[str]:
+    remap_dict: dict[str, str]
     if remappings is None:
         remap_dict = {}
     elif isinstance(remappings, str):
         remap_dict = dict([remappings.split("=")])
     else:
         remap_dict = dict(i.split("=") for i in remappings)
-    remapped_dict: Dict[str, str] = {}
+    remapped_dict: dict[str, str] = {}
     packages = _get_data_folder().joinpath("packages")
     for path in packages.iterdir():
         pathname = path.name
@@ -263,7 +263,7 @@ def _get_solc_remappings(remappings: Optional[Union[List[str], str]]) -> List[st
     return [f"{k}={v}" for k, v in dict(remap_dict, **remapped_dict).items()]
 
 
-def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
+def _get_allow_paths(allow_paths: str | None, remappings: list[str]) -> str:
     # generate the final allow_paths field based on path remappings
     path_list = [] if allow_paths is None else [allow_paths]
 
@@ -276,8 +276,8 @@ def _get_allow_paths(allow_paths: Optional[str], remappings: List[str]) -> str:
 
 
 def compile_from_input_json(
-    input_json: InputJson, silent: bool = True, allow_paths: Optional[str] = None
-) -> Dict:
+    input_json: InputJson, silent: bool = True, allow_paths: str | None = None
+) -> dict:
     """
     Compiles contracts from a standard input json.
 
@@ -305,10 +305,10 @@ def compile_from_input_json(
 
 def generate_build_json(
     input_json: InputJson,
-    output_json: Dict,
-    compiler_data: Optional[CompilerConfig] = None,
+    output_json: dict,
+    compiler_data: CompilerConfig | None = None,
     silent: bool = True,
-) -> Dict[ContractName, ContractBuildJson]:
+) -> dict[ContractName, ContractBuildJson]:
     """Formats standard compiler output to the brownie build json.
 
     Args:
@@ -330,14 +330,14 @@ def generate_build_json(
 
     settings = input_json["settings"]
     compiler_data["evm_version"] = settings["evmVersion"]
-    build_json: Dict[ContractName, ContractBuildJson] = {}
+    build_json: dict[ContractName, ContractBuildJson] = {}
 
     if language == "Solidity":
         compiler_data["optimizer"] = settings["optimizer"]  # type: ignore [typeddict-item]
         source_nodes, statement_nodes, branch_nodes = solidity._get_nodes(output_json)
 
     sources = input_json["sources"]
-    contracts: Dict[str, Dict[ContractName, dict]] = output_json["contracts"]
+    contracts: dict[str, dict[ContractName, dict]] = output_json["contracts"]
 
     for path_str, path_contracts in contracts.items():
         if path_str in sources:
@@ -359,7 +359,7 @@ def generate_build_json(
 
             natspec = merge_natspec(contract.get("devdoc", {}), contract.get("userdoc", {}))
 
-            abi: List[ABIElement] = contract["abi"]
+            abi: list[ABIElement] = contract["abi"]
             output_evm: dict = contract["evm"]
             deployed_bytecode: dict = output_evm["deployedBytecode"]
             bytecode: HexStr = deployed_bytecode["object"]
@@ -423,7 +423,7 @@ def generate_build_json(
     return build_json
 
 
-def _sources_dict(original: Dict[str, Any], language: Language) -> SourcesDict:
+def _sources_dict(original: dict[str, Any], language: Language) -> SourcesDict:
     result: SourcesDict = {}
     for key, value in original.items():
         if Path(key).suffix == ".json":
@@ -436,12 +436,12 @@ def _sources_dict(original: Dict[str, Any], language: Language) -> SourcesDict:
 
 
 def get_abi(
-    contract_sources: Dict[str, str],
-    solc_version: Optional[str] = None,
-    allow_paths: Optional[str] = None,
-    remappings: Optional[List[str]] = None,
+    contract_sources: dict[str, str],
+    solc_version: str | None = None,
+    allow_paths: str | None = None,
+    remappings: list[str] | None = None,
     silent: bool = True,
-) -> Dict[ContractName, InterfaceBuildJson]:
+) -> dict[ContractName, InterfaceBuildJson]:
     """
     Generate ABIs from contract interfaces.
 
@@ -463,7 +463,7 @@ def get_abi(
         Compiled ABIs in the format `{'contractName': [ABI]}`
     """
 
-    final_output: Dict[ContractName, InterfaceBuildJson] = {
+    final_output: dict[ContractName, InterfaceBuildJson] = {
         ContractName(stem := p.stem): {
             "abi": ujson_loads(v),
             "contractName": ContractName(stem),
@@ -516,7 +516,7 @@ def get_abi(
         output_json = compile_from_input_json(input_json, silent, allow_paths)
         source_nodes = _from_standard_output(output_json)
         compiled_sources: dict[str, dict] = output_json["sources"]
-        abi_json: Dict[str, dict] = {
+        abi_json: dict[str, dict] = {
             k: v for k, v in output_json["contracts"].items() if k in path_list
         }
 

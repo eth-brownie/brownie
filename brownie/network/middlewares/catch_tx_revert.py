@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, Optional, Sequence, final
+from collections.abc import Callable, Sequence
+from typing import Any, final
 
 from web3 import Web3
 from web3.types import RPCEndpoint
@@ -17,7 +18,7 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
     """
 
     @classmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         return -1
 
     def process_request(
@@ -25,7 +26,7 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
         make_request: Callable,
         method: RPCEndpoint,
         params: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Raise a ValueError when RPC.eth_call or RPC.eth_estimateGas errors."""
         result = make_request(method, params)
         if method in {"eth_call", "eth_estimateGas"} and "error" in result:

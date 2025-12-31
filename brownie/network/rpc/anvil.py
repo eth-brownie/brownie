@@ -3,7 +3,6 @@
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
 
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -28,7 +27,7 @@ CLI_FLAGS = {
 }
 
 
-def launch(cmd: str, **kwargs: Dict) -> None:
+def launch(cmd: str, **kwargs: dict) -> None:
     """Launches the RPC client.
 
     Args:
@@ -60,7 +59,7 @@ def on_connection() -> None:
     web3.provider.make_request("evm_setBlockGasLimit", [hex(gas_limit)])
 
 
-def _request(method: str, args: List) -> int:
+def _request(method: str, args: list) -> int:
     try:
         response = web3.provider.make_request(method, args)
         if "result" in response:
@@ -75,7 +74,7 @@ def sleep(seconds: int) -> int:
     return seconds
 
 
-def mine(blocks: Optional[int] = None) -> None:
+def mine(blocks: int | None = None) -> None:
     _request("evm_mine", blocks)
 
 

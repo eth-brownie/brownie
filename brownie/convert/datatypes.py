@@ -3,19 +3,14 @@
 import decimal
 from typing import (
     Any,
-    Dict,
     Final,
-    ItemsView,
-    Iterable,
-    KeysView,
-    List,
     Optional,
-    Sequence,
     TypeVar,
     Union,
     final,
     overload,
 )
+from collections.abc import ItemsView, Iterable, KeysView, Sequence
 
 try:
     from vyper.exceptions import DecimalOverrideException
@@ -333,13 +328,13 @@ def _to_hex(value: Any) -> HexStr:
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List[ABIComponent]] = None
-    _dict: Dict[str, Any] = {}
+    _abi: list[ABIComponent] | None = None
+    _dict: dict[str, Any] = {}
 
     def __new__(
         cls,
         values: Iterable[Any],
-        abi: Optional[Sequence[ABIComponent]] = None,
+        abi: Sequence[ABIComponent] | None = None,
     ) -> "ReturnValue":
         values = list(values)
         for i, value in enumerate(values):
@@ -417,7 +412,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict[str, Any]:
+    def dict(self) -> dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():

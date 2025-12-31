@@ -36,7 +36,7 @@ bitarray==3.8.0
     # via
     #   -r requirements.txt
     #   eth-account
-cbor2==5.7.1
+cbor2==5.8.0
     # via
     #   -r requirements.txt
     #   vyper
@@ -65,7 +65,7 @@ cytoolz==1.1.0
     #   -r requirements.txt
     #   eth-utils
     #   faster-eth-utils
-eip712==0.3.0
+eip712==0.3.3
     # via -r requirements.txt
 eth-abi==5.2.0
     # via
@@ -97,7 +97,7 @@ eth-keys==0.7.0
     #   -r requirements.txt
     #   eth-account
     #   eth-keyfile
-eth-pydantic-types==0.2.4
+eth-pydantic-types==0.2.5
     # via
     #   -r requirements.txt
     #   eip712
