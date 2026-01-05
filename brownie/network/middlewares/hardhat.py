@@ -1,11 +1,13 @@
-import re
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence, final
 
 from web3 import Web3
+from web3.types import RPCEndpoint
 
+from brownie._c_constants import regex_findall
 from brownie.network.middlewares import BrownieMiddlewareABC
 
 
+@final
 class HardhatMiddleWare(BrownieMiddlewareABC):
     @classmethod
     def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
@@ -14,15 +16,21 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         else:
             return None
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: Callable,
+        method: RPCEndpoint,
+        params: Sequence[Any],
+    ) -> Dict[str, Any]:
         result = make_request(method, params)
 
         # modify Hardhat transaction error to mimick the format that Ganache uses
         if (
-            method in ("eth_call", "eth_sendTransaction", "eth_sendRawTransaction")
+            method in {"eth_call", "eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
         ):
-            message = result["error"]["message"]
+            error: dict = result["error"]
+            message: str = error["message"]
             if message.startswith("Error: VM Exception") or message.startswith(
                 "Error: Transaction reverted"
             ):
@@ -31,16 +39,16 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     # but we still mimick it here for the sake of consistency
                     txid = "0x"
                 else:
-                    txid = result["error"]["data"]["txHash"]
+                    txid = error["data"]["txHash"]
                 data: Dict = {}
-                result["error"]["data"] = {txid: data}
+                error["data"] = {txid: data}
                 message = message.split(": ", maxsplit=1)[-1]
                 if message == "Transaction reverted without a reason":
                     data.update({"error": "revert", "reason": None})
                 elif message.startswith("revert"):
                     data.update({"error": "revert", "reason": message[7:]})
                 elif "reverted with reason string '" in message:
-                    data.update(error="revert", reason=re.findall(".*?'(.*)'$", message)[0])
+                    data.update(error="revert", reason=regex_findall(".*?'(.*)'$", message)[0])
                 elif "reverted with an unrecognized custom error" in message:
                     message = message[message.index("0x") : -1]
                     data.update(error="revert", reason=message)

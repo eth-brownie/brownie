@@ -8,13 +8,14 @@ from subprocess import DEVNULL, PIPE
 from typing import Dict, List, Optional
 
 import psutil
-from hexbytes import HexBytes
+from eth_utils.toolz import concat
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.convert import Wei
 from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
 from brownie.network.web3 import web3
+from brownie.utils import bytes_to_hexstring
 
 CLI_FLAGS = {
     "7": {
@@ -87,7 +88,7 @@ def launch(cmd: str, **kwargs: Dict) -> None:
                 value = [value]  # type: ignore
             for address in value:
                 if isinstance(address, int):
-                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                    address = bytes_to_hexstring(address.to_bytes(20, "big"))
                 cmd_list.extend([cli_flags[key], address])
         else:
             try:
@@ -110,10 +111,9 @@ def launch(cmd: str, **kwargs: Dict) -> None:
 def get_ganache_version(ganache_executable: str) -> int:
     ganache_version_proc = psutil.Popen([ganache_executable, "--version"], stdout=PIPE)
     ganache_version_stdout, _ = ganache_version_proc.communicate()
-    ganache_version_match = re.search(r"v([0-9]+)\.", ganache_version_stdout.decode())
-    if not ganache_version_match:
-        raise ValueError("could not read ganache version: {}".format(ganache_version_stdout))
-    return int(ganache_version_match.group(1))
+    if ganache_version_match := re.search(r"v([0-9]+)\.", ganache_version_stdout.decode()):
+        return int(ganache_version_match[1])
+    raise ValueError(f"could not read ganache version: {ganache_version_stdout}")
 
 
 def on_connection() -> None:
@@ -163,7 +163,7 @@ def unlock_account(address: str) -> None:
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:
-    ganache_keys = set(k for f in CLI_FLAGS.values() for k in f.keys())
+    ganache_keys = set(concat(CLI_FLAGS.values()))
 
     CMD_TYPES = {
         "port": int,
@@ -180,11 +180,7 @@ def _validate_cmd_settings(cmd_settings: dict) -> dict:
         "chain_id": int,
     }
     for cmd, value in cmd_settings.items():
-        if (
-            cmd in ganache_keys
-            and cmd in CMD_TYPES.keys()
-            and not isinstance(value, CMD_TYPES[cmd])
-        ):
+        if cmd in ganache_keys and cmd in CMD_TYPES and not isinstance(value, CMD_TYPES[cmd]):
             raise TypeError(
                 f'Wrong type for cmd_settings "{cmd}": {value}. '
                 f"Found {type(value).__name__}, but expected {CMD_TYPES[cmd].__name__}."

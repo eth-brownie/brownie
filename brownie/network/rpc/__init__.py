@@ -16,7 +16,7 @@ from brownie.exceptions import RPCConnectionError, RPCProcessError
 from brownie.network.state import Chain
 from brownie.network.web3 import web3
 
-from . import anvil, ganache, geth, hardhat
+from brownie.network.rpc import anvil, ganache, geth, hardhat
 
 chain = Chain()
 

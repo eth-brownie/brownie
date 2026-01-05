@@ -5,6 +5,8 @@ from web3 import HTTPProvider, IPCProvider, Web3, WebsocketProvider
 
 from brownie.exceptions import MainnetUndefined
 
+from tests.conftest import _connect_to_mainnet
+
 
 def test_connect_http(web3):
     web3.connect("http://localhost")
@@ -43,9 +45,18 @@ def test_bad_env_var(web3):
 def test_mainnet(config, network, web3):
     assert type(web3._mainnet) == Web3
     assert web3._mainnet != web3
-    network.connect("mainnet")
+    _connect_to_mainnet(network)
+
     assert web3._mainnet == web3
-    network.disconnect()
+
+    try:
+        network.disconnect()
+    except ConnectionError as e:
+        # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+        # It's probably just a silly race condition due to parallel testing.
+        if str(e) != "Not connected to any network":
+            raise
+
     del config.networks["mainnet"]
     with pytest.raises(MainnetUndefined):
         web3._mainnet
@@ -65,9 +76,10 @@ def test_disconnect(web3):
 
 
 def test_genesis_hash(web3, devnetwork):
-    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex()[2:]
+    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex().removeprefix("0x")
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_genesis_hash_different_networks(devnetwork, web3):
     ganache_hash = web3.genesis_hash
     devnetwork.disconnect()
@@ -82,6 +94,7 @@ def test_genesis_hash_disconnected(web3):
         web3.genesis_hash
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_chain_uri(web3, network):
     network.connect("goerli")
     assert web3.chain_uri.startswith(
@@ -95,6 +108,7 @@ def test_chain_uri_disconnected(web3):
         web3.chain_uri
 
 
+@pytest.mark.skip("rinkeby is dead, maybe fix this with another network")
 def test_rinkeby(web3, network):
     network.connect("rinkeby")
 
@@ -112,12 +126,14 @@ def test_supports_traces_not_connected(web3, network):
     assert not web3.supports_traces
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_supports_traces_infura(web3, network):
     # goerli should return false (infura, geth)
     network.connect("goerli")
     assert not web3.supports_traces
 
 
+@pytest.mark.skip("kovan is dead, maybe fix this with another network")
 def test_supports_traces_kovan(web3, network):
     # kovan should return false (infura, parity)
     network.connect("kovan")

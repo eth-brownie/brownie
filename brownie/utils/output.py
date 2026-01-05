@@ -49,7 +49,7 @@ def build_tree(
 
     was_padded = False
     for i, row in enumerate(tree_structure):
-        is_last_item = bool(i < len(tree_structure) - 1)
+        is_last_item = i < len(tree_structure) - 1
 
         # create indentation string
         indent = ""
@@ -62,10 +62,10 @@ def build_tree(
         key = row[0] if isinstance(row, (list, tuple)) else row
         lines = [x for x in key.split("\n") if x]
         if pad_depth and i > 0:
-            for x in range(pad_depth[0]):
+            for _ in range(pad_depth[0]):
                 tree_str = f"{tree_str}{indent[:-4]}\u2502   \n"
         elif len(lines) > 1 and not was_padded:
-            for x in range(multiline_pad):
+            for _ in range(multiline_pad):
                 tree_str = f"{tree_str}{indent[:-4]}\u2502   \n"
 
         tree_str = f"{tree_str}{indent}{lines[0]}\n"

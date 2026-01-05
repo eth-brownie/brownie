@@ -1,45 +1,78 @@
 #!/usr/bin/python3
 
 import logging
-from collections import deque
-from hashlib import sha1
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Deque, Dict, Final, List, Optional, Set, Tuple
 
+import semantic_version
 import solcast
 import solcx
+from eth_typing import ABIElement, HexStr
 from requests.exceptions import ConnectionError
-from semantic_version import Version
 from solcast.nodes import NodeBase, is_inside_offset
 
+from brownie._c_constants import Version, deque
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import SOLIDITY_ERROR_CODES, CompilerError, IncompatibleSolcVersion  # noqa
-from brownie.project.compiler.utils import _get_alias, expand_source_map
+from brownie.project.compiler.utils import (
+    VersionList,
+    VersionSpec,
+    _get_alias,
+    expand_source_map,
+)
+from brownie.typing import (
+    BranchMap,
+    BytecodeJson,
+    Count,
+    DeployedBytecodeJson,
+    InputJsonSolc,
+    Offset,
+    PcList,
+    ProgramCounter,
+    SolidityBuildJson,
+    Source,
+    StatementMap,
+)
+from brownie.utils import hash_source
 
-from . import sources
+from brownie.project.compiler import sources
 
-solcx_logger = logging.getLogger("solcx")
+solcx_logger: Final = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
-sh = logging.StreamHandler()
+sh: Final = logging.StreamHandler()
 sh.setLevel(10)
 sh.setFormatter(logging.Formatter("%(message)s"))
 solcx_logger.addHandler(sh)
 
-AVAILABLE_SOLC_VERSIONS = None
+AVAILABLE_SOLC_VERSIONS: Optional[VersionList] = None
 
-EVM_VERSION_MAPPING = [
+EVM_VERSION_MAPPING: Final = [
+    ("prague", Version("0.8.30")),
+    ("cancun", Version("0.8.25")),
+    ("shanghai", Version("0.8.20")),
+    ("paris", Version("0.8.18")),
+    ("london", Version("0.8.7")),
+    ("berlin", Version("0.8.5")),
     ("istanbul", Version("0.5.13")),
     ("petersburg", Version("0.5.5")),
     ("byzantium", Version("0.4.0")),
 ]
 
+PcMap = Dict[Count, ProgramCounter]
+StatementNodes = Dict[str, Set[Offset]]
+BranchNodes = Dict[str, Set[NodeBase]]
 
-def get_version() -> Version:
+_BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
+
+
+def get_version() -> semantic_version.Version:
     return solcx.get_solc_version(with_commit_hash=True)
 
 
 def compile_from_input_json(
-    input_json: Dict, silent: bool = True, allow_paths: Optional[str] = None
-) -> Dict:
+    input_json: InputJsonSolc,
+    silent: bool = True,
+    allow_paths: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Compiles contracts from a standard input json.
 
@@ -51,19 +84,20 @@ def compile_from_input_json(
     Returns: standard compiler output json
     """
 
-    optimizer = input_json["settings"]["optimizer"]
-    input_json["settings"].setdefault("evmVersion", None)
-    if input_json["settings"]["evmVersion"] in EVM_EQUIVALENTS:
-        input_json["settings"]["evmVersion"] = EVM_EQUIVALENTS[input_json["settings"]["evmVersion"]]
+    settings = input_json["settings"]
+    settings.setdefault("evmVersion", None)
+    if settings["evmVersion"] in EVM_EQUIVALENTS:
+        settings["evmVersion"] = EVM_EQUIVALENTS[settings["evmVersion"]]
 
     if not silent:
         print(f"Compiling contracts...\n  Solc version: {str(solcx.get_solc_version())}")
 
+        optimizer = settings["optimizer"]
         opt = f"Enabled  Runs: {optimizer['runs']}" if optimizer["enabled"] else "Disabled"
         print(f"  Optimizer: {opt}")
 
-        if input_json["settings"]["evmVersion"]:
-            print(f"  EVM Version: {input_json['settings']['evmVersion'].capitalize()}")
+        if settings["evmVersion"]:
+            print(f"  EVM Version: {settings['evmVersion'].capitalize()}")
 
     try:
         return solcx.compile_standard(input_json, allow_paths=allow_paths)
@@ -71,7 +105,7 @@ def compile_from_input_json(
         raise CompilerError(e, "solc")
 
 
-def set_solc_version(version: Union[str, Version]) -> str:
+def set_solc_version(version: VersionSpec) -> str:
     """Sets the solc version. If not available it will be installed."""
     if not isinstance(version, Version):
         version = Version(version.lstrip("v"))
@@ -90,13 +124,13 @@ def set_solc_version(version: Union[str, Version]) -> str:
     return str(solcx.get_solc_version())
 
 
-def install_solc(*versions: Union[Version, str]) -> None:
+def install_solc(*versions: VersionSpec) -> None:
     """Installs solc versions."""
     for version in versions:
         solcx.install_solc(version, show_progress=False)
 
 
-def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict:
+def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict[str, List[ABIElement]]:
     """
     Given a contract source, returns a dict of {name: abi}
 
@@ -104,7 +138,7 @@ def get_abi(contract_source: str, allow_paths: Optional[str] = None) -> Dict:
     """
     version = find_best_solc_version({"<stdin>": contract_source})
     set_solc_version(version)
-    compiled = solcx.compile_source(
+    compiled: Dict[str, dict] = solcx.compile_source(
         contract_source, allow_empty=True, allow_paths=allow_paths, output_values=["abi"]
     )
     return {k.rsplit(":")[-1]: v["abi"] for k, v in compiled.items()}
@@ -115,7 +149,7 @@ def find_solc_versions(
     install_needed: bool = False,
     install_latest: bool = False,
     silent: bool = True,
-) -> Dict:
+) -> Dict[str, List[str]]:
     """
     Analyzes contract pragmas and determines which solc version(s) to use.
 
@@ -137,20 +171,21 @@ def find_solc_versions(
     new_versions = set()
 
     for path, source in contract_sources.items():
-        pragma_specs[path] = sources.get_pragma_spec(source, path)
-        version = pragma_specs[path].select(installed_versions)
+        pragma_spec = sources.get_pragma_spec(source, path)
+        pragma_specs[path] = pragma_spec
+        version = pragma_spec.select(installed_versions)
 
-        if not version and not (install_needed or install_latest):
+        if not version and not install_needed and not install_latest:
             raise IncompatibleSolcVersion(
-                f"No installed solc version matching '{pragma_specs[path]}' in '{path}'"
+                f"No installed solc version matching '{pragma_spec}' in '{path}'"
             )
 
         # if no installed version of solc matches the pragma, find the latest available version
-        latest = pragma_specs[path].select(available_versions)
+        latest = pragma_spec.select(available_versions)
 
         if not version and not latest:
             raise IncompatibleSolcVersion(
-                f"No installable solc version matching '{pragma_specs[path]}' in '{path}'"
+                f"No installable solc version matching '{pragma_spec}' in '{path}'"
             )
 
         if not version or (install_latest and latest > version):
@@ -169,7 +204,7 @@ def find_solc_versions(
         )
 
     # organize source paths by latest available solc version
-    compiler_versions: Dict = {}
+    compiler_versions: Dict[str, List[str]] = {}
     for path, spec in pragma_specs.items():
         version = spec.select(installed_versions)
         compiler_versions.setdefault(str(version), []).append(path)
@@ -196,6 +231,8 @@ def find_best_solc_version(
 
     Returns: version string
     """
+    available_versions: VersionList
+    installed_versions: VersionList
 
     available_versions, installed_versions = _get_solc_version_list()
 
@@ -207,7 +244,7 @@ def find_best_solc_version(
     if not available_versions:
         raise IncompatibleSolcVersion("No installable solc version compatible across all sources")
 
-    if not installed_versions and not (install_needed or install_latest):
+    if not installed_versions and not install_needed and not install_latest:
         raise IncompatibleSolcVersion("No installed solc version compatible across all sources")
 
     if max(available_versions) > max(installed_versions, default=Version("0.0.0")):
@@ -220,9 +257,9 @@ def find_best_solc_version(
     return str(max(installed_versions))
 
 
-def _get_solc_version_list() -> Tuple[List, List]:
+def _get_solc_version_list() -> Tuple[VersionList, VersionList]:
     global AVAILABLE_SOLC_VERSIONS
-    installed_versions = solcx.get_installed_solc_versions()
+    installed_versions: VersionList = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:
         try:
             AVAILABLE_SOLC_VERSIONS = solcx.get_installable_solc_versions()
@@ -234,20 +271,26 @@ def _get_solc_version_list() -> Tuple[List, List]:
 
 
 def _get_unique_build_json(
-    output_evm: Dict, contract_node: Any, stmt_nodes: Dict, branch_nodes: Dict, has_fallback: bool
-) -> Dict:
+    output_evm: Dict,
+    contract_node: Any,
+    stmt_nodes: StatementNodes,
+    branch_nodes: BranchNodes,
+    has_fallback: bool,
+) -> SolidityBuildJson:
     paths = {
         str(i.contract_id): i.parent().absolutePath
         for i in [contract_node] + contract_node.dependencies
     }
 
     bytecode = _format_link_references(output_evm)
-    without_metadata = _remove_metadata(output_evm["deployedBytecode"]["object"])
+    bytecode_json: DeployedBytecodeJson = output_evm["deployedBytecode"]
+
+    without_metadata = _remove_metadata(bytecode_json["object"])
     instruction_count = len(without_metadata) // 2
 
     pc_map, statement_map, branch_map = _generate_coverage_data(
-        output_evm["deployedBytecode"]["sourceMap"],
-        output_evm["deployedBytecode"]["opcodes"],
+        bytecode_json["sourceMap"],
+        bytecode_json["opcodes"],
         contract_node,
         stmt_nodes,
         branch_nodes,
@@ -256,52 +299,53 @@ def _get_unique_build_json(
     )
 
     dependencies = []
-    for node in [i for i in contract_node.dependencies if i.nodeType == "ContractDefinition"]:
-        # use contract aliases when recording dependencies, to avoid
-        # potential namespace collisions when importing across projects
-        name = node.name
-        path_str = node.parent().absolutePath
-        dependencies.append(_get_alias(name, path_str))
+    for node in contract_node.dependencies:
+        if node.nodeType == "ContractDefinition":
+            # use contract aliases when recording dependencies, to avoid
+            # potential namespace collisions when importing across projects
+            name = node.name
+            path_str = node.parent().absolutePath
+            dependencies.append(_get_alias(name, path_str))
 
-    return {
+    # This is not a complete SolidityBuildJson object but that's okay for now
+    # TODO: make a partial SolidityBuildJson subclass for this dtype
+    build_json: SolidityBuildJson = {  # type: ignore [typeddict-item]
         "allSourcePaths": paths,
         "bytecode": bytecode,
-        "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),
+        "bytecodeSha1": hash_source(_remove_metadata(bytecode)),
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": dependencies,
         "offset": contract_node.offset,
         "pcMap": pc_map,
         "type": contract_node.contractKind,
     }
+    return build_json
 
 
-def _format_link_references(evm: Dict) -> str:
+def _format_link_references(evm: Dict) -> HexStr:
     # Standardizes formatting for unlinked libraries within bytecode
-    bytecode = evm["bytecode"]["object"]
-    references = [
-        (k, x) for v in evm["bytecode"].get("linkReferences", {}).values() for k, x in v.items()
-    ]
-    for n, loc in [(i[0], x["start"] * 2) for i in references for x in i[1]]:
-        bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"
+    bytecode_json: BytecodeJson = evm["bytecode"]
+    bytecode = bytecode_json["object"]
+    link_refs: Dict[str, dict] = bytecode_json.get("linkReferences", {})
+    references = ((k, x) for v in link_refs.values() for k, x in v.items())
+    for n, loc in ((i[0], x["start"] * 2) for i in references for x in i[1]):
+        bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"  # type: ignore [assignment]
     return bytecode
 
 
-def _remove_metadata(bytecode: str) -> str:
-    if not bytecode:
-        return ""
-    idx = -(int(bytecode[-4:], 16) + 2) * 2
-    return bytecode[:idx]
+def _remove_metadata(bytecode: HexStr) -> HexStr:
+    return bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else ""  # type: ignore [return-value]
 
 
 def _generate_coverage_data(
     source_map_str: str,
     opcodes_str: str,
     contract_node: Any,
-    stmt_nodes: Dict,
-    branch_nodes: Dict,
+    stmt_nodes: StatementNodes,
+    branch_nodes: BranchNodes,
     has_fallback: bool,
     instruction_count: int,
-) -> Tuple:
+) -> Tuple[PcMap, StatementMap, BranchMap]:
     # Generates data used by Brownie for debugging and coverage evaluation
     if not opcodes_str:
         return {}, {}, {}
@@ -313,22 +357,22 @@ def _generate_coverage_data(
     source_nodes = {str(i.contract_id): i.parent() for i in contract_nodes}
 
     stmt_nodes = {i: stmt_nodes[i].copy() for i in source_nodes}
-    statement_map: Dict = {i: {} for i in source_nodes}
+    statement_map: StatementMap = {i: {} for i in source_nodes}
 
     # possible branch offsets
     branch_original = {i: branch_nodes[i].copy() for i in source_nodes}
-    branch_nodes = {i: set(i.offset for i in branch_nodes[i]) for i in source_nodes}
+    branch_nodes = {i: {i.offset for i in branch_nodes[i]} for i in source_nodes}
     # currently active branches, awaiting a jumpi
-    branch_active: Dict = {i: {} for i in source_nodes}
+    branch_active: Dict[str, Dict[Offset, int]] = {i: {} for i in source_nodes}
     # branches that have been set
-    branch_set: Dict = {i: {} for i in source_nodes}
+    branch_set: Dict[str, Dict[Offset, Tuple[int, int]]] = {i: {} for i in source_nodes}
 
     count, pc = 0, 0
-    pc_list: List = []
-    revert_map: Dict = {}
+    pc_list: PcList = []
+    revert_map: Dict[Tuple[str, Offset], List[int]] = {}
     fallback_hexstr: str = "unassigned"
 
-    optimizer_revert = False if get_version() >= Version("0.8.0") else True
+    optimizer_revert = get_version() < Version("0.8.0")
 
     active_source_node: Optional[NodeBase] = None
     active_fn_node: Optional[NodeBase] = None
@@ -344,35 +388,38 @@ def _generate_coverage_data(
     while source_map:
         # format of source_map is [start, stop, contract_id, jump code]
         source = source_map.popleft()
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        start, stop, contract_id_int, jump_code = source
+
+        op = opcodes.popleft()
+        this: ProgramCounter = {"op": op, "pc": pc}  # type: ignore [typeddict-item]
+        pc_list.append(this)
 
         if (
             has_fallback is False
             and fallback_hexstr == "unassigned"
-            and pc_list[-1]["op"] == "REVERT"
+            and op == "REVERT"
             and [i["op"] for i in pc_list[-4:-1]] == ["JUMPDEST", "PUSH1", "DUP1"]
         ):
             # flag the REVERT op at the end of the function selector,
             # later reverts may jump to it instead of having their own REVERT op
             fallback_hexstr = f"0x{hex(pc - 4).upper()[2:]}"
-            pc_list[-1]["first_revert"] = True
+            this["first_revert"] = True
 
-        if source[3] != "-":
-            pc_list[-1]["jump"] = source[3]
+        if jump_code != "-":
+            this["jump"] = jump_code
 
         pc += 1
-        if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
-            pc_list[-1]["value"] = opcodes.popleft()
-            pc += int(pc_list[-1]["op"][4:])
+        if op.startswith("PUSH") and opcodes[0][:2] == "0x":
+            this["value"] = opcodes.popleft()
+            pc += int(op[4:])
 
         # for REVERT opcodes without an source offset, try to infer one
-        if source[2] == -1 or source == first_source:
-            if pc_list[-1]["op"] == "REVERT":
-                _find_revert_offset(
-                    pc_list, source_map, active_source_node, active_fn_node, active_fn_name
-                )
-            if source[2] == -1:
-                continue
+        if (contract_id_int == -1 or source == first_source) and op == "REVERT":
+            _find_revert_offset(
+                pc_list, source_map, active_source_node, active_fn_node, active_fn_name
+            )
+        if contract_id_int == -1:
+            continue
 
         # set contract path (-1 means none)
         contract_id = str(source[2])
@@ -383,20 +430,20 @@ def _generate_coverage_data(
             continue
 
         active_source_node = source_nodes[contract_id]
-        pc_list[-1]["path"] = contract_id
+        this["path"] = contract_id
 
         # set source offset (-1 means none)
-        if source[0] == -1:
+        if start == -1:
             continue
-        offset = (source[0], source[0] + source[1])
-        pc_list[-1]["offset"] = offset
+        offset: Offset = (start, start + stop)  # type: ignore [assignment]
+        this["offset"] = offset
 
-        if pc_list[-1]["op"] == "REVERT" and not optimizer_revert:
+        if op == "REVERT" and not optimizer_revert:
             # In Solidity >=0.8.0, an optimization is applied to reverts with an error string
             # such that all reverts appear to happen at the same point in the source code.
             # We mark this REVERT as the "optimizer revert" so that when it's encountered in
             # a trace we know to look back to find the actual revert location.
-            fn_node = active_source_node.children(
+            if fn_node := active_source_node.children(
                 include_parents=False,
                 include_children=True,
                 required_offset=offset,
@@ -404,19 +451,18 @@ def _generate_coverage_data(
                     {"nodeType": "FunctionCall", "expression.name": "revert"},
                     {"nodeType": "FunctionCall", "expression.name": "require"},
                 ),
-            )
-            if fn_node:
+            ):
                 args = len(fn_node[0].arguments)
                 if args == 2 or (fn_node[0].expression.name == "revert" and args):
                     optimizer_revert = True
-                    pc_list[-1]["optimizer_revert"] = True
+                    this["optimizer_revert"] = True
 
         # add error messages for INVALID opcodes
-        if pc_list[-1]["op"] == "INVALID":
-            _set_invalid_error_string(active_source_node, pc_list[-1])
+        if op == "INVALID":
+            _set_invalid_error_string(active_source_node, this)
 
         # for JUMPI instructions, set active branch markers
-        if branch_active[contract_id] and pc_list[-1]["op"] == "JUMPI":
+        if branch_active[contract_id] and op == "JUMPI":
             for offset in branch_active[contract_id]:
                 # ( program counter index, JUMPI index)
                 branch_set[contract_id][offset] = (
@@ -434,32 +480,34 @@ def _generate_coverage_data(
         try:
             # set fn name and statement coverage marker
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                pc_list[-1]["fn"] = active_fn_name
+                this["fn"] = active_fn_name  # type: ignore [typeddict-item]
             else:
-                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
-                pc_list[-1]["fn"] = active_fn_name
-                stmt_offset = next(
+                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)  # type: ignore [arg-type]
+                this["fn"] = active_fn_name
+                stmt_offset: Offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
                 )
                 stmt_nodes[contract_id].discard(stmt_offset)
                 statement_map[contract_id].setdefault(active_fn_name, {})[count] = stmt_offset
-                pc_list[-1]["statement"] = count
+                this["statement"] = count
                 count += 1
         except (KeyError, IndexError, StopIteration):
             pass
 
-        if pc_list[-1].get("value", None) == fallback_hexstr and opcodes[0] in ("JUMP", "JUMPI"):
+        if this.get("value", None) == fallback_hexstr and opcodes[0] in ("JUMP", "JUMPI"):
             # track all jumps to the initial revert
-            key = (pc_list[-1]["path"], pc_list[-1]["offset"])
+            key = (this["path"], this["offset"])
             revert_map.setdefault(key, []).append(len(pc_list))
 
     while opcodes[0] not in ("INVALID", "STOP") and pc < instruction_count:
         # necessary because sometimes solidity returns an incomplete source map
-        pc_list.append({"op": opcodes.popleft(), "pc": pc})
+        op = opcodes.popleft()
+        this = {"op": op, "pc": pc}  # type: ignore [typeddict-item]
+        pc_list.append(this)
         pc += 1
-        if pc_list[-1]["op"].startswith("PUSH") and opcodes[0][:2] == "0x":
-            pc_list[-1]["value"] = opcodes.popleft()
-            pc += int(pc_list[-1]["op"][4:])
+        if op.startswith("PUSH") and opcodes[0][:2] == "0x":
+            this["value"] = opcodes.popleft()
+            pc += int(op[4:])
 
     # compare revert and require statements against the map of revert jumps
     for (contract_id, fn_offset), values in revert_map.items():
@@ -482,30 +530,31 @@ def _generate_coverage_data(
         for node in revert_nodes:
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
-            if not next((x for x in pc_list if "offset" in x and x["offset"] == offset), False):
-                pc_list[values[0]].update(offset=offset, jump_revert=True)
+            if not any("offset" in x and x["offset"] == offset for x in pc_list):
+                pc_list[values[0]].update(offset=offset, jump_revert=True)  # type: ignore [call-arg]
                 del values[0]
 
     # set branch index markers and build final branch map
-    branch_map: Dict = {i: {} for i in source_nodes}
-    for path, offset, idx in [(k, x, y) for k, v in branch_set.items() for x, y in v.items()]:
-        # for branch to be hit, need an op relating to the source and the next JUMPI
-        # this is because of how the compiler optimizes nested BinaryOperations
-        if "fn" in pc_list[idx[0]]:
-            fn = pc_list[idx[0]]["fn"]
-            pc_list[idx[0]]["branch"] = count
-            pc_list[idx[1]]["branch"] = count
-            node = next(i for i in branch_original[path] if i.offset == offset)
-            branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
-            count += 1
+    branch_map: BranchMap = {i: {} for i in source_nodes}
+    for path, markers in branch_set.items():
+        for offset, idx in markers.items():
+            # for branch to be hit, need an op relating to the source and the next JUMPI
+            # this is because of how the compiler optimizes nested BinaryOperations
+            if "fn" in pc_list[idx[0]]:
+                fn = pc_list[idx[0]]["fn"]
+                pc_list[idx[0]]["branch"] = count
+                pc_list[idx[1]]["branch"] = count
+                node = next(i for i in branch_original[path] if i.offset == offset)
+                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)  # type: ignore [arg-type]
+                count += 1
 
-    pc_map = {i.pop("pc"): i for i in pc_list}
+    pc_map: PcMap = {i.pop("pc"): i for i in pc_list}
     return pc_map, statement_map, branch_map
 
 
 def _find_revert_offset(
-    pc_list: List,
-    source_map: deque,
+    pc_list: PcList,
+    source_map: Deque[Source],
     source_node: NodeBase,
     fn_node: NodeBase,
     fn_name: Optional[str],
@@ -516,7 +565,7 @@ def _find_revert_offset(
         # is not the last instruction
         if len(pc_list) >= 8 and pc_list[-8]["op"] == "CALLVALUE":
             # reference to CALLVALUE 8 instructions previous is a nonpayable function check
-            pc_list[-1].update(
+            pc_list[-1].update(  # type: ignore [call-arg]
                 dev="Cannot send ether to nonpayable function",
                 fn=pc_list[-8].get("fn", "<unknown>"),
                 offset=pc_list[-8].get("offset"),
@@ -537,12 +586,13 @@ def _find_revert_offset(
     # but IS contained within the active function, apply this offset to the current
     # instruction
 
+    fn_node_offset: Offset = fn_node.offset
     if (
         next_offset
-        and next_offset != fn_node.offset
-        and is_inside_offset(next_offset, fn_node.offset)
+        and next_offset != fn_node_offset
+        and is_inside_offset(next_offset, fn_node_offset)
     ):
-        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)
+        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)  # type: ignore [call-arg]
         return
 
     # if any of the previous conditions are not satisfied, this is the final revert
@@ -551,23 +601,25 @@ def _find_revert_offset(
         expr = fn_node[-1].expression
 
         if expr.nodeType == "FunctionCall" and expr.get("expression.name") in ("revert", "require"):
-            pc_list[-1].update(
+            pc_list[-1].update(  # type: ignore [call-arg]
                 path=str(source_node.contract_id), fn=fn_name, offset=expr.expression.offset
             )
 
 
-def _set_invalid_error_string(source_node: NodeBase, pc_map: Dict) -> None:
+def _set_invalid_error_string(source_node: NodeBase, pc_map: ProgramCounter) -> None:
     # set custom error string for INVALID opcodes
     try:
         node = source_node.children(include_children=False, offset_limits=pc_map["offset"])[0]
     except IndexError:
         return
-    if node.nodeType == "IndexAccess":
+    node_type: str = node.nodeType
+    if node_type == "IndexAccess":
         pc_map["dev"] = "Index out of range"
-    elif node.nodeType == "BinaryOperation":
-        if node.operator == "/":
+    elif node_type == "BinaryOperation":
+        operator: str = node.operator
+        if operator == "/":
             pc_map["dev"] = "Division by zero"
-        elif node.operator == "%":
+        elif operator == "%":
             pc_map["dev"] = "Modulus by zero"
 
 
@@ -592,55 +644,55 @@ def _get_active_fn(source_node: NodeBase, offset: Tuple[int, int]) -> Tuple[Node
     return fn_node, f"{fn_node.parent().name}.{name}"
 
 
-def _get_nodes(output_json: Dict) -> Tuple[Dict, Dict, Dict]:
-    source_nodes = solcast.from_standard_output(output_json)
+def _get_nodes(output_json: Dict) -> Tuple[List[NodeBase], StatementNodes, BranchNodes]:
+    source_nodes: List[NodeBase] = solcast.from_standard_output(output_json)
     stmt_nodes = _get_statement_nodes(source_nodes)
     branch_nodes = _get_branch_nodes(source_nodes)
     return source_nodes, stmt_nodes, branch_nodes
 
 
-def _get_statement_nodes(source_nodes: Dict) -> Dict:
+def _get_statement_nodes(source_nodes: List[NodeBase]) -> StatementNodes:
     # Given a list of source nodes, returns a dict of lists of statement nodes
-    statements = {}
-    for node in source_nodes:
-        statements[str(node.contract_id)] = set(
+    return {
+        str(node.contract_id): {
             i.offset
             for i in node.children(
                 include_parents=False,
                 filters={"baseNodeType": "Statement"},
                 exclude_filter={"isConstructor": True},
             )
-        )
-    return statements
+        }
+        for node in source_nodes
+    }
 
 
-def _get_branch_nodes(source_nodes: List) -> Dict:
+def _get_branch_nodes(source_nodes: List[NodeBase]) -> BranchNodes:
     # Given a list of source nodes, returns a dict of lists of nodes corresponding
     # to possible branches in the code
-    branches: Dict = {}
+    branches: BranchNodes = {}
     for node in source_nodes:
-        branches[str(node.contract_id)] = set()
+        contract_branches: Set[NodeBase] = set()
+        branches[str(node.contract_id)] = contract_branches
         for contract_node in node.children(depth=1, filters={"nodeType": "ContractDefinition"}):
-            for child_node in [
-                x
-                for i in contract_node
-                for x in i.children(
+            for i in contract_node:
+                for child_node in i.children(
                     filters=(
                         {"nodeType": "FunctionCall", "expression.name": "require"},
                         {"nodeType": "IfStatement"},
                         {"nodeType": "Conditional"},
                     )
-                )
-            ]:
-                branches[str(node.contract_id)] |= _get_recursive_branches(child_node)
+                ):
+                    contract_branches |= _get_recursive_branches(child_node)
     return branches
 
 
-def _get_recursive_branches(base_node: Any) -> Set:
+def _get_recursive_branches(base_node: NodeBase) -> Set[NodeBase]:
+    node_type = base_node.nodeType
+
     # if node is IfStatement or Conditional, look only at the condition
-    node = base_node if base_node.nodeType == "FunctionCall" else base_node.condition
+    node = base_node if node_type == "FunctionCall" else base_node.condition
     # for IfStatement, jumping indicates evaluating false
-    jump_is_truthful = base_node.nodeType != "IfStatement"
+    jump_is_truthful = node_type != "IfStatement"
 
     filters = (
         {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool", "operator": "||"},
@@ -651,13 +703,13 @@ def _get_recursive_branches(base_node: Any) -> Set:
     # if no BinaryOperation nodes are found, this node is the branch
     if not all_binaries:
         # if node is FunctionCall, look at the first argument
-        if base_node.nodeType == "FunctionCall":
+        if node_type == "FunctionCall":
             node = node.arguments[0]
         # some versions of solc do not map IfStatement unary opertions to bytecode
         elif node.nodeType == "UnaryOperation":
             node = node.subExpression
         node.jump = jump_is_truthful
-        return set([node])
+        return {node}
 
     # look at children of BinaryOperation nodes to find all possible branches
     binary_branches = set()
@@ -677,21 +729,15 @@ def _get_recursive_branches(base_node: Any) -> Set:
 
 def _is_rightmost_operation(node: NodeBase, depth: int) -> bool:
     # Check if the node is the final operation within the expression
-    parents = node.parents(
-        depth, {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
-    )
-    return not next(
-        (i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)),
-        False,
-    )
+    parents = node.parents(depth, _BINOPS_PARAMS)
+    return not any(i.leftExpression == node or node.is_child_of(i.leftExpression) for i in parents)
 
 
 def _check_left_operator(node: NodeBase, depth: int) -> bool:
     # Find the nearest parent boolean where this node sits on the left side of
     # the comparison, and return True if that node's operator is ||
-    parents = node.parents(
-        depth, {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
-    )
+    parents = node.parents(depth, _BINOPS_PARAMS)
+
     op = next(
         i for i in parents if i.leftExpression == node or node.is_child_of(i.leftExpression)
     ).operator

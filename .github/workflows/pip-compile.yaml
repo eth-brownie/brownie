@@ -1,0 +1,68 @@
+name: Repo Chores
+
+on:
+  pull_request:
+    branches:
+      - master
+      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}  # Check out the PR branch
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install Black
+      run: pip install black
+
+    - name: Run black .
+      run: black .
+
+    - name: Install Pip Tools
+      run: pip install pip-tools
+      
+    - name: Run Pip Compile
+      run: pip-compile -U
+
+    - name: Run Pip Compile for Windows
+      run: pip-compile -U requirements-windows.in
+
+    - name: Run Pip Compile for Dev Deps
+      run: pip-compile -U requirements-dev.in
+    
+    - name: Install Mypyc and Deps
+      run: |
+        pip install -U types-PyYAML
+        pip install -r requirements.txt
+
+    - name: Compile
+      run: pip install .
+    
+    - name: Check for changes
+      id: changes
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "changes_detected=true" >> $GITHUB_ENV
+        else
+          echo "changes_detected=false" >> $GITHUB_ENV
+        fi
+    - name: Commit changes
+      if: env.changes_detected == 'true'
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "chore: \`black .\` and \`pip-compile\` and compile C files for source control"
+        git push

@@ -30,26 +30,26 @@ def test_bright_dark():
 
 def test_pretty_dict(colorpatch):
     x = {1: 2, "foo": "bar", "baz": True}
-    assert x == eval(color.pretty_dict(x))
+    assert x == eval(color.pretty_dict(x))  # nosec B307
     x = {"foo": [1, 2], "bar": ["a", "b", "c"]}
-    assert x == eval(color.pretty_dict(x))
+    assert x == eval(color.pretty_dict(x))  # nosec B307
     x = {"yes": {"maybe": 1, "no": 2}, "no": {1: 2, 4: True}}
-    assert x == eval(color.pretty_dict(x))
+    assert x == eval(color.pretty_dict(x))  # nosec B307
 
 
 def test_pretty_sequence(colorpatch):
     x = [1, 2, 3, 4, 5]
-    assert x == eval(color.pretty_sequence(x))
+    assert x == eval(color.pretty_sequence(x))  # nosec B307
     x = (1, 2, 3, 4, 5)
-    assert x == eval(color.pretty_sequence(x))
+    assert x == eval(color.pretty_sequence(x))  # nosec B307
     x = [{"foo": "bar"}, {"potato": 123}]
-    assert x == eval(color.pretty_sequence(x))
+    assert x == eval(color.pretty_sequence(x))  # nosec B307
     x = [
         "0000000100000000000000000000000000000000000000000000000000000000",
         "0000000100000000000000000000000000000000000000000000000000000000",
         "0000000100000000000000000000000000000000000000000000000000000000",
     ]
-    assert x == eval(color.pretty_sequence(x))
+    assert x == eval(color.pretty_sequence(x))  # nosec B307
 
 
 def test_format_tb():

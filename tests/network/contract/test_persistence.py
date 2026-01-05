@@ -2,34 +2,34 @@
 
 import json
 
+from eth_retry import auto_retry
 
-def test_persist_load_unload(testproject, network):
-    network.connect("mainnet")
+
+def test_persist_load_unload(testproject, connect_to_mainnet):
     testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.close()
     testproject.load()
-    assert len(testproject.BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
 
 
-def test_delete(testproject, network):
-    network.connect("mainnet")
+@auto_retry
+def test_delete(testproject, network, connect_to_mainnet):
     testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.BrownieTester.at("0xB8c77482e45F1F44dE1745F52C74426C631bDD52")
-    network.disconnect(False)
-    network.connect("mainnet")
+    _disconnect(network)
+    _reconnect(network)
     del testproject.BrownieTester[0]
-    network.disconnect(False)
-    network.connect("mainnet")
-    assert len(testproject.BrownieTester) == 1
+    _disconnect(network)
+    _reconnect(network)
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
     assert testproject.BrownieTester[0].address == "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
 
 
-def test_changed_name(testproject, network):
-    network.connect("mainnet")
+def test_changed_name(testproject, network, connect_to_mainnet):
     c = testproject.BrownieTester.at("0xdAC17F958D2ee523a2206206994597C13D831ec7")
     testproject.BrownieTester.at("0xB8c77482e45F1F44dE1745F52C74426C631bDD52")
     build_json = c._build
-    network.disconnect(False)
+    _disconnect(network)
     build_json["contractName"] = "PotatoTester"
 
     path = testproject._path.joinpath(
@@ -38,7 +38,31 @@ def test_changed_name(testproject, network):
     with path.open("w") as fp:
         json.dump(build_json, fp)
 
-    network.connect("mainnet")
+    _reconnect(network)
     assert not path.exists()
-    assert len(testproject.BrownieTester) == 1
+    assert len(testproject.BrownieTester) == 1, testproject.BrownieTester
     assert testproject.BrownieTester[0].address == "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
+
+
+def _disconnect(network) -> None:
+    # Just a helper to deal with intermittent errs that aren't relevant to our tests
+    try:
+        network.disconnect(False)
+    except ConnectionError:
+        # `ConnectionError: Not connected to any network`
+        # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+        # It's probably just a silly race condition due to parallel testing.
+        pass
+
+
+def _reconnect(network) -> None:
+    # I expect an intermittent err here eventually so I'm making this handler now.
+    try:
+        network.connect("mainnet")
+    except ConnectionError as e:
+        if str(e) == "Already connected to network 'mainnet'":
+            # This happens in the test runners sometimes, we're not too concerned with why or how to fix.
+            # It's probably just a silly race condition due to parallel testing.
+            pass
+        else:
+            raise

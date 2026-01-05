@@ -2,11 +2,13 @@
 
 import pytest
 from ens.exceptions import InvalidName
+from eth_retry import auto_retry
 
 from brownie.exceptions import UnsetENSName
 from brownie.network.account import PublicKeyAccount
 
 
+@auto_retry
 def test_lookup():
     pub = PublicKeyAccount("ens.snakecharmers.eth")
     assert pub == "0x808B53bF4D70A24bA5cb720D37A4835621A9df00"
@@ -18,6 +20,7 @@ def test_invalid():
         PublicKeyAccount("this-is-not-an-ENS-address,isit?.eth")
 
 
+@auto_retry
 def test_unset():
     with pytest.raises(UnsetENSName):
         PublicKeyAccount("pleasedonot.buythisoryouwill.breakmytests.eth")

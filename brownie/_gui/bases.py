@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from .styles import BUTTON_STYLE
+from brownie._gui.styles import BUTTON_STYLE
 
 
 class ToggleButton(tk.Button):
@@ -19,10 +19,10 @@ class ToggleButton(tk.Button):
         if self.active:
             self.toggle_off()
             self.configure(relief="raised", background="#272727")
-        else:
-            if not self.toggle_on():
-                return
+        elif self.toggle_on():
             self.configure(relief="sunken", background="#383838")
+        else:
+            return
         self.active = not self.active
 
     def toggle_on(self):

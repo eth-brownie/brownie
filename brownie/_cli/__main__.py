@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
-import importlib
 import sys
-from pathlib import Path
 
 from brownie import network
+from brownie._c_constants import Path, import_module
 from brownie._config import CONFIG, __version__
 from brownie.exceptions import ProjectNotFound
 from brownie.utils import color, notify
@@ -55,11 +54,11 @@ def main():
         sys.exit("Invalid command. Try 'brownie --help' for available commands.")
 
     CONFIG.argv["cli"] = cmd
-    sys.modules["brownie"].a = network.accounts
+    sys.modules["brownie"].a = network.accounts  # type: ignore [attr-defined]
     sys.modules["brownie"].__all__.append("a")
 
     try:
-        importlib.import_module(f"brownie._cli.{cmd}").main()
+        import_module(f"brownie._cli.{cmd}").main()
     except ProjectNotFound:
         notify("ERROR", "Brownie environment has not been initiated for this folder.")
         sys.exit("Type 'brownie init' to create the file structure.")

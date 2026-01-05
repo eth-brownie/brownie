@@ -6,6 +6,62 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
+### Fixed
+- typing for *args and **kwargs ([#1870](https://github.com/eth-brownie/brownie/pull/1870))
+- singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
+- various other minor typing issues
+
+### Changed
+- compile half of the libarary to C with mypyc ([#1875](https://github.com/eth-brownie/brownie/pull/1875))
+- optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
+- implement faster-eth-utils ([#1885](https://github.com/eth-brownie/brownie/pull/1885))
+
+## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
+### Fixed
+- GethPOAMiddleware on Polygon networks with anvil fork ([#1791](https://github.com/eth-brownie/brownie/pull/1791))
+
+### Changed
+- replace `eth_utils.to_checksum_address` with `cchecksum.to_checksum_address` for ~8x faster checksumming ([#1796](https://github.com/eth-brownie/brownie/pull/1796))
+- Use Etherscan v2 API (only uses `ETHERSCAN_TOKEN` env var for all networks) ([#1852](https://github.com/eth-brownie/brownie/pull/1852))
+
+## [1.20.7](https://github.com/eth-brownie/brownie/tree/v1.20.7) - 2025-01-07
+### Added
+- Support for vyper `0.4.0` ([#1793](https://github.com/eth-brownie/brownie/pull/1793))
+- `py.typed` marker ([#1794](https://github.com/eth-brownie/brownie/pull/1794))
+
+### Fixed
+- Improvements to caching ([#1786](https://github.com/eth-brownie/brownie/pull/1786))
+
+### Removed
+- `tqdm` progress bars during compiler installation ([#1785](https://github.com/eth-brownie/brownie/pull/1785))
+
+## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
+### Added
+- `include` kwarg for address strategy, type-dependent strategy overloads ([#1780](https://github.com/eth-brownie/brownie/pull/1780))
+
+### Fixed
+- ds-note decoding ([#1781](https://github.com/eth-brownie/brownie/pull/1781))
+- "Dropped without known replacement" tx race condition ([#1782](https://github.com/eth-brownie/brownie/pull/1782))
+
+## [1.20.5](https://github.com/eth-brownie/brownie/tree/v1.20.5) - 2024-05-22
+### Fixed
+- Handle missing `blockNumber` while awaiting confirmation ([#1774](https://github.com/eth-brownie/brownie/pull/1774))
+- Search parent paths for file import during source verification ([#1776](https://github.com/eth-brownie/brownie/pull/1776))
+
+## [1.20.4](https://github.com/eth-brownie/brownie/tree/v1.20.4) - 2024-05-08
+### Fixed
+- Fall back to ABI when `Contract.from_explorer` compilation fails ([#1772](https://github.com/eth-brownie/brownie/pull/1772))
+
+## [1.20.3](https://github.com/eth-brownie/brownie/tree/v1.20.3) - 2024-05-05
+### Added
+- Config setting to disable short-term caching ([#1767](https://github.com/eth-brownie/brownie/pull/1767))
+- Support for blast chain contract verification ([#1765](https://github.com/eth-brownie/brownie/pull/1765))
+- Support for additional anvil cmdline args ([#1756](https://github.com/eth-brownie/brownie/pull/1756))
+
+### Fixed
+- Target different blocks for live/dev networks when adding POA middleware ([#1769](https://github.com/eth-brownie/brownie/pull/1769))
+- Dict keys for nested tuples in returndata ([#1768](https://github.com/eth-brownie/brownie/pull/1768))
+- Solidity error code decoding ([#1758](https://github.com/eth-brownie/brownie/pull/1758))
 
 ## [1.20.6](https://github.com/eth-brownie/brownie/tree/v1.20.6) - 2024-06-22
 ### Added
@@ -115,7 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.19.0](https://github.com/eth-brownie/brownie/tree/v1.19.0) - 2022-05-29
 ### Added
-- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
+- Initial support for [Anvil](https://github.com/foundry-rs/foundry/tree/master/crates/anvil), a blazing-fast local testnet node implementation in Rust ([#1541](https://github.com/eth-brownie/brownie/pull/1541))
 - Support configurable initial wallet balance, chain id, and gas limit.
 
 ### Fixed
@@ -356,7 +412,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.13.3](https://github.com/eth-brownie/brownie/tree/v1.13.3) - 2021-03-08
 ### Added
-- Option to choose console editting mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
+- Option to choose console editing mode ([#970](https://github.com/eth-brownie/brownie/pull/970))
 
 ### Fixed
 - Strip whitespace from `address_or_alias` ([#978](https://github.com/eth-brownie/brownie/pull/978))
@@ -437,7 +493,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `timedelta` as a kwarg in `chain.mine` ([#856](https://github.com/eth-brownie/brownie/pull/856))
 - `require_network` pytest marker ([#858](https://github.com/eth-brownie/brownie/pull/858))
 - `TransactionReceipt.dev_revert_msg` to access the dev revert string when there is a regular revert message ([#860](https://github.com/eth-brownie/brownie/pull/860))
-- Allow targetting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
+- Allow targeting dev revert string in `brownie.reverts` ([#861](https://github.com/eth-brownie/brownie/pull/861))
 - Support regex in `brownie.reverts` ([#864](https://github.com/eth-brownie/brownie/pull/864))
 
 ### Changed
@@ -467,7 +523,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Include nonce in `stdout` output when broadcasting a transaction ([#833](https://github.com/eth-brownie/brownie/pull/833))
 
 ### Changed
-- `brownie bake` project names are no longer case sensetive ([#829](https://github.com/eth-brownie/brownie/pull/829))
+- `brownie bake` project names are no longer case sensitive ([#829](https://github.com/eth-brownie/brownie/pull/829))
 
 ### Fixed
 - Handle `str` when looking at traceback paths ([#823](https://github.com/eth-brownie/brownie/pull/823))

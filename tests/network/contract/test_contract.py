@@ -4,6 +4,7 @@ from copy import deepcopy
 import pytest
 import requests
 import yaml
+from eth_retry import auto_retry
 from semantic_version import Version
 
 from brownie import Wei
@@ -34,6 +35,7 @@ def test_type_vyper(vypertester):
     assert isinstance(vypertester, _DeployedContractBase)
 
 
+@auto_retry
 def test_namespace_collision(tester, build):
     build["abi"].append(
         {
@@ -72,6 +74,7 @@ def test_balance(tester):
     assert balance == "0 ether"
 
 
+@auto_retry
 def test_comparison(testproject, tester):
     del testproject.BrownieTester[0]
     assert tester != 123
@@ -86,6 +89,7 @@ def test_revert_not_found(tester, chain):
         tester.balance()
 
 
+@auto_retry
 def test_contractabi_replace_contract(testproject, tester):
     Contract.from_abi("BrownieTester", tester.address, tester.abi)
     del testproject.BrownieTester[0]
@@ -93,6 +97,7 @@ def test_contractabi_replace_contract(testproject, tester):
     Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
 
+@auto_retry
 def test_deprecated_init_abi(tester):
     with pytest.warns(DeprecationWarning):
         old = Contract("BrownieTester", tester.address, tester.abi)
@@ -100,8 +105,8 @@ def test_deprecated_init_abi(tester):
     assert old == Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
 
-def test_from_explorer(network):
-    network.connect("mainnet")
+@auto_retry
+def test_from_explorer(connect_to_mainnet):
     contract = Contract.from_explorer("0x973e52691176d36453868d9d86572788d27041a9")
 
     assert contract._name == "DxToken"
@@ -110,8 +115,8 @@ def test_from_explorer(network):
 
 
 @pytest.mark.xfail
-def test_from_explorer_only_abi(network):
-    network.connect("mainnet")
+@auto_retry
+def test_from_explorer_only_abi(connect_to_mainnet):
     # uniswap DAI market - ABI is available but source is not
     with pytest.warns(BrownieCompilerWarning):
         contract = Contract.from_explorer("0x2a1530C4C41db0B0b2bB646CB5Eb1A67b7158667")
@@ -120,9 +125,8 @@ def test_from_explorer_only_abi(network):
     assert "pcMap" not in contract._build
 
 
-def test_from_explorer_pre_422(network):
-    network.connect("mainnet")
-
+@auto_retry
+def test_from_explorer_pre_422(connect_to_mainnet):
     # MKR, compiler version 0.4.18
     with pytest.warns(BrownieCompilerWarning):
         contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
@@ -130,9 +134,8 @@ def test_from_explorer_pre_422(network):
     assert "pcMap" not in contract._build
 
 
-def test_from_explorer_vyper_supported_020(network):
-    network.connect("mainnet")
-
+@auto_retry
+def test_from_explorer_vyper_supported_020(connect_to_mainnet):
     # curve yCRV gauge - `0.2.4`
     contract = Contract.from_explorer("0xFA712EE4788C042e2B7BB55E6cb8ec569C4530c1")
 
@@ -140,9 +143,8 @@ def test_from_explorer_vyper_supported_020(network):
     assert "pcMap" in contract._build
 
 
-def test_from_explorer_vyper_supported_010(network):
-    network.connect("mainnet")
-
+@auto_retry
+def test_from_explorer_vyper_supported_010(connect_to_mainnet):
     # curve cDAI/cUSDC - `0.1.0-beta.16`
     contract = Contract.from_explorer("0x845838DF265Dcd2c412A1Dc9e959c7d08537f8a2")
 
@@ -150,8 +152,8 @@ def test_from_explorer_vyper_supported_010(network):
     assert "pcMap" in contract._build
 
 
-def test_from_explorer_vyper_old_version(network):
-    network.connect("mainnet")
+@auto_retry
+def test_from_explorer_vyper_old_version(connect_to_mainnet):
     with pytest.warns(BrownieCompilerWarning):
         # uniswap v1 - `0.1.0-beta.4`
         contract = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
@@ -160,13 +162,17 @@ def test_from_explorer_vyper_old_version(network):
     assert "pcMap" not in contract._build
 
 
-def test_from_explorer_unverified(network):
-    network.connect("mainnet")
+@auto_retry
+def test_from_explorer_unverified(connect_to_mainnet):
     with pytest.raises(ValueError):
         Contract.from_explorer("0x0000000000000000000000000000000000000000")
 
 
-@pytest.mark.xfail
+@pytest.mark.skip(
+    "etc rpc fails to connect and blocks the test runner while retrying. "
+    "Maybe fix this test with a different network."
+)
+@auto_retry
 def test_from_explorer_etc(network):
     network.connect("etc")
     with pytest.warns(BrownieCompilerWarning):
@@ -175,8 +181,8 @@ def test_from_explorer_etc(network):
     assert contract._name == "ONEX"
 
 
-def test_retrieve_existing(network):
-    network.connect("mainnet")
+@auto_retry
+def test_retrieve_existing(connect_to_mainnet):
     with pytest.warns(BrownieCompilerWarning):
         new = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
@@ -184,9 +190,9 @@ def test_retrieve_existing(network):
     assert new == existing
 
 
-@pytest.mark.xfail(reason="Infura rate limiting - the test suite needs a refactor", strict=False)
-def test_existing_different_chains(network):
-    network.connect("mainnet")
+@auto_retry
+@pytest.mark.skip(reason="Goerli on Infura is dead - the test suite needs a refactor", strict=False)
+def test_existing_different_chains(network, connect_to_mainnet):
     with pytest.warns(BrownieCompilerWarning):
         Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
@@ -196,8 +202,8 @@ def test_existing_different_chains(network):
         Contract("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
 
-def test_alias(network):
-    network.connect("mainnet")
+@auto_retry
+def test_alias(connect_to_mainnet):
     with pytest.warns(BrownieCompilerWarning):
         contract = Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
 
@@ -213,16 +219,13 @@ def test_alias(network):
         Contract("testalias")
 
 
-def test_alias_not_exists(network):
-    network.connect("mainnet")
-
+def test_alias_not_exists(connect_to_mainnet):
     with pytest.raises(ValueError):
         Contract("doesnotexist")
 
 
-def test_duplicate_alias(network):
-    network.connect("mainnet")
-
+@auto_retry
+def test_duplicate_alias(connect_to_mainnet):
     foo = Contract.from_explorer("0x2af5d2ad76741191d15dfe7bf6ac92d4bd912ca3")
     with pytest.warns(BrownieCompilerWarning):
         bar = Contract.from_explorer("0x2157a7894439191e520825fe9399ab8655e0f708")
@@ -236,6 +239,7 @@ def test_duplicate_alias(network):
     bar.set_alias("foo")
 
 
+@auto_retry
 def test_alias_in_development(tester):
     contract = Contract.from_abi("BrownieTester", tester.address, tester.abi)
 
@@ -243,8 +247,8 @@ def test_alias_in_development(tester):
         contract.set_alias("testalias")
 
 
-def test_autofetch(network, config):
-    network.connect("mainnet")
+@auto_retry
+def test_autofetch(config, connect_to_mainnet):
     with pytest.raises(ValueError):
         Contract("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 
@@ -252,12 +256,12 @@ def test_autofetch(network, config):
     Contract("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 
 
-def test_autofetch_missing(network, config, mocker):
+@auto_retry
+def test_autofetch_missing(config, mocker, connect_to_mainnet):
     # an issue woth pytest-mock prevents spying on Contract.from_explorer,
     # so we watch requests.get which is only called inside Contract.from_explorer
     mocker.spy(requests, "get")
 
-    network.connect("mainnet")
     config.settings["autofetch_sources"] = True
 
     with pytest.raises(ValueError):
@@ -269,6 +273,8 @@ def test_autofetch_missing(network, config, mocker):
     assert requests.get.call_count == 2
 
 
+@pytest.mark.skip("TODO: maybe fix this with another network")
+@auto_retry
 def test_as_proxy_for(network):
     proxy = "0x2410B710ecA3818003c091c42E3803cC7D70AeE9"
     impl = "0x7542fb54dc0c2d71a00d9409b48f5e464b5e9f24"
@@ -285,8 +291,7 @@ def test_as_proxy_for(network):
     assert proxy.address != implementation.address
 
 
-def test_solc_use_latest_patch_true(testproject, network):
-    network.connect("mainnet")
+def test_solc_use_latest_patch_true(testproject, connect_to_mainnet):
     solc_config = {"compiler": {"solc": {"use_latest_patch": True}}}
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
@@ -296,8 +301,7 @@ def test_solc_use_latest_patch_true(testproject, network):
     ) == Version("0.4.26")
 
 
-def test_solc_use_latest_patch_false(testproject, network):
-    network.connect("mainnet")
+def test_solc_use_latest_patch_false(testproject, connect_to_mainnet):
     solc_config = {"compiler": {"solc": {"use_latest_patch": False}}}
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
@@ -307,8 +311,7 @@ def test_solc_use_latest_patch_false(testproject, network):
     ) == Version("0.4.16")
 
 
-def test_solc_use_latest_patch_missing(testproject, network):
-    network.connect("mainnet")
+def test_solc_use_latest_patch_missing(testproject, connect_to_mainnet):
     solc_config = {"compiler": {"solc": {}}}
     with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
         yaml.dump(solc_config, fp)
@@ -318,8 +321,7 @@ def test_solc_use_latest_patch_missing(testproject, network):
     ) == Version("0.4.16")
 
 
-def test_solc_use_latest_patch_specific_not_included(testproject, network):
-    network.connect("mainnet")
+def test_solc_use_latest_patch_specific_not_included(testproject, connect_to_mainnet):
     solc_config = {
         "compiler": {"solc": {"use_latest_patch": ["0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e"]}}
     }
@@ -331,8 +333,7 @@ def test_solc_use_latest_patch_specific_not_included(testproject, network):
     ) == Version("0.4.16")
 
 
-def test_solc_use_latest_patch_specific_included(testproject, network):
-    network.connect("mainnet")
+def test_solc_use_latest_patch_specific_included(testproject, connect_to_mainnet):
     solc_config = {
         "compiler": {"solc": {"use_latest_patch": ["0x514910771AF9Ca656af840dff83E8264EcF986CA"]}}
     }
@@ -344,8 +345,8 @@ def test_solc_use_latest_patch_specific_included(testproject, network):
     ) == Version("0.4.26")
 
 
-def test_abi_deployment_enabled_by_default(network, build):
-    network.connect("mainnet")
+@auto_retry
+def test_abi_deployment_enabled_by_default(build, connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_abi("abiTester", address, build["abi"])
 
@@ -354,16 +355,16 @@ def test_abi_deployment_enabled_by_default(network, build):
     Contract.remove_deployment(address)
 
 
-def test_abi_deployment_disabled(network, build):
-    network.connect("mainnet")
+@auto_retry
+def test_abi_deployment_disabled(build, connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_abi("abiTester", address, build["abi"], persist=False)
 
     assert _get_deployment(address) == (None, None)
 
 
-def test_from_explorer_deployment_enabled_by_default(network):
-    network.connect("mainnet")
+@auto_retry
+def test_from_explorer_deployment_enabled_by_default(connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_explorer(address)
 
@@ -372,16 +373,16 @@ def test_from_explorer_deployment_enabled_by_default(network):
     Contract.remove_deployment(address)
 
 
-def test_from_explorer_deployment_disabled(network):
-    network.connect("mainnet")
+@auto_retry
+def test_from_explorer_deployment_disabled(connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_explorer(address, persist=False)
 
     assert _get_deployment(address) == (None, None)
 
 
-def test_remove_deployment(network):
-    network.connect("mainnet")
+@auto_retry
+def test_remove_deployment(connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_explorer(address)
     Contract.remove_deployment(address)
@@ -389,8 +390,8 @@ def test_remove_deployment(network):
     assert _get_deployment(address) == (None, None)
 
 
-def test_remove_deployment_returns(network):
-    network.connect("mainnet")
+@auto_retry
+def test_remove_deployment_returns(connect_to_mainnet):
     address = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
     Contract.from_explorer(address)
     build_json, sources = _get_deployment(address)
@@ -406,8 +407,8 @@ def test_remove_deployment_returns(network):
 #         "0xEd0bEdA6991Ac426de442C84cee19d75aB78d2CE",  # aaragondao
 #     ],
 # )
-# def test_as_proxy_for(network, original):
-#     network.connect("mainnet")
+# @auto_retry
+# def test_as_proxy_for(original, connect_to_mainnet):
 #     original = Contract.from_explorer(original)
 #
 #     # fetch implementation from etherscan

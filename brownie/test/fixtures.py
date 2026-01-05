@@ -8,7 +8,7 @@ import pytest
 import brownie
 from brownie._config import CONFIG, _get_data_folder
 
-from .stateful import _BrownieStateMachine, state_machine
+from brownie.test.stateful import _BrownieStateMachine, state_machine
 
 
 def _generate_fixture(container):

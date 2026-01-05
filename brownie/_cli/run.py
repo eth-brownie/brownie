@@ -2,9 +2,9 @@
 
 import inspect
 import sys
-from pathlib import Path
 
 from brownie import network, project
+from brownie._c_constants import Path
 from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
 from brownie.project.scripts import _get_path, run
@@ -23,7 +23,7 @@ Options:
   --network [name]        Use a specific network (default {CONFIG.settings['networks']['default']})
   --silent                Suppress console output for transactions
   --interactive -I        Open an interactive console when the script completes or raises
-  --raise -r              Raise exceptions occured in the script to the caller
+  --raise -r              Raise exceptions occurred in the script to the caller
   --gas -g                Display gas profile for function calls
   --tb -t                 Show entire python traceback on exceptions
   --help -h               Display this message

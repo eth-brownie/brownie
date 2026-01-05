@@ -1,4 +1,17 @@
-	# Brownie configuration for Black.
+[build-system]
+requires = [
+    "setuptools", 
+    "wheel", 
+    "mypy[mypyc]==1.18.2",
+    "types-pyyaml",
+    "types-requests",
+    "types-ujson",
+    "eth-event>=1.4.3,<2",
+    "eth-typing==4.4.0",
+]
+
+
+# Brownie configuration for Black.
 
 # NOTE: you have to use single-quoted strings in TOML for regular expressions.
 # It's the equivalent of r-strings in Python.  Multiline strings are treated as
@@ -7,7 +20,7 @@
 
 [tool.black]
 line-length = 100
-target-version = ['py37', 'py38', 'py39']
+target-version = ['py310', 'py311', 'py312']
 include = '\.pyi?$'
 exclude = '''
 /(

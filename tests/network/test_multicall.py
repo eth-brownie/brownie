@@ -1,10 +1,12 @@
 import inspect
 
+import pytest
 from lazy_object_proxy import Proxy
 
 import brownie
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_auto_deploy_on_testnet(config, devnetwork):
     with brownie.multicall:
         # gets deployed on init
@@ -16,6 +18,7 @@ def test_auto_deploy_on_testnet(config, devnetwork):
         assert config.active_network["multicall2"] == addr
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_proxy_object_is_returned_from_calls(accounts, tester):
     addr = accounts[1]
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
@@ -31,6 +34,7 @@ def test_proxy_object_is_returned_from_calls(accounts, tester):
         assert ret_val.__wrapped__ == value
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_flush_mid_execution(accounts, tester):
     addr = accounts[1]
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
@@ -43,6 +47,7 @@ def test_flush_mid_execution(accounts, tester):
         assert len([x for v in brownie.multicall._pending_calls.values() for x in v]) == 0
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_proxy_object_fetches_on_next_use(accounts, tester):
     addr = accounts[1]
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]
@@ -56,6 +61,7 @@ def test_proxy_object_fetches_on_next_use(accounts, tester):
         assert len([x for v in brownie.multicall._pending_calls.values() for x in v]) == 0
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_proxy_object_updates_on_exit(accounts, tester):
     addr = accounts[1]
     value = ["blahblah", addr, ["yesyesyes", "0x1234"]]

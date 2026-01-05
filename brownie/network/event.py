@@ -1,42 +1,77 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="union-attr"
 
-import json
 import time
 import warnings
 from collections import OrderedDict
 from pathlib import Path
 from threading import Lock, Thread
-from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union, ValuesView
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Final,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    ValuesView,
+    final,
+    overload,
+)
 
 import eth_event
 from eth_event import EventError
+from eth_event.main import _TraceStep, DecodedEvent, NonDecodedEvent, TopicMapData
+from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
+from ujson import JSONDecodeError
 from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.types import LogReceipt
 
+from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
+from brownie.typing import FormattedEvent, Selector
+from brownie.utils import hexbytes_to_hexstring
 
-from .web3 import ContractEvent, web3
+from brownie.network.web3 import ContractEvent, web3
+
+if TYPE_CHECKING:
+    from brownie.network.contract import Contract
 
 
+TopicMap = Dict[HexStr, TopicMapData]
+DeploymentTopics = Dict[ChecksumAddress, TopicMap]
+
+EventData = OrderedDict[str, Any]
+"""An OrderedDict which contains the indexed args for a single on-chain event."""
+
+
+@final
 class EventDict:
     """
     Dict/list hybrid container, base class for all events fired in a transaction.
     """
 
-    def __init__(self, events: Optional[List] = None) -> None:
+    def __init__(self, events: Optional[Iterable[FormattedEvent]] = None) -> None:
         """Instantiates the class.
 
         Args:
             events: event data as supplied by eth_event.decode_logs or eth_event.decode_trace"""
-        if events is None:
-            events = []
+        events = list(events) if events else []
 
-        self._ordered = [
+        ordered: List[Event] = [
             _EventItem(
                 i["name"],
                 i["address"],
@@ -45,14 +80,22 @@ class EventDict:
             )
             for pos, i in enumerate(events)
         ]
+        self._ordered: Final = ordered
 
-        self._dict: Dict = OrderedDict()
-        for event in self._ordered:
-            if event.name not in self._dict:
-                events = [i for i in self._ordered if i.name == event.name]
-                self._dict[event.name] = _EventItem(
-                    event.name, None, events, tuple(i.pos[0] for i in events)
+        _dict: OrderedDict[str, Events]
+        _dict = OrderedDict()
+        for event in ordered:
+            event_name = event.name
+            if event_name not in _dict:
+                events_for_name = [i for i in ordered if i.name == event_name]
+                _dict[event_name] = _EventItem(
+                    event_name,
+                    None,
+                    events_for_name,
+                    tuple(i.pos[0] for i in events_for_name),
                 )
+
+        self._dict: Final = _dict
 
     def __repr__(self) -> str:
         return str(self)
@@ -62,25 +105,35 @@ class EventDict:
 
     def __contains__(self, name: str) -> bool:
         """returns True if an event fired with the given name."""
-        return name in [i.name for i in self._ordered]
+        return name in self._dict
 
-    def __getitem__(self, key: Union[str, int]) -> "_EventItem":
+    @overload
+    def __getitem__(self, key: int) -> "Event":
+        """returns the n'th event that was fired"""
+
+    @overload
+    def __getitem__(self, key: str) -> "Events":
+        """returns a _EventItem dict of all events where name == key"""
+
+    def __getitem__(self, key: Union[str, int]) -> Union["Event", "Events"]:
         """if key is int: returns the n'th event that was fired
         if key is str: returns a _EventItem dict of all events where name == key"""
-        if not isinstance(key, (int, str)):
-            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):
             try:
                 return self._ordered[key]
             except IndexError:
                 raise EventLookupError(
                     f"Index out of range - only {len(self._ordered)} events fired"
-                )
-        if key in self._dict:
-            return self._dict[key]
-        raise EventLookupError(f"Event '{key}' did not fire.")
+                ) from None
+        elif isinstance(key, str):
+            try:
+                return self._dict[key]
+            except KeyError:
+                raise EventLookupError(f"Event '{key}' did not fire.") from None
+        else:
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator["Event"]:
         return iter(self._ordered)
 
     def __len__(self) -> int:
@@ -88,26 +141,30 @@ class EventDict:
         return len(self._ordered)
 
     def __str__(self) -> str:
-        return str(dict((k, [i[0] for i in v._ordered]) for k, v in self._dict.items()))
+        return str({k: [i[0] for i in v._ordered] for k, v in self._dict.items()})
 
     def count(self, name: str) -> int:
         """EventDict.count(name) -> integer -- return number of occurrences of name"""
-        return len([i.name for i in self._ordered if i.name == name])
+        return len(self._dict.get(name, ()))
 
-    def items(self) -> List:
+    def items(self) -> List[Tuple[str, "Events"]]:
         """EventDict.items() -> a list object providing a view on EventDict's items"""
         return list(self._dict.items())
 
-    def keys(self) -> List:
+    def keys(self) -> List[str]:
         """EventDict.keys() -> a list object providing a view on EventDict's keys"""
         return list(self._dict.keys())
 
-    def values(self) -> ValuesView:
+    def values(self) -> ValuesView["Events"]:
         """EventDict.values() -> a list object providing a view on EventDict's values"""
         return self._dict.values()
 
 
-class _EventItem:
+_TData = TypeVar("_TData", "Event", EventData)
+
+
+@final
+class _EventItem(Generic[_TData]):
     """
     Dict/list hybrid container, represents one or more events with the same name
     that were fired in a transaction.
@@ -116,25 +173,37 @@ class _EventItem:
     ----------
     name : str
         Name of the event.
-    address : str
+    address : ChecksumAddress
         Address where this event fired. When the object represents more than one event,
         this value is set to `None`.
-    pos : tuple
+    pos : Tuple[int, ...]
         Tuple of indexes where this event fired.
     """
 
-    def __init__(self, name: str, address: Optional[str], event_data: List, pos: Tuple) -> None:
-        self.name = name
-        self.address = address
-        self._ordered = event_data
-        self.pos = pos
+    def __init__(
+        self,
+        name: str,
+        address: Optional[ChecksumAddress],
+        event_data: List[_TData],
+        pos: Tuple[int, ...],
+    ) -> None:
+        self.name: Final = name
+        self.address: Final = address
+        self._ordered: Final = event_data
+        self.pos: Final = pos
 
-    def __getitem__(self, key: Union[int, str]) -> List:
+    @overload
+    def __getitem__(self, key: int) -> _TData:
+        """returns the n'th event that was fired with this name"""
+
+    @overload
+    def __getitem__(self, key: str) -> Any:
+        """returns the value of data field 'key' from the 1st event within the container"""
+
+    def __getitem__(self, key: Union[int, str]) -> Union[_TData, Any]:
         """if key is int: returns the n'th event that was fired with this name
         if key is str: returns the value of data field 'key' from the 1st event
         within the container"""
-        if not isinstance(key, (int, str)):
-            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
         if isinstance(key, int):
             try:
                 return self._ordered[key]
@@ -142,14 +211,18 @@ class _EventItem:
                 raise EventLookupError(
                     f"Index out of range - only {len(self._ordered)} '{self.name}' events fired"
                 )
-        if key in self._ordered[0]:
-            return self._ordered[0][key]
-        if f"{key} (indexed)" in self._ordered[0]:
-            return self._ordered[0][f"{key} (indexed)"]
-        valid_keys = ", ".join(self.keys())
-        raise EventLookupError(
-            f"Unknown key '{key}' - the '{self.name}' event includes these keys: {valid_keys}"
-        )
+        elif isinstance(key, str):
+            first = self._ordered[0]
+            if key in first:
+                return first[key]
+            if f"{key} (indexed)" in first:
+                return first[f"{key} (indexed)"]
+            valid_keys = ", ".join(self.keys())
+            raise EventLookupError(
+                f"Unknown key '{key}' - the '{self.name}' event includes these keys: {valid_keys}"
+            )
+        else:
+            raise TypeError(f"Invalid key type '{type(key)}' - can only use strings or integers")
 
     def __contains__(self, name: str) -> bool:
         """returns True if this event contains a value with the given name."""
@@ -163,11 +236,12 @@ class _EventItem:
         return str(self)
 
     def __str__(self) -> str:
-        if len(self._ordered) == 1:
-            return str(self._ordered[0])
-        return str([i[0] for i in self._ordered])
+        data = self._ordered
+        if len(data) == 1:
+            return str(data[0])
+        return str([i[0] for i in data])  # type: ignore [index]
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[_TData]:
         return iter(self._ordered)
 
     def __eq__(self, other: object) -> bool:
@@ -180,17 +254,25 @@ class _EventItem:
 
     def items(self) -> ReturnValue:
         """_EventItem.items() -> a list object providing a view on _EventItem[0]'s items"""
-        return ReturnValue([(i, self[i]) for i in self.keys()])
+        return ReturnValue((i, self[i]) for i in self.keys())
 
     def keys(self) -> ReturnValue:
         """_EventItem.keys() -> a list object providing a view on _EventItem[0]'s keys"""
-        return ReturnValue([i.replace(" (indexed)", "") for i in self._ordered[0].keys()])
+        return ReturnValue(i.replace(" (indexed)", "") for i in self._ordered[0].keys())
 
     def values(self) -> ReturnValue:
         """_EventItem.values() -> a list object providing a view on _EventItem[0]'s values"""
-        return ReturnValue(self._ordered[0].values())
+        return ReturnValue(self._ordered[0].values())  # type: ignore [arg-type]
 
 
+Event = _EventItem[EventData]
+"""An _EventItem which represents a single event."""
+
+Events = _EventItem[Event]
+"""An _EventItem which represents a collection of events which share the same event name."""
+
+
+@final
 class _EventWatchData:
     """
     Class containing the data needed to check, time, and execute callbacks on a specified event.
@@ -204,11 +286,11 @@ class _EventWatchData:
         repeat: bool = True,
     ) -> None:
         # Args
-        self.event: ContractEvent = event
+        self.event: Final[ContractEvent] = event
         self._callbacks_list: List[dict] = []
         self.delay: float = delay
         # Members
-        self._event_filter: filters.LogFilter = event.create_filter(
+        self._event_filter: Final[filters.LogFilter] = event.create_filter(
             fromBlock=(web3.eth.block_number - 1)
         )
         self._cooldown_time_over: bool = False
@@ -217,7 +299,7 @@ class _EventWatchData:
 
     def get_new_events(self) -> List["filters.LogReceipt"]:
         """
-        Retrieves and return the events that occured between now and the last function call.
+        Retrieves and return the events that occurred between now and the last function call.
 
         Returns:
             [List[LogReceipt]]: List of the retrieved events
@@ -272,7 +354,7 @@ class _EventWatchData:
             )
             threads[-1].start()
         # Remove non-repeating callbacks from list
-        self._callbacks_list = list(filter(lambda x: x.get("repeat"), self._callbacks_list))
+        self._callbacks_list = [cb for cb in self._callbacks_list if cb.get("repeat")]
         return threads
 
     @property
@@ -284,7 +366,7 @@ class _EventWatchData:
             float: Time difference between self.delay and the time between
             now and the last callback_trigger_time.
         """
-        return max(float(0), self.delay - (time.time() - self.timer))
+        return max(0.0, self.delay - (time.time() - self.timer))
 
 
 class EventWatcher(metaclass=_Singleton):
@@ -353,9 +435,9 @@ class EventWatcher(metaclass=_Singleton):
             raise TypeError("Argument 'callback' argument must be a callable.")
         delay = max(delay, 0.05)
         self.target_list_lock.acquire()  # lock
-        # Key refering to this specific event (event.address is the address
+        # Key referring to this specific event (event.address is the address
         # of the contract to which the event is linked)
-        event_watch_data_key = str(event.address) + "+" + event.event_name
+        event_watch_data_key = f"{str(event.address)}+{event.event_name}"
         if self.target_events_watch_data.get(event_watch_data_key) is None:
             # If the _EventWatchData for 'event' does not exist, creates it.
             self.target_events_watch_data[event_watch_data_key] = _EventWatchData(
@@ -423,10 +505,9 @@ class EventWatcher(metaclass=_Singleton):
         for worker_instance in workers_list:
             worker_instance.join(timeout=30)
             if worker_instance.is_alive():
+                worker_name = worker_instance.getName()
                 warnings.warn(
-                    message="Callback execution ({}) could not be joined.".format(
-                        worker_instance.getName()
-                    ),
+                    message=f"Callback execution ({worker_name}) could not be joined.",
                     category=RuntimeWarning,
                 )
 
@@ -435,7 +516,7 @@ def __get_path() -> Path:
     return _get_data_folder().joinpath("topics.json")
 
 
-def _get_topics(abi: List) -> Dict:
+def _get_topics(abi: List[ABIElement]) -> Dict[str, HexStr]:
     topic_map = eth_event.get_topic_map(abi)
 
     updated_topics = _topics.copy()
@@ -447,32 +528,36 @@ def _get_topics(abi: List) -> Dict:
         elif value == updated_topics[key]:
             # existing event topic, nothing has changed
             continue
-        elif not next((i for i in updated_topics[key]["inputs"] if i["indexed"]), False):
+        elif not any(i["indexed"] for i in updated_topics[key]["inputs"]):
             # existing topic, but the old abi has no indexed events - keep the new one
             updated_topics[key] = value
 
     if updated_topics != _topics:
         _topics.update(updated_topics)
         with __get_path().open("w") as fp:
-            json.dump(updated_topics, fp, sort_keys=True, indent=2)
+            ujson_dump(updated_topics, fp, sort_keys=True, indent=2)
 
     return {v["name"]: k for k, v in topic_map.items()}
 
 
-def _add_deployment_topics(address: str, abi: List) -> None:
+def _add_deployment_topics(address: ChecksumAddress, abi: List[ABIElement]) -> None:
     _deployment_topics[address] = eth_event.get_topic_map(abi)
 
 
-def _decode_logs(logs: List[LogReceipt], contracts: Optional[Dict] = None) -> EventDict:
+def _decode_logs(
+    # Mapping is included so we don't break dependent lib ypricemagic with this change
+    logs: List[_EventItem] | List[Mapping[str, Any]],
+    contracts: Optional[Dict[ChecksumAddress, "Contract"]] = None,
+) -> EventDict:
     if not logs:
         return EventDict()
 
     idx = 0
-    events: List = []
+    events: List[DecodedEvent | NonDecodedEvent] = []
     while True:
-        address = logs[idx]["address"]
+        address: ChecksumAddress = logs[idx]["address"]
         try:
-            new_idx = logs.index(next(i for i in logs[idx:] if i["address"] != address))
+            new_idx = logs.index(next(i for i in logs[idx:] if i["address"] != address))  # type: ignore [arg-type, misc]
             log_slice = logs[idx:new_idx]
             idx = new_idx
         except StopIteration:
@@ -480,70 +565,79 @@ def _decode_logs(logs: List[LogReceipt], contracts: Optional[Dict] = None) -> Ev
 
         topics_map = _deployment_topics.get(address, _topics)
         for item in log_slice:
-            if contracts and contracts[item["address"]]:
-                note = _decode_ds_note(item, contracts[item["address"]])
-                if note:
-                    events.append(note)
-                    continue
+            if contracts:
+                contract = contracts[address]
+                if contract is not None:
+                    note = _decode_ds_note(item, contract)  # type: ignore [arg-type]
+                    if note is not None:
+                        events.append(note)
+                        continue
             try:
-                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))
+                events.extend(eth_event.decode_logs([item], topics_map, allow_undecoded=True))  # type: ignore [call-overload]
             except EventError as exc:
                 warnings.warn(f"{address}: {exc}")
 
         if log_slice[-1] == logs[-1]:
             break
 
-    events = [format_event(i) for i in events]
-    return EventDict(events)
+    return EventDict(format_event(event) for event in events)
 
 
-def _decode_ds_note(log: LogReceipt, contract):  # type: ignore
+def _decode_ds_note(
+    log: _EventItem | Mapping[str, Any], contract: "Contract"
+) -> Optional[DecodedEvent]:
     # ds-note encodes function selector as the first topic
-    selector, tail = log["topics"][0][:4], log["topics"][0][4:]
-    if selector.hex() not in contract.selectors or sum(tail):
-        return
-    name = contract.selectors[selector.hex()]
-    log_data = log["data"]
-    data = bytes.fromhex(log_data[2:]) if isinstance(log_data, str) else log_data
+    # TODO double check typing for `log` input
+    selector, tail = log.topics[0][:4], log.topics[0][4:]  # type: ignore [attr-defined]
+    selector_hexstr = Selector(hexbytes_to_hexstring(selector))
+    if selector_hexstr not in contract.selectors or sum(tail):
+        return None
+    name = contract.selectors[selector_hexstr]
+    data = bytes.fromhex(log.data[2:]) if isinstance(log.data, str) else log.data  # type: ignore [attr-defined]
     # data uses ABI encoding of [uint256, bytes] or [bytes] in different versions
     # instead of trying them all, assume the payload starts from selector
     try:
         func, args = contract.decode_input(data[data.index(selector) :])
     except ValueError:
-        return
-    return {
+        return None
+    selector_hexstr = Selector(hexbytes_to_hexstring(selector))
+    inputs = contract.get_method_object(selector_hexstr).abi["inputs"]  # type: ignore [union-attr]
+    return {  # type: ignore [return-value]
         "name": name,
-        "address": log["address"],
+        "address": log.address,  # type: ignore [attr-defined, typeddict-item]
         "decoded": True,
         "data": [
             {"name": abi["name"], "type": abi["type"], "value": arg, "decoded": True}
-            for arg, abi in zip(args, contract.get_method_object(selector.hex()).abi["inputs"])
+            for arg, abi in zip(args, inputs)
         ],
     }
 
 
-def _decode_trace(trace: Sequence, initial_address: str) -> EventDict:
+def _decode_trace(trace: Sequence[_TraceStep], initial_address: AnyAddress) -> EventDict:
     if not trace:
         return EventDict()
 
     events = eth_event.decode_traceTransaction(
-        trace, _topics, allow_undecoded=True, initial_address=initial_address
+        trace if type(trace) is list else list(trace),
+        _topics,
+        allow_undecoded=True,
+        initial_address=initial_address,
     )
-    events = [format_event(i) for i in events]
-    return EventDict(events)
+    return EventDict(format_event(event) for event in events)
 
 
 # dictionary of event topic ABIs specific to a single contract deployment
-_deployment_topics: Dict = {}
-
-# general event topic ABIs for decoding events on unknown contracts
-_topics: Dict = {}
+_deployment_topics: Final[DeploymentTopics] = {}
 
 # EventWatcher program instance
-event_watcher = EventWatcher()
+event_watcher: Final = EventWatcher()
 
 try:
     with __get_path().open() as fp:
-        _topics = json.load(fp)
-except (FileNotFoundError, json.decoder.JSONDecodeError):
-    pass
+        __topics = ujson_load(fp)
+except (FileNotFoundError, JSONDecodeError):
+    __topics = None
+
+# general event topic ABIs for decoding events on unknown contracts
+_topics: Final[TopicMap] = __topics or {}
+del __topics

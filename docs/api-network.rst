@@ -1053,7 +1053,7 @@ Contract Internal Attributes
 
 .. py:attribute:: Contract._reverted
 
-    Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
+    Boolean. Once set to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
 
 ContractEvents
 --------------
@@ -1097,7 +1097,7 @@ ContractEvents Classmethods
 .. py:classmethod:: ContractEvents.listen(event_name, timeout=0)
 
     Creates a listening Coroutine object ending whenever an event matching 'event_name' occurs.
-    If timeout is superior to zero and no event matching 'event_name' has occured, the Coroutine ends when the timeout is reached.
+    If timeout is superior to zero and no event matching 'event_name' has occurred, the Coroutine ends when the timeout is reached.
 
     * ``event_name``: Name of the event to be listened to.
     * ``timeout``: Timeout value in seconds. Defaults to 0.
@@ -1358,7 +1358,7 @@ OverloadedMethod
         >>> erc223.transfer
         <OverloadedMethod object 'ERC223Token.transfer'>
 
-    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-seperated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
+    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-separated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
 
     .. code-block:: python
 
@@ -1368,7 +1368,7 @@ OverloadedMethod
         >>> erc223.transfer['address', 'uint256', 'uint256']
         <ContractTx object 'transfer(address,uint256,uint256)'>
 
-    When a contract only contains one method with the given name and number of arguements, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
+    When a contract only contains one method with the given name and number of arguments, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
 
     .. code-block:: python
 
@@ -1642,7 +1642,7 @@ Internal Methods
 
 .. py:method:: brownie.network.event._get_topics(abi)
 
-    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictioary in the form of ``{'Name': "encoded topic hexstring"}``.
+    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictionary in the form of ``{'Name': "encoded topic hexstring"}``.
 
     .. code-block:: python
 
@@ -1722,7 +1722,7 @@ Gas Strategies
 
 .. py:class:: brownie.network.gas.strategies.GasNowStrategy(speed="fast")
 
-    Gas strategy for determing a price using the `GasNow <https://www.gasnow.org/>`_ API.
+    Gas strategy for determining a price using the `GasNow <https://www.gasnow.org/>`_ API.
 
     * ``speed``: The gas price to use based on the API call. Options are rapid, fast, standard and slow.
 
@@ -1797,7 +1797,7 @@ Simple Strategies
 
     Abstract base class for simple gas strategies.
 
-    Simple gas strategies are called once to provide a dynamically genreated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
+    Simple gas strategies are called once to provide a dynamically generated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
 
 Simple Strategy Abstract Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1850,7 +1850,7 @@ Multicall
 
     Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standard Brownie call API.
 
-    The only syntatic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
+    The only syntactic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
 
     Features:
 
@@ -1929,7 +1929,7 @@ Multicall Methods
 
 .. py:classmethod:: Multicall.flush
 
-    Flushes the current queue of pending calls, especially useful for preventing ``OOG`` errors from occuring when querying large amounts of data.
+    Flushes the current queue of pending calls, especially useful for preventing ``OOG`` errors from occurring when querying large amounts of data.
 
     >>> results = []
     >>> long_list_of_addresses = [...]
@@ -2188,7 +2188,7 @@ Chain Methods
 
     Mine one or more empty blocks.
 
-    * ``blocks``: Number of blocks to mine
+    * ``blocks``: Number of blocks to mine. ``chain.mine()`` will mine a single block. Only parameter available when using Anvil RPC.
     * ``timestamp``: Timestamp of the final block being mined. If multiple blocks are mined, they will be mined at equal intervals starting from :func:`chain.time <Chain.time>` and ending at ``timestamp``.
     * ``timedelta``: Timedelta for the final block to be mined. If given, the final block will have a timestamp of ``chain.time() + timedelta``.
 
@@ -2340,7 +2340,7 @@ Rpc Methods
 
 .. py:classmethod:: Rpc.launch(cmd)
 
-    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string requiried to run it.
+    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string required to run it.
 
     If the process cannot load successfully, raises ``brownie.RPCProcessError``.
 
@@ -2610,7 +2610,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.modified_state
 
-    Boolean indicating if this transaction resuled in any state changes on the blockchain.
+    Boolean indicating if this transaction resulted in any state changes on the blockchain.
 
     .. code-block:: python
 
@@ -2682,7 +2682,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.subcalls
 
-    A list of dictionaries providing information about subcalls that occured during the transaction.
+    A list of dictionaries providing information about subcalls that occurred during the transaction.
 
     The following fields are always included:
 
@@ -2885,7 +2885,7 @@ TransactionReceipt Methods
 
 .. py:classmethod:: TransactionReceipt.call_trace(expand=False)
 
-    Display the complete sequence of contracts and functions called while execiting this transaction.
+    Display the complete sequence of contracts and functions called while executing this transaction.
 
     Each line is formatted as:
 
@@ -2960,7 +2960,7 @@ TransactionReceipt Methods
 
     Displays the source code that caused the first revert in the transaction, if any.
 
-    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+    * ``pad``: Number of unrelated lines of code to include before and after the relevant source
 
 
     .. code-block:: python
@@ -2986,7 +2986,7 @@ TransactionReceipt Methods
     Displays the associated source code for a given stack trace step.
 
     * ``idx``: Stack trace step index
-    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+    * ``pad``: Number of unrelated lines of code to include before and after the relevant source
 
     .. code-block:: python
 

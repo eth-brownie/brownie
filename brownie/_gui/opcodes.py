@@ -6,7 +6,7 @@ from tkinter import ttk
 
 from brownie.project.sources import is_inside_offset
 
-from .bases import ToggleButton
+from brownie._gui.bases import ToggleButton
 
 
 class OpcodeList(ttk.Treeview):

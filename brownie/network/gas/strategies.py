@@ -10,7 +10,7 @@ from brownie.convert import Wei
 from brownie.exceptions import RPCRequestError
 from brownie.network.web3 import web3
 
-from .bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
+from brownie.network.gas.bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
 
 _gasnow_update = 0
 _gasnow_data: Dict[str, int] = {}
@@ -115,7 +115,7 @@ class ExponentialScalingStrategy(TimeGasStrategy):
 
 class GasNowStrategy(SimpleGasStrategy):
     """
-    Gas strategy for determing a price using the GasNow API.
+    Gas strategy for determining a price using the GasNow API.
 
     GasNow returns 4 possible prices:
 
@@ -131,7 +131,7 @@ class GasNowStrategy(SimpleGasStrategy):
     """
 
     def __init__(self, speed: str = "fast"):
-        if speed not in ("rapid", "fast", "standard", "slow"):
+        if speed not in {"rapid", "fast", "standard", "slow"}:
             raise ValueError("`speed` must be one of: rapid, fast, standard, slow")
         self.speed = speed
 

@@ -5,8 +5,10 @@ import json
 import os
 import shutil
 import sys
+import threading
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import pytest
 import solcx
@@ -127,7 +129,7 @@ def _project_factory(tmp_path_factory):
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
 
-    p = brownie.project.load(path, "TestProject")
+    p = _load_project(brownie.project, path, "TestProject")
     p.close()
     return path
 
@@ -145,22 +147,26 @@ def _copy_all(src_folder, dest_folder):
 # project fixtures
 
 
+_project_lock = threading.Lock()
+
+
 # creates a temporary folder and sets it as the working directory
 @pytest.fixture
 def project(tmp_path):
-    original_path = os.getcwd()
-    os.chdir(tmp_path)
-    yield brownie.project
-    os.chdir(original_path)
-    for p in brownie.project.get_loaded_projects():
-        p.close(False)
+    with _project_lock:
+        original_path = os.getcwd()
+        os.chdir(tmp_path)
+        yield brownie.project
+        os.chdir(original_path)
+        for p in brownie.project.get_loaded_projects():
+            p.close(False)
 
 
 # yields a newly initialized Project that is not loaded
 @pytest.fixture
 def newproject(project, tmp_path):
     path = project.new(tmp_path)
-    p = project.load(path, "NewProject")
+    p = _load_project(project, path, "NewProject")
     p.close()
     yield p
 
@@ -176,7 +182,7 @@ def testproject(_project_factory, project, tmp_path):
     path = tmp_path.joinpath("testproject")
     _copy_all(_project_factory, path)
     os.chdir(path)
-    return project.load(path, "TestProject")
+    return _load_project(project, path, "TestProject")
 
 
 # same as function above but doesn't compile
@@ -185,7 +191,7 @@ def testproject_nocompile(_project_factory, project, tmp_path):
     path = tmp_path.joinpath("testproject")
     _copy_all(_project_factory, path)
     os.chdir(path)
-    return project.load(path, "TestProject", compile=False)
+    return _load_project(project, path, "TestProject", compile=False)
 
 
 @pytest.fixture
@@ -196,7 +202,7 @@ def tp_path(testproject):
 @pytest.fixture
 def otherproject(_project_factory, project, tmp_path):  # testproject):
     _copy_all(_project_factory, tmp_path.joinpath("otherproject"))
-    return project.load(tmp_path.joinpath("otherproject"), "OtherProject")
+    return _load_project(project, tmp_path.joinpath("otherproject"), "OtherProject")
 
 
 # yields a deployed EVMTester contract
@@ -215,7 +221,7 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
     }
     with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)
-    p = project.load(tmp_path, "EVMProject")
+    p = _load_project(project, tmp_path, "EVMProject")
     return p.EVMTester.deploy({"from": accounts[0]})
 
 
@@ -226,7 +232,7 @@ def plugintesterbase(project, testdir, monkeypatch, network_name):
     monkeypatch.setattr("brownie.network.connect", lambda k: None)
     testdir.plugins.extend(["pytest-brownie", "pytest-cov"])
     yield testdir
-    brownie.network.disconnect()
+    _disconnect_network()
 
 
 # setup for pytest-brownie plugin testing
@@ -242,13 +248,25 @@ def plugintester(_project_factory, plugintesterbase, request):
     yield plugintesterbase
 
 
+_devnetwork_lock = threading.Lock()
+
+
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc, chain, network_name):
-    brownie.network.connect(network_name)
-    yield brownie.network
-    if rpc.is_active():
-        chain.reset()
+    with _devnetwork_lock:
+        try:
+            network.connect(network_name)
+        except ConnectionError as e:
+            if not e.args[0].startswith("Already connected to network "):
+                raise
+            if network_name not in e.args[0]:
+                _disconnect_network()
+                network.connect(network_name)
+
+        yield network
+        if rpc.is_active():
+            chain.reset()
 
 
 # brownie object fixtures
@@ -256,8 +274,8 @@ def devnetwork(network, rpc, chain, network_name):
 
 @pytest.fixture
 def accounts(devnetwork):
-    yield brownie.network.account.accounts
-    brownie.network.account.accounts.default = None
+    yield devnetwork.accounts
+    devnetwork.accounts.default = None
 
 
 @pytest.fixture(scope="session")
@@ -265,13 +283,25 @@ def history():
     return brownie.network.history
 
 
+_network_lock = threading.Lock()
+
+
 @pytest.fixture
-def network():
-    if brownie.network.is_connected():
-        brownie.network.disconnect(False)
-    yield brownie.network
-    if brownie.network.is_connected():
-        brownie.network.disconnect(False)
+def network():  # sourcery skip: use-contextlib-suppress
+    with _network_lock:
+        if brownie.network.is_connected():
+            _disconnect_network()
+
+        yield brownie.network
+
+        if brownie.network.is_connected():
+            _disconnect_network()
+
+
+@pytest.fixture
+def connect_to_mainnet(network):
+    _connect_to_mainnet(network)
+    yield network
 
 
 @pytest.fixture(scope="session")
@@ -401,3 +431,32 @@ def console():
     sys.argv = ["brownie", "console"]
     yield Console
     sys.argv = argv
+
+
+def _load_project(project, path: Path, name: str, **kwargs: Any):
+    for _ in range(5):
+        try:
+            return project.load(path, name, **kwargs)
+        except PermissionError:
+            # This happens sometimes in the runner, I think its just a race condition
+            # due to multithreaded testing and doesn't need to be debugged.
+            pass
+
+
+def _connect_to_mainnet(network) -> None:
+    # This recursive helper helps us with a race condition.
+    # Usually the first call of this func will work fine, but in edge cases we need to call it more than once to make all of the tests succeed.
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        _disconnect_network()
+        _connect_to_mainnet(network)
+
+
+def _disconnect_network() -> None:
+    try:
+        brownie.network.disconnect(False)
+    except ConnectionError:
+        # this happens in the test runners sometimes, most likely
+        # from a race condition we see no reason to debug
+        pass

@@ -3,11 +3,14 @@
 import shutil
 import sys
 from pathlib import Path
+from typing import Any, Dict, Tuple
 
 import yaml
 
+from brownie._c_constants import Path
 from brownie._config import CONFIG, _get_data_folder
 from brownie.utils import color, notify
+from brownie.utils._color import bright_black, bright_magenta, green
 from brownie.utils.docopt import docopt
 
 __doc__ = """Usage: brownie networks <command> [<arguments> ...] [options]
@@ -80,7 +83,7 @@ def main():
 def _list(verbose=False):
     if isinstance(verbose, str):
         try:
-            verbose = eval(verbose.capitalize())
+            verbose = eval(verbose.capitalize())  # nosec B307
         except (NameError, SyntaxError) as e:
             print("Please pass 'True' or 'False'.")
             raise e
@@ -112,28 +115,28 @@ def _list(verbose=False):
 
 def _add(env, id_, *args):
     if id_ in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' already exists")
+        raise ValueError(f"Network '{bright_magenta}{id_}{color}' already exists")
 
-    args = _parse_args(args)
+    args_dict = _parse_args(args)
 
-    if "name" not in args:
-        args["name"] = id_
+    if "name" not in args_dict:
+        args_dict["name"] = id_
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
     if env.lower() == "development":
         try:
             new = {
-                "name": args.pop("name"),
+                "name": args_dict.pop("name"),
                 "id": id_,
-                "cmd": args.pop("cmd"),
-                "host": args.pop("host"),
+                "cmd": args_dict.pop("cmd"),
+                "host": args_dict.pop("host"),
             }
         except KeyError as exc:
             raise ValueError(f"Missing field: {exc.args[0]}")
-        if "timeout" in args:
-            new["timeout"] = args.pop("timeout")
-        new["cmd_settings"] = args
+        if "timeout" in args_dict:
+            new["timeout"] = args_dict.pop("timeout")
+        new["cmd_settings"] = args_dict
         _validate_network(new, DEV_REQUIRED)
         networks["development"].append(new)
     else:
@@ -143,23 +146,21 @@ def _add(env, id_, *args):
         if target is None:
             networks["live"].append({"name": env, "networks": []})
             target = networks["live"][-1]["networks"]
-        new = {"id": id_, **args}
+        new = {"id": id_, **args_dict}
         _validate_network(new, PROD_REQUIRED)
         target.append(new)
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify(
-        "SUCCESS", f"A new network '{color('bright magenta')}{new['name']}{color}' has been added"
-    )
+    notify("SUCCESS", f"A new network '{bright_magenta}{new['name']}{color}' has been added")
     _print_verbose_network_description(new, True)
 
 
 def _modify(id_, *args):
     if id_ not in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
+        raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
-    args = _parse_args(args)
+    args_dict = _parse_args(args)
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -169,7 +170,7 @@ def _modify(id_, *args):
         target = next(i for i in networks["development"] if i["id"] == id_)
     else:
         target = next(x for i in networks["live"] for x in i["networks"] if x["id"] == id_)
-    for key, value in args.items():
+    for key, value in args_dict.items():
         t = target
         if key in DEV_CMD_SETTINGS and is_dev:
             t = target["cmd_settings"]
@@ -188,15 +189,13 @@ def _modify(id_, *args):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify(
-        "SUCCESS", f"Network '{color('bright magenta')}{target['name']}{color}' has been modified"
-    )
+    notify("SUCCESS", f"Network '{bright_magenta}{target['name']}{color}' has been modified")
     _print_verbose_network_description(target, True)
 
 
 def _delete(id_):
     if id_ not in CONFIG.networks:
-        raise ValueError(f"Network '{color('bright magenta')}{id_}{color}' does not exist")
+        raise ValueError(f"Network '{bright_magenta}{id_}{color}' does not exist")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -211,12 +210,12 @@ def _delete(id_):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(networks, fp)
 
-    notify("SUCCESS", f"Network '{color('bright magenta')}{id_}{color}' has been deleted")
+    notify("SUCCESS", f"Network '{bright_magenta}{id_}{color}' has been deleted")
 
 
 def _import(path_str, replace=False):
     if isinstance(replace, str):
-        replace = eval(replace.capitalize())
+        replace = eval(replace.capitalize())  # nosec B307
 
     path = Path(path_str)
     with path.open() as fp:
@@ -261,7 +260,7 @@ def _import(path_str, replace=False):
     with _get_data_folder().joinpath("network-config.yaml").open("w") as fp:
         yaml.dump(old_networks, fp)
 
-    notify("SUCCESS", f"Network settings imported from '{color('bright magenta')}{path}{color}'")
+    notify("SUCCESS", f"Network settings imported from '{bright_magenta}{path}{color}'")
 
 
 def _export(path_str):
@@ -275,7 +274,7 @@ def _export(path_str):
         path = path.with_suffix(".yaml")
     shutil.copy(_get_data_folder().joinpath("network-config.yaml"), path)
 
-    notify("SUCCESS", f"Network settings exported as '{color('bright magenta')}{path}{color}'")
+    notify("SUCCESS", f"Network settings exported as '{bright_magenta}{path}{color}'")
 
 
 def _update_provider(name, url):
@@ -287,7 +286,7 @@ def _update_provider(name, url):
     with _get_data_folder().joinpath("providers-config.yaml").open("w") as fp:
         yaml.dump(providers, fp)
 
-    notify("SUCCESS", f"Provider '{color('bright magenta')}{name}{color}' has been updated")
+    notify("SUCCESS", f"Provider '{bright_magenta}{name}{color}' has been updated")
 
 
 def _delete_provider(name):
@@ -295,14 +294,14 @@ def _delete_provider(name):
         providers = yaml.safe_load(fp)
 
     if name not in providers.keys():
-        raise ValueError(f"Provider '{color('bright magenta')}{name}{color}' does not exist")
+        raise ValueError(f"Provider '{bright_magenta}{name}{color}' does not exist")
 
     del providers[name]
 
     with _get_data_folder().joinpath("providers-config.yaml").open("w") as fp:
         yaml.dump(providers, fp)
 
-    notify("SUCCESS", f"Provider '{color('bright magenta')}{name}{color}' has been deleted")
+    notify("SUCCESS", f"Provider '{bright_magenta}{name}{color}' has been deleted")
 
 
 def _set_provider(name):
@@ -310,7 +309,7 @@ def _set_provider(name):
         providers = yaml.safe_load(fp)
 
     if name not in providers.keys():
-        raise ValueError(f"Provider '{color('bright magenta')}{name}{color}' does not exist")
+        raise ValueError(f"Provider '{bright_magenta}{name}{color}' does not exist")
 
     with _get_data_folder().joinpath("network-config.yaml").open() as fp:
         networks = yaml.safe_load(fp)
@@ -334,7 +333,7 @@ def _set_provider(name):
 def _list_providers(verbose=False):
     if isinstance(verbose, str):
         try:
-            verbose = eval(verbose.capitalize())
+            verbose = eval(verbose.capitalize())  # nosec B307
         except (NameError, SyntaxError) as e:
             print("Please pass 'True' or 'False'.")
             raise e
@@ -349,46 +348,46 @@ def _list_providers(verbose=False):
         _print_simple_providers_description(providers)
 
 
-def _parse_args(args):
+def _parse_args(args: Tuple[str, ...]) -> Dict[str, Any]:
     try:
-        args = dict(i.split("=", maxsplit=1) for i in args)
+        parsed: Dict[str, Any] = dict(i.split("=", maxsplit=1) for i in args)
     except ValueError:
         raise ValueError("Arguments must be given as key=value") from None
 
-    for key in args:
-        if args[key].isdigit():
-            args[key] = int(args[key])
-        elif args[key].lower() in ("true", "false", "none"):
-            args[key] = eval(args[key].capitalize())
+    for key, value in parsed.items():
+        if value.isdigit():
+            parsed[key] = int(value)
+        elif value.lower() in ("true", "false", "none"):
+            parsed[key] = eval(value.capitalize())  # nosec B307
 
-    return args
+    return parsed
 
 
-def _print_verbose_providers_description(providers):
+def _print_verbose_providers_description(providers) -> None:
     u = "\u251c"
     for provider in providers:
-        print(f"{color('bright black')}  {u}\u2500{color}provider: {provider}:")
-        print(f"{color('bright black')}  {u}\u2500{color}   host: {providers[provider]}:")
+        print(f"{bright_black}  {u}\u2500{color}provider: {provider}:")
+        print(f"{bright_black}  {u}\u2500{color}   host: {providers[provider]}:")
 
 
-def _print_simple_providers_description(providers):
+def _print_simple_providers_description(providers) -> None:
     u = "\u251c"
-    print(f"{color('bright black')}  {u}\u2500{color}{providers.keys()}:")
+    print(f"{bright_black}  {u}\u2500{color}{providers.keys()}:")
 
 
-def _print_simple_network_description(network_dict, is_last):
+def _print_simple_network_description(network_dict, is_last) -> None:
     u = "\u2514" if is_last else "\u251c"
     print(
-        f"{color('bright black')}  {u}\u2500{color}{network_dict['name']}:"
-        f" {color('green')}{network_dict['id']}{color}"
+        f"{bright_black}  {u}\u2500{color}{network_dict['name']}:"
+        f" {green}{network_dict['id']}{color}"
     )
 
 
-def _print_verbose_network_description(network_dict, is_last, indent=0):
+def _print_verbose_network_description(network_dict, is_last, indent=0) -> None:
     u = "\u2514" if is_last else "\u251c"
     v = " " if is_last else "\u2502"
     if "name" in network_dict:
-        print(f"{color('bright black')}  {u}\u2500{color}{network_dict.pop('name')}")
+        print(f"{bright_black}  {u}\u2500{color}{network_dict.pop('name')}")
 
     obj_keys = sorted(network_dict)
     if "id" in obj_keys:
@@ -401,20 +400,17 @@ def _print_verbose_network_description(network_dict, is_last, indent=0):
 
         if indent:
             u = (" " * indent) + u
-        c = color("green") if key == "id" else ""
-        print(f"{color('bright black')}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
+        c = green if key == "id" else ""
+        print(f"{bright_black}  {v} {u}\u2500{color}{key}: {c}{value}{color}")
 
 
-def _validate_network(network, required):
-    missing = [i for i in required if i not in network]
-    if missing:
+def _validate_network(network, required) -> None:
+    if missing := [i for i in required if i not in network]:
         raise ValueError(f"Network is missing required field(s): {', '.join(missing)}")
 
-    unknown = [i for i in network if i not in required + OPTIONAL]
-    if unknown:
+    if unknown := [i for i in network if i not in required + OPTIONAL]:
         raise ValueError(f"Unknown field(s): {', '.join(unknown)}")
 
     if "cmd_settings" in network:
-        unknown = [i for i in network["cmd_settings"] if i not in DEV_CMD_SETTINGS]
-        if unknown:
+        if unknown := [i for i in network["cmd_settings"] if i not in DEV_CMD_SETTINGS]:
             raise ValueError(f"Unknown field(s): {', '.join(unknown)}")

@@ -3,6 +3,7 @@
 black
 bumpversion
 coverage
+eth-retry
 flake8
 isort
 pip-tools
