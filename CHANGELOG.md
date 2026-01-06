@@ -6,12 +6,8 @@ This changelog format is based on [Keep a Changelog](https://keepachangelog.com/
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
-### Fixed
-- typing for *args and **kwargs ([#1870](https://github.com/eth-brownie/brownie/pull/1870))
-- singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
-- various other minor typing issues
-- Various typos in API and core documentation for readability
-- API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix) ([#1799](https://github.com/eth-brownie/brownie/pull/1799))
+
+## [1.22.0.dev1](https://github.com/eth-brownie/brownie/tree/v1.22.0.dev1) - 2026-01-06
 
 ### Changed
 - Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875) and others)
@@ -20,9 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace [eth-abi](https://github.com/ethereum/eth-abi/) with [faster-eth-abi](https://github.com/BobTheBuidler/faster-eth-abi) ([#1977](https://github.com/eth-brownie/brownie/pull/1977))
 - Replace [hexbytes](https://github.com/ethereum/hexbytes) with [faster-hexbytes](https://github.com/BobTheBuidler/faster-hexbytes) ([#2004](https://github.com/eth-brownie/brownie/pull/2004))
 - Replaced builtin json with ([ujson](https://github.com/ultrajson/ultrajson)) for 4x encoding/decoding speed improvements ([#2005](https://github.com/eth-brownie/brownie/pull/2005))
-- Support eth-utils v5 ([#1872](https://github.com/eth-brownie/brownie/pull/1872))
 - optimize EventDict.__contains__ and .count ([#1868](https://github.com/eth-brownie/brownie/pull/1868))
 - Various TypedDict definitions and other typing improvements
+- Expanded typing coverage and stricter mypy flags for better editor support ([#2051](https://github.com/eth-brownie/brownie/pull/2051), [#2053](https://github.com/eth-brownie/brownie/pull/2053), [#2056](https://github.com/eth-brownie/brownie/pull/2056), [#2082](https://github.com/eth-brownie/brownie/pull/2082), [#2086](https://github.com/eth-brownie/brownie/pull/2086), [#2110](https://github.com/eth-brownie/brownie/pull/2110))
+- Pinned build dependencies and wheel naming for consistent artifacts ([#2050](https://github.com/eth-brownie/brownie/pull/2050), [#2059](https://github.com/eth-brownie/brownie/pull/2059))
+
+### Fixed
+- Prevent brownie console crash when X11 is not available ([#2088](https://github.com/eth-brownie/brownie/pull/2088))
+- Fix system err handling in console ([#2098](https://github.com/eth-brownie/brownie/pull/2098))
+- API endpoint of Sepolia-ETH (Infura) changed to `https://api-sepolia.etherscan.io/api` (with `/api` suffix) ([#1799](https://github.com/eth-brownie/brownie/pull/1799))
+- Correct Base network fork name typo ([#2103](https://github.com/eth-brownie/brownie/pull/2103))
+- Fix ganache version URL mismatch ([#2099](https://github.com/eth-brownie/brownie/pull/2099))
+- Ensure wheel builds on Windows, including 32-bit builds ([#2064](https://github.com/eth-brownie/brownie/pull/2064), [#2065](https://github.com/eth-brownie/brownie/pull/2065))
+- Various typos in API and core documentation for readability ([#2095](https://github.com/eth-brownie/brownie/pull/2095))
+- typing for *args and **kwargs ([#1870](https://github.com/eth-brownie/brownie/pull/1870))
+- singleton metaclass instance typing ([#1888](https://github.com/eth-brownie/brownie/pull/1888))
+- various other minor typing issues
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
