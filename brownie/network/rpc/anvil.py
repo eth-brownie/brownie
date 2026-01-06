@@ -3,6 +3,7 @@
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
+from typing import Any
 
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -27,7 +28,7 @@ CLI_FLAGS = {
 }
 
 
-def launch(cmd: str, **kwargs: dict) -> None:
+def launch(cmd: str, **kwargs: Any) -> None:
     """Launches the RPC client.
 
     Args:

@@ -2,6 +2,7 @@
 
 import sys
 from subprocess import DEVNULL, PIPE
+from typing import Any
 
 import psutil
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -10,7 +11,7 @@ from brownie.exceptions import RPCRequestError
 from brownie.network.web3 import web3
 
 
-def launch(cmd: str, **kwargs: dict) -> None:
+def launch(cmd: str, **_: Any) -> None:
     print(f"\nLaunching '{cmd}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
 

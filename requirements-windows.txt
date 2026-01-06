@@ -8,7 +8,7 @@ aiohappyeyeballs==2.6.1
     # via
     #   -r requirements.txt
     #   aiohttp
-aiohttp==3.13.2
+aiohttp==3.13.3
     # via
     #   -r requirements.txt
     #   web3
@@ -46,7 +46,7 @@ cchecksum==0.3.7.dev0
     #   eth-pydantic-types
     #   faster-eth-abi
     #   faster-eth-utils
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   -r requirements.txt
     #   requests

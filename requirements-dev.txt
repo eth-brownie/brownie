@@ -18,7 +18,7 @@ bumpversion==0.6.0
     # via -r requirements-dev.in
 cachetools==6.2.4
     # via tox
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   -c requirements.txt
     #   requests
@@ -48,7 +48,7 @@ docutils==0.22.4
     # via readme-renderer
 eth-retry==0.3.5
     # via -r requirements-dev.in
-filelock==3.20.1
+filelock==3.20.2
     # via
     #   tox
     #   virtualenv

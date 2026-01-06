@@ -5,6 +5,7 @@ import re
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
+from typing import Any
 
 import psutil
 from eth_utils.toolz import concat
@@ -56,7 +57,7 @@ EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
 EVM_DEFAULT = "istanbul"
 
 
-def launch(cmd: str, **kwargs: dict) -> None:
+def launch(cmd: str, **kwargs: Any) -> None:
     """Launches the RPC client.
 
     Args:
