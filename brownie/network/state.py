@@ -7,7 +7,7 @@ import weakref
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import TYPE_CHECKING, Any, Final, Union, final
+from typing import TYPE_CHECKING, Any, Final, Union, cast, final
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3.datastructures import AttributeDict
@@ -631,7 +631,7 @@ def _get_deployment(
         return None, None
 
     keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
-    build_json: ContractBuildJson = dict(zip(keys, row))  # type: ignore [assignment]
+    build_json = cast(ContractBuildJson, dict(zip(keys, row)))
     # when we json.dump the path map, the tuples are encoded as lists so we need to make them tuples again.
     path_map: PathMap = {k: tuple(v) for k, v in build_json.pop("paths", {}).items()}  # type: ignore [typeddict-item]
     sources: dict[str, Any] = {
