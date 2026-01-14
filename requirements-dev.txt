@@ -48,7 +48,7 @@ docutils==0.22.4
     # via readme-renderer
 eth-retry==0.3.5
     # via -r requirements-dev.in
-filelock==3.20.2
+filelock==3.20.3
     # via
     #   tox
     #   virtualenv
@@ -66,7 +66,7 @@ isort==7.0.0
     # via -r requirements-dev.in
 jaraco-classes==3.4.0
     # via keyring
-jaraco-context==6.0.2
+jaraco-context==6.1.0
     # via keyring
 jaraco-functools==4.4.0
     # via keyring
@@ -101,7 +101,7 @@ packaging==23.2
     #   pytest
     #   tox
     #   twine
-pathspec==0.12.1
+pathspec==1.0.3
     # via black
 pip-tools==7.5.2
     # via -r requirements-dev.in
@@ -182,7 +182,7 @@ typing-extensions==4.15.0
     # via
     #   -c requirements.txt
     #   eth-retry
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   -c requirements.txt
     #   requests
