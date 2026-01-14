@@ -2,7 +2,7 @@
 requires = [
     "setuptools", 
     "wheel", 
-    "mypy[mypyc]==1.18.2",
+    "mypy[mypyc]==1.19.0",
     "types-pyyaml",
     "types-requests",
     "types-ujson",
