@@ -4,7 +4,7 @@ requires = [
     "wheel", 
     # Need packaging >=25 so bdist_wheel understands cp14xt (nogil) ABI tags
     "packaging>=25.0; python_version == '3.14'",
-    "mypy[mypyc]==1.19.0",
+    "mypy[mypyc]==1.19.1",
     "types-pyyaml",
     "types-requests",
     "types-ujson",
