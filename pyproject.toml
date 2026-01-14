@@ -2,6 +2,8 @@
 requires = [
     "setuptools", 
     "wheel", 
+    # Need packaging >=25 so bdist_wheel understands cp14xt (nogil) ABI tags
+    "packaging>=25.0",
     "mypy[mypyc]==1.18.2",
     "types-pyyaml",
     "types-requests",
