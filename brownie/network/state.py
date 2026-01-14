@@ -84,7 +84,7 @@ class TxHistory(metaclass=_Singleton):
         self._list.clear()
 
     def _revert(self, height: BlockNumber) -> None:
-        self._list = [i for i in self._list if i.block_number <= height]  # type: ignore [operator]
+        self._list = [i for i in self._list if i.block_number <= height]
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
         if tx not in self._list:
@@ -322,7 +322,7 @@ class Chain(metaclass=_Singleton):
     def _revert(self, id_: int | str) -> int | str:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
-            _notify_registry(0)  # type: ignore [arg-type]
+            _notify_registry(BlockNumber(0))
             return rpc_client.snapshot()
         rpc_client.revert(id_)
         id_ = rpc_client.snapshot()
@@ -354,7 +354,7 @@ class Chain(metaclass=_Singleton):
             self.reset()
         except NotImplementedError:
             # required for geth dev
-            _notify_registry(0)  # type: ignore [arg-type]
+            _notify_registry(BlockNumber(0))
 
     def _network_disconnected(self) -> None:
         self._undo_buffer.clear()
@@ -363,7 +363,7 @@ class Chain(metaclass=_Singleton):
         self._reset_id = None
         self._current_id = None
         self._chainid = None
-        _notify_registry(0)  # type: ignore [arg-type]
+        _notify_registry(BlockNumber(0))
 
     def get_transaction(self, txid: str | bytes) -> TransactionReceipt:
         """
@@ -490,7 +490,7 @@ class Chain(metaclass=_Singleton):
         self._redo_buffer.clear()
         if self._reset_id is None:
             self._reset_id = self._current_id = rpc.Rpc().snapshot()
-            _notify_registry(0)  # type: ignore [arg-type]
+            _notify_registry(BlockNumber(0))
         else:
             self._reset_id = self._current_id = self._revert(self._reset_id)
         return web3.eth.block_number
@@ -640,7 +640,7 @@ def _get_deployment(
     }
 
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
-    pc_map: dict[int | str, ProgramCounter] | None = build_json.get("pcMap")  # type: ignore [assignment]
+    pc_map: cast(dict[int | str, ProgramCounter] | None, build_json.get("pcMap"))
     if isinstance(pc_map, dict):
         build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
 
