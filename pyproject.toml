@@ -25,7 +25,9 @@ requires = [
 	"py-solc-ast==1.2.10",
 	"py-solc-x==1.1.1",
 	# There is failure to resolve "packaging" on MacOS and Windows
-    "vvm==0.2.1; platform_system == 'Linux'",
+	# NOTE: The current vvm pins packaging < v24, which breaks the release workflow.
+	# Uncomment the lines below once vvm loosens the pin.
+    # "vvm==0.2.1; platform_system == 'Linux'",
     "vyper==0.4.3; platform_system == 'Linux'",
     "websockets==15.0.1",
     "web3==6.11.0; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
