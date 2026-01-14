@@ -173,7 +173,7 @@ iniconfig==2.3.0
     # via
     #   -r requirements.txt
     #   pytest
-jsonschema==4.25.1
+jsonschema==4.26.0
     # via
     #   -r requirements.txt
     #   web3
@@ -223,7 +223,7 @@ propcache==0.4.1
     #   -r requirements.txt
     #   aiohttp
     #   yarl
-protobuf==6.33.2
+protobuf==6.33.4
     # via
     #   -r requirements.txt
     #   web3
@@ -348,7 +348,7 @@ typing-inspection==0.4.2
     #   pydantic
 ujson==5.11.0
     # via -r requirements.txt
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   -r requirements.txt
     #   requests
@@ -362,7 +362,7 @@ wcwidth==0.2.14
     #   prompt-toolkit
 web3==6.11.0
     # via -r requirements.txt
-websockets==15.0.1
+websockets==16.0
     # via
     #   -r requirements.txt
     #   web3
