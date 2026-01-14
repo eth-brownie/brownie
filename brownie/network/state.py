@@ -626,7 +626,7 @@ def _get_deployment(
     try:
         row = cur.fetchone(f"SELECT * FROM {name} WHERE {query}")
     except OperationalError:
-        row = None
+        raise
     if not row:
         return None, None
 
