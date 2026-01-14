@@ -4,15 +4,10 @@ import functools
 import sys
 import threading
 import time
+from collections.abc import Callable, Sequence
 from enum import IntEnum
 from pathlib import Path
-from typing import (
-    Any,
-    Concatenate,
-    ParamSpec,
-    TypeVar,
-)
-from collections.abc import Callable, Sequence
+from typing import Any, Concatenate, ParamSpec, TypeVar
 from warnings import warn
 
 import requests

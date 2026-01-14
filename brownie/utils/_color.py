@@ -2,8 +2,8 @@
 
 import sys
 import traceback
-from typing import Any, Final, Literal, cast, final
 from collections.abc import Sequence
+from typing import Any, Final, Literal, cast, final
 
 import pygments
 from pygments.formatter import Formatter

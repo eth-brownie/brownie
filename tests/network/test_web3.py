@@ -4,7 +4,6 @@ import pytest
 from web3 import HTTPProvider, IPCProvider, Web3, WebsocketProvider
 
 from brownie.exceptions import MainnetUndefined
-
 from tests.conftest import _connect_to_mainnet
 
 

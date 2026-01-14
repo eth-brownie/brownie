@@ -1,10 +1,9 @@
-from typing import Any, Final, TypeVar, overload
 from collections.abc import Mapping
+from typing import Any, Final, TypeVar, overload
 
 from dotenv.variables import parse_variables
 
 from brownie._c_constants import regex_compile
-
 
 _T = TypeVar("_T")
 

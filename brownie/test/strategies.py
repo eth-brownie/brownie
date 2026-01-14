@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Any, Literal, Union, overload
 from collections.abc import Callable, Iterable
+from typing import Any, Literal, Union, overload
 
 from faster_eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st

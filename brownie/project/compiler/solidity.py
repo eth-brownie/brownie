@@ -13,12 +13,7 @@ from solcast.nodes import NodeBase, is_inside_offset
 from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion  # noqa
-from brownie.project.compiler.utils import (
-    VersionList,
-    VersionSpec,
-    _get_alias,
-    expand_source_map,
-)
+from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
 from brownie.typing import (
     BranchMap,
     BytecodeJson,

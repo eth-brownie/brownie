@@ -1,12 +1,4 @@
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    NewType,
-    TypedDict,
-    TypeVar,
-    final,
-)
+from typing import TYPE_CHECKING, Any, Literal, NewType, TypedDict, TypeVar, final
 
 from eth_event.main import EventData
 from eth_typing import ABIElement, ChecksumAddress, HexStr

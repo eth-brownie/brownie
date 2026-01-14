@@ -26,8 +26,8 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Any, NamedTuple, Union, cast
 from collections.abc import Callable
+from typing import Any, NamedTuple, Union, cast
 
 from brownie._c_constants import regex_findall, regex_match, regex_sub
 

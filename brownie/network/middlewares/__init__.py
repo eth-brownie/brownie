@@ -1,11 +1,10 @@
 import functools
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Final, List, Optional, Type
 from collections.abc import Callable, Sequence
+from typing import Any, Dict, Final, List, Optional, Type
 
 from web3 import Web3
 from web3.types import RPCEndpoint
-
 
 partial: Final = functools.partial
 
