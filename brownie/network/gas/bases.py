@@ -2,8 +2,8 @@ import inspect
 import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any
 from collections.abc import Generator, Iterator
+from typing import Any
 
 from brownie.network.web3 import web3
 

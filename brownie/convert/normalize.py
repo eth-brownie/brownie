@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, cast
 from collections.abc import Sequence
+from typing import Any, Final, cast
 
 from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction

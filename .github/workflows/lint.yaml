@@ -27,7 +27,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
       - name: Lint All The Things
-        uses: BobTheBuidler/lint-all-the-things@v0.0.3
+        uses: BobTheBuidler/lint-all-the-things@v0.0.4
         with:
           python-version: 3.14
           pyupgrade-target-version: py310
