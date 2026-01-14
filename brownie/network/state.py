@@ -84,7 +84,7 @@ class TxHistory(metaclass=_Singleton):
         self._list.clear()
 
     def _revert(self, height: BlockNumber) -> None:
-        self._list = [i for i in self._list if i.block_number <= height]
+        self._list = [i for i in self._list if cast(BlockNumber, i.block_number) <= height]
 
     def _add_tx(self, tx: TransactionReceipt) -> None:
         if tx not in self._list:
@@ -640,7 +640,7 @@ def _get_deployment(
     }
 
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
-    pc_map: cast(dict[int | str, ProgramCounter] | None, build_json.get("pcMap"))
+    pc_map = cast(dict[int | str, ProgramCounter] | None, build_json.get("pcMap"))
     if isinstance(pc_map, dict):
         build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
 
