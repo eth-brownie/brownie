@@ -2,6 +2,8 @@
 requires = [
     "setuptools", 
     "wheel", 
+    # Need packaging >=25 so bdist_wheel understands cp14xt (nogil) ABI tags
+    "packaging>=25.0; python_version == '3.14'",
     "mypy[mypyc]==1.19.0",
     "types-pyyaml",
     "types-requests",
@@ -22,9 +24,10 @@ requires = [
     "prompt-toolkit==3.0.52",
 	"py-solc-ast==1.2.10",
 	"py-solc-x==1.1.1",
-	# There is failure to resolve "packaging" on MacOS and Windows
-    "vvm==0.2.1; platform_system == 'Linux'",
-    "vyper==0.4.3; platform_system == 'Linux'",
+	# vvm v0.2.1 pins packaging < v24, which breaks the release workflow on Python3.14t.
+	# NOTE: There is failure to resolve "packaging" on MacOS and Windows so we just skip those
+    "vvm==0.2.1; platform_system == 'Linux' and python_version != '3.14'",
+    "vyper==0.4.3; platform_system == 'Linux' and python_version != '3.14'",
     "websockets==15.0.1",
     "web3==6.11.0; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
 ]
