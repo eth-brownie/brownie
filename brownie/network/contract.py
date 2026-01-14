@@ -899,7 +899,6 @@ class Contract(_DeployedContractBase):
             address = _resolve_address(address_or_alias)
             build, sources = _get_deployment(address)
         except Exception:
-            raise
             build, sources = _get_deployment(alias=address_or_alias)
             if build is not None:
                 address = build["address"]
