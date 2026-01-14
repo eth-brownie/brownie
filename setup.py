@@ -13,11 +13,10 @@ if os.environ.get("BROWNIE_LIB", "0") == "1":
         requirements_filename = "requirements-windows.in"
     else:
         requirements_filename = "requirements.in"
+elif sys.platform == "windows":
+    requirements_filename = "requirements-windows.txt"
 else:
-    if sys.platform == "windows":
-        requirements_filename = "requirements-windows.txt"
-    else:
-        requirements_filename = "requirements.txt"
+    requirements_filename = "requirements.txt"
 
 with open(requirements_filename) as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
@@ -94,9 +93,7 @@ setup(
         "console_scripts": ["brownie=brownie._cli.__main__:main"],
         "pytest11": ["pytest-brownie=brownie.test.plugin"],
     },
-    package_data={
-        "brownie": ["py.typed"],
-    },
+    package_data={"brownie": ["py.typed"]},
     include_package_data=True,
     ext_modules=ext_modules,
     python_requires=">=3.10,<4",
