@@ -9,7 +9,6 @@ from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.typing import ContractName, Source
 
-
 VersionSpec = Union[str, Version]
 VersionList = list[Version]
 

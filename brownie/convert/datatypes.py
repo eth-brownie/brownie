@@ -1,16 +1,8 @@
 #!/usr/bin/python3
 
 import decimal
-from typing import (
-    Any,
-    Final,
-    Optional,
-    TypeVar,
-    Union,
-    final,
-    overload,
-)
 from collections.abc import ItemsView, Iterable, KeysView, Sequence
+from typing import Any, Final, Optional, TypeVar, Union, final, overload
 
 try:
     from vyper.exceptions import DecimalOverrideException

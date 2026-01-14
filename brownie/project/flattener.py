@@ -1,14 +1,8 @@
 import re
-from typing import Any, DefaultDict, Final, final
 from collections.abc import Iterator
+from typing import Any, DefaultDict, Final, final
 
-from brownie._c_constants import (
-    Path,
-    defaultdict,
-    mapcat,
-    regex_compile,
-    regex_sub,
-)
+from brownie._c_constants import Path, defaultdict, mapcat, regex_compile, regex_sub
 from brownie.utils.toposort import toposort_flatten
 
 # Pattern matching Solidity `import-directive`, capturing path component

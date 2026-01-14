@@ -1,10 +1,10 @@
-import faster_hexbytes
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Final, final
 from collections.abc import Callable, Sequence
+from typing import Any, Final, final
 
+import faster_hexbytes
 from web3 import Web3
 from web3.types import LogReceipt, RPCEndpoint
 

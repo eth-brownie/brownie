@@ -4,24 +4,14 @@
 import time
 import warnings
 from collections import OrderedDict
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, ValuesView
 from pathlib import Path
 from threading import Lock, Thread
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Final,
-    Generic,
-    TypeVar,
-    Union,
-    cast,
-    final,
-    overload,
-)
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, ValuesView
+from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar, Union, cast, final, overload
 
 import eth_event
 from eth_event import EventError
-from eth_event.main import _TraceStep, DecodedEvent, NonDecodedEvent, TopicMapData
+from eth_event.main import DecodedEvent, NonDecodedEvent, TopicMapData, _TraceStep
 from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from ujson import JSONDecodeError
 from web3._utils import filters

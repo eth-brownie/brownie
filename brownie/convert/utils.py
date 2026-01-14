@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from typing import Final
 from collections.abc import Sequence
+from typing import Final
 
 import eth_hash.auto
 from eth_typing import ABIComponent, ABIFunction, HexStr
-
 
 keccak: Final = eth_hash.auto.keccak
 

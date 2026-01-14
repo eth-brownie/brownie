@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 import time
+from collections.abc import Callable
 from threading import Thread
 from typing import Final
-from collections.abc import Callable
 
 from mypy_extensions import mypyc_attr
 

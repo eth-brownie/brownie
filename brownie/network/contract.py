@@ -5,18 +5,12 @@ import io
 import os
 import time
 import warnings
+from collections.abc import Callable, Coroutine, Iterator
 from pathlib import Path
+from re import Match
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Final,
-    Optional,
-    Union,
-)
-from collections.abc import Callable, Coroutine, Iterator
-from re import Match
+from typing import TYPE_CHECKING, Any, Final, Optional, Union
 
 import requests
 import solcx
@@ -69,12 +63,7 @@ from brownie.typing import (
     TransactionReceiptType,
 )
 from brownie.utils import color, hexbytes_to_hexstring
-from brownie.utils._color import (
-    bright_blue,
-    bright_green,
-    bright_magenta,
-    bright_red,
-)
+from brownie.utils._color import bright_blue, bright_green, bright_magenta, bright_red
 
 from . import accounts, chain
 from .event import _add_deployment_topics, _get_topics, event_watcher

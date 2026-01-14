@@ -5,13 +5,13 @@ import pathlib
 import sys
 import warnings
 from ast import FunctionDef, Import, ImportFrom, dump, parse
+from collections.abc import Sequence
 from importlib import reload
 from importlib.machinery import SourceFileLoader
 from importlib.util import find_spec
 from pathlib import WindowsPath
 from types import FunctionType, ModuleType
 from typing import Any, Final
-from collections.abc import Sequence
 
 from brownie._c_constants import Path, import_module, sha1
 from brownie.exceptions import ProjectNotFound

@@ -15,11 +15,7 @@ from vyper.exceptions import VyperException
 from brownie._c_constants import Version, deque, sha1
 from brownie.exceptions import CompilerError, IncompatibleVyperVersion
 from brownie.project import sources
-from brownie.project.compiler.utils import (
-    VersionList,
-    VersionSpec,
-    expand_source_map,
-)
+from brownie.project.compiler.utils import VersionList, VersionSpec, expand_source_map
 from brownie.project.sources import is_inside_offset
 from brownie.typing import (
     Branches,

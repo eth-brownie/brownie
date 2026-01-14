@@ -10,7 +10,6 @@ from brownie._c_constants import Decimal, HexBytes
 from .datatypes import EthAddress, Fixed, HexString, Wei
 from .utils import get_int_bounds
 
-
 is_hex: Final = faster_eth_utils.is_hex
 to_text: Final = faster_eth_utils.to_text
 
