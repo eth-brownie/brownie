@@ -48,7 +48,7 @@ docutils==0.22.4
     # via readme-renderer
 eth-retry==0.3.5
     # via -r requirements-dev.in
-filelock==3.20.2
+filelock==3.20.3
     # via
     #   tox
     #   virtualenv
