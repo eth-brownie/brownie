@@ -1,12 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index"
 
-from typing import (
-    Final,
-    Literal,
-    cast,
-    final,
-)
+from typing import Final, Literal, cast, final
 
 from brownie.typing import (
     BuildJson,

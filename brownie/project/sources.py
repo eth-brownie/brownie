@@ -7,14 +7,7 @@ import semantic_version
 from eth_typing import HexStr
 from vvm.utils.convert import to_vyper_version
 
-from brownie._c_constants import (
-    Path,
-    NpmSpec,
-    regex_findall,
-    regex_finditer,
-    regex_sub,
-    sha1,
-)
+from brownie._c_constants import NpmSpec, Path, regex_findall, regex_finditer, regex_sub, sha1
 from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.typing import ContractName, Offset
 from brownie.utils import color

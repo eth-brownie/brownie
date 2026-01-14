@@ -34,8 +34,8 @@
 ########################################################################
 
 import functools
-from typing import Final, final
 from collections.abc import Iterator
+from typing import Final, final
 
 __all__ = ["toposort", "toposort_flatten", "CircularDependencyError"]
 
