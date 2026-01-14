@@ -640,7 +640,7 @@ def _get_deployment(
     }
 
     build_json["allSourcePaths"] = {k: path_map[k][1] for k in path_map}
-    pc_map = cast(dict[int | str, ProgramCounter] | None, build_json.get("pcMap"))
+    pc_map = cast(dict[int | str, ProgramCounter] | None, build_json.get("pcMap", None))
     if isinstance(pc_map, dict):
         build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
 
