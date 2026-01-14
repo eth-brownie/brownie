@@ -1,12 +1,12 @@
-#ifndef MYPYC_NATIVE_INTERNAL_eth_brownie_H
-#define MYPYC_NATIVE_INTERNAL_eth_brownie_H
+#ifndef MYPYC_LIBRT_INTERNAL_eth_brownie_H
+#define MYPYC_LIBRT_INTERNAL_eth_brownie_H
 #include <Python.h>
 #include <CPy.h>
 #include "__native_eth_brownie.h"
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2444];
+extern PyObject *CPyStatics[2447];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
