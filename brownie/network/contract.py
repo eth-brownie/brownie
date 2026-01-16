@@ -114,10 +114,13 @@ _explorer_tokens = {
     "ftmscan": "FTMSCAN_TOKEN",
     "arbiscan": "ARBISCAN_TOKEN",
     "snowtrace": "SNOWTRACE_TOKEN",
+    "snowscan": "SNOWTRACE_TOKEN",
     "aurorascan": "AURORASCAN_TOKEN",
     "moonscan": "MOONSCAN_TOKEN",
     "gnosisscan": "GNOSISSCAN_TOKEN",
     "base": "BASESCAN_TOKEN",
+    "blastscan": "BLASTSCAN_TOKEN",
+    "zksync": "ZKSYNCSCAN_TOKEN",
 }
 
 _rng = random.Random()
@@ -138,9 +141,9 @@ class _ContractBase:
         abi = self.abi
         self.topics: Final = _get_topics(abi)
         self.selectors: Final[Dict[Selector, FunctionName]] = {
-            build_function_selector(i): FunctionName(i["name"])
+            build_function_selector(i): f"{i['type']} {build_function_signature(i)}"
             for i in abi
-            if i["type"] == "function"
+            if i["type"] in ("function", "error", "event")
         }
         # JPD fixed: this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
         self.signatures: Final[Dict[FunctionName, Selector]] = {
@@ -1246,7 +1249,7 @@ class Contract(_DeployedContractBase):
         return self
 
     @classmethod
-    def get_solc_version(cls, compiler_str: str, address: str) -> Version:
+    def get_solc_version(cls, compiler_str: str, address: str) -> Version: # type: ignore
         """
         Return the solc compiler version either from the passed compiler string
         or try to find the latest available patch semver compiler version.
