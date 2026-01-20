@@ -34,7 +34,8 @@
 ########################################################################
 
 import functools
-from typing import Dict, Final, Iterator, List, Set, final
+from collections.abc import Iterator
+from typing import Final, final
 
 __all__ = ["toposort", "toposort_flatten", "CircularDependencyError"]
 
@@ -49,18 +50,18 @@ class CircularDependencyError(ValueError):
         #  error messages.  That's convenient for doctests.
         super().__init__(
             "Circular dependencies exist among these items: {{{}}}".format(
-                ", ".join("{!r}:{!r}".format(key, value) for key, value in sorted(data.items()))
+                ", ".join(f"{key!r}:{value!r}" for key, value in sorted(data.items()))
             )
         )
         self.data = data
 
 
-def toposort(data: Dict) -> Iterator[Set]:
+def toposort(data: dict) -> Iterator[set]:
     """Dependencies are expressed as a dictionary whose keys are items
     and whose values are a set of dependent items. Output is a list of
     sets in topological order. The first set consists of items with no
-    dependences, each subsequent set consists of items that depend upon
-    items in the preceeding sets."""
+    dependencies, each subsequent set consists of items that depend upon
+    items in the preceding sets."""
 
     # Special case empty input.
     if len(data) == 0:
@@ -74,7 +75,7 @@ def toposort(data: Dict) -> Iterator[Set]:
         v.discard(k)
     # Find all items that don't depend on anything.
     extra_items_in_deps = _reduce(set.union, data.values()) - set(data.keys())
-    # Add empty dependences where needed.
+    # Add empty dependencies where needed.
     data.update({item: set() for item in extra_items_in_deps})
     while True:
         ordered = {item for item, dep in data.items() if len(dep) == 0}
@@ -86,7 +87,7 @@ def toposort(data: Dict) -> Iterator[Set]:
         raise CircularDependencyError(data)
 
 
-def toposort_flatten(data: Dict, sort: bool = True) -> List:
+def toposort_flatten(data: dict, sort: bool = True) -> list:
     """Returns a single list of dependencies. For any set returned by
     toposort(), those items are sorted and appended to the result (just to
     make the results deterministic)."""

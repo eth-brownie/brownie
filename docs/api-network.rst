@@ -1523,7 +1523,7 @@ EventWatcher
     * ``event``: The ContractEvent instance to watch for.
     * ``callback``: The function to be called when a new ``event`` is detected. It MUST take one and only one parameter, which will be the event data.
     * ``delay``: The delay between each check for new ``event`` (s). Defaults to 2.
-    * ``repeat``: Wether to repeat the callback or not (if ``False``, the callback instructions will only be called the first time events are detected). Defaults to ``True``.
+    * ``repeat``: Whether to repeat the callback or not (if ``False``, the callback instructions will only be called the first time events are detected). Defaults to ``True``.
 
     If the function is called with the same ``event`` more than once, the delay between each check for this ``event`` will take the minimum value between the already set delay and the one passed as parameter.
 
@@ -1537,7 +1537,7 @@ EventWatcher
 
     If that is your goal, check the :func:`EventWatcher.reset <brownie.network.event.EventWatcher.reset>` method.
 
-    * ``wait``: Wether to wait for threads to join within the function. Defaults to ``True``.
+    * ``wait``: Whether to wait for threads to join within the function. Defaults to ``True``.
 
 .. py:classmethod:: EventWatcher.reset
 

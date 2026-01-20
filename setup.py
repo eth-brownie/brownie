@@ -5,7 +5,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     long_description = fh.read()
 
 if os.environ.get("BROWNIE_LIB", "0") == "1":
@@ -13,57 +13,67 @@ if os.environ.get("BROWNIE_LIB", "0") == "1":
         requirements_filename = "requirements-windows.in"
     else:
         requirements_filename = "requirements.in"
+elif sys.platform == "windows":
+    requirements_filename = "requirements-windows.txt"
 else:
-    if sys.platform == "windows":
-        requirements_filename = "requirements-windows.txt"
-    else:
-        requirements_filename = "requirements.txt"
+    requirements_filename = "requirements.txt"
 
-with open(requirements_filename, "r") as f:
+with open(requirements_filename) as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
 
-if os.environ.get("BROWNIE_NOCOMPILE") or platform.python_implementation() != "CPython":
+try:
+    from mypyc.build import mypycify
+except ImportError:
+    skip_mypyc = True
+else:
     # We only compile this library for CPython, other implementations will use it as normal interpreted python code
+    # CPython users can also set the BROWNIE_NOCOMPILE env at install time to run brownie in interpreted python mode
+    skip_mypyc = (
+        os.environ.get("BROWNIE_NOCOMPILE")
+        or platform.python_implementation() != "CPython"
+        or any(
+            cmd in sys.argv
+            for cmd in ("sdist", "egg_info", "--name", "--version", "--help", "--help-commands")
+        )
+    )
+if skip_mypyc:
     ext_modules = []
 else:
-    try:
-        from mypyc.build import mypycify
-    except ImportError:
-        ext_modules = []
-    else:
-        ext_modules = mypycify(
-            [
-                "brownie/_c_constants.py",
-                "brownie/_cli",
-                "brownie/_config.py",
-                "brownie/_expansion.py",
-                "brownie/convert",
-                "brownie/network/__init__.py",
-                "brownie/network/alert.py",
-                "brownie/network/event.py",
-                "brownie/network/middlewares/__init__.py",
-                "brownie/network/middlewares/caching.py",
-                "brownie/network/middlewares/catch_tx_revert.py",
-                "brownie/network/middlewares/ganache7.py",
-                "brownie/network/middlewares/geth_poa.py",
-                "brownie/network/middlewares/hardhat.py",
-                "brownie/network/state.py",
-                "brownie/project",
-                "brownie/test/coverage.py",
-                "brownie/test/managers/utils.py",
-                "brownie/test/output.py",
-                "brownie/test/stateful.py",
-                "brownie/typing.py",
-                "brownie/utils/__init__.py",
-                "brownie/utils/_color.py",
-                "brownie/utils/output.py",
-                "brownie/utils/sql.py",
-                "brownie/utils/toposort.py",
-                # "--strict",
-                "--pretty",
-                "--check-untyped-defs",
-            ]
-        )
+    ext_modules = mypycify(
+        [
+            "brownie/_c_constants.py",
+            "brownie/_cli",
+            "brownie/_config.py",
+            "brownie/_expansion.py",
+            "brownie/convert",
+            "brownie/network/__init__.py",
+            "brownie/network/alert.py",
+            "brownie/network/event.py",
+            "brownie/network/middlewares/__init__.py",
+            "brownie/network/middlewares/caching.py",
+            "brownie/network/middlewares/catch_tx_revert.py",
+            "brownie/network/middlewares/ganache7.py",
+            "brownie/network/middlewares/geth_poa.py",
+            "brownie/network/middlewares/hardhat.py",
+            "brownie/network/state.py",
+            "brownie/project",
+            "brownie/test/coverage.py",
+            "brownie/test/managers/utils.py",
+            "brownie/test/output.py",
+            "brownie/test/stateful.py",
+            "brownie/typing.py",
+            "brownie/utils/__init__.py",
+            "brownie/utils/_color.py",
+            "brownie/utils/output.py",
+            "brownie/utils/sql.py",
+            "brownie/utils/toposort.py",
+            # "--strict",
+            "--pretty",
+            "--check-untyped-defs",
+        ],
+        group_name="eth_brownie",
+        strict_dunder_typing=True,
+    )
 
 
 setup(
@@ -83,9 +93,7 @@ setup(
         "console_scripts": ["brownie=brownie._cli.__main__:main"],
         "pytest11": ["pytest-brownie=brownie.test.plugin"],
     },
-    package_data={
-        "brownie": ["py.typed"],
-    },
+    package_data={"brownie": ["py.typed"]},
     include_package_data=True,
     ext_modules=ext_modules,
     python_requires=">=3.10,<4",
@@ -98,5 +106,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ],
 )

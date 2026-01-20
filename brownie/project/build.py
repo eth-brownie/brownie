@@ -1,25 +1,17 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index"
 
-from typing import (
-    Any,
-    Dict,
-    Final,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-    final,
-)
+from typing import Final, Literal, cast, final
 
 from brownie.typing import (
     BuildJson,
     ContractBuildJson,
     ContractName,
+    Count,
     InterfaceBuildJson,
     Language,
     Offset,
+    PCMap,
     ProgramCounter,
 )
 
@@ -54,7 +46,7 @@ BUILD_KEYS: Final = (
     "sourcePath",
 ) + DEPLOYMENT_KEYS
 
-_revert_map: Final[Dict[int | str, tuple | Literal[False]]] = {}
+_revert_map: Final[dict[int | str, tuple | Literal[False]]] = {}
 
 
 @final
@@ -63,13 +55,13 @@ class Build:
 
     def __init__(self, sources: Sources) -> None:
         self._sources: Final = sources
-        self._contracts: Final[Dict[ContractName, ContractBuildJson]] = {}
-        self._interfaces: Final[Dict[ContractName, InterfaceBuildJson]] = {}
+        self._contracts: Final[dict[ContractName, ContractBuildJson]] = {}
+        self._interfaces: Final[dict[ContractName, InterfaceBuildJson]] = {}
 
     def _add_contract(
         self,
         build_json: ContractBuildJson,
-        alias: Optional[ContractName] = None,
+        alias: ContractName | None = None,
     ) -> None:
         contract_name = alias or build_json["contractName"]
         if contract_name in self._contracts and build_json["type"] == "interface":
@@ -82,9 +74,9 @@ class Build:
             # no pcMap means build artifact is for an interface
             return
 
-        pc_map: Dict[int | str, ProgramCounter] = build_json["pcMap"]  # type: ignore [assignment]
+        pc_map: dict[int | str, ProgramCounter] = build_json["pcMap"]  # type: ignore [assignment]
         if "0" in pc_map:
-            build_json["pcMap"] = {int(k): pc_map[k] for k in pc_map}
+            build_json["pcMap"] = PCMap({Count(int(k)): pc_map[k] for k in pc_map})
         self._generate_revert_map(pc_map, build_json["allSourcePaths"], build_json["language"])
 
     def _add_interface(self, build_json: InterfaceBuildJson) -> None:
@@ -93,18 +85,20 @@ class Build:
 
     def _generate_revert_map(
         self,
-        pcMap: Dict[int | str, ProgramCounter],
-        source_map: Dict[str, str],
+        pcMap: dict[int | str, ProgramCounter],
+        source_map: dict[str, str],
         language: Language,
     ) -> None:
         # Adds a contract's dev revert strings to the revert map and it's pcMap
         marker = "//" if language == "Solidity" else "#"
         for pc, data in pcMap.items():
-            if data["op"] in ("REVERT", "INVALID") or "jump_revert" in data:
-                if "path" not in data or data["path"] is None:
+            op = data["op"]
+            if op in ("REVERT", "INVALID") or "jump_revert" in data:
+                path = data.get("path")
+                if path is None:
                     continue
 
-                path_str = source_map[data["path"]]
+                path_str = source_map[path]
 
                 if "dev" not in data:
                     if "fn" not in data or "first_revert" in data:
@@ -119,10 +113,10 @@ class Build:
                     except (KeyError, ValueError):
                         pass
 
-                msg = "" if data["op"] == "REVERT" else "invalid opcode"
+                msg = "" if op == "REVERT" else "invalid opcode"
                 revert = (
                     path_str,
-                    tuple(data["offset"]),
+                    data["offset"],
                     data.get("fn", "<None>"),
                     data.get("dev", msg),
                     self._sources,
@@ -155,8 +149,8 @@ class Build:
 
     def items(
         self,
-        path: Optional[str] = None,
-    ) -> List[Tuple[ContractName, BuildJson]]:
+        path: str | None = None,
+    ) -> list[tuple[ContractName, BuildJson]]:
         """Provides an list of tuples as (key,value), similar to calling dict.items.
         If a path is given, only contracts derived from that source file are returned."""
         items = [*self._contracts.items(), *self._interfaces.items()]
@@ -169,7 +163,7 @@ class Build:
         stem = self._stem(contract_name)
         return stem in self._contracts or stem in self._interfaces
 
-    def get_dependents(self, contract_name: ContractName) -> List[ContractName]:
+    def get_dependents(self, contract_name: ContractName) -> list[ContractName]:
         """Returns a list of contract names that inherit from or link to the given
         contract. Used by the compiler when determining which contracts to recompile
         based on a changed source file."""
@@ -179,7 +173,7 @@ class Build:
         return contract_name.replace(".json", "")  # type: ignore [return-value]
 
 
-def _get_dev_revert(pc: int) -> Optional[str]:
+def _get_dev_revert(pc: int) -> str | None:
     # Given the program counter from a stack trace that caused a transaction
     # to revert, returns the commented dev string (if any)
     if pc not in _revert_map:
@@ -192,12 +186,12 @@ def _get_dev_revert(pc: int) -> Optional[str]:
 
 def _get_error_source_from_pc(
     pc: int, pad: int = 3
-) -> Tuple[Optional[str], Optional[Tuple[int, int]], Optional[str], Optional[str]]:
+) -> tuple[str | None, tuple[int, int] | None, str | None, str | None]:
     # Given the program counter from a stack trace that caused a transaction
     # to revert, returns the highlighted relevant source code and the method name.
     if pc not in _revert_map or _revert_map[pc] is False:
         return (None,) * 4
-    revert: Tuple[str, Offset, str, str, Sources] = _revert_map[pc]  # type: ignore [assignment]
-    source = revert[4].get(revert[0])  # type: ignore [index]
+    revert = cast(tuple[str, Offset, str, str, Sources], _revert_map[pc])
+    source = revert[4].get(revert[0])
     highlight, linenos = highlight_source(source, revert[1], pad=pad)
-    return highlight, linenos, revert[0], revert[2]  # type: ignore [index]
+    return highlight, linenos, revert[0], revert[2]

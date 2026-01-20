@@ -4,32 +4,32 @@ on:
   push:
     branches:
       - master
-      
+  pull_request:
+    branches:
+      - master
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  format:
+  compile:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Build wheel
+      uses: BobTheBuidler/mypycify@v0.2.6
       with:
         python-version: '3.13'
-
-    - name: Compile
-      run: pip install .
-
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v5
-      with:
-        branch: compile-c-files-auto
-        base: master
-        title: "chore: Compile C files for source control"
-        body: "This PR was created automatically by GitHub Actions in response to recent changes on master branch."
+        hash-key: |
+          **/*.py
+          pyproject.toml
+          setup.py
+        ccache: 'true'
+        push-source: 'true'
+        normalize-source: 'true'
+        trigger-branch-name: ${{ github.head_ref || github.ref_name }}
         commit-message: "chore: compile C files for source control"

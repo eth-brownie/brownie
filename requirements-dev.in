@@ -1,17 +1,14 @@
 -c requirements.txt
 
-black
-bumpversion
-coverage
-eth-retry
-flake8
-isort
-pip-tools
-pygments-lexer-solidity
-pytest-cov
-pytest-mock
-sphinx
-sphinx_rtd_theme
-tox
-twine
-wheel
+black==26.1.0
+bumpversion==0.6.0
+eth-retry==0.3.5
+flake8==7.3.0
+isort==7.0.0
+pip-tools==7.5.2
+pygments-lexer-solidity==0.7.0
+pytest-cov==7.0.0
+pytest-mock==3.15.1
+tox==4.34.1
+twine==6.2.0
+wheel==0.45.1

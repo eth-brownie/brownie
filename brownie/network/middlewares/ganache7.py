@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional, Sequence, final
+from collections.abc import Callable, Sequence
+from typing import Any, final
 
 from web3 import Web3
 from web3.types import RPCEndpoint
@@ -9,7 +10,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 @final
 class Ganache7MiddleWare(BrownieMiddlewareABC):
     @classmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         return -100 if w3.client_version.lower().startswith("ganache/v7") else None
 
     def process_request(
@@ -17,13 +18,13 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         make_request: Callable,
         method: RPCEndpoint,
         params: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         result = make_request(method, params)
 
-        # reformat failed eth_call / eth_sendTransaction output to mimick that of Ganache 6.x
+        # reformat failed eth_call / eth_sendTransaction output to mimic that of Ganache 6.x
         # yes, this is hacky and awful and in the future we should stop supporting
         # the older version of ganache. but doing so will cause unexpected issues
-        # in projects that are still pinned to the old verion, so for now we support
+        # in projects that are still pinned to the old version, so for now we support
         # both and simply raise a warning of a pending deprecation.
         data: dict
         error: dict

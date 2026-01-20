@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Any, Callable, Iterable, Literal, Optional, Tuple, Union, overload
+from collections.abc import Callable, Iterable
+from typing import Any, Literal, Union, overload
 
 from faster_eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
@@ -97,7 +98,7 @@ class _DeferredStrategyRepr(DeferredStrategy):
 
 
 def _exclude_filter(fn: Callable) -> Callable:
-    def wrapper(*args: Tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
+    def wrapper(*args: tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
         strat = fn(*args, **kwargs)
         if exclude is None:
             return strat
@@ -116,7 +117,7 @@ def _exclude_filter(fn: Callable) -> Callable:
 
 def _check_numeric_bounds(
     type_str: str, min_value: NumberType, max_value: NumberType, num_class: type
-) -> Tuple:
+) -> tuple:
     lower, upper = get_int_bounds(type_str)
     min_final = lower if min_value is None else num_class(min_value)
     max_final = upper if max_value is None else num_class(max_value)
@@ -131,7 +132,7 @@ def _check_numeric_bounds(
 
 @_exclude_filter
 def _integer_strategy(
-    type_str: str, min_value: Optional[int] = None, max_value: Optional[int] = None
+    type_str: str, min_value: int | None = None, max_value: int | None = None
 ) -> SearchStrategy:
     min_value, max_value = _check_numeric_bounds(type_str, min_value, max_value, Wei)
     return st.integers(min_value=min_value, max_value=max_value)
@@ -146,7 +147,7 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy(length: Optional[int] = None, include: list = []) -> SearchStrategy:
+def _address_strategy(length: int | None = None, include: list = []) -> SearchStrategy:
     return _DeferredStrategyRepr(
         lambda: st.sampled_from(list(network.accounts)[:length] + include), "accounts"
     )
@@ -154,7 +155,7 @@ def _address_strategy(length: Optional[int] = None, include: list = []) -> Searc
 
 @_exclude_filter
 def _bytes_strategy(
-    abi_type: BasicType, min_size: Optional[int] = None, max_size: Optional[int] = None
+    abi_type: BasicType, min_size: int | None = None, max_size: int | None = None
 ) -> SearchStrategy:
     size = abi_type.sub
     if not size:
@@ -203,7 +204,7 @@ def _array_strategy(
     strat = st.lists(base_strategy, min_size=min_len, max_size=max_len, unique=unique)
     # swap 'size' for 'length' in the repr
     repr_ = "length".join(strat.__repr__().rsplit("size", maxsplit=2))
-    strat._LazyStrategy__representation = repr_  # type: ignore
+    strat._LazyStrategy__representation = repr_
     return strat
 
 
@@ -226,16 +227,16 @@ def contract_strategy(contract_name: str) -> SearchStrategy:
 @overload
 def strategy(
     type_str: Literal["address"],
-    length: Optional[int] = None,
+    length: int | None = None,
     include: list = [],
 ) -> SearchStrategy: ...
 
 
 @overload
 def strategy(
-    type_str: Union[EvmIntType, EvmUintType],
-    min_value: Optional[int] = None,
-    max_value: Optional[int] = None,
+    type_str: EvmIntType | EvmUintType,
+    min_value: int | None = None,
+    max_value: int | None = None,
 ) -> SearchStrategy: ...
 
 
@@ -246,7 +247,7 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if type_str == "address":
         return _address_strategy(**kwargs)
     if type_str == "bool":
-        return st.booleans(**kwargs)  # type: ignore
+        return st.booleans(**kwargs)
     if type_str == "string":
         return _string_strategy(**kwargs)
 
@@ -254,7 +255,7 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if abi_type.is_array:
         return _array_strategy(abi_type, **kwargs)
     if isinstance(abi_type, TupleType):
-        return _tuple_strategy(abi_type, **kwargs)  # type: ignore
+        return _tuple_strategy(abi_type, **kwargs)
 
     base = abi_type.base
     if base in ("int", "uint"):

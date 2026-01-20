@@ -3,7 +3,7 @@
 import sys
 from inspect import getmembers
 from types import FunctionType
-from typing import Any, ClassVar, Dict, Final, Optional, final
+from typing import Any, ClassVar, Final, final
 
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
@@ -39,7 +39,7 @@ class _BrownieStateMachine:
             marker.rotate(1)
 
         if hasattr(self, "setup"):
-            self.setup()  # type: ignore
+            self.setup()
 
     def execute_step(self, step) -> None:
         try:
@@ -69,11 +69,11 @@ def _attr_filter(attr: str, pattern: str) -> bool:
     return attr == pattern or attr.startswith(f"{pattern}_")
 
 
-def _generate_state_machine(rules_object: type) -> type:
+def _generate_state_machine(rules_object: type) -> type[_BrownieStateMachine]:
 
     bases = (_BrownieStateMachine, rules_object, sf.RuleBasedStateMachine)
     machine = type("BrownieStateMachine", bases, {})
-    strategies: Dict[str, SearchStrategy] = {
+    strategies: dict[str, SearchStrategy] = {
         k: v for k, v in getmembers(rules_object) if isinstance(v, SearchStrategy)
     }
 
@@ -98,13 +98,13 @@ def _generate_state_machine(rules_object: type) -> type:
 
 
 def state_machine(
-    rules_object: type, *args: Any, settings: Optional[dict] = None, **kwargs: Any
+    rules_object: type, *args: Any, settings: dict | None = None, **kwargs: Any
 ) -> None:
 
     machine = _generate_state_machine(rules_object)
     if hasattr(rules_object, "__init__"):
         # __init__ is treated as a class method
-        rules_object.__init__(machine, *args, **kwargs)  # type: ignore
+        rules_object.__init__(machine, *args, **kwargs)  # type: ignore [misc]
     brownie.chain.snapshot()
 
     try:
@@ -112,4 +112,4 @@ def state_machine(
     finally:
         if hasattr(machine, "teardown_final"):
             # teardown_final is also a class method
-            machine.teardown_final(machine)  # type: ignore
+            machine.teardown_final(machine)

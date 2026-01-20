@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional, Sequence, final
+from collections.abc import Callable, Sequence
+from typing import Any, final
 
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
@@ -11,7 +12,7 @@ from brownie.network.middlewares import BrownieMiddlewareABC
 @final
 class GethPOAMiddleware(BrownieMiddlewareABC):
     @classmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         # NOTE: We check `0` because Ganache sometimes injects a block of their own.
         # It doesn't have the extra data that we are checking for.
         # We also check `"latest"` because On Polygon networks, anvil in forked
@@ -29,6 +30,6 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
         make_request: Callable,
         method: RPCEndpoint,
         params: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         middleware_fn = geth_poa_middleware(make_request, self.w3)
         return middleware_fn(method, params)

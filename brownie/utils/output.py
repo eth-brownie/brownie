@@ -1,11 +1,11 @@
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
 
 
 def build_tree(
     tree_structure: Sequence,
     multiline_pad: int = 1,
-    pad_depth: Optional[List[int]] = None,
-    _indent_data: Optional[list] = None,
+    pad_depth: list[int] | None = None,
+    _indent_data: list | None = None,
 ) -> str:
     """
     Build a tree graph from a nested list.

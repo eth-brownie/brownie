@@ -1,16 +1,11 @@
 import re
-from typing import Any, DefaultDict, Dict, Final, Iterator, Set, final
+from collections.abc import Iterator
+from typing import Any, DefaultDict, Final, final
 
-from brownie._c_constants import (
-    Path,
-    defaultdict,
-    mapcat,
-    regex_compile,
-    regex_sub,
-)
+from brownie._c_constants import Path, defaultdict, mapcat, regex_compile, regex_sub
 from brownie.utils.toposort import toposort_flatten
 
-# Patten matching Solidity `import-directive`, capturing path component
+# Pattern matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
 IMPORT_PATTERN: Final = regex_compile(
     r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"
@@ -27,11 +22,11 @@ class Flattener:
         self,
         primary_source_fp: str,
         contract_name: str,
-        remappings: Dict[str, str],
-        compiler_settings: Dict[str, Any],
+        remappings: dict[str, str],
+        compiler_settings: dict[str, Any],
     ) -> None:
-        self.sources: Final[Dict[str, str]] = {}
-        self.dependencies: Final[DefaultDict[str, Set[str]]] = defaultdict(set)
+        self.sources: Final[dict[str, str]] = {}
+        self.dependencies: Final[DefaultDict[str, set[str]]] = defaultdict(set)
         self.compiler_settings: Final = compiler_settings
         self.contract_name: Final = contract_name
         self.contract_file: Final = self.path_to_name(primary_source_fp)
@@ -103,7 +98,7 @@ class Flattener:
         pragmas_iter: Iterator[str] = mapcat(_PRAGMA_PATTERN_FINDALL, sources)
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set(s.strip() for s in pragmas_iter)
+        pragmas = {s.strip() for s in pragmas_iter}
 
         # now we go through and remove all imports/pragmas/license stuff, then flatten
         flat = (
@@ -119,7 +114,7 @@ class Flattener:
         return regex_sub(r"\n{3,}", "\n\n", flat)
 
     @property
-    def standard_input_json(self) -> Dict:
+    def standard_input_json(self) -> dict:
         """Useful for etherscan verification via solidity-standard-json-input mode.
 
         Sadly programmatic upload of this isn't available at the moment (2021-10-11)

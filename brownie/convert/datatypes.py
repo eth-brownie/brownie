@@ -1,20 +1,8 @@
 #!/usr/bin/python3
 
 import decimal
-from typing import (
-    Any,
-    Dict,
-    Final,
-    ItemsView,
-    Iterable,
-    KeysView,
-    List,
-    Optional,
-    Sequence,
-    TypeVar,
-    Union,
-    final,
-)
+from collections.abc import ItemsView, Iterable, KeysView, Sequence
+from typing import Any, Final, Optional, TypeVar, Union, final, overload
 
 try:
     from vyper.exceptions import DecimalOverrideException
@@ -46,7 +34,8 @@ UNITS: Final = {
 }
 
 WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, decimal.Decimal, None)
-# This is no longer used within the codebase but we leave it in place in case downstream users import it
+# This is no longer used within the codebase but we leave it
+# in place in case downstream users import it
 
 WeiInputType = str | float | int | bytes | decimal.Decimal | None
 
@@ -171,13 +160,13 @@ class Fixed(decimal.Decimal):
     def __hash__(self) -> int:
         return super().__hash__()
 
-    def __lt__(self, other: Any) -> bool:  # type: ignore
+    def __lt__(self, other: Any) -> bool:
         return super().__lt__(_to_fixed(other))
 
-    def __le__(self, other: Any) -> bool:  # type: ignore
+    def __le__(self, other: Any) -> bool:
         return super().__le__(_to_fixed(other))
 
-    def __eq__(self, other: Any) -> bool:  # type: ignore
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, float):
             raise TypeError("Cannot compare to floating point - use a string instead")
         try:
@@ -193,16 +182,16 @@ class Fixed(decimal.Decimal):
         except TypeError:
             return True
 
-    def __ge__(self, other: Any) -> bool:  # type: ignore
+    def __ge__(self, other: Any) -> bool:
         return super().__ge__(_to_fixed(other))
 
-    def __gt__(self, other: Any) -> bool:  # type: ignore
+    def __gt__(self, other: Any) -> bool:
         return super().__gt__(_to_fixed(other))
 
-    def __add__(self, other: Any) -> "Fixed":  # type: ignore
+    def __add__(self, other: Any) -> "Fixed":
         return Fixed(super().__add__(_to_fixed(other)))
 
-    def __sub__(self, other: Any) -> "Fixed":  # type: ignore
+    def __sub__(self, other: Any) -> "Fixed":
         return Fixed(super().__sub__(_to_fixed(other)))
 
 
@@ -245,7 +234,7 @@ class EthAddress(str):
             converted_value = to_checksum_address(converted_value)
         except ValueError:
             raise ValueError(f"{value!r} is not a valid ETH address") from None
-        return str.__new__(cls, converted_value)  # type: ignore
+        return str.__new__(cls, converted_value)
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -317,12 +306,12 @@ def _to_hex(value: Any) -> HexStr:
     if isinstance(value, bytes):
         return bytes_to_hexstring(value)
     if isinstance(value, int):
-        return hex(value)  # type: ignore [return-value]
+        return HexStr(hex(value))
     if isinstance(value, str):
         if value in ("", "0x"):
-            return "0x00"  # type: ignore [return-value]
+            return HexStr("0x00")
         if is_hex(value):
-            return add_0x_prefix(value)  # type: ignore [arg-type]
+            return add_0x_prefix(value)
     raise ValueError(f"Cannot convert {type(value).__name__} '{value}' to a hex string")
 
 
@@ -331,13 +320,13 @@ def _to_hex(value: Any) -> HexStr:
 class ReturnValue(tuple):
     """Tuple subclass with dict-like functionality, used for iterable return values."""
 
-    _abi: Optional[List[ABIComponent]] = None
-    _dict: Dict[str, Any] = {}
+    _abi: list[ABIComponent] | None = None
+    _dict: dict[str, Any] = {}
 
     def __new__(
         cls,
         values: Iterable[Any],
-        abi: Optional[Sequence[ABIComponent]] = None,
+        abi: Sequence[ABIComponent] | None = None,
     ) -> "ReturnValue":
         values = list(values)
         for i, value in enumerate(values):
@@ -377,9 +366,18 @@ class ReturnValue(tuple):
     def __ne__(self, other: Any) -> bool:
         return not _kwargtuple_compare(self, other)
 
-    def __getitem__(  # type: ignore [override]
+    @overload  # type: ignore [override]
+    def __getitem__(self, key: int) -> Any: ...
+    @overload
+    def __getitem__(self, key: str) -> Any: ...
+    @overload
+    def __getitem__(
         self,
-        key: Union[str, int, "slice[int, int, int]"],
+        key: "slice[Optional[int], Optional[int], Optional[int]]",
+    ) -> "ReturnValue": ...
+    def __getitem__(
+        self,
+        key: Union[str, int, "slice[Optional[int], Optional[int], Optional[int]]"],
     ) -> Any:
         if type(key) is slice:
             abi = self._abi
@@ -406,7 +404,7 @@ class ReturnValue(tuple):
                 continue
         return count
 
-    def dict(self) -> Dict[str, Any]:
+    def dict(self) -> dict[str, Any]:
         """ReturnValue.dict() -> a dictionary of ReturnValue's named items"""
         response = {}
         for k, v in self._dict.items():

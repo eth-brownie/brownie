@@ -1,10 +1,10 @@
 import functools
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Final, List, Optional, Sequence, Type
+from collections.abc import Callable, Sequence
+from typing import Any, Dict, Final, List, Optional, Type
 
 from web3 import Web3
 from web3.types import RPCEndpoint
-
 
 partial: Final = functools.partial
 
@@ -28,7 +28,7 @@ class BrownieMiddlewareABC(ABC):
 
     @classmethod
     @abstractmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         """
         Return the target layer of this middleware.
 
@@ -51,7 +51,7 @@ class BrownieMiddlewareABC(ABC):
         make_request: Callable,
         method: RPCEndpoint,
         params: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Process an RPC request.
 
@@ -81,10 +81,9 @@ class BrownieMiddlewareABC(ABC):
         when they are removed. Note that you must not assume network connectivity
         when this method is called.
         """
-        pass
 
 
-def get_middlewares(web3: Web3, network_type: str) -> Dict:
+def get_middlewares(web3: Web3, network_type: str) -> dict:
     """
     Get a list of middlewares to be used for the given web3 object.
 
@@ -95,7 +94,7 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
     network_type : str
         One of "live" or "development".
     """
-    middleware_layers: Dict[int, List[Type[BrownieMiddlewareABC]]] = {}
+    middleware_layers: dict[int, list[type[BrownieMiddlewareABC]]] = {}
     for obj in _middlewares:
         layer = obj.get_layer(web3, network_type)
         if layer is not None:
@@ -105,6 +104,6 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
 
 
 # this must go down here to prevent a circ import issue
-from brownie.network.middlewares._setup import load_middlewares
+from brownie.network.middlewares._setup import load_middlewares  # noqa: E402
 
 _middlewares: Final = load_middlewares()

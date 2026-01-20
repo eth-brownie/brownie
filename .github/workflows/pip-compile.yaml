@@ -1,4 +1,4 @@
-name: Repo Chores
+name: Pip Compile
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format:
+  pip-compile:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,31 +24,29 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Install Black
-      run: pip install black
+    - name: Cache .mypy_cache
+      uses: actions/cache@v4
+      with:
+        path: .mypy_cache
+        key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
-    - name: Run black .
-      run: black .
+    - name: Pin pip to <25.0 for pip-tools compatibility
+      run: pip install "pip<25.0"
 
     - name: Install Pip Tools
-      run: pip install pip-tools
+      run: pip install -U pip-tools
       
     - name: Run Pip Compile
-      run: pip-compile -U
+      run: pip-compile -U --no-strip-extras
 
     - name: Run Pip Compile for Windows
-      run: pip-compile -U requirements-windows.in
+      run: pip-compile -U requirements-windows.in --no-strip-extras
 
     - name: Run Pip Compile for Dev Deps
-      run: pip-compile -U requirements-dev.in
-    
-    - name: Install Mypyc and Deps
-      run: |
-        pip install -U types-PyYAML
-        pip install -r requirements.txt
+      run: pip-compile -U requirements-dev.in --no-strip-extras
 
-    - name: Compile
-      run: pip install .
+    - name: Run Pip Compile for Docs Deps
+      run: pip-compile -U requirements-docs.in --no-strip-extras
     
     - name: Check for changes
       id: changes
@@ -58,11 +56,12 @@ jobs:
         else
           echo "changes_detected=false" >> $GITHUB_ENV
         fi
+
     - name: Commit changes
       if: env.changes_detected == 'true'
       run: |
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "chore: \`black .\` and \`pip-compile\` and compile C files for source control"
+        git commit -m "chore: \`pip-compile\`"
         git push

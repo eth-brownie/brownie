@@ -1,42 +1,33 @@
-on: ["push", "pull_request"]
+name: Lint All The Things
 
-name: linting
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.py'
+      - '.github/workflows/lint.yaml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '**.py'
+      - '.github/workflows/lint.yaml'
 
-# This limits the workflow to 1 active run at any given time for a specific branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  ETHERSCAN_TOKEN: 9MKURTHE8FNA9NRUUJBHMUEVY6IQ5K1EGY
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  WEB3_INFURA_PROJECT_ID: 44c6300c5e5b4b2da5fc42b06bf18a8e
-
 jobs:
-
-  linting:
+  lint-all-the-things:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        job: [lint, docs-local]
-        experimental: [false]
-        include:
-          - job: docs-external
-            experimental: true
-
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
-
-    - name: Install Tox
-      run: pip install tox
-
-    - name: Run Tox
-      run: tox -e ${{ matrix.job }}
-      continue-on-error: ${{ matrix.experimental }}
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Lint All The Things
+        uses: BobTheBuidler/lint-all-the-things@v0.0.4
+        with:
+          python-version: 3.14
+          pyupgrade-target-version: py310

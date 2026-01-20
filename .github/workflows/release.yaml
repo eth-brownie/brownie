@@ -1,0 +1,220 @@
+name: Build and Publish Wheels
+
+on:
+  release:
+    branches:
+      - master
+    types: [published]
+  workflow_dispatch:
+    # We can do a "dry-run" from the Actions page which will run the workflow without pushing anything to PyPI
+
+jobs:
+  build_wheels:
+    name: Build wheels using cibuildwheel
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ----------------------------------------------------
+          # manylinux 64-bit
+          # ----------------------------------------------------
+          - os: ubuntu-latest
+            build_type: manylinux-x64
+            cibw_build: "*manylinux*"
+            cibw_archs_linux: x86_64
+            artifact_name: "wheels-ubuntu-latest-manylinux-x64"
+
+          # ----------------------------------------------------
+          # manylinux 32-bit
+          # ----------------------------------------------------
+          - os: ubuntu-latest
+            build_type: manylinux-x86
+            cibw_build: "*manylinux*"
+            cibw_archs_linux: i686
+            artifact_name: "wheels-ubuntu-latest-manylinux-x86"
+
+          # ----------------------------------------------------
+          # musllinux 64-bit
+          # ----------------------------------------------------
+          - os: ubuntu-latest
+            build_type: musllinux-x64
+            cibw_build: "*musllinux*"
+            cibw_archs_linux: x86_64
+            artifact_name: "wheels-ubuntu-latest-musllinux-x64"
+
+          # ----------------------------------------------------
+          # macOS (64-bit only)
+          # ----------------------------------------------------
+          - os: macos-latest
+            build_type: macos
+            cibw_build: ""
+            cibw_archs_linux: ""
+            artifact_name: "wheels-macos-latest"
+
+          # ----------------------------------------------------
+          # Windows 64-bit
+          # ----------------------------------------------------
+          - os: windows-latest
+            build_type: winx64
+            cibw_build: ""
+            cibw_archs_windows: AMD64
+            artifact_name: "wheels-windows-latest-x64"
+
+          # ----------------------------------------------------
+          # Windows 32-bit
+          # ----------------------------------------------------
+          - os: windows-latest
+            build_type: winx86
+            cibw_build: ""
+            cibw_archs_windows: x86
+            artifact_name: "wheels-windows-latest-x86"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Cache .mypy_cache
+        uses: actions/cache@v4
+        with:
+          path: .mypy_cache
+          key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
+
+      - name: Install cibuildwheel
+        run: python -m pip install --upgrade pip setuptools wheel cibuildwheel
+
+      - name: Restore ccache cache
+        id: restore-ccache
+        if: runner.os != 'Windows'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+          restore-keys: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-
+
+      - name: Install ccache (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ccache
+      - name: Install ccache (MacOS)
+        if: runner.os == 'MacOS'
+        run: brew install ccache
+
+      - name: Build wheels
+        env:
+          # Skip PyPy
+          CIBW_SKIP: pp*
+          # On Linux: manylinux / musllinux arches
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw_archs_linux || '' }}
+          # On Windows: AMD64 / x86
+          CIBW_ARCHS_WINDOWS: ${{ matrix.cibw_archs_windows || '' }}
+          # Which wheels to build for Linux (manylinux vs. musllinux)
+          CIBW_BUILD: ${{ matrix.cibw_build || '' }}
+          # use ccache for speed
+          CC: ccache gcc
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: wheelhouse/*.whl
+
+      - name: Save ccache cache
+        if: runner.os != 'Windows'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ hashFiles('setup.py', 'pyproject.toml') }}-${{ hashFiles('**/*.h', '**/*.c', '**/*.py') }}
+
+  publish_sdist_and_wheels:
+    name: Publish wheels to PyPI
+    needs: build_wheels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+    
+      - name: Drop build folder to prevent shadowing issues w/ the PyPA “build” module
+        run: rm -rf build
+
+      - name: Install PyPA “build” module
+        run: pip install -U build
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      # ----------------------------------------------------
+      # Download wheels built on each runner
+      # ----------------------------------------------------
+      - name: Download manylinux 64-bit wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: "wheels-ubuntu-latest-manylinux-x64"
+          path: wheelhouse/linux-many-x64
+
+      - name: Download manylinux 32-bit wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: "wheels-ubuntu-latest-manylinux-x86"
+          path: wheelhouse/linux-many-x86
+
+      - name: Download musllinux 64-bit wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: "wheels-ubuntu-latest-musllinux-x64"
+          path: wheelhouse/linux-musl-x64
+
+      - name: Download macOS wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: "wheels-macos-latest"
+          path: wheelhouse/macos
+
+      - name: Download Windows 64-bit wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: "wheels-windows-latest-x64"
+          path: wheelhouse/windows-x64
+
+      - name: Download Windows 32-bit wheels
+        uses: actions/download-artifact@v5
+        with:
+          name: "wheels-windows-latest-x86"
+          path: wheelhouse/windows-x86
+
+      # ----------------------------------------------------
+      # Publish sdist and wheels to PyPI
+      # ----------------------------------------------------
+      - name: Publish sdist and wheels to PyPI
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          twine upload \
+            dist/* \
+            wheelhouse/linux-many-x64/*.whl \
+            wheelhouse/linux-many-x86/*.whl \
+            wheelhouse/linux-musl-x64/*.whl \
+            wheelhouse/macos/*.whl \
+            wheelhouse/windows-x64/*.whl \
+            wheelhouse/windows-x86/*.whl

@@ -205,7 +205,7 @@ Build Methods
 
 .. py:classmethod:: Build.items(path=None)
 
-    Provides an list of tuples in the format ``('contract_name', build_json)``, similar to calling ``dict.items``.  If a path is given, only contracts derived from that source file are returned.
+    Provides a list of tuples in the format ``('contract_name', build_json)``, similar to calling ``dict.items``.  If a path is given, only contracts derived from that source file are returned.
 
     .. code-block:: python
 

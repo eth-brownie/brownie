@@ -1,14 +1,14 @@
-from typing import Any, Final, Mapping, Optional, Text, TypeVar, overload
+from collections.abc import Mapping
+from typing import Any, Final, TypeVar, overload
 
 from dotenv.variables import parse_variables
 
 from brownie._c_constants import regex_compile
 
-
 _T = TypeVar("_T")
 
 
-def expand_posix_vars(obj: Any, variables: Mapping[Text, Optional[Any]]) -> Any:
+def expand_posix_vars(obj: Any, variables: Mapping[str, Any | None]) -> Any:
     """expand_posix_vars recursively expands POSIX values in an object.
 
     Args:

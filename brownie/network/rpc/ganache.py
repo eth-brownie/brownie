@@ -5,7 +5,7 @@ import re
 import sys
 import warnings
 from subprocess import DEVNULL, PIPE
-from typing import Dict, List, Optional
+from typing import Any
 
 import psutil
 from eth_utils.toolz import concat
@@ -57,7 +57,7 @@ EVM_VERSIONS = ["byzantium", "constantinople", "petersburg", "istanbul"]
 EVM_DEFAULT = "istanbul"
 
 
-def launch(cmd: str, **kwargs: Dict) -> None:
+def launch(cmd: str, **kwargs: Any) -> None:
     """Launches the RPC client.
 
     Args:
@@ -78,14 +78,14 @@ def launch(cmd: str, **kwargs: Dict) -> None:
         # more verbose output similar to what ganache 6 produced
         cmd_list.extend(["--chain.vmErrorsOnRPCResponse", "true"])
 
-    kwargs.setdefault("evm_version", EVM_DEFAULT)  # type: ignore
+    kwargs.setdefault("evm_version", EVM_DEFAULT)
     if kwargs["evm_version"] in EVM_EQUIVALENTS:
-        kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]  # type: ignore
+        kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]
     kwargs = _validate_cmd_settings(kwargs)
     for key, value in [(k, v) for k, v in kwargs.items() if v]:
         if key == "unlock":
             if not isinstance(value, list):
-                value = [value]  # type: ignore
+                value = [value]
             for address in value:
                 if isinstance(address, int):
                     address = bytes_to_hexstring(address.to_bytes(20, "big"))
@@ -120,9 +120,9 @@ def on_connection() -> None:
     pass
 
 
-def _request(method: str, args: List) -> int:
+def _request(method: str, args: list) -> int:
     try:
-        response = web3.provider.make_request(method, args)  # type: ignore
+        response = web3.provider.make_request(method, args)
         if "result" in response:
             return response["result"]
     except (AttributeError, RequestsConnectionError):
@@ -134,7 +134,7 @@ def sleep(seconds: int) -> int:
     return _request("evm_increaseTime", [seconds])
 
 
-def mine(timestamp: Optional[int] = None) -> None:
+def mine(timestamp: int | None = None) -> None:
     params = [timestamp] if timestamp else []
     _request("evm_mine", params)
     if timestamp and web3.client_version.lower().startswith("ganache/v7"):
@@ -153,13 +153,13 @@ def revert(snapshot_id: int) -> None:
 
 def unlock_account(address: str) -> None:
     if web3.client_version.lower().startswith("ganache/v7"):
-        web3.provider.make_request("evm_addAccount", [address, ""])  # type: ignore
-        web3.provider.make_request(  # type: ignore
+        web3.provider.make_request("evm_addAccount", [address, ""])
+        web3.provider.make_request(
             "personal_unlockAccount",
             [address, "", 9999999999],
         )
     else:
-        web3.provider.make_request("evm_unlockUnknownAccount", [address])  # type: ignore
+        web3.provider.make_request("evm_unlockUnknownAccount", [address])
 
 
 def _validate_cmd_settings(cmd_settings: dict) -> dict:

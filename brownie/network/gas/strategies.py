@@ -2,7 +2,7 @@ import itertools
 import threading
 import time
 import warnings
-from typing import Dict, Generator
+from collections.abc import Generator
 
 import requests
 
@@ -13,7 +13,7 @@ from brownie.network.web3 import web3
 from brownie.network.gas.bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
 
 _gasnow_update = 0
-_gasnow_data: Dict[str, int] = {}
+_gasnow_data: dict[str, int] = {}
 _gasnow_lock = threading.Lock()
 
 
@@ -205,7 +205,7 @@ class GethMempoolStrategy(BlockGasStrategy):
         super().__init__(block_duration)
         self.position = position
         if graphql_endpoint is None:
-            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"  # type: ignore
+            graphql_endpoint = f"{web3.provider.endpoint_uri}/graphql"
         self.graphql_endpoint = graphql_endpoint
         self.max_gas_price = Wei(max_gas_price) or 2**256 - 1
 

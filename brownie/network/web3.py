@@ -3,7 +3,6 @@
 import os
 import time
 from pathlib import Path
-from typing import Dict, Optional, Set
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
@@ -22,7 +21,7 @@ from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 from brownie.network.middlewares import get_middlewares
 
-_chain_uri_cache: Dict = {}
+_chain_uri_cache: dict = {}
 
 
 class Web3(_Web3):
@@ -31,12 +30,12 @@ class Web3(_Web3):
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
         self.provider = None
-        self._mainnet_w3: Optional[_Web3] = None
-        self._genesis_hash: Optional[HexStr] = None
-        self._chain_uri: Optional[str] = None
-        self._custom_middleware: Set = set()
+        self._mainnet_w3: _Web3 | None = None
+        self._genesis_hash: HexStr | None = None
+        self._chain_uri: str | None = None
+        self._custom_middleware: set = set()
         self._supports_traces = None
-        self._chain_id: Optional[int] = None
+        self._chain_id: int | None = None
 
     def _remove_middlewares(self) -> None:
         for middleware in self._custom_middleware:
@@ -222,6 +221,6 @@ web3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
 
 try:
     with _get_path().open() as fp:
-        _ens_cache: Dict = ujson_load(fp)
+        _ens_cache: dict = ujson_load(fp)
 except (FileNotFoundError, JSONDecodeError):
     _ens_cache = {}

@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
 import time
+from collections.abc import Callable
 from threading import Thread
-from typing import Callable, Dict, Final, List, Optional, Set, Tuple, Union
+from typing import Final
 
 from mypy_extensions import mypyc_attr
 
@@ -10,7 +11,7 @@ from brownie.utils import color
 from brownie.utils._color import bright_red
 
 __console_dir__: Final = ["Alert", "new", "show", "stop_all"]
-_instances: Final[Set["Alert"]] = set()
+_instances: Final[set["Alert"]] = set()
 
 # Internal C Constants
 
@@ -24,16 +25,16 @@ _time: Final = time.time
 # TODO: remove this decorator once the compiler bug preventing compilation is fixed
 class Alert:
     """Setup notifications and callbacks based on state changes to the blockchain.
-    The alert is immediatly active as soon as the class is insantiated."""
+    The alert is immediately active as soon as the class is instantiated."""
 
     def __init__(
         self,
         fn: Callable,
-        args: Optional[Tuple] = None,
-        kwargs: Optional[Dict] = None,
+        args: tuple | None = None,
+        kwargs: dict | None = None,
         delay: float = 2,
-        msg: Optional[str] = None,
-        callback: Optional[Callable] = None,
+        msg: str | None = None,
+        callback: Callable | None = None,
         repeat: bool = False,
     ) -> None:
         """Creates a new Alert.
@@ -72,13 +73,13 @@ class Alert:
     def _loop(
         self,
         fn: Callable,
-        args: Tuple,
-        kwargs: Dict,
+        args: tuple,
+        kwargs: dict,
         start_value: int,
         delay: float,
         msg: str,
         callback: Callable,
-        repeat: Union[int, bool, None] = False,
+        repeat: int | bool | None = False,
     ) -> None:
         try:
             sleep = min(delay, 0.05)
@@ -108,7 +109,7 @@ class Alert:
         """Checks if the alert is currently active."""
         return self._thread.is_alive()
 
-    def wait(self, timeout: Optional[int] = None) -> None:
+    def wait(self, timeout: int | None = None) -> None:
         """Waits for the alert to fire.
         Args:
             timeout: Number of seconds to wait. If None, will wait indefinitely."""
@@ -129,18 +130,18 @@ class Alert:
 
 def new(
     fn: Callable,
-    args: Optional[Tuple] = None,
-    kwargs: Optional[Dict] = None,
+    args: tuple | None = None,
+    kwargs: dict | None = None,
     delay: float = 0.5,
-    msg: Optional[str] = None,
-    callback: Optional[Callable] = None,
+    msg: str | None = None,
+    callback: Callable | None = None,
     repeat: bool = False,
 ) -> "Alert":
     """Alias for creating a new Alert instance."""
     return Alert(fn, args, kwargs, delay, msg, callback, repeat)
 
 
-def show() -> List[Alert]:
+def show() -> list[Alert]:
     """Returns a list of all currently active Alert instances."""
     return sorted(_instances, key=Alert._get_start_time)
 

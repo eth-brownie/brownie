@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import warnings
-from typing import Final, Optional, Union
+from typing import Final
 
 from brownie import project
 from brownie._config import CONFIG
@@ -18,7 +18,7 @@ chain: Final = Chain()
 rpc: Final = Rpc()
 
 
-def connect(network: Optional[str] = None, launch_rpc: bool = True) -> None:
+def connect(network: str | None = None, launch_rpc: bool = True) -> None:
     """Connects to the network.
 
     Args:
@@ -74,7 +74,7 @@ def disconnect(kill_rpc: bool = True) -> None:
     _notify_registry(0)
 
 
-def show_active() -> Optional[str]:
+def show_active() -> str | None:
     """Returns the name of the currently active network"""
     return CONFIG.active_network["id"] if web3.provider else None
 
@@ -86,7 +86,7 @@ def is_connected() -> bool:
     return web3.isConnected() or web3.isConnected()
 
 
-def gas_limit(*args: Union[int, str, bool, None]) -> Union[int, bool]:
+def gas_limit(*args: int | str | bool | None) -> int | bool:
     """Gets and optionally sets the default gas limit.
 
     * If an integer value is given, this will be the default gas limit.
@@ -99,7 +99,7 @@ def gas_limit(*args: Union[int, str, bool, None]) -> Union[int, bool]:
             CONFIG.active_network["settings"]["gas_limit"] = False  # @UndefinedVariable
         else:
             try:
-                limit: int = int(args[0])  # type: ignore
+                limit: int = int(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
@@ -108,7 +108,7 @@ def gas_limit(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
 
 
-def gas_price(*args: Union[int, str, bool, None]) -> Union[int, bool]:
+def gas_price(*args: int | str | bool | None) -> int | bool:
     """Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
@@ -130,7 +130,7 @@ def gas_price(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["gas_price"]  # @UndefinedVariable
 
 
-def gas_buffer(*args: Optional[float]) -> Optional[float]:
+def gas_buffer(*args: float | None) -> float | None:
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
@@ -143,7 +143,7 @@ def gas_buffer(*args: Optional[float]) -> Optional[float]:
     return CONFIG.active_network["settings"]["gas_buffer"]  # @UndefinedVariable
 
 
-def max_fee(*args: Union[int, str, bool, None]) -> Union[int, bool]:
+def max_fee(*args: int | str | bool | None) -> int | bool:
     """
     Gets and optionally sets the default max fee per gas.
 
@@ -164,7 +164,7 @@ def max_fee(*args: Union[int, str, bool, None]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["max_fee"]  # @UndefinedVariable
 
 
-def priority_fee(*args: Union[int, str, bool, None]) -> Union[int, bool]:
+def priority_fee(*args: int | str | bool | None) -> int | bool:
     """
     Gets and optionally sets the default max priority fee per gas.
 

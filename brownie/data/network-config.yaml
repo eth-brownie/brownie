@@ -26,7 +26,7 @@ live:
         chainid: 11155111
         id: sepolia
         host: https://sepolia.infura.io/v3/$WEB3_INFURA_PROJECT_ID
-        explorer: https://api-sepolia.etherscan.io/
+        explorer: https://api-sepolia.etherscan.io/api
         provider: infura
       - name: Goerli (Infura)
         chainid: 5
@@ -367,7 +367,7 @@ development:
       evm_version: istanbul
       mnemonic: brownie
       fork: zkevm-main
-  - name: Ganache-CLI Base-Mainnet Fork)
+  - name: Ganache-CLI (Base-Mainnet Fork)
     id: base-main-fork
     cmd: ganache-cli
     host: http://127.0.0.1

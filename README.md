@@ -19,7 +19,7 @@ Brownie is a Python-based development and testing framework for smart contracts 
 * [python3](https://www.python.org/downloads/release/python-3910/) version 3.10 or greater, python3-dev
 * [hardhat](https://github.com/NomicFoundation/hardhat) or [ganache](https://github.com/trufflesuite/ganache)
 
-Tested with ganache version [7.9.2](https://github.com/trufflesuite/ganache/releases/tag/v7.0.2), however it is generally recommended to use hardhat because ganache has been sunsetted.
+Tested with ganache version [7.9.2](https://github.com/trufflesuite/ganache/releases/tag/v7.9.2), however it is generally recommended to use hardhat because ganache has been sunsetted.
 
 ## Installation
 

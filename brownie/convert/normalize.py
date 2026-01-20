@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Any, Final, cast
 
 from eth_event.main import DecodedEvent, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
@@ -12,7 +13,7 @@ from brownie.convert.datatypes import EthAddress, HexString, ReturnValue
 from brownie.convert.main import to_bool, to_decimal, to_int, to_string, to_uint
 from brownie.convert.utils import get_type_strings
 
-AnyListOrTuple = List[Any] | Tuple[Any, ...]
+AnyListOrTuple = list[Any] | tuple[Any, ...]
 
 # Internal C constants
 
@@ -21,7 +22,7 @@ _TupleType: Final = TupleType
 _parse: Final = parse
 
 
-def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> List[Any]:
+def format_input(abi: ABIFunction, inputs: AnyListOrTuple) -> list[Any]:
     """Format contract inputs based on ABI types."""
     abi_inputs = abi["inputs"]
     if len(inputs) and not len(abi_inputs):
@@ -60,14 +61,18 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
         if not e["decoded"]:
             e["type"] = "bytes32"
             e["name"] += " (indexed)"
-    abi_types = _get_abi_types(data)
-    values = ReturnValue(_format_tuple(abi_types, [i["value"] for i in data]), data)
+    abi_types = _get_abi_types(cast(Sequence[ABIComponent], data))
+    event_values = [i["value"] for i in data]
+    values = ReturnValue(
+        _format_tuple(abi_types, event_values),
+        cast(Sequence[ABIComponent], data),
+    )
     for e, value in zip(data, values):
         e["value"] = value
-    return event  # type: ignore [return-value]
+    return cast(FormattedEvent, event)
 
 
-def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[Any]:
+def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> list[Any]:
     result = []
     _check_array(values, len(abi_types))
     for type_, value in zip(abi_types, values):
@@ -83,8 +88,10 @@ def _format_tuple(abi_types: Sequence[ABIType], values: AnyListOrTuple) -> List[
     return result
 
 
-def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> List[Any]:
-    _check_array(values, abi_type.arrlist[-1][0] if abi_type.arrlist[-1] else None)  # type: ignore [index]
+def _format_array(abi_type: ABIType, values: AnyListOrTuple) -> list[Any]:
+    arrlist = cast(tuple[tuple[int, ...], ...], abi_type.arrlist)
+    arrlast = arrlist[-1]
+    _check_array(values, arrlast[0] if arrlast else None)
     item_type = abi_type.item_type
     if item_type.is_array:
         return [_format_array(item_type, i) for i in values]
@@ -114,7 +121,7 @@ def _format_single(type_str: str, value: Any) -> Any:
     raise TypeError(f"Unknown type: {type_str}")
 
 
-def _check_array(values: AnyListOrTuple, length: Optional[int]) -> None:
+def _check_array(values: AnyListOrTuple, length: int | None) -> None:
     if not isinstance(values, (list, tuple)):
         # NOTE: we keep this check here in case the user is running in interpreted mode
         raise TypeError(f"Expected list or tuple, got {type(values).__name__}")
@@ -126,5 +133,5 @@ def _get_abi_types(abi_params: Sequence[ABIComponent]) -> Sequence[ABIType]:
     if not abi_params:
         return []
     type_str = f"({','.join(get_type_strings(abi_params))})"
-    tuple_type = _parse(type_str)
+    tuple_type = cast(TupleType, _parse(type_str))
     return tuple_type.components

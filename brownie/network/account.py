@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import re
 import sys
 import threading
@@ -9,7 +8,7 @@ from collections.abc import Iterator
 from getpass import getpass
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import eth_account
 import eth_keys
@@ -74,7 +73,7 @@ class Accounts(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self.default = None
-        self._accounts: List = []
+        self._accounts: list = []
 
         # prevent sensitive info from being stored in readline history
         self.add.__dict__["_private"] = True
@@ -137,7 +136,7 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, private_key: Union[int, bytes, str] = None) -> "LocalAccount":
+    def add(self, private_key: int | bytes | str = None) -> "LocalAccount":
         """
         Create a new ``LocalAccount`` instance and appends it to the container.
 
@@ -168,7 +167,7 @@ class Accounts(metaclass=_Singleton):
 
     def from_mnemonic(
         self, mnemonic: str, count: int = 1, offset: int = 0, passphrase: str = ""
-    ) -> Union["LocalAccount", List["LocalAccount"]]:
+    ) -> Union["LocalAccount", list["LocalAccount"]]:
         """
         Generate one or more `LocalAccount` objects from a seed phrase.
 
@@ -201,10 +200,10 @@ class Accounts(metaclass=_Singleton):
 
     def load(
         self,
-        filename: Optional[Union[str, Path]] = None,
-        password: Optional[str] = None,
+        filename: str | Path | None = None,
+        password: str | None = None,
         allow_retry: bool = False,
-    ) -> Union[List, "LocalAccount"]:
+    ) -> Union[list, "LocalAccount"]:
         """
         Load a local account from a keystore file.
 
@@ -388,7 +387,7 @@ class PublicKeyAccount:
     def __str__(self) -> str:
         return self.address
 
-    def __eq__(self, other: Union[object, str]) -> bool:
+    def __eq__(self, other: object | str) -> bool:
         if isinstance(other, str):
             try:
                 address = _resolve_address(other)
@@ -413,7 +412,7 @@ class PublicKeyAccount:
     def nonce(self) -> int:
         return web3.eth.get_transaction_count(self.address)
 
-    def get_deployment_address(self, nonce: Optional[int] = None) -> EthAddress:
+    def get_deployment_address(self, nonce: int | None = None) -> EthAddress:
         """
         Return the address of a contract deployed from this account at the given nonce.
 
@@ -463,9 +462,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: Optional["Account"],
         amount: int,
-        gas_price: Optional[int],
-        gas_buffer: Optional[float],
-        data: Optional[str] = None,
+        gas_price: int | None,
+        gas_buffer: float | None,
+        data: str | None = None,
     ) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
         if gas_limit == "max":
@@ -482,9 +481,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_limit)
 
-    def _gas_price(
-        self, gas_price: Any = None
-    ) -> Tuple[Wei, Optional[GasABC], Optional[Iterator]]:
+    def _gas_price(self, gas_price: Any = None) -> tuple[Wei, Optional[GasABC], Optional[Iterator]]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
             gas_price = CONFIG.active_network["settings"][
@@ -494,7 +491,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
             if isinstance(value, Iterator):
-                # if `get_gas_price` returns an interator, this is a gas strategy
+                # if `get_gas_price` returns an iterator, this is a gas strategy
                 # intended for rebroadcasting. we need to retain both the strategy
                 # object and the active gas price iterator
                 return Wei(next(value)), gas_price, value
@@ -510,7 +507,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_price), None, None
 
-    def _check_for_revert(self, tx: Dict) -> None:
+    def _check_for_revert(self, tx: dict) -> None:
         try:
             # remove gas price related values to avoid issues post-EIP1559
             # https://github.com/ethereum/go-ethereum/pull/23027
@@ -528,12 +525,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
         contract: Any,
         *args: Any,
         amount: int = 0,
-        gas_limit: Optional[int] = None,
-        gas_buffer: Optional[float] = None,
-        gas_price: Optional[int] = None,
-        max_fee: Optional[int] = None,
-        priority_fee: Optional[int] = None,
-        nonce: Optional[int] = None,
+        gas_limit: int | None = None,
+        gas_buffer: float | None = None,
+        gas_price: int | None = None,
+        max_fee: int | None = None,
+        priority_fee: int | None = None,
+        nonce: int | None = None,
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
@@ -642,7 +639,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         -------
         Estimated gas value in wei.
         """
-        tx: Dict = {
+        tx: dict = {
             "from": self.address,
             "to": to_address(str(to)) if to else None,
             "value": Wei(amount),
@@ -674,13 +671,13 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: "Account" = None,
         amount: int = 0,
-        gas_limit: Optional[int] = None,
-        gas_buffer: Optional[float] = None,
-        gas_price: Optional[int] = None,
-        max_fee: Optional[int] = None,
-        priority_fee: Optional[int] = None,
+        gas_limit: int | None = None,
+        gas_buffer: float | None = None,
+        gas_price: int | None = None,
+        max_fee: int | None = None,
+        priority_fee: int | None = None,
         data: str = None,
-        nonce: Optional[int] = None,
+        nonce: int | None = None,
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
@@ -845,18 +842,18 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: Optional["Account"],
         amount: int,
-        gas_limit: Optional[int],
-        gas_buffer: Optional[float],
-        gas_price: Optional[int],
-        max_fee: Optional[int],
-        priority_fee: Optional[int],
+        gas_limit: int | None,
+        gas_buffer: float | None,
+        gas_price: int | None,
+        max_fee: int | None,
+        priority_fee: int | None,
         data: str,
-        nonce: Optional[int],
+        nonce: int | None,
         fn_name: str,
         required_confs: int,
-        allow_revert: Optional[bool],
-        silent: Optional[bool],
-    ) -> Tuple[TransactionReceipt, Optional[Exception]]:
+        allow_revert: bool | None,
+        silent: bool | None,
+    ) -> tuple[TransactionReceipt, Exception | None]:
         # shared logic for `transfer` and `deploy`
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
@@ -920,14 +917,6 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
             while True:
                 try:
-                    print(
-                        f"""Setting Gas Fee(
-   nonce={tx['nonce']}, 
-   gas_price={self._format_gwei(gas_price)}, 
-   max_fee={self._format_gwei(max_fee)}, 
-   priority_fee={self._format_gwei(priority_fee_to_send)},
-)"""
-                    )
                     tx = _apply_fee_to_tx(
                         tx,
                         gas_price,
@@ -1000,9 +989,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     if max_fee is not None:
                         priority_fee_to_send = min(Wei(max_fee), priority_fee_to_send)
 
-        receipt = self._await_confirmation(
-            receipt, required_confs, gas_strategy, gas_iter
-        )
+        receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         if receipt.status != 1 and exc is None:
             error_data = {
                 "message": (
@@ -1026,15 +1013,15 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         receipt: TransactionReceipt,
         required_confs: int,
-        gas_strategy: Optional[GasABC],
-        gas_iter: Optional[Iterator],
+        gas_strategy: GasABC | None,
+        gas_iter: Iterator | None,
     ) -> TransactionReceipt:
         # add to TxHistory before waiting for confirmation, this way the tx
         # object is available if the user exits blocking via keyboard interrupt
         history._add_tx(receipt)
 
         if gas_strategy is not None:
-            gas_strategy.run(receipt, gas_iter)  # type: ignore
+            gas_strategy.run(receipt, gas_iter)
 
         if required_confs == 0:
             # set 0-conf tx's as silent to hide the confirmation output
@@ -1081,7 +1068,7 @@ class Account(_PrivateKeyAccount):
         address: Public address of the account.
         nonce: Current nonce of the account."""
 
-    def _transact(self, tx: Dict, allow_revert: Optional[bool]) -> Any:
+    def _transact(self, tx: dict, allow_revert: Optional[bool] = None) -> Any:
         if allow_revert is None:
             allow_revert = bool(
                 CONFIG.network_type == "development"
@@ -1100,9 +1087,7 @@ class LocalAccount(_PrivateKeyAccount):
         private_key: Account private key.
         public_key: Account public key."""
 
-    def __init__(
-        self, address: str, account: Account, priv_key: Union[int, bytes, str]
-    ) -> None:
+    def __init__(self, address: str, account: Account, priv_key: int | bytes | str):
         self._acct = account
         if not isinstance(priv_key, str):
             priv_key = bytes_to_hexstring(priv_key)
@@ -1110,9 +1095,7 @@ class LocalAccount(_PrivateKeyAccount):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def save(
-        self, filename: str, overwrite: bool = False, password: Optional[str] = None
-    ) -> str:
+    def save(self, filename: str, overwrite: bool = False, password: Optional[str] = None) -> str:
         """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
@@ -1206,7 +1189,7 @@ class LocalAccount(_PrivateKeyAccount):
                 signature=HexBytes(eth_signature_bytes),
             )
 
-    def _transact(self, tx: Dict, allow_revert: Optional[bool]) -> None:
+    def _transact(self, tx: dict, allow_revert: Optional[bool] = None):
         if allow_revert is None:
             allow_revert = bool(
                 CONFIG.network_type == "development"
@@ -1216,9 +1199,7 @@ class LocalAccount(_PrivateKeyAccount):
         tx["chainId"] = web3.chain_id
         signed = self._acct.sign_transaction(tx)
         return web3.eth.send_raw_transaction(
-            signed.rawTransaction  # type: ignore
-            if ETH_ACCOUNT_LT_0_13_0
-            else signed.raw_transaction  # type: ignore
+            signed.rawTransaction if ETH_ACCOUNT_LT_0_13_0 else signed.raw_transaction
         )
 
 
@@ -1227,13 +1208,11 @@ class ClefAccount(_PrivateKeyAccount):
     Class for interacting with an Ethereum account where signing is handled in Clef.
     """
 
-    def __init__(
-        self, address: str, provider: Union[HTTPProvider, IPCProvider]
-    ) -> None:
+    def __init__(self, address: str, provider: HTTPProvider | IPCProvider):
         self._provider = provider
         super().__init__(address)
 
-    def _transact(self, tx: Dict, allow_revert: Optional[bool]) -> None:
+    def _transact(self, tx: dict, allow_revert: Optional[bool]):
         if allow_revert is None:
             allow_revert = bool(
                 CONFIG.network_type == "development"
@@ -1261,11 +1240,11 @@ class ClefAccount(_PrivateKeyAccount):
 
 
 def _apply_fee_to_tx(
-    tx: Dict,
-    gas_price: Optional[int] = None,
-    max_fee: Optional[int] = None,
-    priority_fee: Optional[int] = None,
-) -> Dict:
+    tx: dict,
+    gas_price: int | None = None,
+    max_fee: int | None = None,
+    priority_fee: int | None = None,
+) -> dict:
     tx = tx.copy()
 
     if gas_price is not None:

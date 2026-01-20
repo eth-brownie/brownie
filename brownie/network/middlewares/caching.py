@@ -1,9 +1,10 @@
-import faster_hexbytes
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Callable, Dict, Final, List, Optional, Sequence, final
+from collections.abc import Callable, Sequence
+from typing import Any, Final, final
 
+import faster_hexbytes
 from web3 import Web3
 from web3.types import LogReceipt, RPCEndpoint
 
@@ -68,7 +69,7 @@ def is_cacheable_bytecode(web3: Web3, bytecode: faster_hexbytes.HexBytes) -> boo
             # the target was not hardcoded and we cannot cache
             return False
 
-    # check if the target code of each delegatecall is also cachable
+    # check if the target code of each delegatecall is also cacheable
     # if yes then we can cache this contract as well
     push20_indexes = (
         i
@@ -120,7 +121,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.event.wait()
 
     @classmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         if CONFIG.settings["eager_caching"] is False:
             # do not cache when user doesn't want it
             return None
@@ -162,7 +163,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.is_killed = False
         self.event.set()
 
-        new_blocks: List[LogReceipt]
+        new_blocks: list[LogReceipt]
         while not self.is_killed:
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
@@ -219,7 +220,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         make_request: Callable,
         method: RPCEndpoint,
         params: Sequence[Any],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if method in (
             # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",

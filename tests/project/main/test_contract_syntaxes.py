@@ -6,7 +6,7 @@ import pytest
 @pytest.mark.parametrize("minor", (4, 5, 6))
 def test_blank(newproject, minor):
     with newproject._path.joinpath("contracts/Blank.sol").open("w") as fp:
-        fp.write("pragma solidity ^0.{}.0; contract Blank {{}}".format(minor))
+        fp.write(f"pragma solidity ^0.{minor}.0; contract Blank {{}}")
     newproject.load()
 
 

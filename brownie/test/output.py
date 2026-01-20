@@ -2,7 +2,7 @@
 
 import pathlib
 import warnings
-from typing import Any, Dict, Final, List, Optional, Set, Tuple
+from typing import Any, Final
 
 from brownie._c_constants import Path, ujson_dump, ujson_dumps, ujson_loads
 from brownie._config import CONFIG
@@ -43,8 +43,8 @@ def _save_coverage_report(
     return report_path
 
 
-def _load_report_exclude_data(settings: Dict[str, Any]) -> Tuple[List[str], List[Any]]:
-    exclude_paths: List[str] = []
+def _load_report_exclude_data(settings: dict[str, Any]) -> tuple[list[str], list[Any]]:
+    exclude_paths: list[str] = []
     if settings["exclude_paths"]:
         exclude = settings["exclude_paths"]
         if not isinstance(exclude, list):
@@ -69,7 +69,7 @@ def _load_report_exclude_data(settings: Dict[str, Any]) -> Tuple[List[str], List
     return exclude_paths, exclude_contracts
 
 
-def _build_gas_profile_output() -> List[str]:
+def _build_gas_profile_output() -> list[str]:
     # Formats gas profile report that may be printed to the console
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
     try:
@@ -79,8 +79,8 @@ def _build_gas_profile_output() -> List[str]:
 
     gas = TxHistory().gas_profile
     sorted_gas = sorted(gas.items())
-    grouped_by_contract: Dict[str, Dict[str, Dict[str, int | str]]] = {}
-    padding: Dict[str, int] = {}
+    grouped_by_contract: dict[str, dict[str, dict[str, int | str]]] = {}
+    padding: dict[str, int] = {}
 
     lines = [""]
 
@@ -127,7 +127,7 @@ def _build_gas_profile_output() -> List[str]:
     return lines + [""]
 
 
-def _build_coverage_output(coverage_eval: CoverageEval) -> List[str]:
+def _build_coverage_output(coverage_eval: CoverageEval) -> list[str]:
     # Formats a coverage evaluation report that may be printed to the console
 
     exclude_paths, exclude_contracts = _load_report_exclude_data(CONFIG.settings["reports"])
@@ -186,14 +186,14 @@ def _pct(statement, branch):
 def _get_totals(
     build: Build,
     coverage_eval: CoverageEval,
-    exclude_contracts: Optional[List[str]] = None,
-) -> Dict[ContractName, Dict[str, Dict[str, Dict[str, Any]]]]:
+    exclude_contracts: list[str] | None = None,
+) -> dict[ContractName, dict[str, dict[str, dict[str, Any]]]]:
     # Returns a modified coverage eval dict showing counts and totals for each function.
 
     if exclude_contracts is None:
         exclude_contracts = []
     split_by_fn = _split_by_fn(build, coverage_eval)
-    results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
+    results: dict[ContractName, dict[str, dict[str, Any]]] = {
         i: {  # ty
             "statements": {},
             "totals": {"statements": 0, "branches": [0, 0]},
@@ -224,10 +224,10 @@ def _get_totals(
 
 def _split_by_fn(
     build: Build,
-    coverage_eval: Dict[ContractName, Dict[str, Dict[int, Set[int]]]],
-) -> Dict[ContractName, Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]]]:
+    coverage_eval: dict[ContractName, dict[str, dict[int, set[int]]]],
+) -> dict[ContractName, dict[str, dict[str, tuple[list[int], list[int], list[int]]]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
-    results: Dict[ContractName, Dict[str, Dict[str, Any]]] = {
+    results: dict[ContractName, dict[str, dict[str, Any]]] = {
         i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval
     }
     for name in coverage_eval:
@@ -240,10 +240,10 @@ def _split_by_fn(
 
 
 def _split(
-    coverage_eval: Dict[int, Set[int]],
+    coverage_eval: dict[int, set[int]],
     coverage_map: CoverageMap,
     key: str,
-) -> Dict[str, Tuple[List[int], List[int], List[int]]]:
+) -> dict[str, tuple[list[int], list[int], list[int]]]:
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
     # not too sure what to call these but we don't want to getitem repeatedly
@@ -261,11 +261,11 @@ def _split(
 
 
 def _statement_totals(
-    coverage_eval: Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]],
-    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
+    coverage_eval: dict[str, dict[str, tuple[list[int], list[int], list[int]]]],
+    coverage_map: dict[str, dict[str, dict[int, Any]]],
     exclude_contracts,
-) -> Tuple[Dict[str, Tuple[int, int]], Tuple[int, int]]:
-    result: Dict[str, Tuple[int, int]] = {}
+) -> tuple[dict[str, tuple[int, int]], tuple[int, int]]:
+    result: dict[str, tuple[int, int]] = {}
     count, total = 0, 0
     for path, fns in coverage_eval.items():
         coverage_eval_for_path = coverage_eval[path]
@@ -282,11 +282,11 @@ def _statement_totals(
 
 
 def _branch_totals(
-    coverage_eval: Dict[str, Dict[str, Tuple[List[int], List[int], List[int]]]],
-    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
-    exclude_contracts: List[str],
-) -> Tuple[Dict[str, Tuple[int, int, int]], Tuple[int, int, int]]:
-    result: Dict[str, Tuple[int, int, int]] = {}
+    coverage_eval: dict[str, dict[str, tuple[list[int], list[int], list[int]]]],
+    coverage_map: dict[str, dict[str, dict[int, Any]]],
+    exclude_contracts: list[str],
+) -> tuple[dict[str, tuple[int, int, int]], tuple[int, int, int]]:
+    result: dict[str, tuple[int, int, int]] = {}
     final_true = 0
     final_false = 0
     final_total = 0
@@ -312,9 +312,9 @@ def _branch_totals(
     return result, (final_true, final_false, final_total)
 
 
-def _get_highlights(build, coverage_eval) -> Dict[str, Dict[str, Dict[str, list]]]:
+def _get_highlights(build, coverage_eval) -> dict[str, dict[str, dict[str, list]]]:
     # Returns a highlight map formatted for display in the GUI.
-    results: Dict[str, Dict[str, Dict[str, list]]] = {"statements": {}, "branches": {}}
+    results: dict[str, dict[str, dict[str, list]]] = {"statements": {}, "branches": {}}
     for name, eval_ in coverage_eval.items():
         try:
             coverage_map = build.get(name)["coverageMap"]
@@ -328,10 +328,10 @@ def _get_highlights(build, coverage_eval) -> Dict[str, Dict[str, Dict[str, list]
 
 
 def _statement_highlights(
-    coverage_eval: Dict[str, Dict[int, set]],
-    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
-) -> Dict[str, List]:
-    results: Dict[str, List] = {i: [] for i in coverage_map}
+    coverage_eval: dict[str, dict[int, set]],
+    coverage_map: dict[str, dict[str, dict[int, Any]]],
+) -> dict[str, list]:
+    results: dict[str, list] = {i: [] for i in coverage_map}
     for path, fns in coverage_map.items():
         for fn in fns:
             results[path].extend(
@@ -343,7 +343,7 @@ def _statement_highlights(
 
 def _statement_color(
     i: int,
-    coverage_eval: Dict[str, Dict[int, set]],
+    coverage_eval: dict[str, dict[int, set]],
     path: str,
 ) -> str:
     if path in coverage_eval and int(i) in coverage_eval[path][0]:
@@ -352,10 +352,10 @@ def _statement_color(
 
 
 def _branch_highlights(
-    coverage_eval: Dict[str, Dict[int, Set]],
-    coverage_map: Dict[str, Dict[str, Dict[int, Any]]],
-) -> Dict[str, List]:
-    results: Dict[str, List] = {i: [] for i in coverage_map}
+    coverage_eval: dict[str, dict[int, set]],
+    coverage_map: dict[str, dict[str, dict[int, Any]]],
+) -> dict[str, list]:
+    results: dict[str, list] = {i: [] for i in coverage_map}
     for path, fns in coverage_map.items():
         for fn in fns:
             results[path].extend(
@@ -367,7 +367,7 @@ def _branch_highlights(
 
 def _branch_color(
     i: int,
-    coverage_eval: Dict[str, Dict[int, Set]],
+    coverage_eval: dict[str, dict[int, set]],
     path: str,
     jump: None,
 ) -> str:

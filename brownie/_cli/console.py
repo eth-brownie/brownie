@@ -8,8 +8,9 @@ import sys
 import tokenize
 from collections.abc import Iterable
 from io import StringIO
-from typing import Any, Dict, Final, Optional, final
+from typing import Any, Final, final
 
+from mypy_extensions import mypyc_attr
 from prompt_toolkit import PromptSession
 from prompt_toolkit.auto_suggest import AutoSuggest, Suggestion
 from prompt_toolkit.completion import Completer, Completion
@@ -133,8 +134,8 @@ class Console(code.InteractiveConsole):
 
     def __init__(
         self,
-        project: Optional[Project] = None,
-        extra_locals: Optional[Dict[str, Any]] = None,
+        project: Project | None = None,
+        extra_locals: dict[str, Any] | None = None,
         exit_on_continue: bool = False,
     ):
         """
@@ -150,7 +151,7 @@ class Console(code.InteractiveConsole):
             If True, the `continue` command causes the console to
             raise a SystemExit with error message "continue".
         """
-        console_settings: Dict[str, Any] = CONFIG.settings["console"]
+        console_settings: dict[str, Any] = CONFIG.settings["console"]
 
         locals_dict = {i: getattr(brownie, i) for i in brownie.__all__}
         locals_dict.update(
@@ -169,7 +170,7 @@ class Console(code.InteractiveConsole):
         try:
             Gui = import_module("brownie._gui").Gui
             locals_dict["Gui"] = Gui
-        except ModuleNotFoundError:
+        except ImportError:
             pass
 
         if extra_locals:
@@ -177,7 +178,7 @@ class Console(code.InteractiveConsole):
 
         # create prompt session object
         history_file = str(_get_data_folder().joinpath(".history").absolute())
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if console_settings["show_colors"]:
             kwargs.update(
                 lexer=PygmentsLexer(PythonLexer),
@@ -265,7 +266,7 @@ class Console(code.InteractiveConsole):
         finally:
             self.console_printer.finish()
 
-    def showsyntaxerror(self, filename: Optional[str] = None) -> None:  # type: ignore [override]
+    def showsyntaxerror(self, filename: str | None = None) -> None:  # type: ignore [override]
         tb = color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
         self.write(tb + "\n")
 
@@ -335,6 +336,7 @@ def _dir_color(obj: Any) -> str:
 
 
 @final
+@mypyc_attr(native_class=False)
 class SanitizedFileHistory(FileHistory):
     """
     FileHistory subclass to strip sensitive information prior to writing to disk.
@@ -353,7 +355,7 @@ class SanitizedFileHistory(FileHistory):
     session is active.
     """
 
-    def __init__(self, filename: str, local_dict: Dict[str, Any]) -> None:
+    def __init__(self, filename: str, local_dict: dict[str, Any]) -> None:
         self.locals = local_dict
         super().__init__(filename)
 
@@ -370,7 +372,7 @@ class SanitizedFileHistory(FileHistory):
 
 @final
 class ConsoleCompleter(Completer):
-    def __init__(self, console, local_dict: Dict[str, Any]) -> None:
+    def __init__(self, console, local_dict: dict[str, Any]) -> None:
         self.console = console
         self.locals = local_dict
         super().__init__()
@@ -406,7 +408,7 @@ class ConsoleAutoSuggest(AutoSuggest):
     respectively.
     """
 
-    def __init__(self, console, local_dict: Dict[str, Any]) -> None:
+    def __init__(self, console, local_dict: dict[str, Any]) -> None:
         self.console = console
         self.locals = local_dict
         super().__init__()
@@ -474,7 +476,7 @@ def _parse_document(local_dict, text):
         active_objects, current_text, comma_data = _parser_cache[text]
         return active_objects.copy(), current_text, comma_data.copy()
 
-    last_token: Optional[tokenize.TokenInfo] = None
+    last_token: tokenize.TokenInfo | None = None
     active_objects = [local_dict]
     pending_active = []
 

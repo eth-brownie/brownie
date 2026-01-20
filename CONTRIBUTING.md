@@ -1,6 +1,6 @@
 # Development
 
-To get started with working on the Brownie codebaser, use the following steps prepare your local environment:
+To get started with working on the Brownie codebase, use the following steps prepare your local environment:
 
 ```bash
 # clone the github repo and navigate into the folder
@@ -29,7 +29,7 @@ pip install pre-commit
 pre-commit install
 ```
 
-Commiting will now automatically run the local hooks and ensure that your commit passes all lint checks.
+Committing will now automatically run the local hooks and ensure that your commit passes all lint checks.
 
 ## Pull Requests
 

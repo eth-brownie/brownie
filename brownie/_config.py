@@ -4,7 +4,7 @@ import pathlib
 import shutil
 import sys
 import warnings
-from typing import Any, DefaultDict, Dict, Final, List, Literal, NewType, Optional, final
+from typing import Any, DefaultDict, Final, Literal, NewType, final
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -16,6 +16,7 @@ from mypy_extensions import mypyc_attr
 from brownie._c_constants import Path, deepcopy, defaultdict, regex_sub, ujson_loads
 from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
+from brownie.typing import EvmVersion
 
 __version__: Final = "1001.22.0"
 
@@ -24,7 +25,10 @@ DATA_FOLDER: Final = Path.home().joinpath(".brownie")
 
 DATA_SUBFOLDERS: Final = "accounts", "packages"
 
-EVM_EQUIVALENTS: Final = {"atlantis": "byzantium", "agharta": "petersburg"}
+EVM_EQUIVALENTS: Final[dict[EvmVersion, EvmVersion]] = {
+    EvmVersion("atlantis"): EvmVersion("byzantium"),
+    EvmVersion("agharta"): EvmVersion("petersburg"),
+}
 
 python_version: Final = (
     f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -34,7 +38,7 @@ REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_
 
 
 NetworkType = Literal["live", "development", None]
-NetworkConfig = NewType("NetworkConfig", Dict[str, Any])
+NetworkConfig = NewType("NetworkConfig", dict[str, Any])
 # TODO: Make this a typed dict
 
 
@@ -46,7 +50,7 @@ class ConfigContainer:
             home_config = _load_config(Path.home().joinpath("brownie-config.yaml"))
             _recursive_update(base_config, home_config)
 
-        networks: Dict[str, dict] = {}
+        networks: dict[str, dict] = {}
         self.networks: Final = networks
 
         network_config = _load_config(_get_data_folder().joinpath("network-config.yaml"))
@@ -68,17 +72,17 @@ class ConfigContainer:
 
         self.argv: Final[DefaultDict[str, Any]] = defaultdict(_None_factory)
         self.settings: Final["ConfigDict"] = _Singleton("settings", (ConfigDict,), {})(base_config)
-        self._active_network: Optional[NetworkConfig] = None
+        self._active_network: NetworkConfig | None = None
 
         self.settings._lock()
         _modify_hypothesis_settings(self.settings["hypothesis"], "brownie-base", "default")
 
-    def set_active_network(self, id_: Optional[str] = None) -> NetworkConfig:
+    def set_active_network(self, id_: str | None = None) -> NetworkConfig:
         """Modifies the 'active_network' configuration settings"""
         if id_ is None:
             id_ = self.settings["networks"]["default"]
 
-        network = NetworkConfig(deepcopy(self.networks[id_]))  # type: ignore [index]
+        network = NetworkConfig(deepcopy(self.networks[id_]))
         key = "development" if "cmd" in network else "live"
         network["settings"] = self.settings["networks"][key].copy()
 
@@ -119,7 +123,7 @@ class ConfigContainer:
         return "development" if "cmd" in self._active_network else "live"
 
     @property
-    def mode(self) -> Optional[str]:
+    def mode(self) -> str | None:
         return self.argv["cli"]
 
 
@@ -128,10 +132,10 @@ class Config(ConfigContainer, metaclass=_Singleton): ...
 
 
 @final
-class ConfigDict(Dict[str, Any]):
+class ConfigDict(dict[str, Any]):
     """Dict subclass that prevents adding new keys when locked"""
 
-    def __init__(self, values: Dict[str, Any] = {}) -> None:
+    def __init__(self, values: dict[str, Any] = {}) -> None:
         self._locked = False
         super().__init__()
         self.update(values)
@@ -143,7 +147,7 @@ class ConfigDict(Dict[str, Any]):
             value = ConfigDict(value)
         super().__setitem__(key, value)
 
-    def update(self, arg: Dict[str, Any]) -> None:  # type: ignore [override]
+    def update(self, arg: dict[str, Any]) -> None:  # type: ignore [override]
         for k, v in arg.items():
             self.__setitem__(k, v)
 
@@ -161,7 +165,7 @@ class ConfigDict(Dict[str, Any]):
                 obj._unlock()
         self._locked = False
 
-    def _copy(self) -> Dict[str, Any]:
+    def _copy(self) -> dict[str, Any]:
         config_copy = {}
         for key, value in self.items():
             if isinstance(value, ConfigDict):
@@ -170,7 +174,7 @@ class ConfigDict(Dict[str, Any]):
         return config_copy
 
 
-def _get_project_config_path(project_path: pathlib.Path) -> Optional[pathlib.Path]:
+def _get_project_config_path(project_path: pathlib.Path) -> pathlib.Path | None:
     if project_path.is_dir():
         path = project_path.joinpath("brownie-config")
     else:
@@ -179,7 +183,7 @@ def _get_project_config_path(project_path: pathlib.Path) -> Optional[pathlib.Pat
     return None if suffix is None else path.with_suffix(suffix)
 
 
-def _load_config(project_path: pathlib.Path) -> Dict:
+def _load_config(project_path: pathlib.Path) -> dict:
     """Loads configuration data from a file, returns as a dict"""
     path = _get_project_config_path(project_path)
     if path is None:
@@ -205,7 +209,7 @@ def _load_project_config(project_path: pathlib.Path) -> None:
         env_path = project_path.joinpath(config_data["dotenv"])
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
-        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+        config_vars.update(dotenv_values(dotenv_path=env_path))
         load_dotenv(dotenv_path=env_path)
         config_data = expand_posix_vars(config_data, config_vars)
 
@@ -247,7 +251,7 @@ def _load_project_config(project_path: pathlib.Path) -> None:
         _modify_hypothesis_settings(config_data["hypothesis"], "brownie", "brownie-base")
 
 
-def _load_project_compiler_config(project_path: Optional[pathlib.Path]) -> Dict:
+def _load_project_compiler_config(project_path: pathlib.Path | None) -> dict:
     if not project_path:
         return CONFIG.settings["compiler"]
 
@@ -258,7 +262,7 @@ def _load_project_compiler_config(project_path: Optional[pathlib.Path]) -> Dict:
     return compiler_data
 
 
-def _load_project_envvars(project_path: pathlib.Path) -> Dict:
+def _load_project_envvars(project_path: pathlib.Path) -> dict:
     config_vars = dict(os.environ)
     settings = CONFIG.settings
     if settings.get("dotenv"):
@@ -268,7 +272,7 @@ def _load_project_envvars(project_path: pathlib.Path) -> Dict:
         env_path = project_path.joinpath(dotenv_path)
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
-        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore
+        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore [arg-type]
     return config_vars
 
 
@@ -284,7 +288,7 @@ def _load_project_structure_config(project_path):
     return structure
 
 
-def _load_project_dependencies(project_path: pathlib.Path) -> List[str]:
+def _load_project_dependencies(project_path: pathlib.Path) -> list[str]:
     data = _load_config(project_path.joinpath("brownie-config"))
     dependencies = data.get("dependencies", []) or []
     if isinstance(dependencies, str):
@@ -306,13 +310,13 @@ def _modify_hypothesis_settings(settings, name, parent=None):
     hp_settings.register_profile(
         name,
         parent=hp_settings.get_profile(parent),
-        database=DirectoryBasedExampleDatabase(_get_data_folder().joinpath("hypothesis")),  # type: ignore [arg-type]
+        database=DirectoryBasedExampleDatabase(str(_get_data_folder().joinpath("hypothesis"))),
         **settings,
     )
     hp_settings.load_profile(name)
 
 
-def _recursive_update(original: Dict, new: Dict) -> None:
+def _recursive_update(original: dict, new: dict) -> None:
     """Recursively merges a new dict into the original dict"""
     if not original:
         original = {}
@@ -323,7 +327,7 @@ def _recursive_update(original: Dict, new: Dict) -> None:
             original[k] = new[k]
 
 
-def _update_argv_from_docopt(args: Dict[str, Any]) -> None:
+def _update_argv_from_docopt(args: dict[str, Any]) -> None:
     CONFIG.argv.update({k.lstrip("-"): v for k, v in args.items()})
 
 

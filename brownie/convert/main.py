@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from typing import Any, Final, Union
+from typing import Any, Final
 
 import faster_eth_utils
 from eth_typing import ChecksumAddress
@@ -9,7 +9,6 @@ from brownie._c_constants import Decimal, HexBytes
 
 from brownie.convert.datatypes import EthAddress, Fixed, HexString, Wei
 from brownie.convert.utils import get_int_bounds
-
 
 is_hex: Final = faster_eth_utils.is_hex
 to_text: Final = faster_eth_utils.to_text
@@ -45,7 +44,7 @@ def to_decimal(value: Any) -> Fixed:
     return d
 
 
-def to_address(value: Union[str, bytes]) -> ChecksumAddress:
+def to_address(value: str | bytes) -> ChecksumAddress:
     """Convert a value to an address"""
     return str(EthAddress(value))  # type: ignore [return-value]
 
