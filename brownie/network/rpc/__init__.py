@@ -253,5 +253,10 @@ class Rpc(metaclass=_Singleton):
 
     def _find_proc_by_name(self, process_name: str) -> psutil.Process:
         for proc in psutil.process_iter():
-            if process_name.lower() in proc.name().lower():
+            try:
+                proc_name = proc.name().lower()
+            except (psutil.NoSuchProcess, psutil.ZombieProcess):
+                continue
+
+            if process_name.lower() in proc_name:
                 return proc
