@@ -3,14 +3,15 @@
 import logging
 from typing import Any, Deque, Final
 
-import semantic_version
+# import semantic_version
 import solcast
 import solcx
+import solcx.exceptions
 from eth_typing import ABIElement, HexStr
 from requests.exceptions import ConnectionError
 from solcast.nodes import NodeBase, is_inside_offset
 
-from brownie._c_constants import Version, deque
+from brownie._c_constants import deque
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion  # noqa
 from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
@@ -32,6 +33,7 @@ from brownie.typing import (
 from brownie.utils import hash_source
 
 from brownie.project.compiler import sources
+from packaging.version import Version
 
 solcx_logger: Final = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
@@ -61,7 +63,7 @@ BranchNodes = dict[str, set[NodeBase]]
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
 
-def get_version() -> semantic_version.Version:
+def get_version() -> Version:
     return solcx.get_solc_version(with_commit_hash=True)
 
 

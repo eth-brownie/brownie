@@ -5,6 +5,7 @@ from typing import Final
 
 import semantic_version
 import vvm
+import vvm.exceptions
 import vyper
 from eth_typing import ABIElement, HexStr
 from packaging.version import Version as PVersion
@@ -12,7 +13,7 @@ from requests.exceptions import ConnectionError
 from vyper.cli import vyper_json
 from vyper.exceptions import VyperException
 
-from brownie._c_constants import Version, deque
+from brownie._c_constants import deque
 from brownie.exceptions import CompilerError, IncompatibleVyperVersion
 from brownie.project import sources
 from brownie.project.compiler.utils import VersionList, VersionSpec, expand_source_map
@@ -33,6 +34,7 @@ from brownie.typing import (
     VyperBuildJson,
 )
 from brownie.utils import hash_source
+from packaging.version import Version
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
@@ -61,7 +63,7 @@ _vvm_install_vyper: Final = vvm.install_vyper
 _vvm_compile_standard: Final = vvm.compile_standard
 
 
-def get_version() -> semantic_version.Version:
+def get_version() -> Version:
     return _active_version
 
 
@@ -124,7 +126,7 @@ def _get_vyper_version_list() -> tuple[VersionList, VersionList]:
     return AVAILABLE_VYPER_VERSIONS, installed_versions
 
 
-def install_vyper(*versions: str) -> None:
+def install_vyper(*versions: str | Version) -> None:
     """Installs vyper versions."""
     for version in versions:
         _vvm_install_vyper(str(version), show_progress=False)
@@ -515,12 +517,16 @@ def _convert_to_semver(versions: list[PVersion]) -> VersionList:
 
     This function serves as a stopgap.
     """
-    return [  # type: ignore [return-value]
+    return [ 
         Version(
-            major=version.major,
-            minor=version.minor,
-            patch=version.micro,
-            prerelease="".join(str(x) for x in version.pre) if version.pre else None,
+            str(
+                semantic_version.Version(
+                    major=version.major,
+                    minor=version.minor,
+                    patch=version.micro,
+                    prerelease="".join(str(x) for x in version.pre) if version.pre else None,
+                )
+            )
         )
         for version in versions
     ]

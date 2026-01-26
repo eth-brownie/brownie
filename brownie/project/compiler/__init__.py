@@ -6,7 +6,7 @@ from typing import Any, Dict, Final, List, Optional, Union, cast
 import solcast
 from eth_typing import ABIElement, HexStr
 
-from brownie._c_constants import Path, Version, deepcopy, ujson_loads
+from brownie._c_constants import Path, deepcopy, ujson_loads
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
@@ -36,6 +36,7 @@ from brownie.typing import (
 from brownie.utils import notify, hash_source
 
 from brownie.project.compiler import solidity, vyper
+from packaging.version import Version
 
 STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,
@@ -210,9 +211,9 @@ def generate_input_json(
 
     if evm_version is None:
         _module = solidity if language == "Solidity" else vyper
-        evm_version = next(
+        evm_version = EvmVersion(next(
             i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
-        )
+        ))
 
     input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language  # type: ignore [arg-type]

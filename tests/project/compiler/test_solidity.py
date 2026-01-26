@@ -4,7 +4,7 @@ import functools
 
 import pytest
 import solcx
-from semantic_version import Version
+from packaging.version import Version
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
