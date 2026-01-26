@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Final, Optional, Union
 
 import requests
 import solcx
+import eth_event
 from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
 from faster_eth_abi import decode as decode_abi
 from faster_eth_abi import encode as encode_abi
@@ -23,6 +24,7 @@ from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 from web3._utils import filters
 from web3.datastructures import AttributeDict
+from web3.exceptions import ContractCustomError
 from web3.types import LogReceipt
 
 from brownie._c_constants import (
@@ -83,7 +85,7 @@ from brownie.network.web3 import ContractEvent, _ContractEvents, _resolve_addres
 if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject
 
-AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod", "ContractError", "ContractEmittedEvent"]
 
 _unverified_addresses: Final[set[ChecksumAddress]] = set()
 
@@ -121,14 +123,14 @@ class _ContractBase:
         self._sources: Final = sources
 
         abi = self.abi
-        self.topics: Final = _get_topics(abi)
-        self.selectors: Final[dict[Selector, FunctionName]] = {
+        self.topics = _get_topics(abi)
+        self.selectors: dict[Selector, FunctionName] = {
             build_function_selector(i): f"{i['type']} {build_function_signature(i)}"
             for i in abi
             if i["type"] in ("function", "error", "event")
         }
         # JPD fixed: this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures: Final[dict[FunctionName, Selector]] = {
+        self.signatures: dict[FunctionName, Selector] = {
             build_function_signature(i): build_function_selector(i)
             for i in self.abi
             if i["type"] in ("function", "error", "event")
@@ -763,17 +765,21 @@ class _DeployedContractBase(_ContractBase):
         fn_abis = [abi for abi in self.abi if abi["type"] in ("function", "error", "event")]
         fn_names = [abi["name"] for abi in fn_abis]
 
+        self.functions_by_selector: dict[HexStr, AnyContractMethod] = dict()
+
         contract_name = self._name
         contract_natspec: dict = self._build.get("natspec") or {}
         methods_natspec: dict = contract_natspec.get("methods") or {}
         for abi, abi_name in zip(fn_abis, fn_names):
             name = f"{contract_name}.{abi_name}"
             sig = build_function_signature(abi)
+            selector = build_function_selector(abi)
             natspec = methods_natspec.get(sig, {})
 
             if fn_names.count(abi_name) == 1:
                 fn = _get_method_object(address, abi, name, owner, natspec)
                 self._check_and_set(abi_name, fn)
+                self.functions_by_selector[selector] = fn
                 continue
 
             # special logic to handle function overloading
@@ -781,6 +787,7 @@ class _DeployedContractBase(_ContractBase):
                 overloaded = OverloadedMethod(address, name, owner)
                 self._check_and_set(abi_name, overloaded)
             getattr(self, abi_name)._add_fn(abi, natspec)
+            self.functions_by_selector[selector] = getattr(self, abi_name) # type: ignore
 
         self._initialized = True
 
@@ -844,10 +851,10 @@ class _DeployedContractBase(_ContractBase):
         """
         Given a calldata hex string, returns a `ContractMethod` object.
         """
-        sig = calldata[:10].lower()
-        if sig not in self.selectors:
+        sig = HexStr(calldata[:10].lower())
+        if sig not in self.functions_by_selector:
             return None
-        fn = getattr(self, self.selectors[sig], None)
+        fn = self.functions_by_selector.get(sig)
         if isinstance(fn, OverloadedMethod):
             return next((v for v in fn.methods.values() if v.signature == sig), None)
         return fn
@@ -1718,10 +1725,54 @@ class _ContractFragment:
         return result
     
 
-class ContractEventError(_ContractFragment):
+class ContractEmittedEvent(_ContractFragment):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.topic = eth_event.get_log_topic(self.abi)
+        
     def __repr__(self) -> str:
         return f"<{self.abi['type']} '{self.abi['name']}({_inputs(self.abi)})'>"
+    
+    def call(self, *args, **kwargs) -> Any:
+        return self(*args)
 
+    def __call__(self, *args: Any) -> Any:
+        encoded = self.encode_input(*args)
+        decoded = self.decode_input(encoded)
+
+        event_data = ", ".join(
+            [
+                f"{input['name'] if 'name' in input else f'arg{idx}': arg}"
+                for idx, (input, arg) in enumerate(zip(self.abi["inputs"], decoded))
+            ] if "inputs" in self.abi else []
+        )
+
+        return f"{self._name}({event_data})"
+
+
+class ContractError(_ContractFragment):
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} '{self.abi['name']}({_inputs(self.abi)})'>"
+    
+    def call(self, *args: Any, original_error: Optional[Exception] = None, **kwargs) -> Any:
+        return self(*args, original_error=original_error)
+
+    def __call__(self, *args: Any, original_error: Optional[Exception] = None) -> Any:
+        encoded = self.encode_input(*args)
+        decoded = self.decode_input(encoded)
+
+        error_data = (
+            {
+                input["name"] if "name" in input else f"arg{idx}": arg
+                for idx, (input, arg) in enumerate(zip(self.abi["inputs"], decoded))
+            }
+            if "inputs" in self.abi
+            else {}
+        )
+        params = ", ".join([f"{name}={value}" for name, value in error_data])
+        message = f"{self._name}({params})"
+
+        raise ContractCustomError(message, error_data) from original_error
 
 class _ContractMethod(_ContractFragment):
     def __repr__(self) -> str:
@@ -2067,9 +2118,11 @@ def _get_method_object(
     name: str,
     owner: AccountsType | None,
     natspec: dict[str, Any],
-) -> ContractCall | ContractTx:
-    if abi["type"] in ("error", "event"):
-        return ContractEventError(address, abi, name, owner, natspec)
+) -> AnyContractMethod:
+    if abi["type"] == "error":
+        return ContractError(address, abi, name, owner, natspec)
+    if abi["type"] == "event":
+        return ContractEmittedEvent(address, abi, name, owner, natspec)
     
     if "constant" in abi:
         constant = abi["constant"]
