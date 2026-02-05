@@ -223,7 +223,7 @@ propcache==0.4.1
     #   -r requirements.txt
     #   aiohttp
     #   yarl
-protobuf==6.33.2
+protobuf==6.33.5
     # via
     #   -r requirements.txt
     #   web3
