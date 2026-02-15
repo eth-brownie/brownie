@@ -4,12 +4,13 @@ from collections.abc import Callable, Sequence
 from typing import Any, Dict, Final, List, Optional, Type
 
 from web3 import Web3
+from web3.middleware import Web3Middleware
 from web3.types import RPCEndpoint
 
 partial: Final = functools.partial
 
 
-class BrownieMiddlewareABC(ABC):
+class BrownieMiddlewareABC(Web3Middleware, ABC):
     """
     Base ABC for all middlewares.
 
@@ -24,6 +25,7 @@ class BrownieMiddlewareABC(ABC):
         Subclasses may optionally include this method. It is called only once,
         when the middleware is being added.
         """
+        super().__init__(w3)
         self.w3: Final = w3
 
     @classmethod
@@ -37,13 +39,21 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, make_request: Callable, w3: Web3) -> Callable:
+    def wrap_make_request(self, make_request: Callable) -> Callable:
         """
         Receive the initial middleware request and return `process_request`.
 
         Subclasses should NOT include this method.
         """
         return partial(self.process_request, make_request)
+
+    def wrap_make_batch_request(self, make_batch_request: Callable) -> Callable:
+        """
+        Receive the batch middleware request and return `make_batch_request`.
+
+        Subclasses should NOT include this method.
+        """
+        return make_batch_request
 
     @abstractmethod
     def process_request(
