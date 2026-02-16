@@ -9,9 +9,8 @@ from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
 from requests import HTTPError
 from ujson import JSONDecodeError
-from web3 import HTTPProvider, IPCProvider
+from web3 import HTTPProvider, IPCProvider, LegacyWebSocketProvider
 from web3 import Web3 as _Web3
-from web3 import LegacyWebSocketProvider
 from web3.contract.contract import ContractEvent  # noqa
 from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
