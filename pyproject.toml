@@ -29,7 +29,7 @@ requires = [
     "vvm==0.2.1; platform_system == 'Linux' and python_version != '3.14'",
     "vyper==0.4.3; platform_system == 'Linux' and python_version != '3.14'",
     "websockets==15.0.1",
-    "web3==6.11.0; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
+    "web3==7.14.1; platform_system == 'MacOS' or (platform_system == 'Linux' and python_version != '3.14')",
 ]
 
 # Brownie configuration for Black.

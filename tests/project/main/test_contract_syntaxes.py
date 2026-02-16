@@ -18,9 +18,7 @@ pragma solidity ^0.{}.0;
 contract OnlyEvents {{
     event Transfer(address from, address to, uint256 value);
     event Approval(address owner, address spender, uint256 value);
-}}""".format(
-        minor
-    )
+}}""".format(minor)
     with newproject._path.joinpath("contracts/OnlyEvents.sol").open("w") as fp:
         fp.write(source)
     newproject.load()

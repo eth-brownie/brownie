@@ -27,5 +27,5 @@ tqdm<5
 ujson
 vvm==0.2.1
 vyper>=0.4.0,<0.5
-web3>=6,<7
+web3>=7,<8
 wrapt>=1.12.1,<2

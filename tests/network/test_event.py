@@ -110,8 +110,7 @@ def test_eventitem_raises(event):
 
 
 def test_same_topic_different_abi(accounts):
-    proj = compile_source(
-        """
+    proj = compile_source("""
     pragma solidity 0.5.0;
 
     contract Foo {
@@ -127,8 +126,7 @@ def test_same_topic_different_abi(accounts):
             _addr.foo();
             emit Baz(4, 5, 6);
         }
-    }"""
-    )
+    }""")
 
     foo = proj.Foo.deploy({"from": accounts[0]})
     bar = proj.Bar.deploy({"from": accounts[0]})
