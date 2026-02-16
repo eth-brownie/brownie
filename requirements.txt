@@ -177,7 +177,7 @@ py==1.11.0
     #   pytest-forked
 py-solc-ast==1.2.10
     # via -r requirements.in
-py-solc-x==1.1.1
+py-solc-x==2.0.5
     # via -r requirements.in
 pycryptodome==3.23.0
     # via
