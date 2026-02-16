@@ -6,7 +6,7 @@
 #
 alabaster==1.0.0
     # via sphinx
-babel==2.17.0
+babel==2.18.0
     # via sphinx
 certifi==2026.1.4
     # via
@@ -22,6 +22,7 @@ docutils==0.22.4
     # via
     #   -c requirements-dev.txt
     #   sphinx
+    #   sphinx-rtd-theme
 idna==3.11
     # via
     #   -c requirements-dev.txt
@@ -56,7 +57,8 @@ sphinx==9.1.0
     # via
     #   -r requirements-docs.in
     #   sphinx-rtd-theme
-sphinx-rtd-theme==0.5.1
+    #   sphinxcontrib-jquery
+sphinx-rtd-theme==3.1.0
     # via -r requirements-docs.in
 sphinxcontrib-applehelp==2.0.0
     # via sphinx
@@ -64,13 +66,15 @@ sphinxcontrib-devhelp==2.0.0
     # via sphinx
 sphinxcontrib-htmlhelp==2.1.0
     # via sphinx
+sphinxcontrib-jquery==4.1
+    # via sphinx-rtd-theme
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
 sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
