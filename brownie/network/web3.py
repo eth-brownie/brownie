@@ -46,9 +46,7 @@ class Web3(_Web3):
             middleware.uninstall()
         self._custom_middleware.clear()
 
-    def _build_middleware(
-        self, middleware_cls: type
-    ) -> tuple[Callable[["_Web3"], object], object]:
+    def _build_middleware(self, middleware_cls: type) -> tuple[Callable[["_Web3"], object], object]:
         middleware = middleware_cls(self)
 
         def builder(_w3: _Web3) -> object:
