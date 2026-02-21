@@ -210,9 +210,9 @@ def generate_input_json(
 
     if evm_version is None:
         _module = solidity if language == "Solidity" else vyper
-        evm_version = EvmVersion(next(
-            i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
-        ))
+        evm_version = EvmVersion(
+            next(i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1])
+        )
 
     input_json = deepcopy(STANDARD_JSON)
     input_json["language"] = language  # type: ignore [arg-type]
@@ -403,7 +403,7 @@ def generate_build_json(
                     "language": language,  # type: ignore [typeddict-item]
                     "natspec": natspec,
                     "opcodes": deployed_bytecode["opcodes"],
-                    "sha1": hash_source(source),  
+                    "sha1": hash_source(source),
                     "source": source,
                     "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
                     "sourcePath": path_str,
@@ -470,7 +470,7 @@ def get_abi(
             "type": "interface",
             "source": None,
             "offset": None,
-            "sha1": hash_source(v)
+            "sha1": hash_source(v),
         }
         for k, v in contract_sources.items()
         if (p := Path(k)).suffix == ".json"
@@ -493,7 +493,7 @@ def get_abi(
                 "type": "interface",
                 "source": source,
                 "offset": (0, len(source)),
-                "sha1": hash_source(contract_sources[path])
+                "sha1": hash_source(contract_sources[path]),
             }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
@@ -539,7 +539,7 @@ def get_abi(
                     "type": "interface",
                     "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": hash_source(path_source), 
+                    "sha1": hash_source(path_source),
                 }
 
     return final_output

@@ -517,7 +517,7 @@ def _convert_to_semver(versions: list[PVersion]) -> VersionList:
 
     This function serves as a stopgap.
     """
-    return [ 
+    return [
         Version(
             str(
                 semantic_version.Version(

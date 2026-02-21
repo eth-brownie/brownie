@@ -101,10 +101,7 @@ class Sources:
 
     def get_interface_hashes(self) -> dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
-        return {
-            k: hash_source(self._interface_sources[v])
-            for k, v in self._interfaces.items()
-        }
+        return {k: hash_source(self._interface_sources[v]) for k, v in self._interfaces.items()}
 
     def get_interface_sources(self) -> dict[str, str]:
         """Returns a dict of interfaces sources in the form {path: source}"""

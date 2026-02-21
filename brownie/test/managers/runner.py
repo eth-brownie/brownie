@@ -258,7 +258,9 @@ class PytestBrownieRunner(PytestBrownieBase):
         """
         outcome = yield
         # handled as a hookwrapper to ensure connecting is the last action for this hook
-        if not outcome.get_result() and session.items and not brownie.network.is_connected():  # @UndefinedVariable
+        if (
+            not outcome.get_result() and session.items and not brownie.network.is_connected()
+        ):  # @UndefinedVariable
             brownie.network.connect(CONFIG.argv["network"])  # @UndefinedVariable
 
     def pytest_runtest_protocol(self, item):

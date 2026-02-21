@@ -53,9 +53,7 @@ rpc = Rpc()
 eth_account.Account.enable_unaudited_hdwallet_features()
 _marker = deque("-/|\\-/|\\")
 
-_dropped_tx_pattern = re.compile(
-    r"Tx dropped without known replacement: (0x[0-9a-f]{64})"
-)
+_dropped_tx_pattern = re.compile(r"Tx dropped without known replacement: (0x[0-9a-f]{64})")
 _lost_tx_pattern = re.compile(r"Transaction with hash: '(0x[0-9a-f]{64})' not found")
 _already_known_pattern = re.compile(r"already known")
 
@@ -282,8 +280,7 @@ class Accounts(metaclass=_Singleton):
             acct = Account(address)
 
             if (
-                CONFIG.network_type == "development"
-                and address not in web3.eth.accounts
+                CONFIG.network_type == "development" and address not in web3.eth.accounts
             ):  # @UndefinedVariable
                 rpc.unlock_account(address)
 
@@ -344,9 +341,7 @@ class Accounts(metaclass=_Singleton):
             if uri is not None and uri.startswith("http"):
                 provider = HTTPProvider(uri, {"timeout": timeout})
         if provider is None:
-            raise ValueError(
-                "Unknown URI, must be IPC socket path or URL starting with 'http'"
-            )
+            raise ValueError("Unknown URI, must be IPC socket path or URL starting with 'http'")
 
         response = provider.make_request("account_list", [])
         if "error" in response:
@@ -363,7 +358,8 @@ class Accounts(metaclass=_Singleton):
         Removes all `ClefAccount` objects from the container.
         """
         self._accounts = [i for i in self._accounts if not isinstance(i, ClefAccount)]
-        
+
+
 accounts = Accounts()
 
 
@@ -439,9 +435,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         super().__init__(addr)
 
     def _pending_nonce(self) -> int:
-        tx_from_sender = sorted(
-            history.from_sender(self.address), key=lambda k: k.nonce
-        )
+        tx_from_sender = sorted(history.from_sender(self.address), key=lambda k: k.nonce)
         if len(tx_from_sender) == 0:
             return self.nonce
 
@@ -483,9 +477,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def _gas_price(self, gas_price: Any = None) -> tuple[Wei, GasABC | None, Iterator | None]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
-            gas_price = CONFIG.active_network["settings"][
-                "gas_price"
-            ]  # @UndefinedVariable
+            gas_price = CONFIG.active_network["settings"]["gas_price"]  # @UndefinedVariable
 
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
@@ -572,9 +564,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent,
         )
 
-        add_thread = threading.Thread(
-            target=contract._add_from_tx, args=(receipt,), daemon=True
-        )
+        add_thread = threading.Thread(target=contract._add_from_tx, args=(receipt,), daemon=True)
         add_thread.start()
 
         if rpc.is_active():
@@ -654,9 +644,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             ]  # @UndefinedVariable
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
-                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = (
-                    revert_gas_limit  # @UndefinedVariable
-                )
+                CONFIG.active_network["settings"][
+                    "reverting_tx_gas_limit"
+                ] = revert_gas_limit  # @UndefinedVariable
             if revert_gas_limit:
                 return revert_gas_limit
 
@@ -755,11 +745,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
         except Exception as ex:
             if max_retries <= 0 or test_function is None:
                 raise ex
-            
+
             ex_string = str(ex)
-            lost_tx_match = _dropped_tx_pattern.search(
+            lost_tx_match = _dropped_tx_pattern.search(ex_string) or _lost_tx_pattern.search(
                 ex_string
-            ) or _lost_tx_pattern.search(ex_string)
+            )
 
             if lost_tx_match:
                 tx_id = lost_tx_match.group(1)
@@ -770,19 +760,19 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     required_confs=required_confs,
                 )
                 if receipt:
-                    print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
+                    print(
+                        f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}"
+                    )
                     return receipt
-                
+
             if _already_known_pattern.search(ex_string):
                 time.sleep(3.0)
 
             if test_function():
-                print(f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}")
-                if (
-                    receipt is not None
-                    and receipt.txid is not None
-                    and receipt.timestamp is None
-                ):
+                print(
+                    f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}"
+                )
+                if receipt is not None and receipt.txid is not None and receipt.timestamp is None:
                     reloaded_receipt = load_transaction(
                         receipt.txid,
                         max_retries=max_retries,
@@ -790,7 +780,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                     )
                     return reloaded_receipt or receipt
                 return receipt
-            
+
             raise
 
     def wait_for_complete(
@@ -820,7 +810,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                             txid,
                             max_retries=max_retries,
                             required_confs=required_confs,
-                        )                        
+                        )
                         if reloaded_receipt:
                             return reloaded_receipt
                     except Exception as ex1:
@@ -829,7 +819,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         )
 
                 if attempt >= max_retries:
-                        return receipt if isinstance(receipt, TransactionReceipt) else None
+                    return receipt if isinstance(receipt, TransactionReceipt) else None
 
                 time.sleep(sleep_time)
                 sleep_time *= 1.5
@@ -857,18 +847,13 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
-            silent = bool(
-                CONFIG.mode == "test" or CONFIG.argv["silent"]
-            )  # @UndefinedVariable
+            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])  # @UndefinedVariable
 
         priority_fee_increment = 1.1
 
         network_settings = (
-            CONFIG.settings["networks"][
-                CONFIG.active_network["id"]
-            ]  # @UndefinedVariable
-            if CONFIG.active_network["id"]
-            in CONFIG.settings["networks"]  # @UndefinedVariable
+            CONFIG.settings["networks"][CONFIG.active_network["id"]]  # @UndefinedVariable
+            if CONFIG.active_network["id"] in CONFIG.settings["networks"]  # @UndefinedVariable
             else CONFIG.active_network["settings"]  # @UndefinedVariable
         )
         if gas_price is None:
@@ -1047,9 +1032,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         )
         while True:
             if not replacements:
-                raise TransactionError(
-                    f"Tx dropped without known replacement: {receipt.txid}"
-                )
+                raise TransactionError(f"Tx dropped without known replacement: {receipt.txid}")
             if len(replacements) > 1:
                 # in case we have multiple tx's where the status is still unresolved
                 replacements = [i for i in replacements if i.status != 2]
@@ -1069,9 +1052,7 @@ class Account(_PrivateKeyAccount):
 
     def _transact(self, tx: dict, allow_revert: bool | None = None) -> Any:
         if allow_revert is None:
-            allow_revert = bool(
-                CONFIG.network_type == "development"
-            )  # @UndefinedVariable
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         return web3.eth.send_transaction(tx)
@@ -1137,7 +1118,7 @@ class LocalAccount(_PrivateKeyAccount):
         """
         msg_hash_bytes = defunct_hash_message(text=message)
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
-        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
+        v, r, s, eth_signature_bytes = sign_message_hash(eth_private_key, msg_hash_bytes)
         if ETH_ACCOUNT_LT_0_13_0:
             return SignedMessage(
                 messageHash=msg_hash_bytes,
@@ -1170,7 +1151,7 @@ class LocalAccount(_PrivateKeyAccount):
         msg_hash_bytes = HexBytes(_hash_eip191_message(message.signable_message))
         assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
-        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
+        v, r, s, eth_signature_bytes = sign_message_hash(eth_private_key, msg_hash_bytes)
         if ETH_ACCOUNT_LT_0_13_0:
             return SignedMessage(
                 messageHash=msg_hash_bytes,
@@ -1190,9 +1171,7 @@ class LocalAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: dict, allow_revert: bool | None = None):
         if allow_revert is None:
-            allow_revert = bool(
-                CONFIG.network_type == "development"
-            )  # @UndefinedVariable
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
@@ -1213,9 +1192,7 @@ class ClefAccount(_PrivateKeyAccount):
 
     def _transact(self, tx: dict, allow_revert: bool | None):
         if allow_revert is None:
-            allow_revert = bool(
-                CONFIG.network_type == "development"
-            )  # @UndefinedVariable
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
 
@@ -1248,9 +1225,7 @@ def _apply_fee_to_tx(
 
     if gas_price is not None:
         if max_fee or priority_fee:
-            raise ValueError(
-                "gas_price and (max_fee, priority_fee) are mutually exclusive"
-            )
+            raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
         tx["gasPrice"] = web3.to_hex(gas_price)
         return tx
 

@@ -100,7 +100,9 @@ class PytestBrownieFixtures:
         def package_loader(project_id):
             if project_id not in _open_projects:
                 path = _get_data_folder().joinpath(f"packages/{project_id}")
-                _open_projects[project_id] = brownie.project.load(path, project_id)  # @UndefinedVariable
+                _open_projects[project_id] = brownie.project.load(
+                    path, project_id
+                )  # @UndefinedVariable
 
             return _open_projects[project_id]
 

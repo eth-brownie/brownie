@@ -84,7 +84,9 @@ from brownie.utils._color import bright_blue, bright_green, bright_magenta, brig
 if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject
 
-AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod", "ContractError", "ContractEmittedEvent"]
+AnyContractMethod = Union[
+    "ContractCall", "ContractTx", "OverloadedMethod", "ContractError", "ContractEmittedEvent"
+]
 
 _unverified_addresses: Final[set[ChecksumAddress]] = set()
 
@@ -107,6 +109,7 @@ _explorer_tokens = {
 }
 
 _rng = random.Random()
+
 
 class _ContractBase:
     _dir_color: Final = "bright magenta"
@@ -178,7 +181,10 @@ class _ContractBase:
 
         abi: ABIFunction | None = None
         for i in self.abi:
-            if i["type"] in ("function", "error", "event") and build_function_selector(i) == fn_selector:
+            if (
+                i["type"] in ("function", "error", "event")
+                and build_function_selector(i) == fn_selector
+            ):
                 abi = i
                 break
 
@@ -505,7 +511,7 @@ class ContractContainer(_ContractBase):
                 if not silent:
                     print("Verification pending...")
             else:
-                success = (data["message"] == "OK" or data["message"] == "Already Verified")
+                success = data["message"] == "OK" or data["message"] == "Already Verified"
                 if not silent:
                     color = bright_green if success else bright_red
                     print(f"Verification complete. Result: {color}{data['result']}{color}")
@@ -676,10 +682,8 @@ class InterfaceConstructor:
         self._name: Final = name
         self.abi: Final = abi
         self.selectors: Final[dict[Selector, FunctionName]] = {
-            build_function_selector(i): FunctionName(build_function_signature(i)
-           )
+            build_function_selector(i): FunctionName(build_function_signature(i))
             for i in abi
-           
             if i["type"] in ("function", "error", "event")
         }
 
@@ -712,7 +716,10 @@ class InterfaceConstructor:
 
         abi: ABIFunction | None = None
         for _abi in self.abi:
-            if _abi["type"] in ("function", "error", "event") and build_function_selector(_abi) == fn_selector:
+            if (
+                _abi["type"] in ("function", "error", "event")
+                and build_function_selector(_abi) == fn_selector
+            ):
                 abi = _abi
                 break
 
@@ -751,7 +758,8 @@ class _DeployedContractBase(_ContractBase):
         web3.isConnected()
         self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
             # removeprefix is used for compatibility with both hexbytes<1 and >=1
-            self._build.get("deployedBytecode", None) or web3.eth.get_code(address).hex().removeprefix("0x")
+            self._build.get("deployedBytecode", None)
+            or web3.eth.get_code(address).hex().removeprefix("0x")
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
@@ -786,7 +794,7 @@ class _DeployedContractBase(_ContractBase):
                 overloaded = OverloadedMethod(address, name, owner)
                 self._check_and_set(abi_name, overloaded)
             getattr(self, abi_name)._add_fn(abi, natspec)
-            self.functions_by_selector[selector] = getattr(self, abi_name) # type: ignore
+            self.functions_by_selector[selector] = getattr(self, abi_name)  # type: ignore
 
         self._initialized = True
 
@@ -866,18 +874,23 @@ class _DeployedContractBase(_ContractBase):
 
     def _deployment_path(self) -> Path | None:
         if not self._project._path or (
-            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]  # @UndefinedVariable
+            CONFIG.network_type != "live"
+            and not CONFIG.settings["dev_deployment_artifacts"]  # @UndefinedVariable
         ):
             return None
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         deployment_build = self._build.copy()
 
         web3.isConnected()
@@ -1239,7 +1252,7 @@ class Contract(_DeployedContractBase):
         return self
 
     @classmethod
-    def get_solc_version(cls, compiler_str: str, address: str) -> Version: # type: ignore
+    def get_solc_version(cls, compiler_str: str, address: str) -> Version:  # type: ignore
         """
         Return the solc compiler version either from the passed compiler string
         or try to find the latest available patch semver compiler version.
@@ -1639,6 +1652,7 @@ class OverloadedMethod:
             print(sig)
         _print_natspec(self.natspec)
 
+
 class _ContractFragment:
     _dir_color: Final = "bright magenta"
 
@@ -1722,16 +1736,16 @@ class _ContractFragment:
         if len(result) == 1:
             result = result[0]
         return result
-    
+
 
 class ContractEmittedEvent(_ContractFragment):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.topic = eth_event.get_log_topic(self.abi)
-        
+
     def __repr__(self) -> str:
         return f"<{self.abi['type']} '{self.abi['name']}({_inputs(self.abi)})'>"
-    
+
     def call(self, *args, **kwargs) -> Any:
         return self(*args)
 
@@ -1743,7 +1757,9 @@ class ContractEmittedEvent(_ContractFragment):
             [
                 f"{input['name'] if 'name' in input else f'arg{idx}': arg}"
                 for idx, (input, arg) in enumerate(zip(self.abi["inputs"], decoded))
-            ] if "inputs" in self.abi else []
+            ]
+            if "inputs" in self.abi
+            else []
         )
 
         return f"{self._name}({event_data})"
@@ -1752,7 +1768,7 @@ class ContractEmittedEvent(_ContractFragment):
 class ContractError(_ContractFragment):
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self.abi['name']}({_inputs(self.abi)})'>"
-    
+
     def call(self, *args: Any, original_error: Exception | None = None, **kwargs) -> Any:
         return self(*args, original_error=original_error)
 
@@ -1772,6 +1788,7 @@ class ContractError(_ContractFragment):
         message = f"{self._name}({params})"
 
         raise ContractCustomError(message, error_data) from original_error
+
 
 class _ContractMethod(_ContractFragment):
     def __repr__(self) -> str:
@@ -1802,7 +1819,11 @@ class _ContractMethod(_ContractFragment):
         _print_natspec(self.natspec)
 
     def call(
-        self, *args: Any, block_identifier: int | str | bytes | None = None, override: dict | None = None, max_retries=5
+        self,
+        *args: Any,
+        block_identifier: int | str | bytes | None = None,
+        override: dict | None = None,
+        max_retries=5,
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1849,7 +1870,12 @@ class _ContractMethod(_ContractFragment):
                 raise
 
             time.sleep(_rng.random() * 0.4 + 0.1)
-            return self.call(*args, block_identifier=block_identifier, override=override, max_retries=max_retries - 1)
+            return self.call(
+                *args,
+                block_identifier=block_identifier,
+                override=override,
+                max_retries=max_retries - 1,
+            )
 
     def transact(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
         """
@@ -1873,7 +1899,7 @@ class _ContractMethod(_ContractFragment):
                 "Final argument must be a dict of transaction parameters that "
                 "includes a `from` field specifying the sender of the transaction"
             )
-        
+
         print(f"{tx['from'].address}: calling {self._name}{args}")
 
         return tx["from"].transfer(
@@ -2080,7 +2106,9 @@ def _get_tx(owner: AccountsType | None, args: tuple) -> tuple:
     # set / remove default sender
     if owner is None:
         owner = accounts.default
-    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]  # @UndefinedVariable
+    default_owner = CONFIG.active_network["settings"][
+        "default_contract_owner"
+    ]  # @UndefinedVariable
     if CONFIG.mode == "test" and default_owner is False:  # @UndefinedVariable
         owner = None
 
@@ -2122,7 +2150,7 @@ def _get_method_object(
         return ContractError(address, abi, name, owner, natspec)
     if abi["type"] == "event":
         return ContractEmittedEvent(address, abi, name, owner, natspec)
-    
+
     if "constant" in abi:
         constant = abi["constant"]
     else:

@@ -3,6 +3,7 @@
 from typing import Final
 
 from brownie.network.account import accounts
+
 # from brownie.network.account import Accounts
 from brownie.network.main import (  # NOQA 401
     connect,

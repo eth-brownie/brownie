@@ -10,6 +10,7 @@ from wrapt import ObjectProxy
 from brownie._c_constants import ujson_loads
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
+
 # from brownie.network import accounts, web3
 from brownie.network import web3
 from brownie.network.account import accounts
@@ -57,7 +58,9 @@ class Multicall:
         self._contract = None
         self._pending_calls: dict[int, list[Call]] = defaultdict(list)
 
-        setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)  # @UndefinedVariable
+        setattr(
+            ContractCall, "__original_call_code", ContractCall.__call__.__code__
+        )  # @UndefinedVariable
         setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
         setattr(ContractCall, "__multicall", defaultdict(lambda: None))
         ContractCall.__call__.__code__ = self._proxy_call.__code__

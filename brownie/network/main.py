@@ -25,7 +25,9 @@ def connect(network: str | None = None, launch_rpc: bool = True) -> None:
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
-        raise ConnectionError(f"Already connected to network '{CONFIG.active_network['id']}'")  # @UndefinedVariable
+        raise ConnectionError(
+            f"Already connected to network '{CONFIG.active_network['id']}'"
+        )  # @UndefinedVariable
     try:
         active = CONFIG.set_active_network(network)  # @UndefinedVariable
         host = active["host"]
@@ -37,9 +39,11 @@ def connect(network: str | None = None, launch_rpc: bool = True) -> None:
                 pass
 
         web3.connect(host, active.get("timeout", 30))
-        if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():  # @UndefinedVariable
+        if (
+            CONFIG.network_type == "development" and launch_rpc and not rpc.is_active()
+        ):  # @UndefinedVariable
             if is_connected():
-                # Why is this a warning? I could not give less of a shit what the block number is 
+                # Why is this a warning? I could not give less of a shit what the block number is
                 # when I connect to my development network.
                 #
                 # if web3.eth.block_number != 0:
@@ -52,7 +56,9 @@ def connect(network: str | None = None, launch_rpc: bool = True) -> None:
                 rpc.launch(active["cmd"], **active["cmd_settings"])
         else:
             Accounts()._reset()
-        if CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
+        if (
+            CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             for p in project.get_loaded_projects():
                 p._load_deployments()
 
@@ -80,7 +86,7 @@ def show_active() -> str | None:
 
 def is_connected() -> bool:
     """Returns a bool indicating if the Web3 object is currently connected"""
-    # Ask twice, because if connection has timed out, first attempt will return False 
+    # Ask twice, because if connection has timed out, first attempt will return False
     # but will wake up the connection, and the second will return True
     return web3.isConnected() or web3.isConnected()
 

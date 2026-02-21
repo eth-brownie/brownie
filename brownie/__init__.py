@@ -3,11 +3,13 @@
 """
 isort:skip_file
 """
+
 from typing import Final
 
 from brownie.project import compile_source, run
 from brownie._config import CONFIG as _CONFIG
 from brownie.convert import Fixed, Wei
+
 # from brownie.network import accounts, alert, chain, history, rpc, web3
 from brownie.network import alert, history, rpc, web3
 from brownie.network.account import accounts

@@ -421,9 +421,13 @@ class Project(_ProjectBase):
             #     path.unlink()
 
     def _load_deployments(self) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
+        if (
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         path = self._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
@@ -471,9 +475,13 @@ class Project(_ProjectBase):
             ujson_dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
+        if (
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         deployment_map = self._load_deployment_map()
         try:
             deployment_map[chainid][contract._name].remove(contract.address)
@@ -487,10 +495,14 @@ class Project(_ProjectBase):
         self._save_deployment_map(deployment_map)
 
     def _add_to_deployment_map(self, contract: ProjectContract) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:  # @UndefinedVariable
+        if (
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             return
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"  # @UndefinedVariable
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         deployment_map = self._load_deployment_map()
         try:
             deployment_map[chainid][contract._name].remove(contract.address)

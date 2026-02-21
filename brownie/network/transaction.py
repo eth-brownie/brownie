@@ -92,6 +92,7 @@ class Status(IntEnum):
     Reverted = 0
     Confirmed = 1
 
+
 def load_transaction(tx_id: str, max_retries: 5, required_confs: int = 3):
     attempt = 1
     sleep_time = 1.0
@@ -109,6 +110,7 @@ def load_transaction(tx_id: str, max_retries: 5, required_confs: int = 3):
         sleep_time *= 1.5
 
     return None
+
 
 class TransactionReceipt:
     """Attributes and methods relating to a broadcasted transaction.
@@ -496,7 +498,7 @@ class TransactionReceipt:
                 if time.time() - nonce_time > 15:
                     sender_nonce = web3.eth.get_transaction_count(str(self.sender))
                     nonce_time = time.time()
-    
+
                 try:
                     receipt = web3.eth.get_transaction_receipt(HexBytes(self.txid))
                 except TransactionNotFound:
@@ -507,12 +509,12 @@ class TransactionReceipt:
                     self._revert_msg = str(ex)
                     self._confirmed.set()
                     raise ex
-                
+
                 # the null blockHash check is required for older versions of Parity
                 # taken from `web3._utils.transactions.wait_for_transaction_receipt`
                 if receipt is not None and receipt["blockHash"] is not None:
                     break
-    
+
                 # continuation of the nonce logic 2 sections prior. we must check the receipt
                 # after querying the nonce, because in the other order there is a chance that
                 # the tx would confirm after checking the receipt but before checking the nonce
@@ -520,7 +522,7 @@ class TransactionReceipt:
                     self.status = Status(-2)
                     self._confirmed.set()
                     return
-    
+
                 if not block_number and not self._silent and required_confs > 0:
                     if required_confs == 1:
                         sys.stdout.write(f"  Waiting for confirmation... {_marker[0]}\r")
@@ -531,15 +533,15 @@ class TransactionReceipt:
                         )
                     _marker.rotate(1)
                     sys.stdout.flush()
-    
+
                 time.sleep(1)
-    
+
             # silence other dropped tx's immediately after confirmation to avoid output weirdness
             for dropped_tx in state.TxHistory().filter(
                 sender=self.sender, nonce=self.nonce, key=lambda k: k != self
             ):
                 dropped_tx._silent = True
-    
+
             self.block_number = receipt["blockNumber"]
             # wait for more confirmations if required and handle uncle blocks
             remaining_confs = required_confs
@@ -561,17 +563,19 @@ class TransactionReceipt:
                     self._revert_msg = str(ex)
                     self._confirmed.set()
                     raise ex
-                
+
                 if required_confs - self.confirmations != remaining_confs:
                     remaining_confs = required_confs - self.confirmations
                     if not self._silent:
-                        sys.stdout.write(f"\rRequired confirmations: {bright_yellow}{self.confirmations}/{required_confs}{color}  ")
+                        sys.stdout.write(
+                            f"\rRequired confirmations: {bright_yellow}{self.confirmations}/{required_confs}{color}  "
+                        )
                         if remaining_confs == 0:
                             sys.stdout.write("\n")
                         sys.stdout.flush()
                 if remaining_confs > 0:
                     time.sleep(1)
-    
+
             self._set_from_receipt(receipt)
             # if coverage evaluation is active, evaluate the trace
             if (
@@ -582,7 +586,7 @@ class TransactionReceipt:
                 self._expand_trace()
             if not self._silent and required_confs > 0:
                 print(self._confirm_output())
-    
+
             # set the confirmation event and mark other tx's with the same nonce as dropped
             for dropped_tx in state.TxHistory().filter(
                 sender=self.sender, nonce=self.nonce, key=lambda k: k != self
@@ -697,13 +701,9 @@ class TransactionReceipt:
             self._trace_exc = RPCRequestError(trace["error"]["message"])
             raise self._trace_exc
 
-        if (
-            "result" not in trace
-            or trace["result"] is None
-            or "structLogs" not in trace["result"]
-        ):
+        if "result" not in trace or trace["result"] is None or "structLogs" not in trace["result"]:
             return
-        
+
         self._raw_trace = trace = trace["result"]["structLogs"]
         if not trace:
             self._modified_state = False

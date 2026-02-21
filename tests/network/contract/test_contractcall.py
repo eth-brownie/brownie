@@ -24,16 +24,14 @@ def test_transact(accounts, tester):
 
 
 def test_block_identifier(accounts, history):
-    contract = compile_source(
-        """
+    contract = compile_source("""
 # @version 0.2.4
 foo: public(int128)
 
 @external
 def set_foo(_foo: int128):
     self.foo = _foo
-    """
-    ).Vyper.deploy({"from": accounts[0]})
+    """).Vyper.deploy({"from": accounts[0]})
 
     contract.set_foo(13)
     contract.set_foo(42)
