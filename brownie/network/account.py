@@ -1044,6 +1044,29 @@ class ClefAccount(_PrivateKeyAccount):
             raise ValueError(response["error"]["message"])
         return web3.eth.send_raw_transaction(response["result"]["raw"])
 
+    def sign_message(self, message: EIP712Message) -> SignedMessage:
+        """Signs an `EIP712Message` using this hd wallet of this clef account.
+
+        Args:
+            message: An `EIP712Message` instance.
+
+        Returns:
+            An eth_account `SignedMessage` instance.
+        """
+        msg_hash_bytes = HexBytes(_hash_eip191_message(message.signable_message))
+        assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
+        response = self._provider.make_request(
+            "account_signTypedData", [self.address, message.body_data])
+        if "error" in response:
+            raise ValueError(response["error"]["message"])
+        return SignedMessage(
+            messageHash=msg_hash_bytes,
+            r=int(response["result"][2:66], 16),
+            s=int(response["result"][66:130], 16),
+            v=int(response["result"][130:132], 16),
+            signature=HexBytes(response["result"]),
+        )
+
 
 def _apply_fee_to_tx(
     tx: dict,
