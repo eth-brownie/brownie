@@ -3,7 +3,6 @@
 
 import pathlib
 import sys
-import warnings
 from ast import FunctionDef, Import, ImportFrom, dump, parse
 from collections.abc import Sequence
 from importlib import reload

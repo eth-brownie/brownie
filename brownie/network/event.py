@@ -16,7 +16,6 @@ from eth_typing import ABIElement, AnyAddress, ChecksumAddress, HexStr
 from ujson import JSONDecodeError
 from web3._utils import filters
 from web3.datastructures import AttributeDict
-from web3.types import LogReceipt
 
 from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import _get_data_folder

@@ -1,12 +1,10 @@
 #!/usr/bin/python3
 
-import warnings
 from typing import Final
 
 from brownie import project
 from brownie._config import CONFIG
 from brownie.convert import Wei
-from brownie.exceptions import BrownieEnvironmentWarning
 from brownie.network.account import Accounts
 from brownie.network.gas.bases import GasABC
 from brownie.network.rpc import Rpc
