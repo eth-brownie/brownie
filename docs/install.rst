@@ -64,6 +64,13 @@ Brownie has the following dependencies:
 * `python3 <https://www.python.org/downloads/release/python-368/>`_ version 3.6 or greater, python3-dev
 * `ganache-cli <https://github.com/trufflesuite/ganache-cli>`_ - tested with version `6.12.2 <https://github.com/trufflesuite/ganache-cli/releases/tag/v6.12.2>`_
 
+.. _install-ganache-cli:
+
+Ganache-cli
+-----------
+
+You can either install ganache-cli globally with `npm install -g ganache-cli`, or locally in your project folder with `npm install ganache-cli`. If you prefer the local installation, you need to point `brownie console` to the local installation with `brownie networks modify development cmd="npx ganache-cli"`. Then it will work just like the global installation would.
+
 .. _install-tk:
 
 Tkinter
