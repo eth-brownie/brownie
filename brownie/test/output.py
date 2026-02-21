@@ -10,11 +10,10 @@ from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.project.build import Build
+from brownie.test.coverage import CoverageEval
 from brownie.typing import ContractName, CoverageMap
 from brownie.utils import color
 from brownie.utils._color import bright_green, bright_magenta, bright_red, bright_yellow
-
-from brownie.test.coverage import CoverageEval
 
 COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
     (0.8, bright_red),

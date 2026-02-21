@@ -8,6 +8,7 @@ import vvm
 import vvm.exceptions
 import vyper
 from eth_typing import ABIElement, HexStr
+from packaging.version import Version
 from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
 from vyper.cli import vyper_json
@@ -34,7 +35,6 @@ from brownie.typing import (
     VyperBuildJson,
 )
 from brownie.utils import hash_source
-from packaging.version import Version
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)

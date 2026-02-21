@@ -6,7 +6,6 @@ import faster_eth_utils
 from eth_typing import ChecksumAddress
 
 from brownie._c_constants import Decimal, HexBytes
-
 from brownie.convert.datatypes import EthAddress, Fixed, HexString, Wei
 from brownie.convert.utils import get_int_bounds
 

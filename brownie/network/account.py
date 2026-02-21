@@ -4,12 +4,11 @@ import re
 import sys
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from getpass import getpass
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Optional, Union
-from collections.abc import Callable
 
 import eth_account
 import eth_keys
@@ -34,14 +33,13 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import bytes_to_hexstring, color
-from brownie.utils._color import bright_blue, bright_cyan
-
 from brownie.network.gas.bases import GasABC
 from brownie.network.rpc import Rpc
 from brownie.network.state import Chain, TxHistory, _revert_register
 from brownie.network.transaction import TransactionReceipt, load_transaction
 from brownie.network.web3 import _resolve_address, web3
+from brownie.utils import bytes_to_hexstring, color
+from brownie.utils._color import bright_blue, bright_cyan
 
 ETH_ACCOUNT_LT_0_13_0 = tuple(map(int, version("eth_account").split("."))) < (
     0,

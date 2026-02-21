@@ -3,6 +3,7 @@
 
 from typing import Final, Literal, cast, final
 
+from brownie.project.sources import Sources, highlight_source
 from brownie.typing import (
     BuildJson,
     ContractBuildJson,
@@ -14,8 +15,6 @@ from brownie.typing import (
     PCMap,
     ProgramCounter,
 )
-
-from brownie.project.sources import Sources, highlight_source
 
 INTERFACE_KEYS: Final = "abi", "contractName", "sha1", "type"
 

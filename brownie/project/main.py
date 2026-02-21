@@ -72,7 +72,7 @@ from brownie.typing import (
     SolcConfig,
     VyperConfig,
 )
-from brownie.utils import notify, hash_source
+from brownie.utils import hash_source, notify
 
 BUILD_FOLDERS: Final = "contracts", "deployments", "interfaces"
 MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"

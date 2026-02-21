@@ -3,7 +3,6 @@
 import warnings
 
 from brownie._c_constants import Path
-
 from brownie._gui.bases import SelectBox
 
 

@@ -8,9 +8,8 @@ import requests
 
 from brownie.convert import Wei
 from brownie.exceptions import RPCRequestError
-from brownie.network.web3 import web3
-
 from brownie.network.gas.bases import BlockGasStrategy, SimpleGasStrategy, TimeGasStrategy
+from brownie.network.web3 import web3
 
 _gasnow_update = 0
 _gasnow_data: dict[str, int] = {}

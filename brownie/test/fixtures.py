@@ -7,7 +7,6 @@ import pytest
 
 import brownie
 from brownie._config import CONFIG, _get_data_folder
-
 from brownie.test.stateful import _BrownieStateMachine, state_machine
 
 

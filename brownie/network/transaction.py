@@ -20,12 +20,15 @@ from brownie._c_constants import HexBytes, deque, regex_compile
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
 from brownie.exceptions import ContractNotFound, RPCRequestError, decode_typed_error
+from brownie.network import state
+from brownie.network.event import EventDict, _decode_logs, _decode_trace
+from brownie.network.web3 import web3
 from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.typing import ContractName
-from brownie.utils import bytes_to_hexstring, color, hexbytes_to_hexstring, hash_source
+from brownie.utils import bytes_to_hexstring, color, hash_source, hexbytes_to_hexstring
 from brownie.utils._color import (
     bright_blue,
     bright_cyan,
@@ -36,10 +39,6 @@ from brownie.utils._color import (
     red,
 )
 from brownie.utils.output import build_tree
-
-from brownie.network import state
-from brownie.network.event import EventDict, _decode_logs, _decode_trace
-from brownie.network.web3 import web3
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")

@@ -7,7 +7,6 @@ from hypothesis.errors import HypothesisDeprecationWarning
 
 from brownie import network
 from brownie.exceptions import BrownieTestWarning
-
 from brownie.test.stateful import state_machine  # NOQA: F401
 from brownie.test.strategies import contract_strategy, strategy  # NOQA: F401
 

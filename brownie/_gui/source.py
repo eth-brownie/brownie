@@ -5,10 +5,9 @@ import tkinter.font as tkFont
 from tkinter import ttk
 
 from brownie._c_constants import Path, regex_finditer
-from brownie.project.sources import is_inside_offset
-
 from brownie._gui.bases import SelectBox
 from brownie._gui.styles import TEXT_COLORS, TEXT_STYLE
+from brownie.project.sources import is_inside_offset
 
 
 class SourceNoteBook(ttk.Notebook):

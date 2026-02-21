@@ -5,11 +5,13 @@ from typing import Any, Dict, Final, List, Optional, Union, cast
 
 import solcast
 from eth_typing import ABIElement, HexStr
+from packaging.version import Version
 
 from brownie._c_constants import Path, deepcopy, ujson_loads
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
+from brownie.project.compiler import solidity, vyper
 from brownie.project.compiler.solidity import (  # NOQA: F401
     find_best_solc_version,
     find_solc_versions,
@@ -33,10 +35,7 @@ from brownie.typing import (
     SettingsSolc,
     SourcesDict,
 )
-from brownie.utils import notify, hash_source
-
-from brownie.project.compiler import solidity, vyper
-from packaging.version import Version
+from brownie.utils import hash_source, notify
 
 STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,

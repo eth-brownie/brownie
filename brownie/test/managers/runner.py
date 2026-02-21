@@ -16,11 +16,10 @@ from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
-from brownie.utils import color
-from brownie.utils._color import yellow
-
 from brownie.test.managers.base import PytestBrownieBase
 from brownie.test.managers.utils import convert_outcome
+from brownie.utils import color
+from brownie.utils._color import yellow
 
 SCOPE_ORDER = ("session", "package", "module", "class", "function")
 

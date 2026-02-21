@@ -18,13 +18,12 @@ from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
+from brownie.network.transaction import TransactionReceipt
+from brownie.network.web3 import _resolve_address, web3
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.typing import ContractBuildJson, ContractName, Count, PCMap, ProgramCounter
 from brownie.utils import bytes_to_hexstring, hash_source
 from brownie.utils.sql import Cursor
-
-from brownie.network.transaction import TransactionReceipt
-from brownie.network.web3 import _resolve_address, web3
 
 if TYPE_CHECKING:
     from brownie.network.contract import Contract, ProjectContract

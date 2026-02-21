@@ -24,10 +24,9 @@ from brownie._singleton import _Singleton
 from brownie.convert.datatypes import ReturnValue
 from brownie.convert.normalize import format_event
 from brownie.exceptions import EventLookupError
+from brownie.network.web3 import ContractEvent, web3
 from brownie.typing import FormattedEvent, Selector
 from brownie.utils import hexbytes_to_hexstring
-
-from brownie.network.web3 import ContractEvent, web3
 
 if TYPE_CHECKING:
     from brownie.network.contract import Contract

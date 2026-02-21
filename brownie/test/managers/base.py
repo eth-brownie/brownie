@@ -12,9 +12,9 @@ from brownie._c_constants import ujson_load
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
-
 from brownie.test.managers.utils import convert_outcome
 from brownie.utils import hash_source
+
 
 class PytestBrownieBase:
     """

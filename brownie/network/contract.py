@@ -13,9 +13,9 @@ from textwrap import TextWrapper
 from threading import get_ident  # noqa
 from typing import TYPE_CHECKING, Any, Final, Optional, Union
 
+import eth_event
 import requests
 import solcx
-import eth_event
 from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
 from faster_eth_abi import decode as decode_abi
 from faster_eth_abi import encode as encode_abi
@@ -54,6 +54,19 @@ from brownie.exceptions import (
     decode_typed_error,
     parse_errors_from_abi,
 )
+from brownie.network.account import accounts
+from brownie.network.event import _add_deployment_topics, _get_topics, event_watcher
+from brownie.network.state import (
+    _add_contract,
+    _add_deployment,
+    _find_contract,
+    _get_deployment,
+    _remove_contract,
+    _remove_deployment,
+    _revert_register,
+    chain,
+)
+from brownie.network.web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import (
@@ -67,20 +80,6 @@ from brownie.typing import (
 )
 from brownie.utils import color, hexbytes_to_hexstring
 from brownie.utils._color import bright_blue, bright_green, bright_magenta, bright_red
-
-from brownie.network.account import accounts
-from brownie.network.event import _add_deployment_topics, _get_topics, event_watcher
-from brownie.network.state import (
-    chain,
-    _add_contract,
-    _add_deployment,
-    _find_contract,
-    _get_deployment,
-    _remove_contract,
-    _remove_deployment,
-    _revert_register,
-)
-from brownie.network.web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject

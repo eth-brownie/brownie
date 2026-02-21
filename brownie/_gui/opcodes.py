@@ -4,10 +4,9 @@
 import time
 from tkinter import ttk
 
+from brownie._gui.bases import ToggleButton
 from brownie.project.sources import is_inside_offset
 from brownie.typing import PCMap
-
-from brownie._gui.bases import ToggleButton
 
 
 class OpcodeList(ttk.Treeview):
