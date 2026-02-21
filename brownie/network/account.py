@@ -8,7 +8,8 @@ from collections.abc import Iterator
 from getpass import getpass
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Callable
 
 import eth_account
 import eth_keys
@@ -315,7 +316,7 @@ class Accounts(metaclass=_Singleton):
         """
         self._accounts.clear()
 
-    def connect_to_clef(self, uri: Optional[str] = None, timeout: int = 120) -> None:
+    def connect_to_clef(self, uri: str | None = None, timeout: int = 120) -> None:
         """
         Connect to Clef and import open accounts.
 
@@ -481,7 +482,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_limit)
 
-    def _gas_price(self, gas_price: Any = None) -> tuple[Wei, Optional[GasABC], Optional[Iterator]]:
+    def _gas_price(self, gas_price: Any = None) -> tuple[Wei, GasABC | None, Iterator | None]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
             gas_price = CONFIG.active_network["settings"][
@@ -681,7 +682,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
-        test_function: Optional[Callable[[], bool]] = None,
+        test_function: Callable[[], bool] | None = None,
         max_retries: int = 5,
         **kwargs,
     ) -> TransactionReceipt:
@@ -704,7 +705,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             TransactionReceipt object
         """
 
-        receipt: Optional[TransactionReceipt] = None
+        receipt: TransactionReceipt | None = None
         try:
             web3.isConnected()
             receipt, exc = self._make_transaction(
@@ -797,7 +798,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def wait_for_complete(
         self,
         receipt: TransactionReceipt | str,
-        test_function: Optional[Callable[[], bool]] = None,
+        test_function: Callable[[], bool] | None = None,
         max_retries: int = 5,
         required_confs: int = 1,
     ) -> TransactionReceipt:
@@ -1068,7 +1069,7 @@ class Account(_PrivateKeyAccount):
         address: Public address of the account.
         nonce: Current nonce of the account."""
 
-    def _transact(self, tx: dict, allow_revert: Optional[bool] = None) -> Any:
+    def _transact(self, tx: dict, allow_revert: bool | None = None) -> Any:
         if allow_revert is None:
             allow_revert = bool(
                 CONFIG.network_type == "development"
@@ -1095,7 +1096,7 @@ class LocalAccount(_PrivateKeyAccount):
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def save(self, filename: str, overwrite: bool = False, password: Optional[str] = None) -> str:
+    def save(self, filename: str, overwrite: bool = False, password: str | None = None) -> str:
         """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
@@ -1189,7 +1190,7 @@ class LocalAccount(_PrivateKeyAccount):
                 signature=HexBytes(eth_signature_bytes),
             )
 
-    def _transact(self, tx: dict, allow_revert: Optional[bool] = None):
+    def _transact(self, tx: dict, allow_revert: bool | None = None):
         if allow_revert is None:
             allow_revert = bool(
                 CONFIG.network_type == "development"
@@ -1212,7 +1213,7 @@ class ClefAccount(_PrivateKeyAccount):
         self._provider = provider
         super().__init__(address)
 
-    def _transact(self, tx: dict, allow_revert: Optional[bool]):
+    def _transact(self, tx: dict, allow_revert: bool | None):
         if allow_revert is None:
             allow_revert = bool(
                 CONFIG.network_type == "development"

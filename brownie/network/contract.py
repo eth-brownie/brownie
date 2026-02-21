@@ -1754,10 +1754,10 @@ class ContractError(_ContractFragment):
     def __repr__(self) -> str:
         return f"<{type(self).__name__} '{self.abi['name']}({_inputs(self.abi)})'>"
     
-    def call(self, *args: Any, original_error: Optional[Exception] = None, **kwargs) -> Any:
+    def call(self, *args: Any, original_error: Exception | None = None, **kwargs) -> Any:
         return self(*args, original_error=original_error)
 
-    def __call__(self, *args: Any, original_error: Optional[Exception] = None) -> Any:
+    def __call__(self, *args: Any, original_error: Exception | None = None) -> Any:
         encoded = self.encode_input(*args)
         decoded = self.decode_input(encoded)
 
@@ -1803,7 +1803,7 @@ class _ContractMethod(_ContractFragment):
         _print_natspec(self.natspec)
 
     def call(
-        self, *args: Any, block_identifier: Optional[int | str | bytes] = None, override: Optional[dict] = None, max_retries=5
+        self, *args: Any, block_identifier: int | str | bytes | None = None, override: dict | None = None, max_retries=5
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
