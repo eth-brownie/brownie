@@ -36,6 +36,7 @@ python_version: Final = (
 )
 REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
+disable_namespace_collisions = False
 
 NetworkType = Literal["live", "development", None]
 NetworkConfig = NewType("NetworkConfig", dict[str, Any])
