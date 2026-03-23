@@ -34,7 +34,7 @@ bitarray==3.8.0
     # via
     #   -r requirements.txt
     #   eth-account
-cbor2==5.8.0
+cbor2==5.9.0
     # via
     #   -r requirements.txt
     #   vyper

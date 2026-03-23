@@ -21,7 +21,7 @@ attrs==25.4.0
     #   pytest
 bitarray==3.8.0
     # via eth-account
-cbor2==5.8.0
+cbor2==5.9.0
     # via vyper
 cchecksum==0.3.7.dev0
     # via
