@@ -157,7 +157,7 @@ pytokens==0.4.1
     # via black
 readme-renderer==44.0
     # via twine
-requests==2.32.5
+requests==2.33.0
     # via
     #   -c requirements.txt
     #   requests-toolbelt

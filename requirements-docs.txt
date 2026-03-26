@@ -44,7 +44,7 @@ pygments==2.19.2
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   sphinx
-requests==2.32.5
+requests==2.33.0
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt

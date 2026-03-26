@@ -269,7 +269,7 @@ regex==2026.1.15
     # via
     #   -r requirements.txt
     #   parsimonious
-requests==2.32.5
+requests==2.33.0
     # via
     #   -r requirements.txt
     #   py-solc-x
