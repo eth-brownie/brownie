@@ -185,7 +185,7 @@ pydantic==2.12.5
     #   web3
 pydantic-core==2.41.5
     # via pydantic
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity

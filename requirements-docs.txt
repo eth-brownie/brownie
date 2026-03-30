@@ -39,7 +39,7 @@ packaging==23.2
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   sphinx
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
