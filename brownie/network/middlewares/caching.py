@@ -253,7 +253,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 data = row[0]
                 if isinstance(data, bytes):
                     data = HexBytes(data)
-                return {"id": sys.maxint, "jsonrpc": "2.0", "result": data}
+                return {"id": sys.maxsize, "jsonrpc": "2.0", "result": data}
 
         if not self.loop_thread.is_alive():
             # restart the block filter loop if it has crashed (usually from a ConnectionError)
