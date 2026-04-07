@@ -8,12 +8,12 @@ alabaster==1.0.0
     # via sphinx
 babel==2.18.0
     # via sphinx
-certifi==2026.1.4
+certifi==2026.2.25
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   requests
-charset-normalizer==3.4.4
+charset-normalizer==3.4.7
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
@@ -28,7 +28,7 @@ idna==3.11
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   requests
-imagesize==1.4.1
+imagesize==2.0.0
     # via sphinx
 jinja2==3.1.6
     # via sphinx
@@ -39,12 +39,12 @@ packaging==23.2
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   sphinx
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
     #   sphinx
-requests==2.32.5
+requests==2.33.1
     # via
     #   -c requirements-dev.txt
     #   -c requirements.txt
