@@ -573,6 +573,8 @@ def _decode_ds_note(
 ) -> DecodedEvent | None:
     # ds-note encodes function selector as the first topic
     # TODO double check typing for `log` input
+    if not log.topics:
+        return None
     topic0 = log.topics[0]
     selector, tail = topic0[:4], topic0[4:]
     selector_hexstr = Selector(hexbytes_to_hexstring(selector))
