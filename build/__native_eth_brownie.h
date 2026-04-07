@@ -2,6 +2,7 @@
 #define MYPYC_NATIVE_eth_brownie_H
 #include <Python.h>
 #include <CPy.h>
+#include "bytes_extra_ops.h"
 #ifndef MYPYC_DECLARED_tuple_T2OF
 #define MYPYC_DECLARED_tuple_T2OF
 typedef struct tuple_T2OF {
