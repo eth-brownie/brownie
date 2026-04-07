@@ -1,3 +1,4 @@
+import sys
 import threading
 import time
 from collections import OrderedDict
@@ -252,7 +253,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 data = row[0]
                 if isinstance(data, bytes):
                     data = HexBytes(data)
-                return {"id": "cache", "jsonrpc": "2.0", "result": data}
+                return {"id": sys.maxsize, "jsonrpc": "2.0", "result": data}
 
         if not self.loop_thread.is_alive():
             # restart the block filter loop if it has crashed (usually from a ConnectionError)
@@ -284,6 +285,9 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def uninstall(self) -> None:
         self.is_killed = True
-        self.block_cache.clear()
-        if self.w3.isConnected():
-            self.w3.eth.uninstall_filter(self.block_filter.filter_id)
+        block_cache = getattr(self, "block_cache", None)
+        if block_cache is not None:
+            block_cache.clear()
+        block_filter = getattr(self, "block_filter", None)
+        if self.w3.isConnected() and block_filter is not None:
+            self.w3.eth.uninstall_filter(block_filter.filter_id)

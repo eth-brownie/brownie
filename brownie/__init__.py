@@ -3,6 +3,7 @@
 """
 isort:skip_file
 """
+
 from typing import Final
 
 from brownie.project import compile_source, run

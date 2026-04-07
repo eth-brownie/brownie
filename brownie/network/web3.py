@@ -2,15 +2,15 @@
 
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from ens import ENS
 from eth_typing import ChecksumAddress, HexStr
 from requests import HTTPError
 from ujson import JSONDecodeError
-from web3 import HTTPProvider, IPCProvider
+from web3 import HTTPProvider, IPCProvider, LegacyWebSocketProvider
 from web3 import Web3 as _Web3
-from web3 import WebsocketProvider
 from web3.contract.contract import ContractEvent  # noqa
 from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
@@ -33,18 +33,26 @@ class Web3(_Web3):
         self._mainnet_w3: _Web3 | None = None
         self._genesis_hash: HexStr | None = None
         self._chain_uri: str | None = None
-        self._custom_middleware: set = set()
+        self._custom_middleware: list[tuple[Callable[["_Web3"], object], object]] = []
         self._supports_traces = None
         self._chain_id: int | None = None
 
     def _remove_middlewares(self) -> None:
-        for middleware in self._custom_middleware:
+        for builder, middleware in self._custom_middleware:
             try:
-                self.middleware_onion.remove(middleware)
+                self.middleware_onion.remove(builder)
             except ValueError:
                 pass
             middleware.uninstall()
         self._custom_middleware.clear()
+
+    def _build_middleware(self, middleware_cls: type) -> tuple[Callable[["_Web3"], object], object]:
+        middleware = middleware_cls(self)
+
+        def builder(_w3: _Web3) -> object:
+            return middleware
+
+        return builder, middleware
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
@@ -60,7 +68,7 @@ class Web3(_Web3):
 
         if self.provider is None:
             if uri.startswith("ws"):
-                self.provider = WebsocketProvider(uri, {"close_timeout": timeout})
+                self.provider = LegacyWebSocketProvider(uri, websocket_timeout=timeout)
             elif uri.startswith("http"):
 
                 self.provider = HTTPProvider(uri, {"timeout": timeout})
@@ -91,17 +99,17 @@ class Web3(_Web3):
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
         for layer in to_inject:
             for obj in middleware_layers[layer]:
-                middleware = obj(self)
-                self.middleware_onion.inject(middleware, layer=0)
-                self._custom_middleware.add(middleware)
+                builder, middleware = self._build_middleware(obj)
+                self.middleware_onion.inject(builder, layer=0)
+                self._custom_middleware.append((builder, middleware))
 
         # middlewares with a layer of zero or greater are added
         to_add = sorted(i for i in middleware_layers if i >= 0)
         for layer in to_add:
             for obj in middleware_layers[layer]:
-                middleware = obj(self)
-                self.middleware_onion.add(middleware)
-                self._custom_middleware.add(middleware)
+                builder, middleware = self._build_middleware(obj)
+                self.middleware_onion.add(builder)
+                self._custom_middleware.append((builder, middleware))
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""

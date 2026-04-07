@@ -948,7 +948,7 @@ class LocalAccount(_PrivateKeyAccount):
         """
         msg_hash_bytes = defunct_hash_message(text=message)
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
-        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
+        v, r, s, eth_signature_bytes = sign_message_hash(eth_private_key, msg_hash_bytes)
         if ETH_ACCOUNT_LT_0_13_0:
             return SignedMessage(
                 messageHash=msg_hash_bytes,
@@ -981,7 +981,7 @@ class LocalAccount(_PrivateKeyAccount):
         msg_hash_bytes = HexBytes(_hash_eip191_message(message.signable_message))
         assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
-        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
+        v, r, s, eth_signature_bytes = sign_message_hash(eth_private_key, msg_hash_bytes)
         if ETH_ACCOUNT_LT_0_13_0:
             return SignedMessage(
                 messageHash=msg_hash_bytes,
