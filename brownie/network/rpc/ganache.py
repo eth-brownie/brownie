@@ -105,7 +105,14 @@ def launch(cmd: str, **kwargs: Any) -> None:
     print(f"\nLaunching '{' '.join(cmd_list)}'...")
     out = DEVNULL if sys.platform == "win32" else PIPE
 
-    return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+    try:
+        p = psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+    except FileNotFoundError:
+        print("Error: Failed to start ganache-cli. Check installation!!")
+        print("Instructions: https://github.com/trufflesuite/ganache-cli")
+        sys.exit(2)
+
+    return p
 
 
 def get_ganache_version(ganache_executable: str) -> int:
