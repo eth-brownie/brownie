@@ -29,7 +29,6 @@ attrs==26.1.0
     #   -r requirements.txt
     #   aiohttp
     #   hypothesis
-    #   pytest
 bitarray==3.8.1
     # via
     #   -r requirements.txt
@@ -216,7 +215,6 @@ psutil==5.9.8
 py==1.11.0
     # via
     #   -r requirements.txt
-    #   pytest
     #   pytest-forked
 py-solc-ast==1.2.10
     # via -r requirements.txt
@@ -245,9 +243,10 @@ pygments==2.20.0
     # via
     #   -r requirements.txt
     #   pygments-lexer-solidity
+    #   pytest
 pygments-lexer-solidity==0.7.0
     # via -r requirements.txt
-pytest==6.2.5
+pytest==9.0.3
     # via
     #   -r requirements.txt
     #   pytest-forked
@@ -295,10 +294,6 @@ sortedcontainers==2.4.0
     # via
     #   -r requirements.txt
     #   hypothesis
-toml==0.10.2
-    # via
-    #   -r requirements.txt
-    #   pytest
 toolz==1.1.0
     # via
     #   -r requirements.txt
