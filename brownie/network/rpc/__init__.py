@@ -192,6 +192,8 @@ class Rpc(metaclass=_Singleton):
             # if no local RPC process could be found we can try to find a dockerized one
             if platform.system() == "Darwin":
                 return self._get_pid_from_docker_backend()
+            elif platform.system() == "Linux" and "Microsoft" in platform.uname().release:
+                return 0
             else:
                 return self._get_pid_from_net_connections(laddr)
 
