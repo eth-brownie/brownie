@@ -18,7 +18,7 @@ pygments-lexer-solidity<1
 pygments<3
 pytest-xdist<2
 pytest<7
-python-dotenv>=0.16.0,<0.17.0
+python-dotenv>=0.16.0,<1.3.0
 pyyaml>=6,<7
 requests>=2.25.0,<3
 rlp
