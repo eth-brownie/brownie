@@ -6,6 +6,15 @@ Brownie is a Python-based development and testing framework for smart contracts 
 
 **Brownie is no longer actively maintained**. Future releases may come sporadically - or never at all. Check out [Ape Framework](https://github.com/ApeWorX/ape) for all your python Ethereum development needs.
 
+### Migration tooling
+
+To help existing Brownie users migrate to Ape, the community has built migration codemods that automate the bulk of the mechanical pattern rewrites (imports, transaction kwargs, network detection, exception classes, etc.):
+
+- [`apeshift`](https://app.codemod.com/registry/apeshift) — referenced by the [official Ape Brownie migration guide](https://docs.apeworx.io/ape/latest/userguides/brownie-migration.html).
+- [`@pugarhuda/brownie-to-ape`](https://app.codemod.com/registry/@pugarhuda/brownie-to-ape) — alternative codemod with 17 deterministic AST transform passes; validated on 5 OSS Brownie projects (incl. `yearn/brownie-strategy-mix`) with zero false positives. End-to-end verified on `brownie-mix/token-mix`: `ape compile` + `ape test` → 38 passed, 0 failed.
+
+Both can be run with `npx codemod <name> -t /path/to/your/brownie/project`.
+
 ## Features
 
 * Full support for [Solidity](https://github.com/ethereum/solidity) (`>=0.4.22`) and [Vyper](https://github.com/vyperlang/vyper) (`>=0.1.0-beta.16`)
