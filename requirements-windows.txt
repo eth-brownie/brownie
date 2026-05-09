@@ -211,7 +211,7 @@ propcache==0.4.1
     #   -r requirements.txt
     #   aiohttp
     #   yarl
-psutil==5.9.8
+psutil==7.2.2
     # via -r requirements.txt
 py==1.11.0
     # via

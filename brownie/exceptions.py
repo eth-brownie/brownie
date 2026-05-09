@@ -225,7 +225,7 @@ class BadProjectName(Exception):
 
 @final
 class CompilerError(Exception):
-    def __init__(self, e: type[psutil.Popen], compiler: str = "Compiler") -> None:
+    def __init__(self, e: Any, compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
         err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(e.stdout_data)
