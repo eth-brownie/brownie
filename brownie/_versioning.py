@@ -26,6 +26,12 @@ def next_minor(version: Version) -> Version:
     return Version(f"{version.major}.{version.minor + 1}.0")
 
 
+def _normalize_legacy_vyper_prerelease(expression: str) -> str:
+    expression = re.sub(r"(?<=\d)a(?=\d)", "-alpha.", expression)
+    expression = re.sub(r"(?<=\d)b(?=\d)", "-beta.", expression)
+    return re.sub(r"(?<=\d)rc(?=\d)", "-rc.", expression)
+
+
 def _reject_solidity_version_qualifiers(expression: str) -> None:
     # solc supports qualifiers on its own compiler version, not inside pragma
     # match expressions. Hyphen ranges remain valid because they use whitespace.
@@ -33,19 +39,31 @@ def _reject_solidity_version_qualifiers(expression: str) -> None:
         raise ValueError(f"Invalid Solidity version pragma: {expression}")
 
 
-def _parse_solidity_version(value: str) -> tuple[Version, Version | None]:
+def _parse_semver_version(
+    value: str, allow_prerelease_match: bool = False
+) -> tuple[Version, Version | None]:
     value = value.lstrip("v")
     if value in {"*", "x", "X"}:
         return Version("0.0.0"), None
 
+    suffix = ""
+    if "-" in value:
+        value, suffix = value.split("-", 1)
+        if not allow_prerelease_match:
+            raise ValueError(f"Invalid semantic version: {value}-{suffix}")
+    if "+" in value:
+        raise ValueError(f"Invalid semantic version: {value}")
+
     parts = value.split(".")
     if not 1 <= len(parts) <= 3:
-        raise ValueError(f"Invalid Solidity version: {value}")
+        raise ValueError(f"Invalid semantic version: {value}")
 
     numeric: list[int] = []
     wildcard_index: int | None = None
     for idx, part in enumerate(parts):
         if part in {"*", "x", "X"}:
+            if suffix:
+                raise ValueError(f"Invalid semantic version: {value}-{suffix}")
             wildcard_index = idx
             numeric.append(0)
             break
@@ -57,7 +75,8 @@ def _parse_solidity_version(value: str) -> tuple[Version, Version | None]:
     while len(numeric) < 3:
         numeric.append(0)
 
-    lower = Version(".".join(str(i) for i in numeric[:3]))
+    lower_text = ".".join(str(i) for i in numeric[:3])
+    lower = Version(f"{lower_text}-{suffix}" if suffix else lower_text)
     if wildcard_index is None:
         return lower, None
 
@@ -94,17 +113,24 @@ def _hyphen_replacement(match: re.Match) -> str:
 
 
 def _expand_hyphen_ranges(expression: str) -> str:
-    return re.sub(r"(\S+)\s+-\s+(\S+)", _hyphen_replacement, expression)
+    matches = list(re.finditer(r"(\S+)\s+-\s+(\S+)", expression))
+    if not matches:
+        return expression
+    if len(matches) > 1 or expression.strip() != matches[0].group(0):
+        raise ValueError(f"Invalid semantic version range: {expression}")
+    return _hyphen_replacement(matches[0])
 
 
-def _predicate_for_token(token: str, npm_caret: bool = False) -> Callable[[Version], bool]:
+def _predicate_for_token(
+    token: str, npm_caret: bool = False, allow_prerelease_match: bool = False
+) -> Callable[[Version], bool]:
     match = re.fullmatch(r"(<=|>=|<|>|=|\^|~)?(.+)", token)
     if match is None:
         raise ValueError(f"Invalid Solidity version pragma token: {token}")
 
     operator = match.group(1) or ""
     value = match.group(2)
-    lower, upper = _parse_solidity_version(value)
+    lower, upper = _parse_semver_version(value, allow_prerelease_match)
 
     if operator in {"", "="}:
         if upper is not None:
@@ -131,19 +157,30 @@ def _predicate_for_token(token: str, npm_caret: bool = False) -> Callable[[Versi
     raise ValueError(f"Invalid Solidity version pragma token: {token}")
 
 
-def _compile_semver_branch(expression: str, npm_caret: bool = False) -> Callable[[Version], bool]:
+def _compile_semver_branch(
+    expression: str, npm_caret: bool = False, allow_prerelease_match: bool = False
+) -> Callable[[Version], bool]:
+    expression = re.sub(r"(<=|>=|<|>|=|\^|~)\s+(?=[0-9xX*])", r"\1", expression)
     tokens = _expand_hyphen_ranges(expression).split()
     if not tokens:
         raise ValueError("Invalid empty semantic version expression")
-    predicates = [_predicate_for_token(token, npm_caret) for token in tokens]
+    predicates = [
+        _predicate_for_token(token, npm_caret, allow_prerelease_match) for token in tokens
+    ]
     return lambda version: all(predicate(version) for predicate in predicates)
 
 
 class _SemverRangeSpec:
-    def __init__(self, expression: str, npm_caret: bool = False) -> None:
+    def __init__(
+        self,
+        expression: str,
+        npm_caret: bool = False,
+        allow_prerelease_match: bool = False,
+    ) -> None:
         self.expression = expression
         self._branches = tuple(
-            _compile_semver_branch(branch.strip(), npm_caret) for branch in expression.split("||")
+            _compile_semver_branch(branch.strip(), npm_caret, allow_prerelease_match)
+            for branch in expression.split("||")
         )
 
     def __contains__(self, version: Any) -> bool:
@@ -192,15 +229,10 @@ def _to_vyper_modern_expression(expression: str) -> str:
     return re.sub(r"^\^", "~=", expression)
 
 
-def _to_vyper_legacy_pep440_expression(expression: str) -> str:
-    if re.match("[v0-9]", expression):
-        return f"=={expression}"
-    return expression
-
-
 class _VyperLegacySpec:
     def __init__(self, expression: str) -> None:
         self._specs: list[SpecifierSet | _SemverRangeSpec] = []
+        expression = _normalize_legacy_vyper_prerelease(expression)
 
         try:
             version = parse_compiler_version(to_vyper_version(expression))
@@ -209,12 +241,9 @@ class _VyperLegacySpec:
             pass
 
         try:
-            self._specs.append(SpecifierSet(_to_vyper_legacy_pep440_expression(expression)))
-        except InvalidSpecifier:
-            pass
-
-        try:
-            self._specs.append(_SemverRangeSpec(expression, npm_caret=True))
+            self._specs.append(
+                _SemverRangeSpec(expression, npm_caret=True, allow_prerelease_match=True)
+            )
         except Exception:
             pass
 
