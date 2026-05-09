@@ -3,6 +3,7 @@
 import functools
 
 import pytest
+from packaging.version import Version
 
 from brownie.exceptions import CompilerError
 from brownie.project import build, compiler
@@ -66,6 +67,32 @@ from foo import bar
 
 def test_compile_empty():
     compiler.compile_and_format({"empty.vy": ""}, vyper_version="0.2.4")
+
+
+def test_find_vyper_versions_uses_installed_when_available_list_does_not_match(monkeypatch):
+    source = {"Foo.vy": "# @version ^0.2.0"}
+    monkeypatch.setattr(
+        compiler.vyper,
+        "_get_vyper_version_list",
+        lambda: ([Version("0.1.0")], [Version("0.2.16")]),
+    )
+
+    assert compiler.find_vyper_versions(source) == {"0.2.16": ["Foo.vy"]}
+
+
+def test_set_vyper_version_normalizes_version_like_objects(monkeypatch):
+    class LegacyVersion:
+        def __str__(self):
+            return "0.2.4"
+
+    called = []
+    monkeypatch.setattr(compiler.vyper, "_active_version", compiler.vyper.LIB_VYPER_VERSION)
+    monkeypatch.setattr(
+        compiler.vyper, "_vvm_set_vyper_version", lambda *args, **kwargs: called.append(args)
+    )
+
+    assert compiler.vyper.set_vyper_version(LegacyVersion()) == "0.2.4"
+    assert called == [(Version("0.2.4"),)]
 
 
 def test_get_abi():

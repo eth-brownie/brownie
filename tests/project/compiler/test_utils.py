@@ -17,6 +17,10 @@ def test_parse_compiler_version_ignores_solidity_build_metadata():
     assert version == Version("0.5.17")
 
 
+def test_parse_compiler_version_removes_one_tag_prefix():
+    assert parse_compiler_version("v0.5.17") == Version("0.5.17")
+
+
 def test_parse_compiler_version_normalizes_pep440_prerelease():
     assert parse_compiler_version(Version("0.1.0b16")) == Version("0.1.0b16")
 

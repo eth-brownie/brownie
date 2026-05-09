@@ -188,14 +188,17 @@ def find_solc_versions(
         # if no installed version of solc matches the pragma, find the latest available version
         latest = pragma_spec.select(available_versions)
 
-        if latest is None:
+        if version is None and latest is None:
             raise IncompatibleSolcVersion(
                 f"No installable solc version matching '{pragma_spec}' in '{path}'"
             )
 
-        if version is None or (install_latest and latest > version):
+        if version is None:
+            assert latest is not None
             to_install.add(latest)
-        elif latest > version:
+        elif latest is not None and install_latest and latest > version:
+            to_install.add(latest)
+        elif latest is not None and latest > version:
             new_versions.add(str(version))
 
     # install new versions if needed

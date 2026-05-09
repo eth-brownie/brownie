@@ -99,6 +99,17 @@ def test_get_pragma_spec_ignores_comments_and_strings():
     ) == Version("0.6.12")
 
 
+def test_get_pragma_spec_does_not_match_solidity_prefix_names():
+    with pytest.raises(PragmaError):
+        sources.get_pragma_spec("pragma solidityx;")
+
+
+def test_get_pragma_spec_accepts_general_whitespace_after_pragma():
+    spec = sources.get_pragma_spec("pragma\t solidity ^0.8.0;")
+
+    assert Version("0.8.20") in spec
+
+
 def test_get_pragma_spec_rejects_solc_prerelease_match_expressions():
     with pytest.raises(PragmaError):
         sources.get_pragma_spec("pragma solidity >=0.8.20-rc.1;")
@@ -203,6 +214,37 @@ def test_get_vyper_pragma_spec_legacy_uses_npm_caret():
 
     assert Version("0.0.3") in spec
     assert Version("0.0.4") not in spec
+
+
+def test_get_vyper_pragma_spec_legacy_exact_prerelease_matches_final_release():
+    spec = sources.get_vyper_pragma_spec("# @version 0.1.0-beta.16")
+
+    assert Version("0.1.0b16") in spec
+    assert Version("0.1.0") in spec
+    assert Version("0.1.1") not in spec
+
+
+def test_get_vyper_pragma_spec_legacy_tilde_prerelease_uses_npm_semantics():
+    spec = sources.get_vyper_pragma_spec("# @version ~0.1.0-beta.16")
+
+    assert Version("0.1.0b16") in spec
+    assert Version("0.1.0") in spec
+    assert Version("0.1.1") not in spec
+
+
+def test_get_vyper_pragma_spec_legacy_wildcard_excludes_prereleases_by_default():
+    spec = sources.get_vyper_pragma_spec("# @version *")
+
+    assert Version("0.1.0b16") not in spec
+    assert Version("0.1.0") in spec
+
+
+def test_get_vyper_pragma_spec_legacy_wildcard_ignores_parts_after_first_wildcard():
+    spec = sources.get_vyper_pragma_spec("# @version 0.*.3")
+
+    assert Version("0.0.1") in spec
+    assert Version("0.2.0") in spec
+    assert Version("1.0.0") not in spec
 
 
 @pytest.mark.parametrize(

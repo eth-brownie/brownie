@@ -280,7 +280,7 @@ def get_pragma_spec(source: str, path: str | None = None) -> SolidityPragmaSpec:
     clean_source = _strip_solidity_comments_and_strings(source)
     pragma_strings = [
         " ".join(match.groups()[0].split())
-        for match in regex_finditer(r"\bpragma +solidity([^;]*);", clean_source)
+        for match in regex_finditer(r"\bpragma\s+solidity\b([^;]*);", clean_source)
     ]
     if pragma_strings:
         try:

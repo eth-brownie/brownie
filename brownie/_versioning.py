@@ -15,7 +15,7 @@ VYPER_PEP440_PRAGMA_VERSION = Version("0.3.10")
 
 
 def parse_compiler_version(version: Any) -> Version:
-    text = str(version).lstrip("v")
+    text = str(version).removeprefix("v")
     return Version(text.split("+", 1)[0])
 
 
@@ -114,6 +114,10 @@ def _compare_semver_pattern(version: Version, pattern: _SemverPattern) -> tuple[
     return 0, did_compare
 
 
+def _next_patch(version: Version) -> Version:
+    return Version(f"{version.major}.{version.minor}.{version.micro + 1}")
+
+
 def _npm_caret_upper_bound(pattern: _SemverPattern) -> Version:
     lower = pattern.version
     if lower.major:
@@ -174,22 +178,18 @@ def _expand_hyphen_ranges(expression: str) -> str:
     return _hyphen_replacement(matches[0])
 
 
-def _predicate_for_token(
-    token: str, npm_caret: bool = False, allow_prerelease_match: bool = False
-) -> Callable[[Version], bool]:
+def _predicate_for_token(token: str) -> Callable[[Version], bool]:
     match = re.fullmatch(r"(<=|>=|<|>|=|\^|~)?(.+)", token)
     if match is None:
         raise ValueError(f"Invalid Solidity version pragma token: {token}")
 
     operator = match.group(1) or ""
     value = match.group(2)
-    pattern = _parse_semver_pattern(value, allow_prerelease_match)
+    pattern = _parse_semver_pattern(value)
 
     if operator in {"", "=", ">=", ">", "<=", "<"}:
         return lambda version: _matches_pattern_operator(version, operator, pattern)
     if operator == "^":
-        if npm_caret:
-            return lambda version: pattern.version <= version < _npm_caret_upper_bound(pattern)
         upper_pattern = _solc_caret_upper_pattern(pattern)
         return lambda version: _matches_pattern_operator(
             version, ">=", pattern
@@ -203,30 +203,142 @@ def _predicate_for_token(
     raise ValueError(f"Invalid Solidity version pragma token: {token}")
 
 
-def _compile_semver_branch(
-    expression: str, npm_caret: bool = False, allow_prerelease_match: bool = False
-) -> Callable[[Version], bool]:
+def _compile_semver_branch(expression: str) -> Callable[[Version], bool]:
     expression = re.sub(r"(<=|>=|<|>|=|\^|~)\s+(?=[0-9xX*])", r"\1", expression)
     tokens = _expand_hyphen_ranges(expression).split()
     if not tokens:
         raise ValueError("Invalid empty semantic version expression")
-    predicates = [
-        _predicate_for_token(token, npm_caret, allow_prerelease_match) for token in tokens
-    ]
+    predicates = [_predicate_for_token(token) for token in tokens]
     return lambda version: all(predicate(version) for predicate in predicates)
 
 
 class _SemverRangeSpec:
-    def __init__(
-        self,
-        expression: str,
-        npm_caret: bool = False,
-        allow_prerelease_match: bool = False,
-    ) -> None:
+    def __init__(self, expression: str) -> None:
         self.expression = expression
         self._branches = tuple(
-            _compile_semver_branch(branch.strip(), npm_caret, allow_prerelease_match)
-            for branch in expression.split("||")
+            _compile_semver_branch(branch.strip()) for branch in expression.split("||")
+        )
+
+    def __contains__(self, version: Any) -> bool:
+        version = parse_compiler_version(version)
+        return any(branch(version) for branch in self._branches)
+
+
+def _npm_release_tuple(version: Version) -> tuple[int, int, int]:
+    return version.major, version.minor, version.micro
+
+
+def _npm_lower_from_pattern(pattern: _SemverPattern) -> Version:
+    numbers = list(pattern.numbers)
+    for idx in range(pattern.levels_present):
+        if numbers[idx] is None:
+            numbers[idx:] = [0] * (3 - idx)
+            break
+    return Version(".".join(str(i or 0) for i in numbers))
+
+
+def _npm_xrange_upper_bound(pattern: _SemverPattern) -> Version | None:
+    numbers = pattern.numbers
+    for idx in range(pattern.levels_present):
+        if numbers[idx] is None:
+            if idx == 0:
+                return None
+            if idx == 1:
+                return Version(f"{numbers[0] + 1}.0.0")  # type: ignore [operator]
+            return Version(f"{numbers[0]}.{numbers[1] + 1}.0")  # type: ignore [operator]
+
+    if pattern.levels_present == 1:
+        return Version(f"{numbers[0] + 1}.0.0")  # type: ignore [operator]
+    if pattern.levels_present == 2:
+        return Version(f"{numbers[0]}.{numbers[1] + 1}.0")  # type: ignore [operator]
+    return _next_patch(pattern.version)
+
+
+def _npm_tilde_upper_bound(pattern: _SemverPattern) -> Version:
+    lower = pattern.version
+    if pattern.has_prerelease:
+        return _next_patch(lower)
+    if pattern.levels_present == 1:
+        return Version(f"{lower.major + 1}.0.0")
+    return Version(f"{lower.major}.{lower.minor + 1}.0")
+
+
+def _npm_base_predicate(pattern: _SemverPattern) -> Callable[[Version], bool]:
+    lower = _npm_lower_from_pattern(pattern)
+    upper = _npm_xrange_upper_bound(pattern)
+    if upper is None:
+        return lambda version: version >= lower
+    return lambda version: lower <= version < upper
+
+
+def _npm_predicate_for_token(
+    token: str,
+) -> tuple[Callable[[Version], bool], set[tuple[int, int, int]]]:
+    match = re.fullmatch(r"(<=|>=|<|>|=|\^|~)?(.+)", token)
+    if match is None:
+        raise ValueError(f"Invalid npm version range token: {token}")
+
+    operator = match.group(1) or ""
+    pattern = _parse_semver_pattern(match.group(2), allow_prerelease_match=True)
+    prerelease_bases = {_npm_release_tuple(pattern.version)} if pattern.has_prerelease else set()
+
+    if operator in {"", "="}:
+        return _npm_base_predicate(pattern), prerelease_bases
+    if operator == ">=":
+        lower = pattern.version
+        return lambda version: version >= lower, prerelease_bases
+    if operator == ">":
+        lower = pattern.version
+        return lambda version: version > lower, prerelease_bases
+    if operator == "<=":
+        if pattern.has_wildcard or pattern.levels_present < 3:
+            upper = _npm_xrange_upper_bound(pattern)
+            if upper is None:
+                return lambda version: True, prerelease_bases
+            return lambda version: version < upper, prerelease_bases
+        upper = pattern.version
+        return lambda version: version <= upper, prerelease_bases
+    if operator == "<":
+        upper = pattern.version
+        return lambda version: version < upper, prerelease_bases
+    if operator == "^":
+        lower = pattern.version
+        upper = _npm_caret_upper_bound(pattern)
+        return lambda version: lower <= version < upper, prerelease_bases
+    if operator == "~":
+        lower = pattern.version
+        upper = _npm_tilde_upper_bound(pattern)
+        return lambda version: lower <= version < upper, prerelease_bases
+
+    raise ValueError(f"Invalid npm version range operator: {operator}")
+
+
+def _compile_npm_branch(expression: str) -> Callable[[Version], bool]:
+    expression = re.sub(r"(<=|>=|<|>|=|\^|~)\s+(?=[0-9xX*])", r"\1", expression)
+    tokens = _expand_hyphen_ranges(expression).split()
+    if not tokens:
+        raise ValueError("Invalid empty npm version expression")
+
+    predicates: list[Callable[[Version], bool]] = []
+    prerelease_bases: set[tuple[int, int, int]] = set()
+    for token in tokens:
+        predicate, token_prerelease_bases = _npm_predicate_for_token(token)
+        predicates.append(predicate)
+        prerelease_bases.update(token_prerelease_bases)
+
+    def matches(version: Version) -> bool:
+        if version.is_prerelease and _npm_release_tuple(version) not in prerelease_bases:
+            return False
+        return all(predicate(version) for predicate in predicates)
+
+    return matches
+
+
+class _NpmRangeSpec:
+    def __init__(self, expression: str) -> None:
+        self.expression = expression
+        self._branches = tuple(
+            _compile_npm_branch(branch.strip()) for branch in expression.split("||")
         )
 
     def __contains__(self, version: Any) -> bool:
@@ -277,7 +389,7 @@ def _to_vyper_modern_expression(expression: str) -> str:
 
 class _VyperLegacySpec:
     def __init__(self, expression: str) -> None:
-        self._specs: list[SpecifierSet | _SemverRangeSpec] = []
+        self._specs: list[SpecifierSet | _NpmRangeSpec] = []
         expression = _normalize_legacy_vyper_prerelease(expression)
 
         try:
@@ -287,9 +399,7 @@ class _VyperLegacySpec:
             pass
 
         try:
-            self._specs.append(
-                _SemverRangeSpec(expression, npm_caret=True, allow_prerelease_match=True)
-            )
+            self._specs.append(_NpmRangeSpec(expression))
         except Exception:
             pass
 

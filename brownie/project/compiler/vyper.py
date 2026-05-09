@@ -72,7 +72,7 @@ def get_version() -> Version:
 def set_vyper_version(version: VersionSpec) -> str:
     """Sets the vyper version. If not available it will be installed."""
     global _active_version
-    if isinstance(version, str):
+    if not isinstance(version, Version):
         version = parse_compiler_version(version)
     if version != LIB_VYPER_VERSION:
         try:
@@ -169,14 +169,17 @@ def find_vyper_versions(
         # if no installed version of vyper matches the pragma, find the latest available version
         latest = pragma_specs[path].select(available_versions)
 
-        if latest is None:
+        if version is None and latest is None:
             raise IncompatibleVyperVersion(
                 f"No installable vyper version matching '{pragma_specs[path]}' in '{path}'"
             )
 
-        if version is None or (install_latest and latest > version):
+        if version is None:
+            assert latest is not None
             to_install.add(latest)
-        elif latest > version:
+        elif latest is not None and install_latest and latest > version:
+            to_install.add(latest)
+        elif latest is not None and latest > version:
             new_versions.add(str(version))
 
     # install new versions if needed

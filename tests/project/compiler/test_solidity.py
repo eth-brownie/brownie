@@ -34,7 +34,7 @@ def solc6json(solc6source):
 
 @pytest.fixture
 def find_version():
-    source = """pragma solidity{};contract Foo {{}}"""
+    source = """pragma solidity {};contract Foo {{}}"""
 
     def fn(version, **kwargs):
         return compiler.find_solc_versions({"Foo": source.format(version)}, **kwargs)
@@ -183,6 +183,17 @@ def test_find_solc_versions_install(find_version, msolc):
     assert msolc.pop() == Version("0.6.7")
     find_version(">=0.4.24 <=0.6.7", install_latest=True)
     assert msolc.pop() == Version("0.6.7")
+
+
+def test_find_solc_versions_uses_installed_when_available_list_does_not_match(monkeypatch):
+    source = {"Foo.sol": "pragma solidity ^0.5.0; contract Foo {}"}
+    monkeypatch.setattr(
+        compiler.solidity,
+        "_get_solc_version_list",
+        lambda: ([Version("0.4.22")], [Version("0.5.8")]),
+    )
+
+    assert compiler.find_solc_versions(source) == {"0.5.8": ["Foo.sol"]}
 
 
 def test_install_solc(msolc):
