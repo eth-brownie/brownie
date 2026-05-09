@@ -248,6 +248,26 @@ def test_get_vyper_pragma_spec_legacy_wildcard_ignores_parts_after_first_wildcar
 
 
 @pytest.mark.parametrize(
+    "version, included, excluded",
+    [
+        (">0.2", ["0.3.0"], ["0.2.16"]),
+        (">0.2.x", ["0.3.0"], ["0.2.16"]),
+        ("^0", ["0.0.1", "0.2.16"], ["1.0.0"]),
+        ("^0.0", ["0.0.1"], ["0.1.0"]),
+        ("~0.x", ["0.1.0", "0.2.16"], ["1.0.0"]),
+        ("<0.2.0", ["0.2.0b1"], ["0.2.0"]),
+    ],
+)
+def test_get_vyper_pragma_spec_legacy_matches_npm_spec_golden(version, included, excluded):
+    spec = sources.get_vyper_pragma_spec(f"# @version {version}")
+
+    for compiler_version in included:
+        assert Version(compiler_version) in spec
+    for compiler_version in excluded:
+        assert Version(compiler_version) not in spec
+
+
+@pytest.mark.parametrize(
     "version",
     [
         "~=0.2.0",

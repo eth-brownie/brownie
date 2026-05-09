@@ -120,6 +120,17 @@ def _next_patch(version: Version) -> Version:
 
 def _npm_caret_upper_bound(pattern: _SemverPattern) -> Version:
     lower = pattern.version
+    major, minor, _ = pattern.numbers
+
+    if pattern.levels_present == 1 or minor is None:
+        return Version(f"{lower.major + 1}.0.0")
+    if pattern.levels_present == 2 or pattern.numbers[2] is None:
+        if lower.major == 0 and lower.minor == 0:
+            return Version("0.1.0")
+        if lower.major == 0:
+            return Version(f"0.{lower.minor + 1}.0")
+        return Version(f"{lower.major + 1}.0.0")
+
     if lower.major:
         return Version(f"{lower.major + 1}.0.0")
     if lower.minor:
@@ -285,9 +296,14 @@ def _npm_predicate_for_token(
     if operator in {"", "="}:
         return _npm_base_predicate(pattern), prerelease_bases
     if operator == ">=":
-        lower = pattern.version
+        lower = _npm_lower_from_pattern(pattern) if pattern.has_wildcard else pattern.version
         return lambda version: version >= lower, prerelease_bases
     if operator == ">":
+        if pattern.has_wildcard or pattern.levels_present < 3:
+            upper = _npm_xrange_upper_bound(pattern)
+            if upper is None:
+                return lambda version: False, prerelease_bases
+            return lambda version: version >= upper, prerelease_bases
         lower = pattern.version
         return lambda version: version > lower, prerelease_bases
     if operator == "<=":
@@ -297,15 +313,21 @@ def _npm_predicate_for_token(
                 return lambda version: True, prerelease_bases
             return lambda version: version < upper, prerelease_bases
         upper = pattern.version
+        if not pattern.has_prerelease:
+            prerelease_bases.add(_npm_release_tuple(upper))
         return lambda version: version <= upper, prerelease_bases
     if operator == "<":
         upper = pattern.version
+        if not pattern.has_prerelease and not pattern.has_wildcard:
+            prerelease_bases.add(_npm_release_tuple(upper))
         return lambda version: version < upper, prerelease_bases
     if operator == "^":
-        lower = pattern.version
+        lower = _npm_lower_from_pattern(pattern)
         upper = _npm_caret_upper_bound(pattern)
         return lambda version: lower <= version < upper, prerelease_bases
     if operator == "~":
+        if pattern.has_wildcard:
+            return _npm_base_predicate(pattern), prerelease_bases
         lower = pattern.version
         upper = _npm_tilde_upper_bound(pattern)
         return lambda version: lower <= version < upper, prerelease_bases
