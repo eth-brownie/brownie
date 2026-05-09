@@ -1,5 +1,6 @@
 """
-This helper file exists so we can use `__file__`, which does not exist when a file is compiled with mypyc.
+This helper file exists so we can use `__file__`,
+which does not exist when a file is compiled with mypyc.
 """
 
 from brownie._c_constants import Path, import_module

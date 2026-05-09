@@ -1,7 +1,7 @@
 import functools
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from typing import Any, Dict, Final, List, Optional, Type
+from typing import Any, Final
 
 from web3 import Web3
 from web3.middleware import Web3Middleware

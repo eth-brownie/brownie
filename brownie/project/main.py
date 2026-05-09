@@ -353,7 +353,9 @@ class Project(_ProjectBase):
         # confirm that this contract was previously compiled
         try:
             source = self._sources.get(contract_name)
-            build_json: ContractBuildJson = self._build.get(contract_name)  # type: ignore [assignment]
+            build_json: ContractBuildJson = self._build.get(  # type: ignore [assignment]
+                contract_name
+            )
         except KeyError:
             return True
         # compare source hashes

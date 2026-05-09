@@ -338,7 +338,9 @@ class Chain(metaclass=_Singleton):
     ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
-            self._undo_buffer.append((self._current_id, fn, args, kwargs))  # type: ignore [arg-type]
+            self._undo_buffer.append(
+                (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
+            )
             redo_buffer = self._redo_buffer
             if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
                 redo_buffer.pop()
@@ -632,10 +634,13 @@ def _get_deployment(
 
     keys = ("address", "alias", "paths") + DEPLOYMENT_KEYS
     build_json = cast(ContractBuildJson, dict(zip(keys, row)))
-    # when we json.dump the path map, the tuples are encoded as lists so we need to make them tuples again.
-    path_map: PathMap = {k: tuple(v) for k, v in build_json.pop("paths", {}).items()}  # type: ignore [typeddict-item]
+    path_values = build_json.pop("paths", {})  # type: ignore [typeddict-item]
+    # json.dump encodes the path-map tuples as lists, so convert them back.
+    path_map: PathMap = {k: tuple(v) for k, v in path_values.items()}
     sources: dict[str, Any] = {
-        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[0]  # type: ignore [index]
+        i[1]: cur.fetchone("SELECT source FROM sources WHERE hash=?", (i[0],))[
+            0
+        ]  # type: ignore [index]
         for i in path_map.values()
     }
 

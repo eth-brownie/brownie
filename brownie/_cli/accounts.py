@@ -46,7 +46,7 @@ def main():
 
 def _list():
     account_paths = sorted(_get_data_folder().glob("accounts/*.json"))
-    print(f"Found {len(account_paths)} account{'s' if len(account_paths)!=1 else ''}:")
+    print(f"Found {len(account_paths)} account{'s' if len(account_paths) != 1 else ''}:")
     for path in account_paths:
         u = "\u2514" if path == account_paths[-1] else "\u251c"
         with path.open() as fp:

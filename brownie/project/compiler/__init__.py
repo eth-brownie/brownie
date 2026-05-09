@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index,typeddict-unknown-key"
 
-from typing import Any, Dict, Final, List, Optional, Union, cast
+from typing import Any, Final, Union, cast
 
 import solcast
 from eth_typing import ABIElement, HexStr

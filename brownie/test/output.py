@@ -51,9 +51,9 @@ def _load_report_exclude_data(settings: dict[str, Any]) -> tuple[list[str], list
             exclude = [exclude]
         for glob_str in exclude:
             glob_path = Path(glob_str)
-            base_path = glob_path.root if glob_path.is_absolute() else Path(".")
+            base_path = Path(glob_path.root) if glob_path.is_absolute() else Path(".")
             try:
-                exclude_paths.extend(map(Path.as_posix, base_path.glob(glob_str)))  # type: ignore [union-attr]
+                exclude_paths.extend(map(Path.as_posix, base_path.glob(glob_str)))
             except Exception:
                 warnings.warn(
                     "Invalid glob pattern in config exclude settings: '{glob_str}'",
@@ -89,7 +89,10 @@ def _build_gas_profile_output() -> list[str]:
         contract, function = full_name.split(".", 1)
 
         try:
-            if project._sources.get_source_path(contract) in exclude_paths:  # type: ignore [union-attr, arg-type]
+            source_path = project._sources.get_source_path(  # type: ignore [union-attr, arg-type]
+                contract  # type: ignore [arg-type]
+            )
+            if source_path in exclude_paths:
                 continue
         except (AttributeError, KeyError):
             # filters contracts that are not part of the project

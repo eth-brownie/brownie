@@ -38,7 +38,7 @@ if HEXBYTES_LT_1_0_0:
         """Convert a bytes value to a hexstring on hexbytes<1."""
         return HexBytes(value).hex()
 
-    hexbytes_to_hexstring = HexBytes.hex
+    hexbytes_to_hexstring = HexBytes.hex  # noqa: F811
     """Convert a HexBytes value to a hexstring on hexbytes<1."""
 
 else:

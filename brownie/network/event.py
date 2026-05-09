@@ -557,7 +557,9 @@ def _decode_logs(
                         continue
             try:
                 events.extend(
-                    eth_event.decode_logs([item], topics_map, allow_undecoded=True)  # type: ignore [call-overload]
+                    eth_event.decode_logs(
+                        [item], topics_map, allow_undecoded=True
+                    )  # type: ignore [call-overload]
                 )
             except EventError as exc:
                 warnings.warn(f"{address}: {exc}")
