@@ -193,6 +193,15 @@ def test_install_solc(msolc):
     assert Version("0.6.0") in msolc
 
 
+def test_install_solc_latest(monkeypatch):
+    called = []
+    monkeypatch.setattr("solcx.install_solc", lambda *args, **kwargs: called.append((args, kwargs)))
+
+    compiler.install_solc("latest")
+
+    assert called == [(("latest",), {"show_progress": False})]
+
+
 def test_first_revert(BrownieTester, ExternalCallTester):
     pc_map = ExternalCallTester._build["pcMap"]
     assert next((i for i in pc_map.values() if "first_revert" in i), False)

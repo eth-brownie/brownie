@@ -120,13 +120,25 @@ def test_get_pragma_spec_solc_caret_zero_major_matches_solc():
     assert Version("0.1.0") not in spec
 
 
+@pytest.mark.parametrize("pragma", ["*", "x", "X"])
+def test_get_pragma_spec_solc_global_wildcard(pragma):
+    spec = sources.get_pragma_spec(f"pragma solidity {pragma};")
+
+    assert Version("0.4.22") in spec
+    assert Version("0.8.30") in spec
+
+
 @pytest.mark.parametrize(
     "pragma, matching_version, excluded_version",
     [
         ("~ 1.0", Version("1.0.2"), Version("1.1.0")),
         (">= 1.2", Version("1.2.8"), Version("1.1.1")),
+        (">= 0.6.0 < 0.9.0", Version("0.8.20"), Version("0.9.0")),
+        ("^ 0.8.0", Version("0.8.20"), Version("0.9.0")),
+        ("~ 0.8.20", Version("0.8.28"), Version("0.9.0")),
         ("1.2.x || 2.*", Version("2.3.4"), Version("3.1.3")),
         ("0.4.0 - 0.9.0 || 1.1.0", Version("0.8.20"), Version("1.0.0")),
+        ("0.8.17 - 0.8.20", Version("0.8.20"), Version("0.8.21")),
     ],
 )
 def test_get_pragma_spec_solc_range_examples(pragma, matching_version, excluded_version):
@@ -146,6 +158,27 @@ def test_get_pragma_spec_solc_range_examples(pragma, matching_version, excluded_
 def test_get_pragma_spec_rejects_solc_range_conjunctions(pragma):
     with pytest.raises(PragmaError):
         sources.get_pragma_spec(f"pragma solidity {pragma};")
+
+
+@pytest.mark.parametrize(
+    "pragma",
+    [
+        "v0.8.20",
+        "01.2.3",
+        "1.02.3",
+        "1.2.03",
+    ],
+)
+def test_get_pragma_spec_rejects_invalid_solc_version_literals(pragma):
+    with pytest.raises(PragmaError):
+        sources.get_pragma_spec(f"pragma solidity {pragma};")
+
+
+def test_get_pragma_spec_solc_prerelease_upper_partial_boundary():
+    spec = sources.get_pragma_spec("pragma solidity ^0.8.0;")
+
+    assert Version("0.8.20") in spec
+    assert Version("0.9.0rc1") not in spec
 
 
 @pytest.mark.parametrize(
@@ -185,11 +218,32 @@ def test_get_vyper_pragma_spec_legacy_rejects_modern_pep440(version):
     assert Version("0.2.16") not in spec
 
 
+def test_get_vyper_pragma_spec_legacy_does_not_accept_pep440_comma_range():
+    spec = sources.get_vyper_pragma_spec("# @version >=0.3.0, <0.4.0")
+
+    assert Version("0.3.9") not in spec
+    assert Version("0.3.10") in spec
+
+
+def test_get_vyper_pragma_spec_legacy_accepts_npm_space_range():
+    spec = sources.get_vyper_pragma_spec("# @version >=0.3.0 <0.4.0")
+
+    assert Version("0.3.9") in spec
+    assert Version("0.3.10") not in spec
+
+
 def test_get_vyper_pragma_spec_modern_pep440():
     spec = sources.get_vyper_pragma_spec("#pragma version >=0.4.0,<0.5.0")
 
     assert Version("0.4.3") in spec
     assert Version("0.3.10") not in spec
+
+
+def test_get_vyper_pragma_spec_modern_pragma_version_does_not_select_legacy_compiler():
+    spec = sources.get_vyper_pragma_spec("#pragma version >=0.3.0,<0.4.0")
+
+    assert Version("0.3.10") in spec
+    assert Version("0.3.9") not in spec
 
 
 def test_get_vyper_pragma_spec_modern_at_version_uses_pep440():
@@ -216,6 +270,11 @@ def test_get_vyper_pragma_spec_uses_comment_tokens():
 
     assert Version("0.4.3") in spec
     assert Version("0.2.4") not in spec
+
+
+def test_get_vyper_pragma_spec_rejects_missing_space_after_at_version():
+    with pytest.raises(PragmaError):
+        sources.get_vyper_pragma_spec("# @version0.4.0")
 
 
 def test_get_vyper_pragma_spec_rejects_duplicate_version_pragmas():

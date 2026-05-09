@@ -129,7 +129,10 @@ def set_solc_version(version: VersionSpec) -> str:
 def install_solc(*versions: VersionSpec) -> None:
     """Installs solc versions."""
     for version in versions:
-        solcx.install_solc(parse_compiler_version(version), show_progress=False)
+        if version == "latest":
+            solcx.install_solc("latest", show_progress=False)
+        else:
+            solcx.install_solc(parse_compiler_version(version), show_progress=False)
 
 
 def get_abi(contract_source: str, allow_paths: str | None = None) -> dict[str, list[ABIElement]]:

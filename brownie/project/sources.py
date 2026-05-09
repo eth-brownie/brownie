@@ -312,7 +312,7 @@ def get_vyper_pragma_spec(source: str, path: str | None = None) -> VyperPragmaSp
 
             contents = token.string[1:].strip()
             if contents.startswith("@version"):
-                pragma_matches.append(("@version", contents.removeprefix("@version").strip()))
+                pragma_matches.append(("@version", contents.removeprefix("@version ").strip()))
             elif contents.startswith("pragma "):
                 pragma = contents.removeprefix("pragma ").strip()
                 if pragma.startswith("version "):
