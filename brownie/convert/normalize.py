@@ -44,17 +44,16 @@ def format_output(abi: ABIFunction, outputs: AnyListOrTuple) -> ReturnValue:
 
 def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     """Format event data based on ABI types."""
-    if not event["decoded"]:
+    if event["decoded"] is False:
         topics = (
             {"type": "bytes32", "name": name, "value": data}
             for name, data in zip(("topic1", "topic2", "topic3"), event.get("topics", ()))
         )
-        event["data"] = [  # type: ignore [typeddict-item]
-            *topics,
-            {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])},
-        ]
-        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"  # type: ignore [typeddict-item]
-        return event  # type: ignore [return-value]
+        data = _format_single("bytes", event["data"])
+        formatted_event = cast(FormattedEvent, event)
+        formatted_event["data"] = [*topics, {"type": "bytes", "name": "data", "value": data}]
+        formatted_event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
+        return formatted_event
 
     data = event["data"]
     for e in data:

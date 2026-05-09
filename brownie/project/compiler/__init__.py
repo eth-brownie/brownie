@@ -393,21 +393,19 @@ def generate_build_json(
                 )
 
             build_json[contract_alias].update(
-                {
-                    "abi": abi,
-                    "ast": ast,
-                    "compiler": compiler_data,  # type: ignore [typeddict-item]
-                    "contractName": contract_name,
-                    "deployedBytecode": bytecode,
-                    "deployedSourceMap": deployed_bytecode["sourceMap"],
-                    "language": language,  # type: ignore [typeddict-item]
-                    "natspec": natspec,
-                    "opcodes": deployed_bytecode["opcodes"],
-                    "sha1": HexStr(sha1(source.encode()).hexdigest()),
-                    "source": source,
-                    "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
-                    "sourcePath": path_str,
-                }
+                abi=abi,
+                ast=ast,
+                compiler=cast(CompilerConfig, compiler_data),
+                contractName=contract_name,
+                deployedBytecode=bytecode,
+                deployedSourceMap=deployed_bytecode["sourceMap"],
+                language=language,  # type: ignore [typeddict-item]
+                natspec=natspec,
+                opcodes=deployed_bytecode["opcodes"],
+                sha1=HexStr(sha1(source.encode()).hexdigest()),
+                source=source,
+                sourceMap=output_evm["bytecode"].get("sourceMap", ""),
+                sourcePath=path_str,
             )
             size = len(bytecode.removeprefix("0x")) / 2
             if size > 24577:
