@@ -77,6 +77,7 @@ from brownie.utils import notify
 
 BUILD_FOLDERS: Final = "contracts", "deployments", "interfaces"
 MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
+DOWNLOAD_CHUNK_SIZE: Final = 1024 * 1024
 
 GITIGNORE: Final = """__pycache__
 .env
@@ -1093,11 +1094,11 @@ def _stream_download(
 
     total_size = int(response.headers.get("content-length", 0))
     progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
-    content = b""
+    content = bytearray()
 
-    for data in response.iter_content(1024, decode_unicode=True):
+    for data in response.iter_content(DOWNLOAD_CHUNK_SIZE):
         progress_bar.update(len(data))
-        content += data
+        content.extend(data)
     progress_bar.close()
 
     with zipfile.ZipFile(BytesIO(content)) as zf:
