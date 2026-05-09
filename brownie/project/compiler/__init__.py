@@ -6,7 +6,7 @@ from typing import Any, Dict, Final, List, Optional, Union, cast
 import solcast
 from eth_typing import ABIElement, HexStr
 
-from brownie._c_constants import Path, Version, deepcopy, sha1, ujson_loads
+from brownie._c_constants import Path, deepcopy, sha1, ujson_loads
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
@@ -16,7 +16,7 @@ from brownie.project.compiler.solidity import (  # NOQA: F401
     install_solc,
     set_solc_version,
 )
-from brownie.project.compiler.utils import _get_alias, merge_natspec
+from brownie.project.compiler.utils import _get_alias, merge_natspec, parse_compiler_version
 from brownie.project.compiler.vyper import find_vyper_versions, set_vyper_version
 from brownie.typing import (
     CompilerConfig,
@@ -154,7 +154,8 @@ def compile_and_format(
                 k: v
                 for k in interface_sources
                 if Path(k).suffix == ".sol"
-                and Version(version) in sources.get_pragma_spec(v := interface_sources[k], k)
+                and parse_compiler_version(version)
+                in sources.get_pragma_spec(v := interface_sources[k], k)
             }
 
         to_compile = {key: contract_sources[key] for key in contract_sources if key in path_list}

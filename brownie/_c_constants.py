@@ -15,12 +15,12 @@ import hashlib
 import importlib
 import pathlib
 import re
-from typing import Final
+from typing import Final, TypeAlias
 
 import faster_eth_utils.toolz
 import faster_hexbytes
-import semantic_version
 import ujson
+from packaging.version import Version as PackagingVersion
 
 # BUILTINS
 # collections
@@ -56,9 +56,8 @@ regex_sub: Final = re.sub
 # faster_hexbytes
 HexBytes: Final = faster_hexbytes.HexBytes
 
-# semantic_version
-NpmSpec: Final = semantic_version.NpmSpec
-Version: Final = semantic_version.Version
+# packaging
+Version: TypeAlias = PackagingVersion
 
 # toolz
 mapcat: Final = faster_eth_utils.toolz.mapcat

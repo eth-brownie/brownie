@@ -25,7 +25,6 @@ from vvm.exceptions import VyperNotInstalled
 
 from brownie._c_constants import (
     Path,
-    Version,
     import_module,
     mapcat,
     regex_match,
@@ -44,6 +43,7 @@ from brownie._config import (
     _load_project_structure_config,
 )
 from brownie._expansion import expand_posix_vars
+from brownie._versioning import parse_compiler_version
 from brownie.exceptions import (
     BadProjectName,
     BrownieEnvironmentWarning,
@@ -367,7 +367,7 @@ class Project(_ProjectBase):
             if not _solidity_compiler_equal(solc_config, compiler):
                 return True
             # compare solc pragma against compiled version
-            if Version(compiler["version"]) not in get_pragma_spec(source):
+            if parse_compiler_version(compiler["version"]) not in get_pragma_spec(source):
                 return True
         else:
             if not _vyper_compiler_equal(config["vyper"], compiler):
@@ -761,7 +761,7 @@ def compile_source(
     if vyper_version is None:
         # if no vyper compiler version is given, try to compile using solidity
         compiler_config["solc"] = {
-            "version": solc_version or str(compiler.solidity.get_version().truncate()),
+            "version": solc_version or str(compiler.solidity.get_version()),
             "optimize": bool(optimize),
             "runs": runs or 0,
         }
@@ -781,7 +781,7 @@ def compile_source(
         except (PragmaError, VyperNotInstalled):
             pass
 
-    compiler_config["vyper"] = {"version": vyper_version or compiler.vyper.get_version()}
+    compiler_config["vyper"] = {"version": vyper_version or str(compiler.vyper.get_version())}
     try:
         return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
     except Exception as exc:

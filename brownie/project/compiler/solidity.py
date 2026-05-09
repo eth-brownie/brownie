@@ -3,7 +3,6 @@
 import logging
 from typing import Any, Deque, Final, cast
 
-import semantic_version
 import solcast
 import solcx
 from eth_typing import ABIElement, HexStr
@@ -13,7 +12,14 @@ from solcast.nodes import NodeBase, is_inside_offset
 from brownie._c_constants import Version, deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion  # noqa
-from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
+from brownie.project.compiler.utils import (
+    VersionList,
+    VersionSpec,
+    _get_alias,
+    expand_source_map,
+    parse_compiler_version,
+    parse_compiler_versions,
+)
 from brownie.typing import (
     BranchMap,
     BytecodeJson,
@@ -60,14 +66,8 @@ BranchNodes = dict[str, set[NodeBase]]
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
 
-def _to_brownie_version(version: Any) -> semantic_version.Version:
-    if isinstance(version, Version):
-        return version
-    return Version(str(version))
-
-
-def get_version() -> semantic_version.Version:
-    return _to_brownie_version(solcx.get_solc_version(with_commit_hash=True))
+def get_version() -> Version:
+    return parse_compiler_version(solcx.get_solc_version(with_commit_hash=True))
 
 
 def compile_from_input_json(
@@ -110,7 +110,7 @@ def compile_from_input_json(
 def set_solc_version(version: VersionSpec) -> str:
     """Sets the solc version. If not available it will be installed."""
     if not isinstance(version, Version):
-        version = Version(version.lstrip("v"))
+        version = parse_compiler_version(version)
     if version < Version("0.4.22"):
         raise IncompatibleSolcVersion("Brownie only supports Solidity versions >=0.4.22")
     try:
@@ -129,7 +129,7 @@ def set_solc_version(version: VersionSpec) -> str:
 def install_solc(*versions: VersionSpec) -> None:
     """Installs solc versions."""
     for version in versions:
-        solcx.install_solc(str(version), show_progress=False)
+        solcx.install_solc(parse_compiler_version(version), show_progress=False)
 
 
 def get_abi(contract_source: str, allow_paths: str | None = None) -> dict[str, list[ABIElement]]:
@@ -169,7 +169,7 @@ def find_solc_versions(
     available_versions, installed_versions = _get_solc_version_list()
 
     pragma_specs: dict = {}
-    to_install = set()
+    to_install: set[Version] = set()
     new_versions = set()
 
     for path, source in contract_sources.items():
@@ -185,20 +185,20 @@ def find_solc_versions(
         # if no installed version of solc matches the pragma, find the latest available version
         latest = pragma_spec.select(available_versions)
 
-        if not version and not latest:
+        if latest is None:
             raise IncompatibleSolcVersion(
                 f"No installable solc version matching '{pragma_spec}' in '{path}'"
             )
 
-        if not version or (install_latest and latest > version):
+        if version is None or (install_latest and latest > version):
             to_install.add(latest)
-        elif latest and latest > version:
+        elif latest > version:
             new_versions.add(str(version))
 
     # install new versions if needed
     if to_install:
         install_solc(*to_install)
-        installed_versions = [_to_brownie_version(i) for i in solcx.get_installed_solc_versions()]
+        installed_versions = parse_compiler_versions(solcx.get_installed_solc_versions())
     elif new_versions and not silent:
         print(
             f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
@@ -261,14 +261,10 @@ def find_best_solc_version(
 
 def _get_solc_version_list() -> tuple[VersionList, VersionList]:
     global AVAILABLE_SOLC_VERSIONS
-    installed_versions: VersionList = [
-        _to_brownie_version(i) for i in solcx.get_installed_solc_versions()
-    ]
+    installed_versions = parse_compiler_versions(solcx.get_installed_solc_versions())
     if AVAILABLE_SOLC_VERSIONS is None:
         try:
-            AVAILABLE_SOLC_VERSIONS = [
-                _to_brownie_version(i) for i in solcx.get_installable_solc_versions()
-            ]
+            AVAILABLE_SOLC_VERSIONS = parse_compiler_versions(solcx.get_installable_solc_versions())
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Solc not installed and cannot connect to GitHub")

@@ -4,7 +4,7 @@ import functools
 
 import pytest
 import solcx
-from semantic_version import Version
+from packaging.version import Version
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
@@ -73,15 +73,15 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert str(solcx.get_solc_version(with_commit_hash=True)) == str(
-        compiler.solidity.get_version()
+    assert str(solcx.get_solc_version(with_commit_hash=True)).startswith(
+        str(compiler.solidity.get_version())
     )
-    assert compiler.solidity.get_version().truncate() == Version("0.5.7")
+    assert compiler.solidity.get_version() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert str(solcx.get_solc_version(with_commit_hash=True)) == str(
-        compiler.solidity.get_version()
+    assert str(solcx.get_solc_version(with_commit_hash=True)).startswith(
+        str(compiler.solidity.get_version())
     )
-    assert compiler.solidity.get_version().truncate() == Version("0.4.25")
+    assert compiler.solidity.get_version() == Version("0.4.25")
 
 
 def test_generate_input_json(solc5source):

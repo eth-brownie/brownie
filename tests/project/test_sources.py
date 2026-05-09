@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 import pytest
-from semantic_version import NpmSpec
+from packaging.version import Version
 
 from brownie import compile_source
-from brownie.exceptions import NamespaceCollision
+from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.project import sources
 
 MESSY_SOURCE = """
@@ -78,21 +78,108 @@ def test_load_messy_project():
 
 
 def test_get_pragma_spec():
-    assert sources.get_pragma_spec(MESSY_SOURCE) == NpmSpec(">=0.4.22 <0.7.0")
+    spec = sources.get_pragma_spec(MESSY_SOURCE)
+
+    assert str(spec) == ">=0.4.22 <0.7.0 && ^0.6.0"
+    assert Version("0.6.12") in spec
+    assert Version("0.5.17") not in spec
+
+
+def test_get_pragma_spec_ignores_comments_and_strings():
+    source = """
+    // pragma solidity 0.4.22;
+    contract Foo {
+        string constant BAR = "pragma solidity 0.5.0;";
+    }
+    pragma solidity ^0.6.0;
+    """
+
+    assert sources.get_pragma_spec(source).select(
+        [Version("0.5.17"), Version("0.6.12")]
+    ) == Version("0.6.12")
+
+
+def test_get_pragma_spec_rejects_solc_prerelease_match_expressions():
+    with pytest.raises(PragmaError):
+        sources.get_pragma_spec("pragma solidity >=0.8.20-rc.1;")
+
+
+def test_get_pragma_spec_solc_tilde_range():
+    spec = sources.get_pragma_spec("pragma solidity ~0.8.20;")
+
+    assert Version("0.8.20") in spec
+    assert Version("0.8.28") in spec
+    assert Version("0.9.0") not in spec
+
+
+def test_get_pragma_spec_solc_caret_zero_major_matches_solc():
+    spec = sources.get_pragma_spec("pragma solidity ^0.0.3;")
+
+    assert Version("0.0.3") in spec
+    assert Version("0.0.4") in spec
+    assert Version("0.1.0") not in spec
 
 
 @pytest.mark.parametrize(
-    "version, spec",
+    "version, matching_version",
     [
-        ("0.1.0b16", NpmSpec("0.1.0-beta.16")),
-        ("0.1.0Beta17", NpmSpec("0.1.0-beta.17")),
-        ("^0.2.0", NpmSpec("^0.2.0")),
-        ("<=0.2.4", NpmSpec("<=0.2.4")),
+        ("0.1.0b16", Version("0.1.0b16")),
+        ("0.1.0Beta17", Version("0.1.0b17")),
+        (">=0.1.0-beta.16", Version("0.1.0b16")),
+        ("^0.2.0", Version("0.2.16")),
+        ("<=0.2.4", Version("0.2.4")),
     ],
 )
-@pytest.mark.xfail
-# this might fail on the beta versions due to a dependency change,
-# but the failing vyper versions are too old for us to care
-def test_get_vyper_pragma_spec(version, spec):
+def test_get_vyper_pragma_spec_legacy_version(version, matching_version):
     source = f"""# @version {version}"""
-    assert sources.get_vyper_pragma_spec(source) == spec
+    spec = sources.get_vyper_pragma_spec(source)
+
+    assert matching_version in spec
+
+
+def test_get_vyper_pragma_spec_legacy_uses_npm_caret():
+    spec = sources.get_vyper_pragma_spec("# @version ^0.0.3")
+
+    assert Version("0.0.3") in spec
+    assert Version("0.0.4") not in spec
+
+
+def test_get_vyper_pragma_spec_modern_pep440():
+    spec = sources.get_vyper_pragma_spec("#pragma version >=0.4.0,<0.5.0")
+
+    assert Version("0.4.3") in spec
+    assert Version("0.3.10") not in spec
+
+
+def test_get_vyper_pragma_spec_modern_caret_does_not_select_unsupported_pragma_directive():
+    spec = sources.get_vyper_pragma_spec("#pragma version ^0.3.0")
+
+    assert Version("0.3.10") in spec
+    assert Version("0.3.9") not in spec
+
+
+def test_get_vyper_pragma_spec_uses_comment_tokens():
+    source = """
+    MESSAGE: constant(String[32]) = "# @version 0.2.4"
+    #pragma optimize gas
+    #pragma version ^0.4.0
+    """
+    spec = sources.get_vyper_pragma_spec(source)
+
+    assert Version("0.4.3") in spec
+    assert Version("0.2.4") not in spec
+
+
+def test_get_vyper_pragma_spec_rejects_duplicate_version_pragmas():
+    source = """
+    # @version ^0.3.0
+    #pragma version ^0.4.0
+    """
+
+    with pytest.raises(PragmaError):
+        sources.get_vyper_pragma_spec(source)
+
+
+def test_get_vyper_pragma_spec_rejects_modern_space_separated_ranges():
+    with pytest.raises(PragmaError):
+        sources.get_vyper_pragma_spec("#pragma version >=0.4.0 <0.5.0")
