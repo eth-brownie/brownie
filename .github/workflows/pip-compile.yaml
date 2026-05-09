@@ -17,7 +17,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.head_ref }}  # Check out the PR branch
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        ref: ${{ github.head_ref || github.ref_name }}  # Check out the PR branch
 
     - name: Set up Python
       uses: actions/setup-python@v4
