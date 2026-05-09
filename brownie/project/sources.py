@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
+import io
 import textwrap
+from tokenize import COMMENT, TokenError, tokenize
 from typing import Final, final
 
-import semantic_version
 from eth_typing import HexStr
-from vvm.utils.convert import to_vyper_version
 
-from brownie._c_constants import NpmSpec, Path, regex_findall, regex_finditer, regex_sub, sha1
+from brownie._c_constants import Path, regex_findall, regex_finditer, regex_sub, sha1
+from brownie._versioning import SolidityPragmaSpec, VyperPragmaSpec
 from brownie.exceptions import NamespaceCollision, PragmaError
 from brownie.typing import ContractName, Offset
 from brownie.utils import color
@@ -204,7 +205,68 @@ def get_contract_names(full_source: str) -> list[tuple[ContractName, str]]:
     return contract_names
 
 
-def get_pragma_spec(source: str, path: str | None = None) -> semantic_version.NpmSpec:
+def _strip_solidity_comments_and_strings(source: str) -> str:
+    chars: list[str] = []
+    idx = 0
+    state = "normal"
+    quote = ""
+
+    while idx < len(source):
+        char = source[idx]
+        next_char = source[idx + 1] if idx + 1 < len(source) else ""
+
+        if state == "normal":
+            if char == "/" and next_char == "/":
+                state = "line_comment"
+                chars.extend("  ")
+                idx += 2
+                continue
+            if char == "/" and next_char == "*":
+                state = "block_comment"
+                chars.extend("  ")
+                idx += 2
+                continue
+            if char in {"'", '"'}:
+                state = "string"
+                quote = char
+                chars.append(" ")
+                idx += 1
+                continue
+            chars.append(char)
+            idx += 1
+            continue
+
+        if state == "line_comment":
+            chars.append("\n" if char == "\n" else " ")
+            if char == "\n":
+                state = "normal"
+            idx += 1
+            continue
+
+        if state == "block_comment":
+            if char == "*" and next_char == "/":
+                chars.extend("  ")
+                state = "normal"
+                idx += 2
+            else:
+                chars.append("\n" if char == "\n" else " ")
+                idx += 1
+            continue
+
+        if state == "string":
+            if char == "\\":
+                chars.extend("  ")
+                idx += 2
+                continue
+            chars.append("\n" if char == "\n" else " ")
+            if char == quote:
+                state = "normal"
+            idx += 1
+
+    return "".join(chars)
+
+
+def get_pragma_spec(source: str, path: str | None = None) -> SolidityPragmaSpec:
     """
     Extracts pragma information from Solidity source code.
 
@@ -212,20 +274,26 @@ def get_pragma_spec(source: str, path: str | None = None) -> semantic_version.Np
         source: Solidity source code
         path: Optional path to the source (only used for error reporting)
 
-    Returns: NpmSpec object
+    Returns: SolidityPragmaSpec object
     """
 
-    pragma_match = next(regex_finditer(r"pragma +solidity([^;]*);", source), None)
-    if pragma_match is not None:
-        pragma_string = pragma_match.groups()[0]
-        pragma_string = " ".join(pragma_string.split())
-        return NpmSpec(pragma_string)
+    clean_source = _strip_solidity_comments_and_strings(source)
+    pragma_strings = [
+        " ".join(match.groups()[0].split())
+        for match in regex_finditer(r"\bpragma\s+solidity\b([^;]*);", clean_source)
+    ]
+    if pragma_strings:
+        try:
+            return SolidityPragmaSpec(pragma_strings)
+        except ValueError as exc:
+            path = "" if path is None else f"{path}: "
+            raise PragmaError(f"{path}{exc}") from exc
     if path:
         raise PragmaError(f"No version pragma in '{path}'")
     raise PragmaError("String does not contain a version pragma")
 
 
-def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_version.NpmSpec:
+def get_vyper_pragma_spec(source: str, path: str | None = None) -> VyperPragmaSpec:
     """
     Extracts pragma information from Vyper source code.
 
@@ -233,28 +301,40 @@ def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_vers
         source: Vyper source code
         path: Optional path to the source (only used for error reporting)
 
-    Returns: NpmSpec object
+    Returns: VyperPragmaSpec object
     """
-    pragma_match = next(
-        regex_finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
-    )
-    if pragma_match is None:
+    pragma_matches: list[tuple[str, str]] = []
+    try:
+        token_list = tokenize(io.BytesIO(source.encode("utf-8")).readline)
+        for token in token_list:
+            if token.type != COMMENT:
+                continue
+
+            contents = token.string[1:].strip()
+            if contents.startswith("@version"):
+                pragma_matches.append(("@version", contents.removeprefix("@version ").strip()))
+            elif contents.startswith("pragma "):
+                pragma = contents.removeprefix("pragma ").strip()
+                if pragma.startswith("version "):
+                    pragma_matches.append(
+                        ("pragma version", pragma.removeprefix("version ").strip())
+                    )
+    except TokenError as exc:
+        path = "" if path is None else f"{path}: "
+        raise PragmaError(f"{path}Cannot parse Vyper source: {exc.args[0]}") from exc
+
+    if not pragma_matches:
         if path:
             raise PragmaError(f"No version pragma in '{path}'")
         raise PragmaError("String does not contain a version pragma")
+    if len(pragma_matches) > 1:
+        path = "" if path is None else f"{path}: "
+        raise PragmaError(f"{path}Vyper version pragma specified multiple times")
 
-    pragma_string = pragma_match.groups()[0]
+    directive, pragma_string = pragma_matches[0]
     pragma_string = " ".join(pragma_string.split())
     try:
-        return NpmSpec(pragma_string)
+        return VyperPragmaSpec(pragma_string, allow_legacy=directive == "@version")
     except ValueError:
-        pass
-    try:
-        # special case for Vyper 0.1.0-beta.X
-        version = to_vyper_version(pragma_string)
-        return NpmSpec(str(version))
-    except Exception:
-        pass
-
-    path = "" if path is None else f"{path}: "
-    raise PragmaError(f"{path}Cannot parse Vyper version from pragma: {pragma_string}")
+        path = "" if path is None else f"{path}: "
+        raise PragmaError(f"{path}Cannot parse Vyper version from pragma: {pragma_string}")

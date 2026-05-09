@@ -5,7 +5,7 @@ import pytest
 import requests
 import yaml
 from eth_retry import auto_retry
-from semantic_version import Version
+from packaging.version import Version
 
 from brownie import Wei
 from brownie.exceptions import BrownieCompilerWarning, BrownieEnvironmentWarning, ContractNotFound

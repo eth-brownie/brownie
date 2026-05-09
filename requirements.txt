@@ -144,6 +144,7 @@ mypy-extensions==1.1.0
     #   faster-hexbytes
 packaging==23.2
     # via
+    #   -r requirements.in
     #   py-solc-x
     #   pytest
     #   vvm
@@ -160,7 +161,7 @@ propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
-psutil==5.9.8
+psutil==7.2.2
     # via -r requirements.in
 py==1.11.0
     # via

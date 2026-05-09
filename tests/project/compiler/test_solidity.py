@@ -4,7 +4,7 @@ import functools
 
 import pytest
 import solcx
-from semantic_version import Version
+from packaging.version import Version
 
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
@@ -34,7 +34,7 @@ def solc6json(solc6source):
 
 @pytest.fixture
 def find_version():
-    source = """pragma solidity{};contract Foo {{}}"""
+    source = """pragma solidity {};contract Foo {{}}"""
 
     def fn(version, **kwargs):
         return compiler.find_solc_versions({"Foo": source.format(version)}, **kwargs)
@@ -73,11 +73,15 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
-    assert solcx.get_solc_version(with_commit_hash=True).truncate() == Version("0.5.7")
+    assert str(solcx.get_solc_version(with_commit_hash=True)).startswith(
+        str(compiler.solidity.get_version())
+    )
+    assert compiler.solidity.get_version() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
-    assert solcx.get_solc_version(with_commit_hash=True).truncate() == Version("0.4.25")
+    assert str(solcx.get_solc_version(with_commit_hash=True)).startswith(
+        str(compiler.solidity.get_version())
+    )
+    assert compiler.solidity.get_version() == Version("0.4.25")
 
 
 def test_generate_input_json(solc5source):
@@ -181,12 +185,32 @@ def test_find_solc_versions_install(find_version, msolc):
     assert msolc.pop() == Version("0.6.7")
 
 
+def test_find_solc_versions_uses_installed_when_available_list_does_not_match(monkeypatch):
+    source = {"Foo.sol": "pragma solidity ^0.5.0; contract Foo {}"}
+    monkeypatch.setattr(
+        compiler.solidity,
+        "_get_solc_version_list",
+        lambda: ([Version("0.4.22")], [Version("0.5.8")]),
+    )
+
+    assert compiler.find_solc_versions(source) == {"0.5.8": ["Foo.sol"]}
+
+
 def test_install_solc(msolc):
     assert Version("0.5.10") not in msolc
     assert Version("0.6.0") not in msolc
     compiler.install_solc(Version("0.6.0"), Version("0.5.10"))
     assert Version("0.5.10") in msolc
     assert Version("0.6.0") in msolc
+
+
+def test_install_solc_latest(monkeypatch):
+    called = []
+    monkeypatch.setattr("solcx.install_solc", lambda *args, **kwargs: called.append((args, kwargs)))
+
+    compiler.install_solc("latest")
+
+    assert called == [(("latest",), {"show_progress": False})]
 
 
 def test_first_revert(BrownieTester, ExternalCallTester):

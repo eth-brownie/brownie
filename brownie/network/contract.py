@@ -34,6 +34,7 @@ from brownie._c_constants import (
     ujson_loads,
 )
 from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_project_compiler_config
+from brownie._versioning import next_minor, parse_compiler_version, parse_compiler_versions
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
@@ -1185,7 +1186,7 @@ class Contract(_DeployedContractBase):
         address: str
             The contract address to check for.
         """
-        version = Version(compiler_str.lstrip("v")).truncate()
+        version = parse_compiler_version(compiler_str)
 
         compiler_config = _load_project_compiler_config(Path(os.getcwd()))
         solc_config = compiler_config["solc"]
@@ -1198,8 +1199,8 @@ class Contract(_DeployedContractBase):
                 needs_patch_version = address in use_latest_patch
 
             if needs_patch_version:
-                versions = [Version(str(i)) for i in solcx.get_installable_solc_versions()]
-                for v in filter(lambda x: x < version.next_minor(), versions):
+                versions = parse_compiler_versions(solcx.get_installable_solc_versions())
+                for v in filter(lambda x: x < next_minor(version), versions):
                     if v > version:
                         version = v
 

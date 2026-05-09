@@ -3,10 +3,11 @@
 
 from typing import Union
 
-from semantic_version import Version
+from packaging.version import Version
 
 from brownie._c_constants import Path
 from brownie._config import _get_data_folder
+from brownie._versioning import parse_compiler_version, parse_compiler_versions  # noqa: F401
 from brownie.typing import ContractName, Source
 
 VersionSpec = Union[str, Version]

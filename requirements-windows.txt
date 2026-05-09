@@ -211,7 +211,7 @@ propcache==0.4.1
     #   -r requirements.txt
     #   aiohttp
     #   yarl
-psutil==5.9.8
+psutil==7.2.2
     # via -r requirements.txt
 py==1.11.0
     # via
@@ -285,8 +285,6 @@ safe-pysha3==1.0.5
     # via
     #   -r requirements.txt
     #   cchecksum
-semantic-version==2.10.0
-    # via -r requirements.txt
 six==1.17.0
     # via
     #   -r requirements.txt

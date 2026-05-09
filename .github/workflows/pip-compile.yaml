@@ -59,7 +59,7 @@ jobs:
         fi
 
     - name: Commit changes
-      if: env.changes_detected == 'true'
+      if: env.changes_detected == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
       run: |
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
