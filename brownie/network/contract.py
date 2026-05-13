@@ -11,7 +11,7 @@ from pathlib import Path
 from re import Match
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import TYPE_CHECKING, Any, Final, Optional, Union
+from typing import TYPE_CHECKING, Any, Final, Optional, Sequence, Union
 
 import eth_event
 import requests
@@ -373,7 +373,7 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: "Contract", silent: bool = False) -> bool:
+    def publish_source(self, contract: "Contract", silent: bool = False, constructor_args: Optional[Sequence[Any]] = None) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -421,42 +421,45 @@ class ContractContainer(_ContractBase):
 
         # get constructor arguments
         url = "https://api.etherscan.io/v2/api"
-        params_tx: dict = {
-            "chainid": web3.chain_id,
-            "apikey": api_key,
-            "module": "account",
-            "action": "txlist",
-            "address": address,
-            "page": 1,
-            "sort": "asc",
-            "offset": 1,
-        }
-        i = 0
-        while True:
-            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
-            if response.status_code != 200:
-                raise ConnectionError(
-                    f"Status {response.status_code} when querying {url}: {response.text}"
-                )
-            data = response.json()
-            if int(data["status"]) == 1:
-                # Constructor arguments received
-                break
+        if constructor_args is None:
+            params_tx: dict = {
+                "chainid": web3.chain_id,
+                "apikey": api_key,
+                "module": "account",
+                "action": "txlist",
+                "address": address,
+                "page": 1,
+                "sort": "asc",
+                "offset": 1,
+            }
+            i = 0
+            while True:
+                response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
+                if response.status_code != 200:
+                    raise ConnectionError(
+                        f"Status {response.status_code} when querying {url}: {response.text}"
+                    )
+                data = response.json()
+                if int(data["status"]) == 1:
+                    # Constructor arguments received
+                    break
 
-            # Wait for contract to be recognized by etherscan
-            # This takes a few seconds after the contract is deployed
-            # After 10 loops we throw with the API result message (includes address)
-            if i >= 10:
-                raise ValueError(f"API request failed with: {data['result']}")
-            elif i == 0 and not silent:
-                print(f"Waiting for {url} to process contract...")
-            i += 1
-            time.sleep(10)
+                # Wait for contract to be recognized by etherscan
+                # This takes a few seconds after the contract is deployed
+                # After 10 loops we throw with the API result message (includes address)
+                if i >= 10:
+                    raise ValueError(f"API request failed with: {data['result']}")
+                elif i == 0 and not silent:
+                    print(f"Waiting for {url} to process contract...")
+                i += 1
+                time.sleep(10)
 
-        if data["message"] == "OK":
-            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+            if data["message"] == "OK":
+                constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+            else:
+                constructor_arguments = ""
         else:
-            constructor_arguments = ""
+            constructor_arguments = self.deploy.encode_constructor_args(constructor_args)
 
         # Submit verification
         payload_verification: dict = {
@@ -620,10 +623,14 @@ class ContractConstructor:
             address = self._parent._project[library][-1].address[-40:]
             bytecode = bytecode.replace(marker, address)
 
+        return bytecode + self.encode_constructor_args(args)
+
+    def encode_constructor_args(self, args):
         abi = self.abi
         data = format_input(abi, args)
         types_list = get_type_strings(abi["inputs"])
-        return bytecode + encode_abi(types_list, data).hex()
+        constructor_args = encode_abi(types_list, data).hex()
+        return constructor_args
 
     def estimate_gas(self, *args: Any) -> int:
         """
@@ -1476,7 +1483,7 @@ class ContractEvents(_ContractEvents):
             from_block = to_block - 10
 
         event_filter: filters.LogFilter = event_type.create_filter(
-            fromBlock=from_block, toBlock=to_block
+            from_block=from_block, to_block=to_block
         )
         return event_filter.get_all_entries()
 

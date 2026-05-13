@@ -3,7 +3,7 @@ from typing import Any, final
 
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
-from web3.middleware import geth_poa_middleware
+from web3.middleware import ExtraDataToPOAMiddleware as geth_poa_middleware
 from web3.types import RPCEndpoint
 
 from brownie.network.middlewares import BrownieMiddlewareABC

@@ -1,14 +1,10 @@
 -c requirements.txt
 
-black==26.1.0
-bumpversion==0.6.0
+black==26.3.1
+bump2version==1.0.1
 eth-retry==0.3.5
 flake8==7.3.0
 isort==7.0.0
-pip-tools==7.5.2
 pygments-lexer-solidity==0.7.0
-pytest-cov==7.0.0
+pytest-cov==7.1.0
 pytest-mock==3.15.1
-tox==4.34.1
-twine==6.2.0
-wheel==0.45.1

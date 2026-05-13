@@ -271,7 +271,7 @@ class _EventWatchData:
         self.delay: float = delay
         # Members
         self._event_filter: Final[filters.LogFilter] = event.create_filter(
-            fromBlock=(web3.eth.block_number - 1)
+            from_block=(web3.eth.block_number - 1)
         )
         self._cooldown_time_over: bool = False
         self.timer = time.time()

@@ -3,7 +3,9 @@
 from operator import attrgetter
 from pathlib import Path
 
-import hypothesis
+import hypothesis.reporting
+import hypothesis.extra
+import hypothesis.extra.pytestplugin
 from eth_utils.toolz import compose, concat
 from ujson import JSONDecodeError
 
