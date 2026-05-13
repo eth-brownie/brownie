@@ -11,7 +11,8 @@ from pathlib import Path
 from re import Match
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import TYPE_CHECKING, Any, Final, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Final, Optional, Union
+from collections.abc import Sequence
 
 import eth_event
 import requests
@@ -373,7 +374,7 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: "Contract", silent: bool = False, constructor_args: Optional[Sequence[Any]] = None) -> bool:
+    def publish_source(self, contract: "Contract", silent: bool = False, constructor_args: Sequence[Any] | None = None) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
