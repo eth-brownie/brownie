@@ -6,13 +6,12 @@ import os
 import random
 import time
 import warnings
-from collections.abc import Callable, Coroutine, Iterator
+from collections.abc import Callable, Coroutine, Iterator, Sequence
 from pathlib import Path
 from re import Match
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
 from typing import TYPE_CHECKING, Any, Final, Optional, Union
-from collections.abc import Sequence
 
 import eth_event
 import requests

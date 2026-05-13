@@ -10,7 +10,6 @@ from wrapt import ObjectProxy
 from brownie._c_constants import ujson_loads
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
-
 # from brownie.network import accounts, web3
 from brownie.network import web3
 from brownie.network.account import accounts
