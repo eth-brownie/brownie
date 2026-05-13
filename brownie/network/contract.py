@@ -415,8 +415,8 @@ class ContractContainer(_ContractBase):
             license_code = 12
 
         # get constructor arguments
+        url = "https://api.etherscan.io/v2/api"
         if constructor_args is None:
-            url = "https://api.etherscan.io/v2/api"
             params_tx: dict = {
                 "chainid": web3.chain_id,
                 "apikey": api_key,
