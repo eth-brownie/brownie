@@ -373,7 +373,12 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: "Contract", silent: bool = False, constructor_args: Sequence[Any] | None = None) -> bool:
+    def publish_source(
+        self,
+        contract: "Contract",
+        silent: bool = False,
+        constructor_args: Sequence[Any] | None = None,
+    ) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -455,7 +460,9 @@ class ContractContainer(_ContractBase):
                 time.sleep(10)
 
             if data["message"] == "OK":
-                constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+                constructor_arguments = data["result"][0]["input"][
+                    contract_info["bytecode_len"] + 2 :
+                ]
             else:
                 constructor_arguments = ""
         else:
