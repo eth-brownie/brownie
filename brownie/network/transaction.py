@@ -509,7 +509,7 @@ class TransactionReceipt:
                     self._confirmed.set()
                     raise ex
                 
-                # the null block_hash check is required for older versions of Parity
+                # the null blockHash check is required for older versions of Parity
                 # taken from `web3._utils.transactions.wait_for_transaction_receipt`
                 if receipt is not None and receipt["blockHash"] is not None:
                     break
