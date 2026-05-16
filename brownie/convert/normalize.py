@@ -53,7 +53,9 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
             *topics,
             {"type": "bytes", "name": "data", "value": _format_single("bytes", event["data"])},
         ]
-        event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"  # type: ignore [typeddict-item]
+        event["name"] = (
+            "(anonymous)" if "anonymous" in event else "(unknown)"  # type: ignore [typeddict-item]
+        )
         return event  # type: ignore [return-value]
 
     data = event["data"]

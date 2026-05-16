@@ -308,7 +308,9 @@ def _get_unique_build_json(
     build_json: SolidityBuildJson = {  # type: ignore [typeddict-item]
         "allSourcePaths": paths,
         "bytecode": bytecode,
-        "bytecodeSha1": sha1(_remove_metadata(bytecode).encode()).hexdigest(),  # type: ignore [typeddict-item]
+        "bytecodeSha1": sha1(
+            _remove_metadata(bytecode).encode()
+        ).hexdigest(),  # type: ignore [typeddict-item]
         "coverageMap": {"statements": statement_map, "branches": branch_map},
         "dependencies": dependencies,
         "offset": contract_node.offset,
@@ -325,12 +327,15 @@ def _format_link_references(evm: dict) -> HexStr:
     link_refs: dict[str, dict] = bytecode_json.get("linkReferences", {})
     references = ((k, x) for v in link_refs.values() for k, x in v.items())
     for n, loc in ((i[0], x["start"] * 2) for i in references for x in i[1]):
-        bytecode = f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc+40:]}"  # type: ignore [assignment]
+        bytecode = cast(
+            HexStr,
+            f"{bytecode[:loc]}__{n[:36]:_<36}__{bytecode[loc + 40:]}",
+        )
     return bytecode
 
 
 def _remove_metadata(bytecode: HexStr) -> HexStr:
-    return bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else ""  # type: ignore [return-value]
+    return cast(HexStr, bytecode[: -(int(bytecode[-4:], 16) + 2) * 2] if bytecode else "")
 
 
 def _generate_coverage_data(
@@ -480,7 +485,9 @@ def _generate_coverage_data(
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
                 this["fn"] = active_fn_name  # type: ignore [typeddict-item]
             else:
-                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)  # type: ignore [arg-type]
+                active_fn_node, active_fn_name = _get_active_fn(
+                    active_source_node, offset
+                )  # type: ignore [arg-type]
                 this["fn"] = active_fn_name
                 stmt_offset: Offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
@@ -529,7 +536,9 @@ def _generate_coverage_data(
             offset = node.offset
             # if the node offset is not in the source map, apply it's offset to the JUMPI op
             if not any("offset" in x and x["offset"] == offset for x in pc_list):
-                pc_list[values[0]].update(offset=offset, jump_revert=True)  # type: ignore [call-arg]
+                pc_list[values[0]].update(
+                    offset=offset, jump_revert=True
+                )  # type: ignore [call-arg]
                 del values[0]
 
     # set branch index markers and build final branch map
@@ -539,11 +548,13 @@ def _generate_coverage_data(
             # for branch to be hit, need an op relating to the source and the next JUMPI
             # this is because of how the compiler optimizes nested BinaryOperations
             if "fn" in pc_list[idx[0]]:
-                fn = pc_list[idx[0]]["fn"]
+                fn = cast(str, pc_list[idx[0]]["fn"])
                 pc_list[idx[0]]["branch"] = count
                 pc_list[idx[1]]["branch"] = count
                 node = next(i for i in branch_original[path] if i.offset == offset)
-                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)  # type: ignore [arg-type]
+                branch_map[path].setdefault(fn, {})[count] = offset + (
+                    node.jump,
+                )  # type: ignore [arg-type]
                 count += 1
 
     pc_map = PCMap({i.pop("pc"): i for i in pc_list})
@@ -594,7 +605,9 @@ def _find_revert_offset(
         and next_offset != fn_node_offset
         and is_inside_offset(next_offset, fn_node_offset)
     ):
-        pc_list[-1].update(path=str(source_node.contract_id), fn=fn_name, offset=next_offset)  # type: ignore [call-arg]
+        pc_list[-1].update(
+            path=str(source_node.contract_id), fn=fn_name, offset=next_offset
+        )  # type: ignore [call-arg]
         return
 
     # if any of the previous conditions are not satisfied, this is the final revert

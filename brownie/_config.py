@@ -128,7 +128,8 @@ class ConfigContainer:
 
 
 @final
-class Config(ConfigContainer, metaclass=_Singleton): ...
+class Config(ConfigContainer, metaclass=_Singleton):
+    pass
 
 
 @final

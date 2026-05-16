@@ -368,13 +368,16 @@ class ReturnValue(tuple):
 
     @overload  # type: ignore [override]
     def __getitem__(self, key: int) -> Any: ...
+
     @overload
     def __getitem__(self, key: str) -> Any: ...
+
     @overload
     def __getitem__(
         self,
         key: "slice[Optional[int], Optional[int], Optional[int]]",
     ) -> "ReturnValue": ...
+
     def __getitem__(
         self,
         key: Union[str, int, "slice[Optional[int], Optional[int], Optional[int]]"],

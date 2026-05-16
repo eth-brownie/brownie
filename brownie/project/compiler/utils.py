@@ -14,7 +14,10 @@ VersionList = list[Version]
 
 
 def expand_source_map(source_map_str: str | dict) -> list[Source]:
-    """Expand the compressed sourceMap supplied by solc into a list of Tuple[Start, Stop, ContractName, str]."""
+    """
+    Expand the compressed sourceMap supplied by solc into a list of
+    Tuple[Start, Stop, ContractName, str].
+    """
 
     if isinstance(source_map_str, dict):
         # NOTE: vyper >= 0.4 gives us a dict that contains the source map
@@ -87,6 +90,7 @@ def _get_alias(contract_name: ContractName, path_str: str) -> ContractName:
     path_parts = Path(path_str).parts
     if path_parts[: len(data_path)] == data_path:
         idx = len(data_path) + 1
-        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"  # type: ignore [return-value]
+        result = f"{path_parts[idx]}/{path_parts[idx + 1]}/{contract_name}"
+        return result  # type: ignore [return-value]
     else:
         return contract_name

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Final
+from typing import Final, cast
 
 import semantic_version
 import vvm
@@ -445,10 +445,12 @@ def _generate_coverage_data(
         ):
             # branch coverage
             this["branch"] = count
-            this_fn = this["fn"]
+            this_fn = cast(str, this["fn"])
             branch_map.setdefault(this_fn, {})  # type: ignore [arg-type]
             if node_ast_type == "If":
-                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)  # type: ignore [index]
+                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (
+                    False,
+                )  # type: ignore [index]
             else:
                 branch_map[this_fn][count] = offset + (True,)  # type: ignore [index]
             count += 1
@@ -479,9 +481,10 @@ def _find_node_by_offset(ast_json: VyperAstJson, offset: Offset) -> VyperAstNode
         if is_inside_offset(offset, converted_src):
             if converted_src == offset:
                 return node
-            node_list: VyperAstJson = [
-                i for i in node.values() if isinstance(i, dict) and "ast_type" in i  # type: ignore [misc]
-            ]
+            node_list: VyperAstJson = []
+            for i in node.values():
+                if isinstance(i, dict) and "ast_type" in i:
+                    node_list.append(i)  # type: ignore [arg-type]
             for v in node.values():
                 if isinstance(v, list):
                     node_list.extend(v)
