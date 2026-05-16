@@ -3,6 +3,7 @@
 import functools
 
 import pytest
+from semantic_version import Version
 
 from brownie.exceptions import CompilerError
 from brownie.project import build, compiler
@@ -23,6 +24,8 @@ def test_generate_input_json(vysource):
 
 
 def test_generate_input_json_evm(vysource):
+    """Legacy Vyper defaults to Istanbul unless a newer active version is selected."""
+    compiler.vyper.set_vyper_version("0.2.4")
     fn = functools.partial(compiler.generate_input_json, {"path.vy": vysource}, language="Vyper")
     assert fn()["settings"]["evmVersion"] == "istanbul"
 
@@ -31,6 +34,25 @@ def test_generate_input_json_evm(vysource):
     }
     for evm_version in all_known_evm_versions:
         assert fn(evm_version=evm_version)["settings"]["evmVersion"] == evm_version
+
+
+@pytest.mark.parametrize(
+    ("vyper_version", "expected_evm_version"),
+    [
+        ("0.2.4", "istanbul"),
+        ("0.2.12", "berlin"),
+        ("0.3.7", "paris"),
+        ("0.3.9", "shanghai"),
+        ("0.4.0", "cancun"),
+        ("0.4.3", "prague"),
+    ],
+)
+def test_generate_input_json_evm_default_boundaries(
+    monkeypatch, vysource, vyper_version, expected_evm_version
+):
+    monkeypatch.setattr(vyper, "get_version", lambda: Version(vyper_version))
+    input_json = compiler.generate_input_json({"path.vy": vysource}, language="Vyper")
+    assert input_json["settings"]["evmVersion"] == expected_evm_version
 
 
 def test_compile_input_json(vyjson):
