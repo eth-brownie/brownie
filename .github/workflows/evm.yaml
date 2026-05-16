@@ -52,7 +52,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        job: [evm-byzantium, evm-petersburg, evm-istanbul, evm-latest]
+        job:
+          - evm-byzantium
+          - evm-petersburg
+          - evm-istanbul
+          - evm-berlin
+          - evm-london
+          - evm-paris
+          - evm-shanghai
+          - evm-cancun
+          - evm-prague
 
     steps:
     - uses: actions/checkout@v6
