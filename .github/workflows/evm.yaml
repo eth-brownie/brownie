@@ -25,7 +25,7 @@ jobs:
     outputs:
       artifact-name: ${{ steps.wheel.outputs.artifact-name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build wheel with mypycify
         id: wheel
@@ -55,10 +55,10 @@ jobs:
         job: [evm-byzantium, evm-petersburg, evm-istanbul, evm-latest]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Cache Solidity Installations
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.solcx
@@ -72,7 +72,7 @@ jobs:
       run: npm install -g ganache@7.9.2
 
     - name: Set up Python 3.10
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: "3.10"
         cache: pip
@@ -87,7 +87,7 @@ jobs:
           requirements-dev.txt
 
     - name: Cache .mypy_cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .mypy_cache
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
@@ -96,14 +96,14 @@ jobs:
       run: pip install tox
 
     - name: Cache tox environment
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .tox
         key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
 
     # Download the wheel artifact built by mypycify
     - name: Download wheel
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: .
         name: ${{ needs.build-wheel.outputs.artifact-name }}
