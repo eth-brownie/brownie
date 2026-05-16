@@ -544,23 +544,24 @@ class TransactionReceipt:
                 time.sleep(1)
 
         self._set_from_receipt(receipt)
-        # if coverage evaluation is active, evaluate the trace
-        if (
-            CONFIG.argv["coverage"]
-            and not coverage._check_cached(self.coverage_hash)
-            and self.trace
-        ):
-            self._expand_trace()
-        if not self._silent and required_confs > 0:
-            print(self._confirm_output())
-
-        # set the confirmation event and mark other tx's with the same nonce as dropped
-        self._confirmed.set()
-        for dropped_tx in state.TxHistory().filter(
-            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
-        ):
-            dropped_tx.status = Status(-2)
-            dropped_tx._confirmed.set()
+        try:
+            # if coverage evaluation is active, evaluate the trace
+            if (
+                CONFIG.argv["coverage"]
+                and not coverage._check_cached(self.coverage_hash)
+                and self.trace
+            ):
+                self._expand_trace()
+            if not self._silent and required_confs > 0:
+                print(self._confirm_output())
+        finally:
+            # set the confirmation event and mark other tx's with the same nonce as dropped
+            self._confirmed.set()
+            for dropped_tx in state.TxHistory().filter(
+                sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+            ):
+                dropped_tx.status = Status(-2)
+                dropped_tx._confirmed.set()
 
     def _set_from_tx(self, tx: dict) -> None:
         if not self.sender:
