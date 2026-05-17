@@ -419,18 +419,20 @@ class EventWatcher(metaclass=_Singleton):
         # Key referring to this specific event (event.address is the address
         # of the contract to which the event is linked)
         event_watch_data_key = f"{str(event.address)}+{event.event_name}"
-        if self.target_events_watch_data.get(event_watch_data_key) is None:
+        target_events_watch_data = self.target_events_watch_data
+        event_watch_data = target_events_watch_data.get(event_watch_data_key)
+        if event_watch_data is None:
             # If the _EventWatchData for 'event' does not exist, creates it.
-            self.target_events_watch_data[event_watch_data_key] = _EventWatchData(
+            target_events_watch_data[event_watch_data_key] = _EventWatchData(
                 event, callback, delay, repeat
             )
         else:
             # Adds a new callback to the already existing _EventWatchData.
-            self.target_events_watch_data[event_watch_data_key].add_callback(callback, repeat)
+            event_watch_data.add_callback(callback, repeat)
             if repeat is True:
                 # Updates the delay between each check calling the
                 # _EventWatchData.update_delay function
-                self.target_events_watch_data[event_watch_data_key].update_delay(delay)
+                event_watch_data.update_delay(delay)
         self.target_list_lock.release()  # unlock
         # Start watch if not done
         if self._has_started is False:
