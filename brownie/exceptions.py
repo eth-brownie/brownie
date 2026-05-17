@@ -86,20 +86,13 @@ class MainnetUndefined(Exception):
     pass
 
 
-def _normalize_rpc_error_payload(exc: Exception | dict[str, Any]) -> Any:
-    if isinstance(exc, dict):
-        return exc.get("error", exc)
-
+def _normalize_rpc_error_payload(exc: Exception) -> Any:
     if isinstance(exc, Web3RPCError):
         response = exc.rpc_response
         if response is not None:
             return response["error"]
 
-    payload: Any = exc.args[0] if exc.args else exc
-    if isinstance(payload, dict):
-        return payload.get("error", payload)
-
-    return payload
+    return exc.args[0] if exc.args else exc
 
 
 def _normalize_tx_error_data(exc_data: Any) -> Any:
@@ -136,7 +129,7 @@ class VirtualMachineError(Exception):
         The transaction ID that raised the error.
     """
 
-    def __init__(self, exc: Exception | dict[str, Any]) -> None:
+    def __init__(self, exc: Exception) -> None:
         self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""
