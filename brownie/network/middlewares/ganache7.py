@@ -2,6 +2,7 @@ from collections.abc import Callable, Sequence
 from typing import Any, final
 
 from web3 import Web3
+from web3.exceptions import Web3RPCError
 from web3.types import RPCEndpoint
 
 from brownie.network.middlewares import BrownieMiddlewareABC
@@ -19,7 +20,11 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         method: RPCEndpoint,
         params: Sequence[Any],
     ) -> dict[str, Any]:
-        result = make_request(method, params)
+        try:
+            result = make_request(method, params)
+        except Web3RPCError as exc:
+            rpc_response = getattr(exc, "rpc_response", None)
+            result = rpc_response if isinstance(rpc_response, dict) else {"error": exc.args[0]}
 
         # reformat failed eth_call / eth_sendTransaction output to mimic that of Ganache 6.x
         # yes, this is hacky and awful and in the future we should stop supporting

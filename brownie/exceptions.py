@@ -9,6 +9,7 @@ import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
 from ujson import JSONDecodeError
+from web3.exceptions import Web3RPCError
 
 import brownie
 from brownie._c_constants import HexBytes, ujson_dump, ujson_load
@@ -85,6 +86,23 @@ class MainnetUndefined(Exception):
     pass
 
 
+def _get_rpc_error(exc: BaseException | dict[str, Any]) -> Any:
+    if isinstance(exc, Web3RPCError):
+        response = getattr(exc, "rpc_response", None)
+        if isinstance(response, dict):
+            return response.get("error", response)
+
+    try:
+        exc = exc.args[0]  # type: ignore [union-attr]
+    except Exception:
+        pass
+
+    if isinstance(exc, dict) and "error" in exc:
+        return exc["error"]
+
+    return exc
+
+
 @final
 class VirtualMachineError(Exception):
     """
@@ -104,7 +122,7 @@ class VirtualMachineError(Exception):
         The transaction ID that raised the error.
     """
 
-    def __init__(self, exc: ValueError) -> None:
+    def __init__(self, exc: BaseException) -> None:
         self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""
@@ -112,10 +130,7 @@ class VirtualMachineError(Exception):
         self.revert_msg: str | None = None
         self.dev_revert_msg: str | None = None
 
-        try:
-            exc = exc.args[0]
-        except Exception:
-            pass
+        exc = _get_rpc_error(exc)
 
         if not (isinstance(exc, dict) and "message" in exc):
             raise ValueError(str(exc)) from None
@@ -127,6 +142,15 @@ class VirtualMachineError(Exception):
         self.message: Final[str] = exc_message.rstrip(".")
 
         exc_data = exc["data"]
+        if isinstance(exc_data, dict) and "hash" in exc_data:
+            data = exc_data.copy()
+            txid = data.pop("hash")
+            if "message" in data and "error" not in data:
+                data["error"] = data.pop("message")
+            if "programCounter" in data:
+                data["program_counter"] = data.pop("programCounter")
+            exc_data = {txid: data}
+
         if isinstance(exc_data, str) and exc_data.startswith("0x"):
             self.revert_type = "revert"
             self.revert_msg = decode_typed_error(exc_data)  # type: ignore [arg-type]
