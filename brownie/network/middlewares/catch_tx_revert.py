@@ -30,13 +30,15 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
         """Raise a ValueError when RPC.eth_call or RPC.eth_estimateGas errors."""
         try:
             result = make_request(method, params)
-        except (ContractLogicError, Web3RPCError) as exc:
+        except Web3RPCError as exc:
             if method not in {"eth_call", "eth_estimateGas"}:
                 raise
-            if isinstance(exc, Web3RPCError):
-                if exc.rpc_response is None:
-                    raise
-                raise ValueError(exc.rpc_response["error"]) from None
+            if exc.rpc_response is None:
+                raise
+            raise ValueError(exc.rpc_response["error"]) from None
+        except ContractLogicError as exc:
+            if method not in {"eth_call", "eth_estimateGas"}:
+                raise
             raise ValueError(exc.args[0] if exc.args else exc) from None
         if method in {"eth_call", "eth_estimateGas"} and "error" in result:
             raise ValueError(result["error"])
