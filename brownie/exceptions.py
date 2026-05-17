@@ -86,7 +86,7 @@ class MainnetUndefined(Exception):
     pass
 
 
-def _normalize_rpc_error_payload(exc: Exception) -> Any:
+def _normalize_rpc_error_payload(exc: ValueError | Web3RPCError) -> Any:
     if isinstance(exc, Web3RPCError):
         response = exc.rpc_response
         if response is not None:
@@ -129,7 +129,7 @@ class VirtualMachineError(Exception):
         The transaction ID that raised the error.
     """
 
-    def __init__(self, exc: Exception) -> None:
+    def __init__(self, exc: ValueError | Web3RPCError) -> None:
         self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""
