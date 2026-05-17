@@ -842,8 +842,7 @@ class TransactionReceipt:
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
-        self._subcalls = []
-        subcalls = self._subcalls
+        subcalls = self._subcalls = []
         if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
