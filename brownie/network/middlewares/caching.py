@@ -271,9 +271,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         # cached value is unavailable, make a request and cache the result
         with self.lock:
             response = make_request(method, params)
-            block_cache = self.block_cache
-            last_block = self.last_block
-            method_cache = block_cache.setdefault(last_block, {}).setdefault(method, {})
+            method_cache = self.block_cache.setdefault(self.last_block, {}).setdefault(method, {})
             method_cache[param_str] = response
 
         # check if the value can be added to long-term cache
