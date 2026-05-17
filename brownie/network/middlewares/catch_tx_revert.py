@@ -33,9 +33,10 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
         except Web3RPCError as exc:
             if method not in {"eth_call", "eth_estimateGas"}:
                 raise
-            if exc.rpc_response is None:
+            rpc_response = exc.rpc_response
+            if rpc_response is None:
                 raise
-            raise ValueError(exc.rpc_response["error"]) from None
+            raise ValueError(rpc_response["error"]) from None
         except ContractLogicError as exc:
             if method not in {"eth_call", "eth_estimateGas"}:
                 raise
