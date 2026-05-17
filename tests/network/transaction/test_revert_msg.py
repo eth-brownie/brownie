@@ -5,6 +5,19 @@ import pytest
 from brownie.exceptions import VirtualMachineError
 from brownie.project import compile_source
 
+
+def compile_like_evmtester(source, evmtester):
+    compiler = evmtester._build["compiler"]
+    optimizer = compiler["optimizer"]
+    return compile_source(
+        source,
+        solc_version=compiler["version"],
+        optimize=optimizer["enabled"],
+        runs=optimizer["runs"],
+        evm_version=compiler["evm_version"],
+    )
+
+
 REVERT_FUNCTIONS_NO_INPUT = [
     """
     function foo () external returns (bool) {{
@@ -50,7 +63,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo()
     assert tx.revert_msg == "dev: yuss"
     assert tx.dev_revert_msg == "dev: yuss"
@@ -68,7 +81,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo()
     assert tx.revert_msg == "foo"
     assert tx.dev_revert_msg == "dev: yuss"
@@ -86,7 +99,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo(4)
     assert tx.revert_msg == "dev: yuss"
 
@@ -103,7 +116,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo(4)
     assert tx.revert_msg == "foo"
     assert tx.dev_revert_msg == "dev: yuss"

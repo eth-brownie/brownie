@@ -217,8 +217,10 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
         tmp_path.joinpath("contracts/EVMTester.sol"),
     )
     conf_json = {
-        "evm_version": evm_version,
-        "compiler": {"solc": {"version": str(solc_version), "optimize": runs > 0, "runs": runs}},
+        "compiler": {
+            "evm_version": evm_version,
+            "solc": {"version": str(solc_version), "optimize": runs > 0, "runs": runs},
+        },
     }
     with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)
