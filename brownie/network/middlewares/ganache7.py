@@ -23,8 +23,9 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         try:
             result = make_request(method, params)
         except Web3RPCError as exc:
-            rpc_response = getattr(exc, "rpc_response", None)
-            result = rpc_response if isinstance(rpc_response, dict) else {"error": exc.args[0]}
+            if exc.rpc_response is None:
+                raise
+            result = exc.rpc_response
 
         # reformat failed eth_call / eth_sendTransaction output to mimic that of Ganache 6.x
         # yes, this is hacky and awful and in the future we should stop supporting

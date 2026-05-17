@@ -91,9 +91,9 @@ def _normalize_rpc_error_payload(exc: Exception | dict[str, Any]) -> Any:
         return exc.get("error", exc)
 
     if isinstance(exc, Web3RPCError):
-        response = getattr(exc, "rpc_response", None)
-        if isinstance(response, dict):
-            return response.get("error", response)
+        response = exc.rpc_response
+        if response is not None:
+            return response["error"]
 
     payload: Any = exc.args[0] if exc.args else exc
     if isinstance(payload, dict):
