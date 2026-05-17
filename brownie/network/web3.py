@@ -173,13 +173,14 @@ class Web3(_Web3):
     def chain_uri(self) -> str:
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
-        if self.genesis_hash not in _chain_uri_cache:
+        genesis_hash = self.genesis_hash
+        if genesis_hash not in _chain_uri_cache:
             block_number = max(self.eth.block_number - 16, 0)
             # removeprefix is used for compatibility with both hexbytes<1 and >=1
             block_hash = self.eth.get_block(block_number)["hash"].hex().removeprefix("0x")
-            chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
-            _chain_uri_cache[self.genesis_hash] = chain_uri
-        return _chain_uri_cache[self.genesis_hash]
+            chain_uri = f"blockchain://{genesis_hash}/block/{block_hash}"
+            _chain_uri_cache[genesis_hash] = chain_uri
+        return _chain_uri_cache[genesis_hash]
 
     @property
     def chain_id(self) -> int:

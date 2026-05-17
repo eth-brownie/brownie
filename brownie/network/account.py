@@ -1026,11 +1026,12 @@ class ClefAccount(_PrivateKeyAccount):
         if not allow_revert:
             self._check_for_revert(tx)
 
+        to_hex = web3.to_hex
         formatters = {
-            "nonce": web3.to_hex,
-            "value": web3.to_hex,
-            "chainId": web3.to_hex,
-            "data": web3.to_hex,
+            "nonce": to_hex,
+            "value": to_hex,
+            "chainId": to_hex,
+            "data": to_hex,
             "from": to_address,
         }
         if "to" in tx:
@@ -1052,11 +1053,12 @@ def _apply_fee_to_tx(
     priority_fee: int | None = None,
 ) -> dict:
     tx = tx.copy()
+    to_hex = web3.to_hex
 
     if gas_price is not None:
         if max_fee or priority_fee:
             raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
-        tx["gasPrice"] = web3.to_hex(gas_price)
+        tx["gasPrice"] = to_hex(gas_price)
         return tx
 
     if priority_fee is None:
@@ -1073,7 +1075,7 @@ def _apply_fee_to_tx(
     if priority_fee > max_fee:
         raise InvalidTransaction("priority_fee must not exceed max_fee")
 
-    tx["maxFeePerGas"] = web3.to_hex(max_fee)
-    tx["maxPriorityFeePerGas"] = web3.to_hex(priority_fee)
-    tx["type"] = web3.to_hex(2)
+    tx["maxFeePerGas"] = to_hex(max_fee)
+    tx["maxPriorityFeePerGas"] = to_hex(priority_fee)
+    tx["type"] = to_hex(2)
     return tx

@@ -157,16 +157,17 @@ class Multicall:
             self._block_number[get_ident()] or web3.eth.get_block_number()
         )
 
-        if self.address is None:
+        address = self.address
+        if address is None:
             raise ContractNotFound(
                 "Must set Multicall address via `brownie.multicall(address=...)`"
             )
-        elif not web3.eth.get_code(self.address, block_identifier=self.block_number):
+        elif not web3.eth.get_code(address, block_identifier=self.block_number):
             raise ContractNotFound(
-                f"Multicall at address {self.address} does not exist at block {self.block_number}"
+                f"Multicall at address {address} does not exist at block {self.block_number}"
             )
 
-        self._contract = Contract.from_abi("Multicall", self.address, MULTICALL2_ABI)
+        self._contract = Contract.from_abi("Multicall", address, MULTICALL2_ABI)
         getattr(ContractCall, "__multicall")[get_ident()] = self
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:
