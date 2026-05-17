@@ -263,10 +263,8 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         with self.lock:
             self.last_request = time.time()
             self.event.set()
-            block_cache = self.block_cache
-            last_block = self.last_block
             try:
-                return block_cache[last_block][method][param_str]
+                return self.block_cache[self.last_block][method][param_str]
             except KeyError:
                 pass
 
