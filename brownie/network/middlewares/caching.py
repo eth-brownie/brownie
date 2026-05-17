@@ -193,12 +193,13 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 else:
                     should_skip = False
                     if new_blocks:
-                        self.block_cache[new_blocks[-1]] = {}
+                        block_cache = self.block_cache
+                        block_cache[new_blocks[-1]] = {}
                         self.last_block = new_blocks[-1]
                         self.last_block_seen = time.time()
-                        if len(self.block_cache) > 5:
-                            old_key = list(self.block_cache)[0]
-                            del self.block_cache[old_key]
+                        if len(block_cache) > 5:
+                            old_key = list(block_cache)[0]
+                            del block_cache[old_key]
 
             # continue in try: except: block is not supported by mypyc
             # as of jul 23 2025 so we use this workaround instead.
@@ -262,16 +263,20 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         with self.lock:
             self.last_request = time.time()
             self.event.set()
+            block_cache = self.block_cache
+            last_block = self.last_block
             try:
-                return self.block_cache[self.last_block][method][param_str]
+                return block_cache[last_block][method][param_str]
             except KeyError:
                 pass
 
         # cached value is unavailable, make a request and cache the result
         with self.lock:
             response = make_request(method, params)
-            self.block_cache.setdefault(self.last_block, {}).setdefault(method, {})
-            self.block_cache[self.last_block][method][param_str] = response
+            block_cache = self.block_cache
+            last_block = self.last_block
+            method_cache = block_cache.setdefault(last_block, {}).setdefault(method, {})
+            method_cache[param_str] = response
 
         # check if the value can be added to long-term cache
         if "result" in response and method in LONGTERM_CACHE:
