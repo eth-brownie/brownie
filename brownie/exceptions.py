@@ -86,7 +86,7 @@ class MainnetUndefined(Exception):
     pass
 
 
-def _get_rpc_error(exc: BaseException | dict[str, Any]) -> Any:
+def _normalize_rpc_error_payload(exc: BaseException | dict[str, Any]) -> Any:
     if isinstance(exc, Web3RPCError):
         response = getattr(exc, "rpc_response", None)
         if isinstance(response, dict):
@@ -130,7 +130,7 @@ class VirtualMachineError(Exception):
         self.revert_msg: str | None = None
         self.dev_revert_msg: str | None = None
 
-        exc = _get_rpc_error(exc)
+        exc = _normalize_rpc_error_payload(exc)
 
         if not (isinstance(exc, dict) and "message" in exc):
             raise ValueError(str(exc)) from None
