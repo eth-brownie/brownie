@@ -22,17 +22,35 @@ def _tx_rpc_error_payload():
     }
 
 
-@pytest.mark.parametrize(
-    "make_exc",
-    [
-        lambda payload: Web3RPCError("execution reverted", rpc_response={"error": payload}),
-        lambda payload: ValueError({"error": payload}),
-    ],
-)
-def test_virtual_machine_error_normalizes_web3_v7_rpc_payloads(make_exc):
-    exc = make_exc(_tx_rpc_error_payload())
+def _brownie_error_payload():
+    return {
+        "message": "VM Exception while processing transaction: revert boom",
+        "data": {
+            TXID: {
+                "error": "revert",
+                "program_counter": 12,
+                "reason": "boom",
+            }
+        },
+    }
+
+
+def test_virtual_machine_error_normalizes_web3_v7_rpc_payloads():
+    exc = Web3RPCError(
+        "execution reverted", rpc_response={"error": _tx_rpc_error_payload()}
+    )
 
     error = VirtualMachineError(exc)
+
+    assert error.txid == TXID
+    assert error.message == "VM Exception while processing transaction: revert boom"
+    assert error.revert_type == "revert"
+    assert error.pc == 11
+    assert error.revert_msg == "boom"
+
+
+def test_virtual_machine_error_keeps_brownie_value_error_payloads():
+    error = VirtualMachineError(ValueError(_brownie_error_payload()))
 
     assert error.txid == TXID
     assert error.message == "VM Exception while processing transaction: revert boom"
@@ -54,13 +72,32 @@ def test_tx_revert_catcher_converts_web3_v7_rpc_errors(method):
     assert exc.value.args[0] == rpc_response["error"]
 
 
+def test_tx_revert_catcher_reraises_web3_v7_rpc_errors_for_other_methods():
+    rpc_error = Web3RPCError(
+        "execution reverted",
+        rpc_response={"error": {"message": "execution reverted", "data": "0x"}},
+    )
+
+    def make_request(method, params):
+        raise rpc_error
+
+    with pytest.raises(Web3RPCError) as exc:
+        TxRevertCatcherMiddleware().process_request(
+            make_request, "eth_sendTransaction", []
+        )
+
+    assert exc.value is rpc_error
+
+
 def test_ganache7_middleware_normalizes_raised_web3_v7_rpc_errors():
     rpc_response = {"error": _tx_rpc_error_payload()}
 
     def make_request(method, params):
         raise Web3RPCError("execution reverted", rpc_response=rpc_response)
 
-    result = Ganache7MiddleWare().process_request(make_request, "eth_sendTransaction", [])
+    result = Ganache7MiddleWare().process_request(
+        make_request, "eth_sendTransaction", []
+    )
 
     assert result["error"]["data"] == {
         TXID: {
@@ -69,3 +106,17 @@ def test_ganache7_middleware_normalizes_raised_web3_v7_rpc_errors():
             "reason": "boom",
         }
     }
+
+
+def test_ganache7_middleware_reraises_web3_v7_rpc_errors_without_response():
+    rpc_error = Web3RPCError("execution reverted")
+
+    def make_request(method, params):
+        raise rpc_error
+
+    with pytest.raises(Web3RPCError) as exc:
+        Ganache7MiddleWare().process_request(
+            make_request, "eth_sendTransaction", []
+        )
+
+    assert exc.value is rpc_error
