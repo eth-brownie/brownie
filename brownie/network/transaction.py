@@ -471,16 +471,19 @@ class TransactionReceipt:
         block_number = block_number or self.block_number
         nonce_time = 0.0
         sender_nonce = 0
+        eth = web3.eth
+        stdout_write = sys.stdout.write
+        stdout_flush = sys.stdout.flush
         while True:
             # every 15 seconds, check if the nonce increased without a confirmation of
             # this specific transaction. if this happens, the tx has likely dropped
             # and we should stop waiting.
             if time.time() - nonce_time > 15:
-                sender_nonce = web3.eth.get_transaction_count(str(self.sender))
+                sender_nonce = eth.get_transaction_count(str(self.sender))
                 nonce_time = time.time()
 
             try:
-                receipt = web3.eth.get_transaction_receipt(HexBytes(self.txid))
+                receipt = eth.get_transaction_receipt(HexBytes(self.txid))
             except TransactionNotFound:
                 receipt = None
             # the null blockHash check is required for older versions of Parity
@@ -498,14 +501,14 @@ class TransactionReceipt:
 
             if not block_number and not self._silent and required_confs > 0:
                 if required_confs == 1:
-                    sys.stdout.write(f"  Waiting for confirmation... {_marker[0]}\r")
+                    stdout_write(f"  Waiting for confirmation... {_marker[0]}\r")
                 else:
-                    sys.stdout.write(
+                    stdout_write(
                         f"  Required confirmations: {bright_yellow}0/"
                         f"{required_confs}{color}   {_marker[0]}\r"
                     )
                 _marker.rotate(1)
-                sys.stdout.flush()
+                stdout_flush()
 
             time.sleep(1)
 
@@ -520,26 +523,26 @@ class TransactionReceipt:
         remaining_confs = required_confs
         while remaining_confs > 0 and required_confs > 1:
             try:
-                receipt = web3.eth.get_transaction_receipt(self.txid)
+                receipt = eth.get_transaction_receipt(self.txid)
                 self.block_number = receipt["blockNumber"]
             except TransactionNotFound:
                 if not self._silent:
-                    sys.stdout.write(f"\r{red}Transaction was lost...{color}{' ' * 8}")
-                    sys.stdout.flush()
+                    stdout_write(f"\r{red}Transaction was lost...{color}{' ' * 8}")
+                    stdout_flush()
                 # check if tx is still in mempool, this will raise otherwise
-                tx = web3.eth.get_transaction(self.txid)
+                tx = eth.get_transaction(self.txid)
                 self.block_number = None
                 return self._await_confirmation(tx.get("blockNumber"), required_confs)
             if required_confs - self.confirmations != remaining_confs:
                 remaining_confs = required_confs - self.confirmations
                 if not self._silent:
-                    sys.stdout.write(
+                    stdout_write(
                         f"\rRequired confirmations: {bright_yellow}{self.confirmations}/"
                         f"{required_confs}{color}  "
                     )
                     if remaining_confs == 0:
-                        sys.stdout.write("\n")
-                    sys.stdout.flush()
+                        stdout_write("\n")
+                    stdout_flush()
             if remaining_confs > 0:
                 time.sleep(1)
 
@@ -839,7 +842,7 @@ class TransactionReceipt:
         self._trace = trace = self._raw_trace
         self._new_contracts = []
         self._internal_transfers = []
-        self._subcalls = []
+        subcalls = self._subcalls = []
         if self.contract_address or not trace:
             coverage._add_transaction(self.coverage_hash, {})
             return
@@ -894,26 +897,26 @@ class TransactionReceipt:
                     last_map[trace[i]["depth"]] = _get_last_map(address, sig)
                     coverage_eval.setdefault(last_map[trace[i]["depth"]]["name"], {})
 
-                self._subcalls.append(
+                subcalls.append(
                     {"from": step["address"], "to": EthAddress(address), "op": step["op"]}
                 )
                 if step["op"] in ("CALL", "CALLCODE"):
-                    self._subcalls[-1]["value"] = int(step["stack"][-3], 16)
+                    subcalls[-1]["value"] = int(step["stack"][-3], 16)
                 if is_depth_increase and calldata and last_map[trace[i]["depth"]].get("function"):
                     fn = last_map[trace[i]["depth"]]["function"]
-                    self._subcalls[-1]["function"] = fn._input_sig
+                    subcalls[-1]["function"] = fn._input_sig
                     try:
                         zip_ = zip(fn.abi["inputs"], fn.decode_input(calldata))
                         inputs = {i[0]["name"]: i[1] for i in zip_}
-                        self._subcalls[-1]["inputs"] = inputs
+                        subcalls[-1]["inputs"] = inputs
                     except Exception:
-                        self._subcalls[-1]["calldata"] = hexbytes_to_hexstring(calldata)
+                        subcalls[-1]["calldata"] = hexbytes_to_hexstring(calldata)
                 elif calldata or is_subcall:
-                    self._subcalls[-1]["calldata"] = hexbytes_to_hexstring(calldata)
+                    subcalls[-1]["calldata"] = hexbytes_to_hexstring(calldata)
 
-                if precompile_contract.search(str(self._subcalls[-1]["from"])) is not None:
-                    caller = self._subcalls.pop(-2)["from"]
-                    self._subcalls[-1]["from"] = caller
+                if precompile_contract.search(str(subcalls[-1]["from"])) is not None:
+                    caller = subcalls.pop(-2)["from"]
+                    subcalls[-1]["from"] = caller
 
             # update trace from last_map
             last = last_map[trace[i]["depth"]]
@@ -936,7 +939,7 @@ class TransactionReceipt:
             # If the function signature is available this will be overridden by setting
             # `return_value` a few lines below.
             if trace[i]["depth"] and opcode == "RETURN":
-                subcall: dict = next(i for i in self._subcalls[::-1] if i["to"] == last["address"])
+                subcall: dict = next(i for i in subcalls[::-1] if i["to"] == last["address"])
 
                 if opcode == "RETURN":
                     returndata = _get_memory(trace[i], -1)
@@ -950,7 +953,7 @@ class TransactionReceipt:
                 continue
 
             if trace[i]["depth"] and opcode in ("RETURN", "REVERT", "INVALID", "SELFDESTRUCT"):
-                subcall: dict = next(i for i in self._subcalls[::-1] if i["to"] == last["address"])
+                subcall: dict = next(i for i in subcalls[::-1] if i["to"] == last["address"])
 
                 if opcode == "RETURN":
                     returndata = _get_memory(trace[i], -1)
@@ -1395,32 +1398,33 @@ def _step_external(
         return key
 
     result: list = [key, f"address: {step['address']}"]
+    append = result.append
 
     if "value" in subcall:
-        result.append(f"value: {subcall['value']}")
+        append(f"value: {subcall['value']}")
 
     if "inputs" not in subcall:
-        result.append(f"calldata: {subcall.get('calldata')}")
+        append(f"calldata: {subcall.get('calldata')}")
     elif subcall["inputs"]:
-        result.append(
+        append(
             ["input arguments:", *(f"{k}: {_format(v)}" for k, v in subcall["inputs"].items())]
         )
     else:
-        result.append("input arguments: None")
+        append("input arguments: None")
 
     if "return_value" in subcall:
         value = subcall["return_value"]
         if isinstance(value, tuple) and len(value) > 1:
-            result.append(["return values:", *(_format(i) for i in value)])
+            append(["return values:", *(_format(i) for i in value)])
         else:
             if isinstance(value, tuple):
                 value = value[0]
-            result.append(f"return value: {_format(value)}")
+            append(f"return value: {_format(value)}")
     elif "returndata" in subcall:
-        result.append(f"returndata: {subcall['returndata']}")
+        append(f"returndata: {subcall['returndata']}")
 
     if "revert_msg" in subcall:
-        result.append(f"revert reason: {bright_red}{subcall['revert_msg']}{color}")
+        append(f"revert reason: {bright_red}{subcall['revert_msg']}{color}")
 
     return build_tree([result], multiline_pad=0).rstrip()
 

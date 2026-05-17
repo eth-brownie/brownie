@@ -62,7 +62,7 @@ SolcxVersion = VersionSpec | PVersion
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
 
-def _as_version(version: SolcxVersion) -> Version:
+def _as_version(version: SolcxVersion) -> semantic_version.Version:
     if isinstance(version, Version):
         return version
     return Version(str(version))
