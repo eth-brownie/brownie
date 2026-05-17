@@ -22,6 +22,7 @@ from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 from web3._utils import filters
 from web3.datastructures import AttributeDict
+from web3.exceptions import Web3RPCError
 from web3.types import LogReceipt
 
 from brownie._c_constants import (
@@ -1650,7 +1651,7 @@ class _ContractMethod:
 
         try:
             data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
-        except ValueError as e:
+        except (ValueError, Web3RPCError) as e:
             raise VirtualMachineError(e) from None
 
         if self.abi["outputs"] and not data:
