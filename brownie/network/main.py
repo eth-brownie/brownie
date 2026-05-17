@@ -111,18 +111,19 @@ def gas_price(*args: int | str | bool | None) -> int | bool:
 
     if not is_connected():
         raise ConnectionError("Not connected to any network")
+    settings = CONFIG.active_network["settings"]
     if args:
         if isinstance(args[0], GasABC):
-            CONFIG.active_network["settings"]["gas_price"] = args[0]
+            settings["gas_price"] = args[0]
         elif args[0] in (None, False, True, "auto"):
-            CONFIG.active_network["settings"]["gas_price"] = False
+            settings["gas_price"] = False
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas price '{args[0]}'")
-            CONFIG.active_network["settings"]["gas_price"] = price
-    return CONFIG.active_network["settings"]["gas_price"]
+            settings["gas_price"] = price
+    return settings["gas_price"]
 
 
 def gas_buffer(*args: float | None) -> float | None:
@@ -169,15 +170,16 @@ def priority_fee(*args: int | str | bool | None) -> int | bool:
     """
     if not is_connected():
         raise ConnectionError("Not connected to any network")
+    settings = CONFIG.active_network["settings"]
     if args:
         if args[0] in (None, False):
-            CONFIG.active_network["settings"]["priority_fee"] = None
+            settings["priority_fee"] = None
         elif args[0] == "auto":
-            CONFIG.active_network["settings"]["priority_fee"] = "auto"
+            settings["priority_fee"] = "auto"
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid priority fee '{args[0]}'")
-            CONFIG.active_network["settings"]["priority_fee"] = price
-    return CONFIG.active_network["settings"]["priority_fee"]
+            settings["priority_fee"] = price
+    return settings["priority_fee"]
