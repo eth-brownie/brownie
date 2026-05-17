@@ -512,15 +512,16 @@ class Chain(metaclass=_Singleton):
             Current block height
         """
         with self._undo_lock:
+            undo_buffer = self._undo_buffer
             if num < 1:
                 raise ValueError("num must be greater than zero")
-            if not self._undo_buffer:
+            if not undo_buffer:
                 raise ValueError("Undo buffer is empty")
-            if num > len(self._undo_buffer):
-                raise ValueError(f"Undo buffer contains {len(self._undo_buffer)} items")
+            if num > len(undo_buffer):
+                raise ValueError(f"Undo buffer contains {len(undo_buffer)} items")
 
             for _ in range(num):
-                id_, fn, args, kwargs = self._undo_buffer.pop()
+                id_, fn, args, kwargs = undo_buffer.pop()
                 self._redo_buffer.append((fn, args, kwargs))
 
             self._current_id = self._revert(id_)
@@ -541,15 +542,16 @@ class Chain(metaclass=_Singleton):
             Current block height
         """
         with self._undo_lock:
+            redo_buffer = self._redo_buffer
             if num < 1:
                 raise ValueError("num must be greater than zero")
-            if not self._redo_buffer:
+            if not redo_buffer:
                 raise ValueError("Redo buffer is empty")
-            if num > len(self._redo_buffer):
-                raise ValueError(f"Redo buffer contains {len(self._redo_buffer)} items")
+            if num > len(redo_buffer):
+                raise ValueError(f"Redo buffer contains {len(redo_buffer)} items")
 
             for _ in range(num):
-                fn, args, kwargs = self._redo_buffer.pop()
+                fn, args, kwargs = redo_buffer.pop()
                 fn(*args, **kwargs)
 
             return web3.eth.block_number
