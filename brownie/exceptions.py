@@ -102,6 +102,21 @@ def _normalize_rpc_error_payload(exc: Exception | dict[str, Any]) -> Any:
     return payload
 
 
+def _normalize_tx_error_data(exc_data: Any) -> Any:
+    if not (isinstance(exc_data, dict) and "hash" in exc_data):
+        return exc_data
+
+    # Web3 v7/Ganache can report a single transaction error as a flat object.
+    # Brownie expects transaction error data keyed by txid.
+    data = exc_data.copy()
+    txid = data.pop("hash")
+    if "message" in data and "error" not in data:
+        data["error"] = data.pop("message")
+    if "programCounter" in data:
+        data["program_counter"] = data.pop("programCounter")
+    return {txid: data}
+
+
 @final
 class VirtualMachineError(Exception):
     """
@@ -140,15 +155,7 @@ class VirtualMachineError(Exception):
         exc_message: str = exc["message"]
         self.message: Final[str] = exc_message.rstrip(".")
 
-        exc_data = exc["data"]
-        if isinstance(exc_data, dict) and "hash" in exc_data:
-            data = exc_data.copy()
-            txid = data.pop("hash")
-            if "message" in data and "error" not in data:
-                data["error"] = data.pop("message")
-            if "programCounter" in data:
-                data["program_counter"] = data.pop("programCounter")
-            exc_data = {txid: data}
+        exc_data = _normalize_tx_error_data(exc["data"])
 
         if isinstance(exc_data, str) and exc_data.startswith("0x"):
             self.revert_type = "revert"
