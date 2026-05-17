@@ -552,18 +552,17 @@ class ContractConstructor:
                 "includes a `from` field specifying the address to deploy from"
             )
 
-        tx_get = tx.get
         return tx["from"].deploy(
             self._parent,
             *args,
             amount=tx["value"],
             gas_limit=tx["gas"],
-            gas_price=tx_get("gas_price"),
-            max_fee=tx_get("max_fee"),
-            priority_fee=tx_get("priority_fee"),
+            gas_price=tx.get("gas_price"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
-            allow_revert=tx_get("allow_revert"),
+            allow_revert=tx.get("allow_revert"),
             publish_source=publish_source,
             silent=silent,
         )
@@ -1685,15 +1684,14 @@ class _ContractMethod:
                 "includes a `from` field specifying the sender of the transaction"
             )
 
-        tx_get = tx.get
         return tx["from"].transfer(
             self._address,
             tx["value"],
             gas_limit=tx["gas"],
-            gas_buffer=tx_get("gas_buffer"),
-            gas_price=tx_get("gas_price"),
-            max_fee=tx_get("max_fee"),
-            priority_fee=tx_get("priority_fee"),
+            gas_buffer=tx.get("gas_buffer"),
+            gas_price=tx.get("gas_price"),
+            max_fee=tx.get("max_fee"),
+            priority_fee=tx.get("priority_fee"),
             nonce=tx["nonce"],
             required_confs=tx["required_confs"],
             data=self.encode_input(*args),
