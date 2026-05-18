@@ -25,6 +25,7 @@ CLI_FLAGS = {
     "base_fee": "--block-base-fee-per-gas",
     "gas_price": "--gas-price",
     "gas_limit": "--gas-limit",
+    "steps_tracing": "--steps-tracing",
 }
 
 

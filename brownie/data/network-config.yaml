@@ -237,12 +237,14 @@ development:
       gas_limit: 12000000
       accounts: 10
       base_fee: 0
+      steps_tracing: true
   - name: Anvil
     id: anvil
     cmd: anvil
     host: http://127.0.0.1
     cmd_settings:
       port: 8545
+      steps_tracing: true
   - name: Anvil (Mainnet Fork)
     id: anvil-fork
     cmd: anvil
@@ -250,6 +252,7 @@ development:
     cmd_settings:
       fork: mainnet
       port: 8545
+      steps_tracing: true
   - name: Ganache-CLI
     id: ganache-cli
     cmd: ganache-cli
