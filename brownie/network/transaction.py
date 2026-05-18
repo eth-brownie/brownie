@@ -806,6 +806,9 @@ class TransactionReceipt:
                         if revert_str.startswith("dev:"):
                             self._dev_revert_msg = revert_str
 
+                    if self._dev_revert_msg is None:
+                        self._dev_revert_msg = self._dev_revert_from_traceback(contract)
+
                     if self._revert_msg is None:
                         self._revert_msg = self._dev_revert_msg or ""
                     return
@@ -819,6 +822,13 @@ class TransactionReceipt:
 
         op = next((i["op"] for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")), None)
         self._revert_msg = "invalid opcode" if op == "INVALID" else ""
+
+    def _dev_revert_from_traceback(self, contract: Any) -> str | None:
+        marker = "//" if contract._build["language"] == "Solidity" else "#"
+        line = self._traceback_string().split("\n")[-1]
+        if f"{marker} dev: " in line:
+            return line[line.index(marker) + len(marker) : -5].strip()
+        return None
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
