@@ -457,9 +457,10 @@ class Chain(metaclass=_Singleton):
 
         This action clears the undo buffer.
         """
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
+        with self._undo_lock:
+            self._undo_buffer.clear()
+            self._redo_buffer.clear()
+            self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
 
     def revert(self) -> BlockNumber:
         """
@@ -474,10 +475,11 @@ class Chain(metaclass=_Singleton):
         """
         if self._snapshot_id is None:
             raise ValueError("No snapshot set")
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
-        return web3.eth.block_number
+        with self._undo_lock:
+            self._undo_buffer.clear()
+            self._redo_buffer.clear()
+            self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
+            return web3.eth.block_number
 
     def reset(self) -> BlockNumber:
         """
@@ -490,15 +492,16 @@ class Chain(metaclass=_Singleton):
         BlockNumber
             Current block height
         """
-        self._snapshot_id = None
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        if self._reset_id is None:
-            self._reset_id = self._current_id = rpc.Rpc().snapshot()
-            _notify_registry(BlockNumber(0))
-        else:
-            self._reset_id = self._current_id = self._revert(self._reset_id)
-        return web3.eth.block_number
+        with self._undo_lock:
+            self._snapshot_id = None
+            self._undo_buffer.clear()
+            self._redo_buffer.clear()
+            if self._reset_id is None:
+                self._reset_id = self._current_id = rpc.Rpc().snapshot()
+                _notify_registry(BlockNumber(0))
+            else:
+                self._reset_id = self._current_id = self._revert(self._reset_id)
+            return web3.eth.block_number
 
     def undo(self, num: int = 1) -> BlockNumber:
         """
