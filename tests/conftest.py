@@ -245,13 +245,20 @@ def plugintesterbase(project, testdir, monkeypatch, network_name):
 @pytest.fixture
 def plugintester(_project_factory, plugintesterbase, request, network_name):
     _copy_all(_project_factory, plugintesterbase.tmpdir)
-    _sync_plugin_data_folder(plugintesterbase.tmpdir, network_name)
     test_source = getattr(request.module, "test_source", None)
     if test_source is not None:
         if isinstance(test_source, str):
             test_source = [test_source]
         test_source = {f"tests/test_{i}.py": test_source[i] for i in range(len(test_source))}
         plugintesterbase.makepyfile(**test_source)
+    for name in ("runpytest", "runpytest_inprocess", "runpytest_subprocess"):
+        runner = getattr(plugintesterbase, name)
+
+        def synced_runner(*args, runner=runner, **kwargs):
+            _sync_plugin_data_folder(plugintesterbase.tmpdir, network_name)
+            return runner(*args, **kwargs)
+
+        setattr(plugintesterbase, name, synced_runner)
     yield plugintesterbase
 
 
