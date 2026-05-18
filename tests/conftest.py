@@ -108,9 +108,9 @@ def xdist_id(worker_id):
     return int(worker_id.lstrip("gw"))
 
 
-# ensure a clean data folder, and set unique ganache ports for each xdist worker
+# ensure a clean data folder, and set unique RPC ports for each xdist worker
 @pytest.fixture(scope="session", autouse=True)
-def _base_config(tmp_path_factory, xdist_id, network_name):
+def _base_config(tmp_path_factory, xdist_id, network_name, pytestconfig):
     brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
     brownie._config._make_data_folders(brownie._config.DATA_FOLDER)
 
@@ -122,6 +122,8 @@ def _base_config(tmp_path_factory, xdist_id, network_name):
     if xdist_id:
         port = 8545 + xdist_id
         brownie._config.CONFIG.networks[network_name]["cmd_settings"]["port"] = port
+    if pytestconfig.getoption("--evm"):
+        brownie._config.CONFIG.networks[network_name]["cmd_settings"]["steps_tracing"] = True
 
 
 @pytest.fixture(scope="session")

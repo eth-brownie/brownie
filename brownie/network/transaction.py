@@ -671,7 +671,12 @@ class TransactionReceipt:
             self._trace_exc = RPCRequestError(trace["error"]["message"])
             raise self._trace_exc
 
-        self._raw_trace = trace = trace["result"]["structLogs"]
+        result = trace["result"]
+        return_value = result.get("returnValue")
+        if self.status and return_value not in (None, "", "0x"):
+            self._confirmed_return_value(return_value)
+
+        self._raw_trace = trace = result["structLogs"]
         if not trace:
             self._modified_state = False
             return
@@ -729,6 +734,18 @@ class TransactionReceipt:
                 warn(f"Unable to find function on {contract} for input {self.input}")
                 return
             self._return_value = fn.decode_output(data)
+
+    def _confirmed_return_value(self, return_value: str) -> None:
+        if self.contract_address:
+            return
+        contract = state._find_contract(self.receiver)
+        if not contract:
+            return
+        fn = contract.get_method_object(self.input)
+        if not fn:
+            return
+        data = return_value if return_value.startswith("0x") else f"0x{return_value}"
+        self._return_value = fn.decode_output(data)
 
     def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
