@@ -790,6 +790,8 @@ class TransactionReceipt:
             dev_revert = build._get_dev_revert(step["pc"]) or None
             if dev_revert is not None:
                 self._dev_revert_msg = dev_revert
+                # User revert data and dev comments can arrive from different
+                # sources. Preserve a decoded user-facing reason when present.
                 if self._revert_msg in (None, ""):
                     self._revert_msg = dev_revert
             else:
@@ -802,6 +804,9 @@ class TransactionReceipt:
                     if "first_revert" in pc_map[step["pc"]]:
                         idx = trace.index(step) - 4
                         jump_step = trace[idx]
+                        # Some optimized traces jump through no-source steps;
+                        # keep the original sourced revert when the jump cannot
+                        # help us recover a dev comment.
                         if jump_step["pc"] != step["pc"] - 4 and jump_step["source"]:
                             step = jump_step
 
@@ -835,6 +840,9 @@ class TransactionReceipt:
                         # of this one.
                         source = contract._sources.get(step["source"]["filename"])
                         marker = "//" if contract._build["language"] == "Solidity" else "#"
+                        # Modern solc can map a revert to a broad function
+                        # range rather than the exact comment offset, so scan
+                        # the resolved source span for a trailing dev comment.
                         start, stop = self._source_range_for_dev_revert(contract, step)
                         line = source[stop:].split("\n")[0]
                         if marker not in line:
@@ -852,6 +860,8 @@ class TransactionReceipt:
                                 self._dev_revert_msg = revert_str
 
                     if self._dev_revert_msg is None:
+                        # Last fallback for trace/source shapes where pcMap and
+                        # source ranges miss the comment but traceback text has it.
                         self._dev_revert_msg = self._dev_revert_from_traceback(contract)
 
                     if self._revert_msg in (None, ""):
