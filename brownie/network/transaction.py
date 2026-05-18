@@ -753,8 +753,12 @@ class TransactionReceipt:
 
     def _reverted_return_value(self, return_value: str) -> None:
         self._revert_msg = decode_typed_error(self._format_return_value(return_value))
-        if self._dev_revert_msg is None:
-            self._dev_revert_msg = ""
+        if (
+            self._dev_revert_msg is None
+            and self._revert_msg
+            and self._revert_msg.startswith("dev:")
+        ):
+            self._dev_revert_msg = self._revert_msg
 
     def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
