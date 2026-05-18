@@ -85,6 +85,27 @@ def test_return_value_from_rpc_result(accounts, tester, monkeypatch):
     assert tx.return_value is True
 
 
+def test_revert_msg_from_rpc_result(accounts, tester, monkeypatch):
+    tx = tester.revertStrings(0, {"from": accounts[0]})
+    tx._revert_msg = None
+    tx._dev_revert_msg = None
+    encoded_error = (
+        "0x08c379a0"
+        "0000000000000000000000000000000000000000000000000000000000000020"
+        "0000000000000000000000000000000000000000000000000000000000000004"
+        "7a65726f00000000000000000000000000000000000000000000000000000000"
+    )
+
+    def make_request(method, params):
+        assert method == "debug_traceTransaction"
+        assert params[0] == tx.txid
+        return {"result": {"returnValue": encoded_error, "structLogs": []}}
+
+    monkeypatch.setattr("brownie.network.transaction.web3.provider.make_request", make_request)
+
+    assert tx.revert_msg == "zero"
+
+
 def test_modified_state(accounts, tester, console_mode):
     assert tester.tx.modified_state
     tx = tester.setNum(42, {"from": accounts[0]})

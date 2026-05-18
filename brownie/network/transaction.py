@@ -673,10 +673,14 @@ class TransactionReceipt:
 
         result = trace["result"]
         return_value = result.get("returnValue")
-        # Anvil exposes successful tx return data directly as `returnValue`.
-        # Ganache still relies on decoding the final RETURN step below, so keep both paths.
-        if self.status and return_value not in (None, "", "0x"):
-            self._confirmed_return_value(return_value)
+        # Anvil exposes tx return/revert data directly as `returnValue`.
+        # Ganache still relies on decoding the final RETURN/REVERT step below,
+        # so keep the direct RPC path and the structLogs fallback.
+        if return_value not in (None, "", "0x"):
+            if self.status:
+                self._confirmed_return_value(return_value)
+            else:
+                self._reverted_return_value(return_value)
 
         self._raw_trace = trace = result["structLogs"]
         if not trace:
@@ -737,6 +741,9 @@ class TransactionReceipt:
                 return
             self._return_value = fn.decode_output(data)
 
+    def _format_return_value(self, return_value: str) -> str:
+        return return_value if return_value.startswith("0x") else f"0x{return_value}"
+
     def _confirmed_return_value(self, return_value: str) -> None:
         if self.contract_address:
             return
@@ -746,8 +753,16 @@ class TransactionReceipt:
         fn = contract.get_method_object(self.input)
         if not fn:
             return
-        data = return_value if return_value.startswith("0x") else f"0x{return_value}"
-        self._return_value = fn.decode_output(data)
+        self._return_value = fn.decode_output(self._format_return_value(return_value))
+
+    def _reverted_return_value(self, return_value: str) -> None:
+        self._revert_msg = decode_typed_error(self._format_return_value(return_value))
+        if (
+            self._dev_revert_msg is None
+            and self._revert_msg
+            and self._revert_msg.startswith("dev:")
+        ):
+            self._dev_revert_msg = self._revert_msg
 
     def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
