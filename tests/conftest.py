@@ -254,7 +254,7 @@ def plugintester(_project_factory, plugintesterbase, request):
 _devnetwork_lock = threading.Lock()
 
 
-# launches and connects to ganache, yields the brownie.network module
+# launches and connects to the development backend, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc, chain, network_name):
     with _devnetwork_lock:
