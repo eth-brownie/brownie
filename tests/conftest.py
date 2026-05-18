@@ -122,7 +122,7 @@ def _base_config(tmp_path_factory, xdist_id, network_name, pytestconfig):
     if xdist_id:
         port = 8545 + xdist_id
         brownie._config.CONFIG.networks[network_name]["cmd_settings"]["port"] = port
-    if pytestconfig.getoption("--evm"):
+    if pytestconfig.getoption("--evm") or pytestconfig.getoption("--target") == "plugin":
         brownie._config.CONFIG.networks[network_name]["cmd_settings"]["steps_tracing"] = True
 
 
