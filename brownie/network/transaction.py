@@ -797,8 +797,9 @@ class TransactionReceipt:
                     # if this is the function selector revert, check for a jump
                     if "first_revert" in pc_map[step["pc"]]:
                         idx = trace.index(step) - 4
-                        if trace[idx]["pc"] != step["pc"] - 4:
-                            step = trace[idx]
+                        jump_step = trace[idx]
+                        if jump_step["pc"] != step["pc"] - 4 and jump_step["source"]:
+                            step = jump_step
 
                     # if this is the optimizer revert, find the actual source
                     if "optimizer_revert" in pc_map[step["pc"]]:
