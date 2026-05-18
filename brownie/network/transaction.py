@@ -793,10 +793,18 @@ class TransactionReceipt:
                     if "dev" in pc_map[step["pc"]]:
                         self._dev_revert_msg = pc_map[step["pc"]]["dev"]
                     else:
-                        self._dev_revert_msg = self._get_dev_revert_for_step(contract, step)
-
-                    if self._dev_revert_msg is None:
-                        self._dev_revert_msg = self._find_dev_revert_before_step(trace, step)
+                        # extract the dev revert string from the source code
+                        # TODO this technique appears superior to `_get_dev_revert`, and
+                        # changes in solc 0.8.0 have necessitated it. the old approach
+                        # of building a dev revert map should be refactored out in favor
+                        # of this one.
+                        source = contract._sources.get(step["source"]["filename"])
+                        offset = step["source"]["offset"][1]
+                        line = source[offset:].split("\n")[0]
+                        marker = "//" if contract._build["language"] == "Solidity" else "#"
+                        revert_str = line[line.index(marker) + len(marker) :].strip()
+                        if revert_str.startswith("dev:"):
+                            self._dev_revert_msg = revert_str
 
                     if self._revert_msg is None:
                         self._revert_msg = self._dev_revert_msg or ""
@@ -811,55 +819,6 @@ class TransactionReceipt:
 
         op = next((i["op"] for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")), None)
         self._revert_msg = "invalid opcode" if op == "INVALID" else ""
-
-    def _get_dev_revert_for_step(self, contract: Any, step: dict[str, Any]) -> str | None:
-        pc_map = contract._build["pcMap"]
-        if "dev" in pc_map[step["pc"]]:
-            return pc_map[step["pc"]]["dev"]
-
-        # extract the dev revert string from the source code
-        # TODO this technique appears superior to `_get_dev_revert`, and
-        # changes in solc 0.8.0 have necessitated it. the old approach
-        # of building a dev revert map should be refactored out in favor
-        # of this one.
-        source_ref = step.get("source")
-        if not source_ref:
-            return None
-        source = contract._sources.get(source_ref["filename"])
-        if source is None:
-            return None
-        offset = source_ref["offset"][1]
-        if offset < 0:
-            return None
-        line = source[offset:].split("\n")[0]
-        marker = "//" if contract._build["language"] == "Solidity" else "#"
-        try:
-            revert_str = line[line.index(marker) + len(marker) :].strip()
-        except ValueError:
-            return None
-        return revert_str if revert_str.startswith("dev:") else None
-
-    def _find_dev_revert_before_step(self, trace: Sequence, step: dict[str, Any]) -> str | None:
-        try:
-            idx = trace.index(step)
-            contract = state._find_contract(step["address"])
-        except (KeyError, ValueError):
-            return None
-        if contract is None:
-            return None
-
-        for candidate in reversed(trace[: idx + 1]):
-            if candidate.get("address") != step.get("address"):
-                continue
-            if candidate.get("depth") != step.get("depth"):
-                continue
-            try:
-                dev_revert = self._get_dev_revert_for_step(contract, candidate)
-            except (KeyError, AttributeError, TypeError, ValueError):
-                continue
-            if dev_revert is not None:
-                return dev_revert
-        return None
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
