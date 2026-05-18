@@ -980,7 +980,7 @@ class TransactionReceipt:
                     stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
                     offset = int(step["stack"][stack_idx], 16)
                     length = int(step["stack"][stack_idx - 1], 16)
-                    calldata = HexBytes("".join(step["memory"]))[offset : offset + length]
+                    calldata = HexBytes(_join_memory(step["memory"]))[offset : offset + length]
                     sig = hexbytes_to_hexstring(calldata[:4])
                     address = step["stack"][-2][-40:]
 
@@ -1523,10 +1523,14 @@ def _step_external(
 def _get_memory(step: dict, idx: int) -> HexBytes:
     offset = int(step["stack"][idx], 16)
     length = int(step["stack"][idx - 1], 16)
-    data = HexBytes("".join(step["memory"]))[offset : offset + length]
+    data = HexBytes(_join_memory(step["memory"]))[offset : offset + length]
     # append zero-bytes if allocated memory ends before `length` bytes
     data = HexBytes(data + b"\x00" * (length - len(data)))
     return data
+
+
+def _join_memory(memory: list) -> str:
+    return "".join(i.removeprefix("0x").zfill(64) for i in memory)
 
 
 def _get_last_map(address: EthAddress, sig: str) -> dict:
