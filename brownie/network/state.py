@@ -341,7 +341,9 @@ class Chain(metaclass=_Singleton):
     ) -> None:
         with self._undo_lock:
             tx._confirmed.wait()
-            self._undo_buffer.append((self._current_id, fn, args, kwargs))  # type: ignore [arg-type]
+            self._undo_buffer.append(
+                (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
+            )
             redo_buffer = self._redo_buffer
             if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
                 redo_buffer.pop()
