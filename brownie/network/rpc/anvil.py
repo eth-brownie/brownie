@@ -39,6 +39,7 @@ def launch(cmd: str, **kwargs: Any) -> None:
         else:
             cmd += ".cmd"
     cmd_list = cmd.split(" ")
+    cmd_list.append("--quiet")
     for key, value in [(k, v) for k, v in kwargs.items() if v]:
         try:
             cmd_list.extend([CLI_FLAGS[key], str(value)])
