@@ -1,7 +1,13 @@
 #!/usr/bin/python3
 
+import pytest
+from hypothesis.errors import InvalidArgument
+
+from brownie.test import given, strategy
+
 test_source = """
 from brownie.test import given, strategy
+from hypothesis.errors import InvalidArgument
 import pytest
 
 @pytest.fixture(scope="module")
@@ -15,18 +21,28 @@ def test_given(tester, web3, value):
     tester.revertStrings(value)
     assert web3.eth.block_number == height + 1
 
-@given(value=strategy('bool'))
-def test_given_fails(web3):
-    # should fail because value is not a keyword argument
-    pass
+def test_given_rejects_unknown_keyword_in_plugin():
+    with pytest.raises(InvalidArgument, match="unexpected keyword argument 'value'"):
+
+        @given(value=strategy('bool'))
+        def test_missing_value_argument(web3):
+            pass
     """
 
 
 def test_given(plugintester):
     result = plugintester.runpytest()
-    result.assert_outcomes(passed=1, failed=1)
+    result.assert_outcomes(passed=2)
 
 
 def test_given_xdist(isolatedtester):
     result = isolatedtester.runpytest("-n 2")
-    result.assert_outcomes(passed=1, failed=1)
+    result.assert_outcomes(passed=2)
+
+
+def test_given_rejects_unknown_keyword():
+    with pytest.raises(InvalidArgument, match="unexpected keyword argument 'value'"):
+
+        @given(value=strategy("bool"))
+        def test_missing_value_argument(web3):
+            pass
