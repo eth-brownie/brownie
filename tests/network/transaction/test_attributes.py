@@ -72,6 +72,19 @@ def test_return_value(accounts, tester):
     assert owner == accounts[0].transfer(tester, 0, data=data).return_value
 
 
+def test_return_value_from_rpc_result(accounts, tester, monkeypatch):
+    tx = tester.setNum(42, {"from": accounts[0]})
+
+    def make_request(method, params):
+        assert method == "debug_traceTransaction"
+        assert params[0] == tx.txid
+        return {"result": {"returnValue": "0x" + "0" * 63 + "1", "structLogs": []}}
+
+    monkeypatch.setattr("brownie.network.transaction.web3.provider.make_request", make_request)
+
+    assert tx.return_value is True
+
+
 def test_modified_state(accounts, tester, console_mode):
     assert tester.tx.modified_state
     tx = tester.setNum(42, {"from": accounts[0]})
