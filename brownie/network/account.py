@@ -646,6 +646,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
+        skip_undo: bool = False,
     ) -> TransactionReceipt:
         """
         Broadcast a transaction from this account.
@@ -682,7 +683,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent,
         )
 
-        if rpc.is_active():
+        if rpc.is_active() and not skip_undo:
             undo_thread = threading.Thread(
                 target=Chain()._add_to_undo_buffer,
                 args=(
