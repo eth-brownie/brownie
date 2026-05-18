@@ -52,6 +52,7 @@ DEV_CMD_SETTINGS: Final = frozenset(
     [
         "port",
         "gas_limit",
+        "gas_price",
         "accounts",
         "evm_version",
         "fork",
@@ -63,6 +64,8 @@ DEV_CMD_SETTINGS: Final = frozenset(
         "time",
         "network_id",
         "chain_id",
+        "base_fee",
+        "steps_tracing",
         "unlimited_contract_size",
     ]
 )

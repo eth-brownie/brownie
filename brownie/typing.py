@@ -117,7 +117,7 @@ BuildJson = ContractBuildJson | InterfaceBuildJson
 # Compiler
 Language = Literal["Solidity", "Vyper"]
 EvmVersion = NewType("EvmVersion", str)
-Source = tuple[Start, Stop, ContractName, str]
+Source = tuple[Start, Stop, int, str]
 
 
 class ContractSource(TypedDict):

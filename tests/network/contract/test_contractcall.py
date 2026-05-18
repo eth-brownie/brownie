@@ -24,14 +24,16 @@ def test_transact(accounts, tester):
 
 
 def test_block_identifier(accounts, history):
-    contract = compile_source("""
+    contract = compile_source(
+        """
 # @version 0.2.4
 foo: public(int128)
 
 @external
 def set_foo(_foo: int128):
     self.foo = _foo
-    """).Vyper.deploy({"from": accounts[0]})
+    """
+    ).Vyper.deploy({"from": accounts[0]})
 
     contract.set_foo(13)
     contract.set_foo(42)
@@ -50,7 +52,7 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     assert owner == result
     assert web3.eth.block_number == height == len(history)
 
-    monkeypatch.setattr("brownie.network.chain.undo", lambda: None)
+    monkeypatch.setattr("brownie.network.contract._revert_transact_call", lambda snapshot_id: None)
     result = tester.owner()
     tx = history[-1]
 

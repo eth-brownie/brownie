@@ -7,7 +7,7 @@ import pytest
 
 from brownie import Contract
 from brownie.exceptions import RPCRequestError
-from brownie.network.transaction import TransactionReceipt
+from brownie.network.transaction import TransactionReceipt, _get_memory
 from brownie.project import build
 
 
@@ -170,6 +170,17 @@ def test_trace_transfer(accounts):
     """trace is not calculated for regular transfers of eth"""
     tx = accounts[0].transfer(accounts[1], "1 ether")
     assert not tx.trace
+
+
+def test_trace_memory_accepts_prefixed_words():
+    step = {
+        "memory": [
+            "0x" + "00" * 31 + "11",
+            "0x" + "22" + "00" * 31,
+        ],
+        "stack": ["02", "1f"],
+    }
+    assert _get_memory(step, -1) == b"\x11\x22"
 
 
 def test_expand_first(tester):

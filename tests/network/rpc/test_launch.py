@@ -8,18 +8,18 @@ from brownie.exceptions import RPCProcessError
 
 def test_launch_file_not_found(no_rpc):
     with pytest.raises(FileNotFoundError):
-        no_rpc.launch("not-ganache")
+        no_rpc.launch("not-anvil")
 
 
 def test_launch_process_fails(no_rpc):
     with pytest.raises(RPCProcessError):
-        no_rpc.launch("ganache-cli --help")
+        no_rpc.launch("anvil --help")
 
 
 def test_launch(no_rpc, temp_port):
     assert not no_rpc.is_active()
     assert not no_rpc.is_child()
-    no_rpc.launch("ganache-cli", port=temp_port)
+    no_rpc.launch("anvil", port=temp_port)
     assert no_rpc.is_active()
     assert no_rpc.is_child()
 
@@ -27,7 +27,7 @@ def test_launch(no_rpc, temp_port):
 def test_launch_with_mnemonic(no_rpc, temp_port):
     no_rpc.kill(False)
     no_rpc.launch(
-        "ganache-cli",
+        "anvil",
         port=temp_port,
         mnemonic="patient rude simple dog close planet oval animal hunt sketch suspect slim",
     )
@@ -36,7 +36,7 @@ def test_launch_with_mnemonic(no_rpc, temp_port):
 
 def test_already_active(temp_rpc, temp_port):
     with pytest.raises(SystemError):
-        temp_rpc.launch("ganache-cli", port=temp_port)
+        temp_rpc.launch("anvil", port=temp_port)
 
 
 def test_kill(temp_rpc):

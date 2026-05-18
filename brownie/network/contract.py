@@ -66,7 +66,7 @@ from brownie.typing import (
 from brownie.utils import color, hexbytes_to_hexstring
 from brownie.utils._color import bright_blue, bright_green, bright_magenta, bright_red
 
-from . import accounts, chain
+from . import accounts, chain, rpc
 from .event import _add_deployment_topics, _get_topics, event_watcher
 from .state import (
     _add_contract,
@@ -1697,6 +1697,7 @@ class _ContractMethod:
             data=self.encode_input(*args),
             allow_revert=tx["allow_revert"],
             silent=silent,
+            skip_undo=tx.get("_skip_undo", False),
         )
 
     def decode_input(self, hexstr: str) -> list:
@@ -1859,16 +1860,18 @@ class ContractCall(_ContractMethod):
 
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
+        tx["_skip_undo"] = True
         pc, revert_msg = None, None
+        snapshot_id = rpc.snapshot()
 
         try:
             self.transact(*args, tx)
-            chain.undo()
         except VirtualMachineError as exc:
             pc, revert_msg = exc.pc, exc.revert_msg
-            chain.undo()
         except Exception:
             pass
+        finally:
+            _revert_transact_call(snapshot_id)
 
         try:
             return self.call(*args)
@@ -1912,6 +1915,10 @@ def _get_tx(owner: AccountsType | None, args: tuple) -> tuple:
         tx["from"] = accounts.at(tx["from"].address, force=True)
 
     return args, tx
+
+
+def _revert_transact_call(snapshot_id: int | str) -> None:
+    chain._current_id = chain._revert(snapshot_id)
 
 
 def _get_method_object(

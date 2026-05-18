@@ -21,6 +21,14 @@ else:
 with open(requirements_filename) as f:
     requirements = list(map(str.strip, f.read().split("\n")))[:-1]
 
+if sys.version_info >= (3, 14):
+    requirements = [
+        requirement
+        for requirement in requirements
+        if not requirement.startswith(("pytest==", "pytest<", "pytest-xdist==", "pytest-xdist<"))
+    ]
+    requirements.extend(["pytest>=8.4.2,<9", "pytest-xdist>=3.8,<4"])
+
 try:
     from mypyc.build import mypycify
 except ImportError:

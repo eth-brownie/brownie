@@ -671,7 +671,14 @@ class TransactionReceipt:
             self._trace_exc = RPCRequestError(trace["error"]["message"])
             raise self._trace_exc
 
-        self._raw_trace = trace = trace["result"]["structLogs"]
+        result = trace["result"]
+        return_value = result.get("returnValue")
+        if self.status and return_value not in (None, "", "0x"):
+            self._confirmed_return_value(return_value)
+        elif not self.status and return_value not in (None, "", "0x"):
+            self._reverted_return_value(return_value)
+
+        self._raw_trace = trace = result["structLogs"]
         if not trace:
             self._modified_state = False
             return
@@ -730,6 +737,29 @@ class TransactionReceipt:
                 return
             self._return_value = fn.decode_output(data)
 
+    def _format_return_value(self, return_value: str) -> str:
+        return return_value if return_value.startswith("0x") else f"0x{return_value}"
+
+    def _confirmed_return_value(self, return_value: str) -> None:
+        if self.contract_address:
+            return
+        contract = state._find_contract(self.receiver)
+        if not contract:
+            return
+        fn = contract.get_method_object(self.input)
+        if not fn:
+            return
+        self._return_value = fn.decode_output(self._format_return_value(return_value))
+
+    def _reverted_return_value(self, return_value: str) -> None:
+        self._revert_msg = decode_typed_error(self._format_return_value(return_value))
+        if (
+            self._dev_revert_msg is None
+            and self._revert_msg
+            and self._revert_msg.startswith("dev:")
+        ):
+            self._dev_revert_msg = self._revert_msg
+
     def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
         if self.contract_address:
@@ -756,7 +786,7 @@ class TransactionReceipt:
             dev_revert = build._get_dev_revert(step["pc"]) or None
             if dev_revert is not None:
                 self._dev_revert_msg = dev_revert
-                if self._revert_msg is None:
+                if self._revert_msg in (None, ""):
                     self._revert_msg = dev_revert
             else:
                 # if none is found, expand the trace and get it from the pcMap
@@ -767,8 +797,9 @@ class TransactionReceipt:
                     # if this is the function selector revert, check for a jump
                     if "first_revert" in pc_map[step["pc"]]:
                         idx = trace.index(step) - 4
-                        if trace[idx]["pc"] != step["pc"] - 4:
-                            step = trace[idx]
+                        jump_step = trace[idx]
+                        if jump_step["pc"] != step["pc"] - 4 and jump_step["source"]:
+                            step = jump_step
 
                     # if this is the optimizer revert, find the actual source
                     if "optimizer_revert" in pc_map[step["pc"]]:
@@ -799,14 +830,27 @@ class TransactionReceipt:
                         # of building a dev revert map should be refactored out in favor
                         # of this one.
                         source = contract._sources.get(step["source"]["filename"])
-                        offset = step["source"]["offset"][1]
-                        line = source[offset:].split("\n")[0]
                         marker = "//" if contract._build["language"] == "Solidity" else "#"
-                        revert_str = line[line.index(marker) + len(marker) :].strip()
-                        if revert_str.startswith("dev:"):
-                            self._dev_revert_msg = revert_str
+                        start, stop = self._source_range_for_dev_revert(contract, step)
+                        line = source[stop:].split("\n")[0]
+                        if marker not in line:
+                            line = next(
+                                (
+                                    i
+                                    for i in reversed(source[start:stop].splitlines())
+                                    if marker in i
+                                ),
+                                "",
+                            )
+                        if marker in line:
+                            revert_str = line[line.index(marker) + len(marker) :].strip()
+                            if revert_str.startswith("dev:"):
+                                self._dev_revert_msg = revert_str
 
-                    if self._revert_msg is None:
+                    if self._dev_revert_msg is None:
+                        self._dev_revert_msg = self._dev_revert_from_traceback(contract)
+
+                    if self._revert_msg in (None, ""):
                         self._revert_msg = self._dev_revert_msg or ""
                     return
                 except (KeyError, AttributeError, TypeError, ValueError):
@@ -819,6 +863,39 @@ class TransactionReceipt:
 
         op = next((i["op"] for i in trace[::-1] if i["op"] in ("REVERT", "INVALID")), None)
         self._revert_msg = "invalid opcode" if op == "INVALID" else ""
+
+    def _source_range_for_dev_revert(self, contract: Any, step: dict) -> tuple[int, int]:
+        start, stop = step["source"]["offset"]
+        fn = step.get("fn")
+        if contract._build["language"] != "Solidity" or not fn:
+            return start, stop
+
+        fn_name = fn.rsplit(".", maxsplit=1)[-1]
+
+        def iter_nodes(node: dict | list) -> Any:
+            if isinstance(node, dict):
+                yield node
+                for value in node.values():
+                    yield from iter_nodes(value)
+            elif isinstance(node, list):
+                for value in node:
+                    yield from iter_nodes(value)
+
+        for node in iter_nodes(contract._build["ast"]):
+            if node.get("nodeType") != "FunctionDefinition" or node.get("name") != fn_name:
+                continue
+            fn_start, fn_length, *_ = (int(i) for i in node["src"].split(":"))
+            fn_stop = fn_start + fn_length
+            if start <= fn_start and fn_stop <= stop:
+                return fn_start, fn_stop
+        return start, stop
+
+    def _dev_revert_from_traceback(self, contract: Any) -> str | None:
+        marker = "//" if contract._build["language"] == "Solidity" else "#"
+        line = self._traceback_string().split("\n")[-1]
+        if f"{marker} dev: " in line:
+            return line[line.index(marker) + len(marker) : -5].strip()
+        return None
 
     def _expand_trace(self) -> None:
         """Adds the following attributes to each step of the stack trace:
@@ -889,7 +966,7 @@ class TransactionReceipt:
                     stack_idx = -4 if step["op"] in ("CALL", "CALLCODE") else -3
                     offset = int(step["stack"][stack_idx], 16)
                     length = int(step["stack"][stack_idx - 1], 16)
-                    calldata = HexBytes("".join(step["memory"]))[offset : offset + length]
+                    calldata = HexBytes(_join_memory(step["memory"]))[offset : offset + length]
                     sig = hexbytes_to_hexstring(calldata[:4])
                     address = step["stack"][-2][-40:]
 
@@ -1432,10 +1509,14 @@ def _step_external(
 def _get_memory(step: dict, idx: int) -> HexBytes:
     offset = int(step["stack"][idx], 16)
     length = int(step["stack"][idx - 1], 16)
-    data = HexBytes("".join(step["memory"]))[offset : offset + length]
+    data = HexBytes(_join_memory(step["memory"]))[offset : offset + length]
     # append zero-bytes if allocated memory ends before `length` bytes
     data = HexBytes(data + b"\x00" * (length - len(data)))
     return data
+
+
+def _join_memory(memory: list) -> str:
+    return "".join(i.removeprefix("0x").zfill(64) for i in memory)
 
 
 def _get_last_map(address: EthAddress, sig: str) -> dict:

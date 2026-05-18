@@ -33,6 +33,9 @@ if TYPE_CHECKING:
 PathMap = dict[str, tuple[HexStr, str]]
 Deployment = tuple[ContractBuildJson, dict[str, Any]]
 
+UndoBuffer = list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any]]]
+RedoBuffer = list[tuple[Any, tuple[Any, ...], dict[str, Any]]]
+
 AnyContract = Union["Contract", "ProjectContract"]
 
 _contract_map: Final[dict[ChecksumAddress, AnyContract]] = {}
@@ -207,8 +210,8 @@ class Chain(metaclass=_Singleton):
         self._reset_id: int | str | None = None
         self._current_id: int | str | None = None
         self._undo_lock: Final = threading.Lock()
-        self._undo_buffer: Final[list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any]]]] = []
-        self._redo_buffer: Final[list[tuple[Any, tuple[Any, ...], dict[str, Any]]]] = []
+        self._undo_buffer: Final[UndoBuffer] = []
+        self._redo_buffer: Final[RedoBuffer] = []
         self._chainid: int | None = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
@@ -454,9 +457,10 @@ class Chain(metaclass=_Singleton):
 
         This action clears the undo buffer.
         """
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
+        with self._undo_lock:
+            self._undo_buffer.clear()
+            self._redo_buffer.clear()
+            self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
 
     def revert(self) -> BlockNumber:
         """
@@ -471,10 +475,11 @@ class Chain(metaclass=_Singleton):
         """
         if self._snapshot_id is None:
             raise ValueError("No snapshot set")
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
-        return web3.eth.block_number
+        with self._undo_lock:
+            self._undo_buffer.clear()
+            self._redo_buffer.clear()
+            self._snapshot_id = self._current_id = self._revert(self._snapshot_id)
+            return web3.eth.block_number
 
     def reset(self) -> BlockNumber:
         """
@@ -487,15 +492,16 @@ class Chain(metaclass=_Singleton):
         BlockNumber
             Current block height
         """
-        self._snapshot_id = None
-        self._undo_buffer.clear()
-        self._redo_buffer.clear()
-        if self._reset_id is None:
-            self._reset_id = self._current_id = rpc.Rpc().snapshot()
-            _notify_registry(BlockNumber(0))
-        else:
-            self._reset_id = self._current_id = self._revert(self._reset_id)
-        return web3.eth.block_number
+        with self._undo_lock:
+            self._snapshot_id = None
+            self._undo_buffer.clear()
+            self._redo_buffer.clear()
+            if self._reset_id is None:
+                self._reset_id = self._current_id = rpc.Rpc().snapshot()
+                _notify_registry(BlockNumber(0))
+            else:
+                self._reset_id = self._current_id = self._revert(self._reset_id)
+            return web3.eth.block_number
 
     def undo(self, num: int = 1) -> BlockNumber:
         """

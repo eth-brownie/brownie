@@ -11,8 +11,9 @@ def tester(BrownieTester, accounts):
 
 @given(value=strategy('uint256', min_value=5, exclude=31337))
 def test_given(tester, web3, value):
+    height = web3.eth.block_number
     tester.revertStrings(value)
-    assert web3.eth.block_number == 2
+    assert web3.eth.block_number == height + 1
 
 @given(value=strategy('bool'))
 def test_given_fails(web3):
