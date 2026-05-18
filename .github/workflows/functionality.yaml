@@ -66,19 +66,6 @@ jobs:
       with:
         version: stable
 
-    - name: Use Anvil as development network
-      shell: bash
-      run: |
-        python3 - <<'PY'
-        from pathlib import Path
-
-        path = Path("brownie/data/network-config.yaml")
-        text = path.read_text()
-        text = text.replace("  - name: Anvil\n    id: anvil\n", "  - name: Anvil\n    id: development\n", 1)
-        text = text.replace("  - name: Ganache-CLI\n    id: development\n", "  - name: Ganache-CLI\n    id: ganache-cli\n", 1)
-        path.write_text(text)
-        PY
-
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
       with:

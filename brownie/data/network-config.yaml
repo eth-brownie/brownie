@@ -229,6 +229,16 @@ live:
 
 development:
   - name: Anvil
+    id: development
+    cmd: anvil
+    host: http://127.0.0.1
+    cmd_settings:
+      port: 8545
+      gas_limit: 12000000
+      accounts: 10
+      evm_version: istanbul
+      mnemonic: brownie
+  - name: Anvil
     id: anvil
     cmd: anvil
     host: http://127.0.0.1
@@ -242,7 +252,7 @@ development:
       fork: mainnet
       port: 8545
   - name: Ganache-CLI
-    id: development
+    id: ganache-cli
     cmd: ganache-cli
     host: http://127.0.0.1
     cmd_settings:
