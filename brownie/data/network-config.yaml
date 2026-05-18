@@ -236,8 +236,6 @@ development:
       port: 8545
       gas_limit: 12000000
       accounts: 10
-      evm_version: istanbul
-      mnemonic: brownie
   - name: Anvil
     id: anvil
     cmd: anvil
