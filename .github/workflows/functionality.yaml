@@ -61,11 +61,23 @@ jobs:
           ~/.vvm
         key: func-${{ runner.os }}-compiler-cache
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: stable
 
-    - name: Install Ganache
-      run: npm install -g ganache@7.9.2
+    - name: Use Anvil as development network
+      shell: bash
+      run: |
+        python3 - <<'PY'
+        from pathlib import Path
+
+        path = Path("brownie/data/network-config.yaml")
+        text = path.read_text()
+        text = text.replace("  - name: Anvil\n    id: anvil\n", "  - name: Anvil\n    id: development\n", 1)
+        text = text.replace("  - name: Ganache-CLI\n    id: development\n", "  - name: Ganache-CLI\n    id: ganache-cli\n", 1)
+        path.write_text(text)
+        PY
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
