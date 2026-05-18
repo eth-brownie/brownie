@@ -675,6 +675,8 @@ class TransactionReceipt:
         return_value = result.get("returnValue")
         if self.status and return_value not in (None, "", "0x"):
             self._confirmed_return_value(return_value)
+        elif not self.status and return_value not in (None, "", "0x"):
+            self._reverted_return_value(return_value)
 
         self._raw_trace = trace = result["structLogs"]
         if not trace:
@@ -735,6 +737,9 @@ class TransactionReceipt:
                 return
             self._return_value = fn.decode_output(data)
 
+    def _format_return_value(self, return_value: str) -> str:
+        return return_value if return_value.startswith("0x") else f"0x{return_value}"
+
     def _confirmed_return_value(self, return_value: str) -> None:
         if self.contract_address:
             return
@@ -744,8 +749,12 @@ class TransactionReceipt:
         fn = contract.get_method_object(self.input)
         if not fn:
             return
-        data = return_value if return_value.startswith("0x") else f"0x{return_value}"
-        self._return_value = fn.decode_output(data)
+        self._return_value = fn.decode_output(self._format_return_value(return_value))
+
+    def _reverted_return_value(self, return_value: str) -> None:
+        self._revert_msg = decode_typed_error(self._format_return_value(return_value))
+        if self._dev_revert_msg is None:
+            self._dev_revert_msg = ""
 
     def _reverted_trace(self, trace: Sequence) -> None:
         self._modified_state = False
