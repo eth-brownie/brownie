@@ -50,7 +50,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
           - python-version: "3.10"
             infura-key: ddddf0c53f254d36aa76ce4e3a6a390e
@@ -62,8 +62,6 @@ jobs:
             infura-key: ddddf0c53f254d36aa76ce4e3a6a390e
           - python-version: "3.14"
             infura-key: 1668fecbc9c242d58253476103a42ce9
-          - python-version: "3.14t"
-            infura-key: 21317ddb5ded42ce8d40c7d78f90474f
           - os: ubuntu-latest
             ccache-dir: ~/.cache/ccache
           - os: macos-latest
