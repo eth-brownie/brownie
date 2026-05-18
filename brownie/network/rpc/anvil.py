@@ -40,9 +40,12 @@ def launch(cmd: str, **kwargs: Any) -> None:
             cmd += ".cmd"
     cmd_list = cmd.split(" ")
     cmd_list.append("--quiet")
-    for key, value in [(k, v) for k, v in kwargs.items() if v]:
+    for key, value in [(k, v) for k, v in kwargs.items() if v is not None and v is not False]:
         try:
-            cmd_list.extend([CLI_FLAGS[key], str(value)])
+            if value is True:
+                cmd_list.append(CLI_FLAGS[key])
+            else:
+                cmd_list.extend([CLI_FLAGS[key], str(value)])
         except KeyError:
             warnings.warn(
                 f"Ignoring invalid commandline setting for anvil: "

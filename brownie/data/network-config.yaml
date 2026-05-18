@@ -236,6 +236,7 @@ development:
       port: 8545
       gas_limit: 12000000
       accounts: 10
+      base_fee: 0
   - name: Anvil
     id: anvil
     cmd: anvil
