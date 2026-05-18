@@ -898,7 +898,7 @@ class TransactionReceipt:
         for node in iter_nodes(contract._build["ast"]):
             if node.get("nodeType") != "FunctionDefinition" or node.get("name") != fn_name:
                 continue
-            fn_start, fn_length, *_ = (int(i) for i in node["src"].split(":"))
+            fn_start, fn_length, *_ = tuple(map(int, node["src"].split(":")))
             fn_stop = fn_start + fn_length
             if start <= fn_start and fn_stop <= stop:
                 return fn_start, fn_stop
