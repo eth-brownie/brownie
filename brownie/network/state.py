@@ -33,6 +33,9 @@ if TYPE_CHECKING:
 PathMap = dict[str, tuple[HexStr, str]]
 Deployment = tuple[ContractBuildJson, dict[str, Any]]
 
+UndoBuffer = list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any], str]]
+RedoBuffer = list[tuple[Any, tuple[Any, ...], dict[str, Any]]]
+
 AnyContract = Union["Contract", "ProjectContract"]
 
 _contract_map: Final[dict[ChecksumAddress, AnyContract]] = {}
@@ -207,8 +210,8 @@ class Chain(metaclass=_Singleton):
         self._reset_id: int | str | None = None
         self._current_id: int | str | None = None
         self._undo_lock: Final = threading.Lock()
-        self._undo_buffer: Final[list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any]]]] = []
-        self._redo_buffer: Final[list[tuple[Any, tuple[Any, ...], dict[str, Any]]]] = []
+        self._undo_buffer: Final[UndoBuffer] = []
+        self._redo_buffer: Final[RedoBuffer] = []
         self._chainid: int | None = None
         self._block_gas_time: int = -1
         self._block_gas_limit: int = 0
@@ -339,7 +342,7 @@ class Chain(metaclass=_Singleton):
         with self._undo_lock:
             tx._confirmed.wait()
             self._undo_buffer.append(
-                (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
+                (self._current_id, fn, args, kwargs, tx.txid)  # type: ignore [arg-type]
             )
             redo_buffer = self._redo_buffer
             if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
@@ -526,6 +529,25 @@ class Chain(metaclass=_Singleton):
 
             self._current_id = self._revert(id_)
             return web3.eth.block_number
+
+    def _undo_transaction(self, txid: str) -> BlockNumber:
+        deadline = time.time() + 5
+        while True:
+            with self._undo_lock:
+                for idx in range(len(self._undo_buffer) - 1, -1, -1):
+                    if self._undo_buffer[idx][4] != txid:
+                        continue
+
+                    for _ in range(len(self._undo_buffer) - idx):
+                        id_, fn, args, kwargs, _ = self._undo_buffer.pop()
+                        self._redo_buffer.append((fn, args, kwargs))
+
+                    self._current_id = self._revert(id_)
+                    return web3.eth.block_number
+
+            if time.time() >= deadline:
+                raise ValueError(f"Undo buffer does not contain transaction {txid}")
+            time.sleep(0.01)
 
     def redo(self, num: int = 1) -> BlockNumber:
         """

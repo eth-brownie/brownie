@@ -1860,16 +1860,21 @@ class ContractCall(_ContractMethod):
         args, tx = _get_tx(self._owner, args)
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
         pc, revert_msg = None, None
-        undo_count = len(chain._undo_buffer)
 
         try:
-            self.transact(*args, tx)
-            _undo_transact_call(undo_count)
+            receipt = self.transact(*args, tx)
         except VirtualMachineError as exc:
             pc, revert_msg = exc.pc, exc.revert_msg
-            _undo_transact_call(undo_count)
+            txid = exc.txid
+            if txid:
+                try:
+                    _undo_transact_call(txid)
+                except Exception:
+                    pass
         except Exception:
             pass
+        else:
+            _undo_transact_call(receipt.txid)
 
         try:
             return self.call(*args)
@@ -1915,13 +1920,8 @@ def _get_tx(owner: AccountsType | None, args: tuple) -> tuple:
     return args, tx
 
 
-def _undo_transact_call(undo_count: int) -> None:
-    for _ in range(500):
-        with chain._undo_lock:
-            if len(chain._undo_buffer) > undo_count:
-                break
-        time.sleep(0.01)
-    chain.undo()
+def _undo_transact_call(txid: str) -> None:
+    chain._undo_transaction(txid)
 
 
 def _get_method_object(
