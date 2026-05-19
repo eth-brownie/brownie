@@ -13,6 +13,7 @@ from typing import Any
 import eth_retry
 import pytest
 import solcx
+import yaml
 from _pytest.monkeypatch import MonkeyPatch
 from prompt_toolkit.input.defaults import create_pipe_input
 
@@ -242,7 +243,7 @@ def plugintesterbase(project, testdir, monkeypatch, network_name):
 
 # setup for pytest-brownie plugin testing
 @pytest.fixture
-def plugintester(_project_factory, plugintesterbase, request):
+def plugintester(_project_factory, plugintesterbase, request, network_name):
     _copy_all(_project_factory, plugintesterbase.tmpdir)
     test_source = getattr(request.module, "test_source", None)
     if test_source is not None:
@@ -250,7 +251,35 @@ def plugintester(_project_factory, plugintesterbase, request):
             test_source = [test_source]
         test_source = {f"tests/test_{i}.py": test_source[i] for i in range(len(test_source))}
         plugintesterbase.makepyfile(**test_source)
+    for name in ("runpytest", "runpytest_inprocess", "runpytest_subprocess"):
+        runner = getattr(plugintesterbase, name)
+
+        def synced_runner(*args, runner=runner, **kwargs):
+            _sync_plugin_data_folder(plugintesterbase.tmpdir, network_name)
+            return runner(*args, **kwargs)
+
+        setattr(plugintesterbase, name, synced_runner)
     yield plugintesterbase
+
+
+def _sync_plugin_data_folder(path, network_id):
+    data_folder = Path(path).joinpath(".brownie")
+    brownie._config._make_data_folders(data_folder)
+    network_config_path = data_folder.joinpath("network-config.yaml")
+    network_settings = deepcopy(brownie._config.CONFIG.networks[network_id])
+
+    with network_config_path.open() as fp:
+        network_config = yaml.safe_load(fp)
+
+    for networks in network_config.values():
+        if not isinstance(networks, list):
+            continue
+        for network in networks:
+            if network.get("id") == network_id:
+                network.update(network_settings)
+
+    with network_config_path.open("w") as fp:
+        yaml.safe_dump(network_config, fp)
 
 
 _devnetwork_lock = threading.Lock()
@@ -451,7 +480,8 @@ def _load_project(project, path: Path, name: str, **kwargs: Any):
 
 def _connect_to_mainnet(network) -> None:
     # This recursive helper helps us with a race condition.
-    # Usually the first call of this func will work fine, but in edge cases we need to call it more than once to make all of the tests succeed.
+    # Usually the first call of this func will work fine, but in edge cases we need to call
+    # it more than once to make all of the tests succeed.
     try:
         network.connect("mainnet")
     except ConnectionError:
