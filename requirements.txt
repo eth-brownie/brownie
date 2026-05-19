@@ -18,7 +18,6 @@ attrs==26.1.0
     # via
     #   aiohttp
     #   hypothesis
-    #   pytest
 bitarray==3.8.1
     # via eth-account
 cbor2==5.9.0
@@ -165,7 +164,6 @@ psutil==5.9.8
 py==1.11.0
     # via
     #   -r requirements.in
-    #   pytest
     #   pytest-forked
 py-solc-ast==1.2.10
     # via -r requirements.in
@@ -190,9 +188,10 @@ pygments==2.20.0
     # via
     #   -r requirements.in
     #   pygments-lexer-solidity
+    #   pytest
 pygments-lexer-solidity==0.7.0
     # via -r requirements.in
-pytest==6.2.5
+pytest==9.0.3
     # via
     #   -r requirements.in
     #   pytest-forked
@@ -228,8 +227,6 @@ six==1.17.0
     # via pytest-xdist
 sortedcontainers==2.4.0
     # via hypothesis
-toml==0.10.2
-    # via pytest
 toolz==1.1.0
     # via cytoolz
 tqdm==4.67.3
