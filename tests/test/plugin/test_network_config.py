@@ -11,8 +11,7 @@ def plugin_network_port(config, network_name, xdist_id):
 
 
 def test_plugin_child_network_config_sync(plugintester, network_name, plugin_network_port):
-    plugintester.makepyfile(
-        f"""
+    plugintester.makepyfile(f"""
 import yaml
 
 from brownie._config import _get_data_folder
@@ -24,7 +23,6 @@ def test_child_network_config_sync():
 
     network = next(i for i in network_config["development"] if i["id"] == {network_name!r})
     assert network["cmd_settings"]["port"] == {plugin_network_port}
-"""
-    )
+""")
     result = plugintester.runpytest()
     result.assert_outcomes(passed=1)

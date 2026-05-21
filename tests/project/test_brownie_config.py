@@ -9,8 +9,7 @@ from brownie._config import _get_data_folder, _load_config
 from brownie.network import web3
 from brownie.network.rpc.ganache import _validate_cmd_settings
 
-BASE_PROJECT_CONFIG = yaml.safe_load(
-    """
+BASE_PROJECT_CONFIG = yaml.safe_load("""
 networks:
     default: development
     development:
@@ -31,8 +30,7 @@ networks:
             unlock:
                 - 0x16Fb96a5fa0427Af0C8F7cF1eB4870231c8154B6
                 - "0x81431b69B1e0E334d4161A13C2955e0f3599381e"
-"""
-)
+""")
 
 
 @pytest.fixture

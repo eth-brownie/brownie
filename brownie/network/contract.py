@@ -1367,7 +1367,6 @@ class ContractEvents(_ContractEvents):
 
         async def _listening_task(is_timeout: bool, end_time: float) -> AttributeDict:
             """Generates and returns a coroutine listening for an event"""
-            nonlocal _triggered, _received_data
             timed_out: bool = False
 
             while not _triggered:

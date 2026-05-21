@@ -35,13 +35,11 @@ def test_compiles(project, tmp_path):
 
     tmp_path.joinpath("sources").mkdir()
     with tmp_path.joinpath("sources/Foo.vy").open("w") as fp:
-        fp.write(
-            """# @version 0.2.4
+        fp.write("""# @version 0.2.4
 @external
 def foo() -> int128:
     return 2
-"""
-        )
+""")
 
     tmp_path.joinpath("abi").mkdir()
     with tmp_path.joinpath("abi/Bar.json").open("w") as fp:
