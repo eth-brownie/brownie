@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# sourcery skip: merge-list-appends-into-extend
 import os
 import platform
 import sys
@@ -39,6 +40,17 @@ else:
 if skip_mypyc:
     ext_modules = []
 else:
+    flags = [
+        # "--strict",
+        "--pretty",
+        "--check-untyped-defs",
+    ]
+
+    if sys.version_info[:2] == (3, 10):
+        # We only want to enable these flags on the lowest supported Python version
+        flags.append("--enable-error-code=unused-ignore")
+        flags.append("--enable-error-code=redundant-cast")
+
     ext_modules = mypycify(
         [
             "brownie/_c_constants.py",
@@ -67,9 +79,7 @@ else:
             "brownie/utils/output.py",
             "brownie/utils/sql.py",
             "brownie/utils/toposort.py",
-            # "--strict",
-            "--pretty",
-            "--check-untyped-defs",
+            *flags,
         ],
         group_name="eth_brownie",
         strict_dunder_typing=True,
