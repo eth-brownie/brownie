@@ -138,9 +138,7 @@ def test_compile_source_solc_without_pragma(project):
 
 def test_compile_source_vyper_without_pragma(project):
     project.compiler.vyper.set_vyper_version("0.2.4")
-    project.compile_source(
-        """
+    project.compile_source("""
 @external
 def foo():
-    pass"""
-    )
+    pass""")
