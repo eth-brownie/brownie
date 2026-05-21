@@ -36,9 +36,7 @@ def _brownie_error_payload():
 
 
 def test_virtual_machine_error_normalizes_web3_v7_rpc_payloads():
-    exc = Web3RPCError(
-        "execution reverted", rpc_response={"error": _tx_rpc_error_payload()}
-    )
+    exc = Web3RPCError("execution reverted", rpc_response={"error": _tx_rpc_error_payload()})
 
     error = VirtualMachineError(exc)
 
@@ -82,9 +80,7 @@ def test_tx_revert_catcher_reraises_web3_v7_rpc_errors_for_other_methods():
         raise rpc_error
 
     with pytest.raises(Web3RPCError) as exc:
-        TxRevertCatcherMiddleware().process_request(
-            make_request, "eth_sendTransaction", []
-        )
+        TxRevertCatcherMiddleware().process_request(make_request, "eth_sendTransaction", [])
 
     assert exc.value is rpc_error
 
@@ -95,9 +91,7 @@ def test_ganache7_middleware_normalizes_raised_web3_v7_rpc_errors():
     def make_request(method, params):
         raise Web3RPCError("execution reverted", rpc_response=rpc_response)
 
-    result = Ganache7MiddleWare().process_request(
-        make_request, "eth_sendTransaction", []
-    )
+    result = Ganache7MiddleWare().process_request(make_request, "eth_sendTransaction", [])
 
     assert result["error"]["data"] == {
         TXID: {
@@ -115,8 +109,6 @@ def test_ganache7_middleware_reraises_web3_v7_rpc_errors_without_response():
         raise rpc_error
 
     with pytest.raises(Web3RPCError) as exc:
-        Ganache7MiddleWare().process_request(
-            make_request, "eth_sendTransaction", []
-        )
+        Ganache7MiddleWare().process_request(make_request, "eth_sendTransaction", [])
 
     assert exc.value is rpc_error
