@@ -89,7 +89,7 @@ def _build_gas_profile_output() -> list[str]:
         contract, function = full_name.split(".", 1)
 
         try:
-            source_path = project._sources.get_source_path(  # type: ignore [union-attr, arg-type]
+            source_path = project._sources.get_source_path(  # type: ignore [union-attr]
                 contract  # type: ignore [arg-type]
             )
             if source_path in exclude_paths:

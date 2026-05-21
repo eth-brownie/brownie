@@ -243,7 +243,7 @@ class _EventItem(Generic[_TData]):
 
     def values(self) -> ReturnValue:
         """_EventItem.values() -> a list object providing a view on _EventItem[0]'s values"""
-        return ReturnValue(self._ordered[0].values())  # type: ignore [arg-type]
+        return ReturnValue(self._ordered[0].values())
 
 
 Event = _EventItem[EventData]

@@ -104,7 +104,7 @@ def compile_from_input_json(
             print(f"  EVM Version: {settings['evmVersion'].capitalize()}")
 
     try:
-        return solcx.compile_standard(input_json, allow_paths=allow_paths)
+        return solcx.compile_standard(cast(dict[Any, Any], input_json), allow_paths=allow_paths)
     except solcx.exceptions.SolcError as e:
         raise CompilerError(e, "solc")
 
@@ -446,7 +446,7 @@ def _generate_coverage_data(
         # set source offset (-1 means none)
         if start == -1:
             continue
-        offset: Offset = (start, start + stop)  # type: ignore [assignment]
+        offset: Offset = (start, start + stop)
         this["offset"] = offset
 
         if op == "REVERT" and not optimizer_revert:
@@ -491,11 +491,9 @@ def _generate_coverage_data(
         try:
             # set fn name and statement coverage marker
             if "offset" in pc_list[-2] and offset == pc_list[-2]["offset"]:
-                this["fn"] = active_fn_name  # type: ignore [typeddict-item]
+                this["fn"] = active_fn_name
             else:
-                active_fn_node, active_fn_name = _get_active_fn(
-                    active_source_node, offset
-                )  # type: ignore [arg-type]
+                active_fn_node, active_fn_name = _get_active_fn(active_source_node, offset)
                 this["fn"] = active_fn_name
                 stmt_offset: Offset = next(
                     i for i in stmt_nodes[contract_id] if sources.is_inside_offset(offset, i)
@@ -560,9 +558,7 @@ def _generate_coverage_data(
                 pc_list[idx[0]]["branch"] = count
                 pc_list[idx[1]]["branch"] = count
                 node = next(i for i in branch_original[path] if i.offset == offset)
-                branch_map[path].setdefault(fn, {})[count] = offset + (
-                    node.jump,
-                )  # type: ignore [arg-type]
+                branch_map[path].setdefault(fn, {})[count] = offset + (node.jump,)
                 count += 1
 
     pc_map = PCMap({i.pop("pc"): i for i in pc_list})

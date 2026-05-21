@@ -266,7 +266,7 @@ class Console(code.InteractiveConsole):
         finally:
             self.console_printer.finish()
 
-    def showsyntaxerror(self, filename: str | None = None) -> None:  # type: ignore [override]
+    def showsyntaxerror(self, filename: str | None = None) -> None:
         tb = color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
         self.write(tb + "\n")
 
@@ -304,7 +304,7 @@ class Console(code.InteractiveConsole):
             pass
         self.runcode(code)  # type: ignore [arg-type]
         if "__ret_value__" in self.locals and self.locals["__ret_value__"] is not None:
-            return_value = self.locals.pop("__ret_value__")  # type: ignore [attr-defined]
+            return_value = self.locals.pop("__ret_value__")
             self._console_write(return_value)
         return False
 

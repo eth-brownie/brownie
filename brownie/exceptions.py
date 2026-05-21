@@ -2,7 +2,7 @@
 
 import sys
 from pathlib import Path
-from typing import Any, Final, final
+from typing import TYPE_CHECKING, Any, Final, cast, final
 
 import psutil
 import yaml
@@ -15,6 +15,10 @@ import brownie
 from brownie._c_constants import HexBytes, ujson_dump, ujson_load
 from brownie._config import _get_data_folder
 from brownie.convert.utils import build_function_selector, get_type_strings
+
+if TYPE_CHECKING:
+    from solcx.exceptions import SolcError
+    from vvm.exceptions import VyperError
 
 # network
 
@@ -248,10 +252,11 @@ class BadProjectName(Exception):
 
 @final
 class CompilerError(Exception):
-    def __init__(self, e: type[psutil.Popen], compiler: str = "Compiler") -> None:
+    def __init__(self, e: "SolcError | VyperError", compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
-        err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(e.stdout_data)
+        stdout_data = cast(str, e.stdout_data)
+        err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(stdout_data)
         err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
         super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 

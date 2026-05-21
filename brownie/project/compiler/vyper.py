@@ -390,7 +390,7 @@ def _generate_coverage_data(
                     this.update(path="0", offset=(0, 0))  # type: ignore [call-arg]
             continue
 
-        offset: Offset = (start, start + stop)  # type: ignore [assignment]
+        offset: Offset = (start, start + stop)
         this["path"] = "0"
         this["offset"] = offset
 
@@ -446,13 +446,11 @@ def _generate_coverage_data(
             # branch coverage
             this["branch"] = count
             this_fn = cast(str, this["fn"])
-            branch_map.setdefault(this_fn, {})  # type: ignore [arg-type]
+            branch_map.setdefault(this_fn, {})
             if node_ast_type == "If":
-                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (
-                    False,
-                )  # type: ignore [index]
+                branch_map[this_fn][count] = _convert_src(node["test"]["src"]) + (False,)
             else:
-                branch_map[this_fn][count] = offset + (True,)  # type: ignore [index]
+                branch_map[this_fn][count] = offset + (True,)
             count += 1
 
     first = pc_list[0]
@@ -517,7 +515,7 @@ def _convert_to_semver(versions: list[PVersion]) -> VersionList:
 
     This function serves as a stopgap.
     """
-    return [  # type: ignore [return-value]
+    return [
         Version(
             major=version.major,
             minor=version.minor,
