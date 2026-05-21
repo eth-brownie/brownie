@@ -266,9 +266,7 @@ def _get_solc_version_list() -> tuple[VersionList, VersionList]:
     installed_versions: VersionList = list(map(_as_version, solcx.get_installed_solc_versions()))
     if AVAILABLE_SOLC_VERSIONS is None:
         try:
-            AVAILABLE_SOLC_VERSIONS = list(
-                map(_as_version, solcx.get_installable_solc_versions())
-            )
+            AVAILABLE_SOLC_VERSIONS = list(map(_as_version, solcx.get_installable_solc_versions()))
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Solc not installed and cannot connect to GitHub")
