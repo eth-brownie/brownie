@@ -8,12 +8,8 @@ on:
       - '.github/workflows/core-ganache.yaml'
       - 'pyproject.toml'
       - 'setup.py'
-      - 'requirements.in'
-      - 'requirements.txt'
-      - 'requirements-windows.in'
-      - 'requirements-windows.txt'
-      - 'requirements-dev.in'
-      - 'requirements-dev.txt'
+      - 'requirements*.in'
+      - 'requirements*.txt'
       - 'tox.ini'
   pull_request:
     paths:
@@ -21,12 +17,8 @@ on:
       - '.github/workflows/core-ganache.yaml'
       - 'pyproject.toml'
       - 'setup.py'
-      - 'requirements.in'
-      - 'requirements.txt'
-      - 'requirements-windows.in'
-      - 'requirements-windows.txt'
-      - 'requirements-dev.in'
-      - 'requirements-dev.txt'
+      - 'requirements*.in'
+      - 'requirements*.txt'
       - 'tox.ini'
   schedule:
     - cron: '0 6 * * *'  # Daily 0600 UTC
@@ -101,12 +93,8 @@ jobs:
           cache-dependency-path: |
             pyproject.toml
             setup.py
-            requirements.in
-            requirements.txt
-            requirements-windows.in
-            requirements-windows.txt
-            requirements-dev.in
-            requirements-dev.txt
+            requirements*.in
+            requirements*.txt
       
       - name: Cache .mypy_cache
         uses: actions/cache@v4
@@ -123,7 +111,7 @@ jobs:
           path: |
             .tox
             .hypothesis
-          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.in', 'requirements.txt', 'requirements-windows.in', 'requirements-windows.txt', 'requirements-dev.in', 'requirements-dev.txt', 'tox.ini') }}
+          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements*.in', 'requirements*.txt', 'tox.ini') }}
 
       - name: Restore ccache cache
         if: runner.os != 'Windows'
