@@ -3,7 +3,7 @@ import os
 import platform
 import sys
 
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 with open("README.md") as fh:
     long_description = fh.read()
@@ -78,7 +78,10 @@ else:
 
 setup(
     name="eth-brownie",
-    packages=find_packages(),
+    packages=find_namespace_packages(
+        include=["brownie", "brownie.*"],
+        exclude=["brownie.__pycache__", "brownie.*.__pycache__"],
+    ),
     version="1.22.0.dev4",  # don't change this manually, use bumpversion instead
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
@@ -93,8 +96,12 @@ setup(
         "console_scripts": ["brownie=brownie._cli.__main__:main"],
         "pytest11": ["pytest-brownie=brownie.test.plugin"],
     },
-    package_data={"brownie": ["py.typed"]},
-    include_package_data=True,
+    package_data={
+        "brownie": ["py.typed"],
+        "brownie.data": ["*.yaml"],
+        "brownie.data.interfaces": ["*.json"],
+        "brownie.data.contracts": ["*.sol"],
+    },
     ext_modules=ext_modules,
     python_requires=">=3.10,<4",
     classifiers=[
