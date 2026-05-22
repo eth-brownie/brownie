@@ -314,7 +314,7 @@ urllib3==2.6.3
     #   -r requirements.txt
     #   requests
     #   types-requests
-vvm==0.2.1
+vvm==0.3.2
     # via -r requirements.txt
 vyper==0.4.3
     # via -r requirements.txt

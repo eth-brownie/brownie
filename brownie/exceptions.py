@@ -2,23 +2,21 @@
 
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, cast, final
+from typing import Any, Final, cast, final
 
 import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
 from ujson import JSONDecodeError
+from solcx.exceptions import SolcError
+from vvm.exceptions import VyperError
 from web3.exceptions import Web3RPCError
 
 import brownie
 from brownie._c_constants import HexBytes, ujson_dump, ujson_load
 from brownie._config import _get_data_folder
 from brownie.convert.utils import build_function_selector, get_type_strings
-
-if TYPE_CHECKING:
-    from solcx.exceptions import SolcError
-    from vvm.exceptions import VyperError
 
 # network
 
@@ -252,7 +250,7 @@ class BadProjectName(Exception):
 
 @final
 class CompilerError(Exception):
-    def __init__(self, e: "SolcError | VyperError", compiler: str = "Compiler") -> None:
+    def __init__(self, e: SolcError | VyperError, compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
         stdout_data = cast(str, e.stdout_data)
