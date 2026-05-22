@@ -8,8 +8,8 @@ import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
-from ujson import JSONDecodeError
 from solcx.exceptions import SolcError
+from ujson import JSONDecodeError
 from vvm.exceptions import VyperError
 from web3.exceptions import Web3RPCError
 
