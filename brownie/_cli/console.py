@@ -267,11 +267,11 @@ class Console(code.InteractiveConsole):
             self.console_printer.finish()
 
     def showsyntaxerror(self, filename: str | None = None, *, source: str = "") -> None:
-        tb = color.format_tb(sys.exc_info()[1])  # type: ignore [arg-type]
+        tb = color.format_tb(_get_current_exception())
         self.write(tb + "\n")
 
     def showtraceback(self) -> None:
-        tb = color.format_tb(sys.exc_info()[1], start=1)  # type: ignore [arg-type]
+        tb = color.format_tb(_get_current_exception(), start=1)
         self.write(tb + "\n")
 
     def resetbuffer(self) -> None:
@@ -333,6 +333,12 @@ def _dir_color(obj: Any) -> str:
     elif hasattr(obj, "_dir_color"):
         return color(obj._dir_color)
     return bright_cyan if callable(obj) else bright_blue
+
+
+def _get_current_exception() -> BaseException:
+    exc = sys.exc_info()[1]
+    assert exc, "no active Exception"
+    return exc
 
 
 @final
