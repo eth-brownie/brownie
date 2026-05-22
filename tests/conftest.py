@@ -256,6 +256,11 @@ def plugintester(_project_factory, plugintesterbase, request, network_name):
 
         def synced_runner(*args, runner=runner, **kwargs):
             _sync_plugin_data_folder(plugintesterbase.tmpdir, network_name)
+            if not any(
+                arg == "--brownie-project" or str(arg).startswith("--brownie-project=")
+                for arg in args
+            ):
+                args = ("--brownie-project", str(plugintesterbase.tmpdir), *args)
             return runner(*args, **kwargs)
 
         setattr(plugintesterbase, name, synced_runner)
