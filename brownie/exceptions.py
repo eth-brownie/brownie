@@ -2,13 +2,15 @@
 
 import sys
 from pathlib import Path
-from typing import Any, Final, final
+from typing import Any, Final, cast, final
 
 import psutil
 import yaml
 from eth_typing import ABIElement, ABIError, HexStr
 from faster_eth_abi import decode as decode_abi
 from ujson import JSONDecodeError
+from solcx.exceptions import SolcError
+from vvm.exceptions import VyperError
 from web3.exceptions import Web3RPCError
 
 import brownie
@@ -248,10 +250,11 @@ class BadProjectName(Exception):
 
 @final
 class CompilerError(Exception):
-    def __init__(self, e: type[psutil.Popen], compiler: str = "Compiler") -> None:
+    def __init__(self, e: SolcError | VyperError, compiler: str = "Compiler") -> None:
         self.compiler: Final = compiler
 
-        err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(e.stdout_data)
+        stdout_data = cast(str, e.stdout_data)
+        err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(stdout_data)
         err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
         super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 

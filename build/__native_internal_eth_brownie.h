@@ -415,7 +415,7 @@ extern char CPyDef_console___Console___interact(PyObject *cpy_r_self, PyObject *
 extern PyObject *CPyPy_console___Console___interact(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_console___Console___raw_input(PyObject *cpy_r_self, PyObject *cpy_r_prompt);
 extern PyObject *CPyPy_console___Console___raw_input(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern char CPyDef_console___Console___showsyntaxerror(PyObject *cpy_r_self, PyObject *cpy_r_filename);
+extern char CPyDef_console___Console___showsyntaxerror(PyObject *cpy_r_self, PyObject *cpy_r_filename, PyObject *cpy_r_source);
 extern PyObject *CPyPy_console___Console___showsyntaxerror(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_console___Console___showtraceback(PyObject *cpy_r_self);
 extern PyObject *CPyPy_console___Console___showtraceback(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
@@ -433,6 +433,8 @@ extern char CPyDef_console___Console_____mypyc_defaults_setup(PyObject *cpy_r___
 extern PyObject *CPyPy_console___Console_____mypyc_defaults_setup(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_console____dir_color(PyObject *cpy_r_obj);
 extern PyObject *CPyPy_console____dir_color(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_console____get_current_exception(void);
+extern PyObject *CPyPy_console____get_current_exception(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_console_____init___3_SanitizedFileHistory_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
 extern PyObject *CPyPy_console_____init___3_SanitizedFileHistory_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_console_____init___3_SanitizedFileHistory_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_filename, PyObject *cpy_r_local_dict);

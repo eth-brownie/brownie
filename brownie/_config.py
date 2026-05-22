@@ -263,8 +263,8 @@ def _load_project_compiler_config(project_path: pathlib.Path | None) -> dict:
     return compiler_data
 
 
-def _load_project_envvars(project_path: pathlib.Path) -> dict:
-    config_vars = dict(os.environ)
+def _load_project_envvars(project_path: pathlib.Path) -> dict[str, str | None]:
+    config_vars: dict[str, str | None] = dict(os.environ)
     settings = CONFIG.settings
     if settings.get("dotenv"):
         dotenv_path = settings["dotenv"]
@@ -273,7 +273,7 @@ def _load_project_envvars(project_path: pathlib.Path) -> dict:
         env_path = project_path.joinpath(dotenv_path)
         if not env_path.is_file():
             raise ValueError(f"Dotenv specified in config but not found at path: {env_path}")
-        config_vars.update(dotenv_values(dotenv_path=env_path))  # type: ignore [arg-type]
+        config_vars.update(dotenv_values(dotenv_path=env_path))
     return config_vars
 
 

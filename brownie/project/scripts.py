@@ -121,9 +121,7 @@ def run(
         # the sys module and assigns the current frame to a global var `__brownie_frame`
         injected_source = "import sys\nglobal __brownie_frame\n__brownie_frame = sys._getframe()"
         injected_ast = _parse(injected_source)
-        func_ast.body[0].body = (
-            injected_ast.body + func_ast.body[0].body  # type: ignore [attr-defined]
-        )
+        func_ast.body[0].body = injected_ast.body + func_ast.body[0].body
 
         # now we compile the AST into a code object, using the module's `__dict__` as our globals
         # so that we have access to all the required imports and other objects
