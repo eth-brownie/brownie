@@ -46,4 +46,4 @@ def test_xdist_no_isolation(plugintester):
     result = plugintester.runpytest()
     result.assert_outcomes(passed=1)
     result = plugintester.runpytest_subprocess("-n 1")
-    assert any("xdist workers failed to collect tests" in line for line in result.errlines)
+    result.assert_outcomes(passed=1)
