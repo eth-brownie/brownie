@@ -263,8 +263,8 @@ def _load_project_compiler_config(project_path: pathlib.Path | None) -> dict:
     return compiler_data
 
 
-def _load_project_envvars(project_path: pathlib.Path) -> dict:
-    config_vars = dict(os.environ)
+def _load_project_envvars(project_path: pathlib.Path) -> dict[str, str | None]:
+    config_vars: dict[str, str | None] = dict(os.environ)
     settings = CONFIG.settings
     if settings.get("dotenv"):
         dotenv_path = settings["dotenv"]
