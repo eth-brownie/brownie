@@ -126,7 +126,9 @@ class PytestPrinter:
         self.first_line = True
         builtins.print = self
 
-    def __call__(self, *values, sep=" ", end="\n", file=sys.stdout, flush=False):
+    def __call__(self, *values, sep=" ", end="\n", file=None, flush=False):
+        if file is None:
+            file = sys.stdout
         if file != sys.stdout:
             self._builtins_print(*values, sep=sep, end=end, file=file, flush=flush)
             return

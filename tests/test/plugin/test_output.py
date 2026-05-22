@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
+import sys
+from io import StringIO
 from pathlib import Path
 
 from brownie.test import output
+from brownie.test.managers.runner import PytestPrinter
 
 test_source = """
 def test_stuff(BrownieTester, EVMTester, accounts):
@@ -54,3 +57,20 @@ def test_stdout_capture(plugintester):
 
     assert output.count("::test_stuff") == 2
     assert "oh hai mark" in output
+
+
+def test_pytest_printer_uses_current_stdout(monkeypatch):
+    first_stdout = StringIO()
+    current_stdout = StringIO()
+    monkeypatch.setattr(sys, "stdout", first_stdout)
+
+    printer = PytestPrinter()
+    printer.start()
+    try:
+        monkeypatch.setattr(sys, "stdout", current_stdout)
+        print("oh hai", "mark")
+    finally:
+        printer.finish("tests/test_output.py::test_pytest_printer_uses_current_stdout")
+
+    assert "oh hai mark" in current_stdout.getvalue()
+    assert "oh hai mark" not in first_stdout.getvalue()
