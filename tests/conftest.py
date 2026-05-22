@@ -46,7 +46,7 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "--network",
-        choices=["development", "hardhat"],
+        choices=["development", "ganache-cli", "hardhat"],
         default="development",
     )
 
