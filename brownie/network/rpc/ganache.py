@@ -79,6 +79,7 @@ def launch(cmd: str, **kwargs: Any) -> None:
         cmd_list.extend(["--chain.vmErrorsOnRPCResponse", "true"])
 
     kwargs.setdefault("evm_version", EVM_DEFAULT)
+    kwargs.setdefault("default_balance", 100)
     if kwargs["evm_version"] in EVM_EQUIVALENTS:
         kwargs["evm_version"] = EVM_EQUIVALENTS[kwargs["evm_version"]]
     kwargs = _validate_cmd_settings(kwargs)
