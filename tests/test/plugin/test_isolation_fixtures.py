@@ -47,3 +47,24 @@ def test_xdist_no_isolation(plugintester):
     result.assert_outcomes(passed=1)
     result = plugintester.runpytest_subprocess("-n 1")
     result.assert_outcomes(passed=1)
+
+
+contract_fixture_source = """
+def test_contract_fixture_one(BrownieTester):
+    assert BrownieTester._name == "BrownieTester"
+
+def test_contract_fixture_two(BrownieTester):
+    assert BrownieTester._name == "BrownieTester"
+"""
+
+
+def test_xdist_contract_fixtures(plugintester):
+    plugintester.makepyfile(contract_fixture_source)
+    result = plugintester.runpytest("-n 2")
+    result.assert_outcomes(passed=2)
+
+
+def test_xdist_subprocess_contract_fixtures(plugintester):
+    plugintester.makepyfile(contract_fixture_source)
+    result = plugintester.runpytest_subprocess("-n 1")
+    result.assert_outcomes(passed=2)
