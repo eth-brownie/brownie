@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2464];
+extern PyObject *CPyStatics[2469];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -982,6 +982,9 @@ extern PyObject *CPyPy_convert___main___to_string(PyObject *self, PyObject *cons
 extern char CPyDef_convert___main_____top_level__(void);
 extern PyObject *CPyStatic_normalize____TupleType;
 extern PyObject *CPyStatic_normalize____parse;
+extern PyTypeObject *CPyType_normalize____iter_event_topics_gen;
+extern PyObject *CPyDef_normalize____iter_event_topics_gen(void);
+extern CPyThreadLocal brownie___convert___normalize____iter_event_topics_genObject *normalize____iter_event_topics_gen_free_instance;
 extern PyObject *CPyDef_normalize___format_input(PyObject *cpy_r_abi, PyObject *cpy_r_inputs);
 extern PyObject *CPyPy_normalize___format_input(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_normalize___format_output(PyObject *cpy_r_abi, PyObject *cpy_r_outputs);
@@ -998,6 +1001,19 @@ extern char CPyDef_normalize____check_array(PyObject *cpy_r_values, PyObject *cp
 extern PyObject *CPyPy_normalize____check_array(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_normalize____get_abi_types(PyObject *cpy_r_abi_params);
 extern PyObject *CPyPy_normalize____get_abi_types(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_normalize____iter_event_topics_gen_____mypyc_generator_helper__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback, PyObject *cpy_r_arg, PyObject **cpy_r_stop_iter_ptr);
+extern PyObject *CPyDef_normalize____iter_event_topics_gen_____next__(PyObject *cpy_r___mypyc_self__);
+extern PyObject *CPyPy_normalize____iter_event_topics_gen_____next__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_normalize____iter_event_topics_gen___send(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_arg);
+extern PyObject *CPyPy_normalize____iter_event_topics_gen___send(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_normalize____iter_event_topics_gen_____iter__(PyObject *cpy_r___mypyc_self__);
+extern PyObject *CPyPy_normalize____iter_event_topics_gen_____iter__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_normalize____iter_event_topics_gen___throw(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_type, PyObject *cpy_r_value, PyObject *cpy_r_traceback);
+extern PyObject *CPyPy_normalize____iter_event_topics_gen___throw(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_normalize____iter_event_topics_gen___close(PyObject *cpy_r___mypyc_self__);
+extern PyObject *CPyPy_normalize____iter_event_topics_gen___close(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_normalize____iter_event_topics(PyObject *cpy_r_event);
+extern PyObject *CPyPy_normalize____iter_event_topics(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_normalize_____top_level__(void);
 extern PyObject *CPyStatic_convert___utils___keccak;
 extern PyObject *CPyStatic_convert___utils____cached_int_bounds;
@@ -1412,6 +1428,15 @@ extern CPyThreadLocal brownie___network___state___base_fee_Chain_objObject *stat
 extern PyTypeObject *CPyType_state___priority_fee_Chain_obj;
 extern PyObject *CPyDef_state___priority_fee_Chain_obj(void);
 extern CPyThreadLocal brownie___network___state___priority_fee_Chain_objObject *state___priority_fee_Chain_obj_free_instance;
+extern PyTypeObject *CPyType_state____set_time_offset_from_block_Chain_obj;
+extern PyObject *CPyDef_state____set_time_offset_from_block_Chain_obj(void);
+extern CPyThreadLocal brownie___network___state____set_time_offset_from_block_Chain_objObject *state____set_time_offset_from_block_Chain_obj_free_instance;
+extern PyTypeObject *CPyType_state____set_time_offset_from_rpc_Chain_obj;
+extern PyObject *CPyDef_state____set_time_offset_from_rpc_Chain_obj(void);
+extern CPyThreadLocal brownie___network___state____set_time_offset_from_rpc_Chain_objObject *state____set_time_offset_from_rpc_Chain_obj_free_instance;
+extern PyTypeObject *CPyType_state____take_snapshot_Chain_obj;
+extern PyObject *CPyDef_state____take_snapshot_Chain_obj(void);
+extern CPyThreadLocal brownie___network___state____take_snapshot_Chain_objObject *state____take_snapshot_Chain_obj_free_instance;
 extern PyTypeObject *CPyType_state____revert_Chain_obj;
 extern PyObject *CPyDef_state____revert_Chain_obj(void);
 extern CPyThreadLocal brownie___network___state____revert_Chain_objObject *state____revert_Chain_obj_free_instance;
@@ -1593,6 +1618,18 @@ extern PyObject *CPyDef_state___priority_fee_Chain_obj_____get__(PyObject *cpy_r
 extern PyObject *CPyPy_state___priority_fee_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_state___priority_fee_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
 extern PyObject *CPyPy_state___priority_fee_Chain_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_state____set_time_offset_from_block_Chain_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+extern PyObject *CPyPy_state____set_time_offset_from_block_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern char CPyDef_state____set_time_offset_from_block_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+extern PyObject *CPyPy_state____set_time_offset_from_block_Chain_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_state____set_time_offset_from_rpc_Chain_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+extern PyObject *CPyPy_state____set_time_offset_from_rpc_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern char CPyDef_state____set_time_offset_from_rpc_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_value);
+extern PyObject *CPyPy_state____set_time_offset_from_rpc_Chain_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_state____take_snapshot_Chain_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
+extern PyObject *CPyPy_state____take_snapshot_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_state____take_snapshot_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+extern PyObject *CPyPy_state____take_snapshot_Chain_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_state____revert_Chain_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
 extern PyObject *CPyPy_state____revert_Chain_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_state____revert_Chain_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_id_);

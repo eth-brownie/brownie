@@ -818,6 +818,19 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
+    PyObject *___mypyc_generator_attribute__event;
+    int32_t ___mypyc_next_label__;
+    tuple_T3OOO ___mypyc_temp__0;
+    PyObject *___mypyc_temp__1;
+    PyObject *___mypyc_temp__2;
+    PyObject *___mypyc_temp__3;
+    PyObject *___mypyc_generator_attribute__name;
+    PyObject *___mypyc_generator_attribute__topic;
+} brownie___convert___normalize____iter_event_topics_genObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
     vectorcallfunc vectorcall;
 } brownie___network___alert_____init___3_Alert_objObject;
 
@@ -1224,6 +1237,24 @@ typedef struct {
     CPyVTableItem *vtable;
     vectorcallfunc vectorcall;
 } brownie___network___state___priority_fee_Chain_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___network___state____set_time_offset_from_block_Chain_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___network___state____set_time_offset_from_rpc_Chain_objObject;
+
+typedef struct {
+    PyObject_HEAD
+    CPyVTableItem *vtable;
+    vectorcallfunc vectorcall;
+} brownie___network___state____take_snapshot_Chain_objObject;
 
 typedef struct {
     PyObject_HEAD
