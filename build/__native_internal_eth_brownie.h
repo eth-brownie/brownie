@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2469];
+extern PyObject *CPyStatics[2472];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1232,7 +1232,7 @@ extern char CPyDef_event_____mypyc_lambda__0__loop_EventWatcher_obj_____call__(P
 extern PyObject *CPyPy_event_____mypyc_lambda__0__loop_EventWatcher_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_event____loop_EventWatcher_obj_____get__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_instance, PyObject *cpy_r_owner);
 extern PyObject *CPyPy_event____loop_EventWatcher_obj_____get__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern char CPyDef_event____loop_EventWatcher_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self);
+extern char CPyDef_event____loop_EventWatcher_obj_____call__(PyObject *cpy_r___mypyc_self__, PyObject *cpy_r_self, PyObject *cpy_r_stop_event);
 extern PyObject *CPyPy_event____loop_EventWatcher_obj_____call__(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_event_____get_path(void);
 extern PyObject *CPyPy_event_____get_path(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);

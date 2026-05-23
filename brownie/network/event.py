@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="union-attr"
 
+import threading
 import time
 import warnings
 from collections import OrderedDict
@@ -30,6 +31,8 @@ from .web3 import ContractEvent, web3
 
 if TYPE_CHECKING:
     from .contract import Contract
+
+_WATCHER_THREAD_JOIN_TIMEOUT: Final = 1.0
 
 
 TopicMap = dict[HexStr, TopicMapData]
@@ -364,9 +367,11 @@ class EventWatcher(metaclass=_Singleton):
     def __init__(self) -> None:
         self.target_list_lock: Lock = Lock()
         self.target_events_watch_data: dict[str, _EventWatchData] = {}
-        self._kill: bool = False
         self._has_started: bool = False
-        self._watcher_thread = Thread(target=self._loop, daemon=True)
+        self._watcher_stop_event = threading.Event()
+        self._watcher_thread = Thread(
+            target=self._loop, args=(self._watcher_stop_event,), daemon=True
+        )
 
     def __del__(self) -> None:
         self.stop(wait=False)
@@ -380,9 +385,20 @@ class EventWatcher(metaclass=_Singleton):
             wait (bool, optional): Whether to wait for thread to join within the function.
                 Defaults to True.
         """
-        self._kill = True
-        if wait is True and self._watcher_thread.is_alive():
-            self._watcher_thread.join()
+        stop_event = self._watcher_stop_event
+        watcher_thread = self._watcher_thread
+
+        stop_event.set()
+        if wait is True and watcher_thread.is_alive():
+            watcher_thread.join(timeout=_WATCHER_THREAD_JOIN_TIMEOUT)
+            if watcher_thread.is_alive():
+                warnings.warn(
+                    message=(
+                        "Event watcher thread did not exit within "
+                        f"{_WATCHER_THREAD_JOIN_TIMEOUT} seconds."
+                    ),
+                    category=RuntimeWarning,
+                )
         self._has_started = False
 
     def reset(self) -> None:
@@ -415,44 +431,59 @@ class EventWatcher(metaclass=_Singleton):
         if not callable(callback):
             raise TypeError("Argument 'callback' argument must be a callable.")
         delay = max(delay, 0.05)
-        self.target_list_lock.acquire()  # lock
         # Key referring to this specific event (event.address is the address
         # of the contract to which the event is linked)
         event_watch_data_key = f"{str(event.address)}+{event.event_name}"
-        target_events_watch_data = self.target_events_watch_data
-        event_watch_data = target_events_watch_data.get(event_watch_data_key)
+
+        with self.target_list_lock:
+            target_events_watch_data = self.target_events_watch_data
+            event_watch_data = target_events_watch_data.get(event_watch_data_key)
+            if event_watch_data is not None:
+                # Adds a new callback to the already existing _EventWatchData.
+                event_watch_data.add_callback(callback, repeat)
+                if repeat is True:
+                    # Updates the delay between each check calling the
+                    # _EventWatchData.update_delay function
+                    event_watch_data.update_delay(delay)
+
         if event_watch_data is None:
             # If the _EventWatchData for 'event' does not exist, creates it.
-            target_events_watch_data[event_watch_data_key] = _EventWatchData(
-                event, callback, delay, repeat
-            )
-        else:
-            # Adds a new callback to the already existing _EventWatchData.
-            event_watch_data.add_callback(callback, repeat)
-            if repeat is True:
-                # Updates the delay between each check calling the
-                # _EventWatchData.update_delay function
-                event_watch_data.update_delay(delay)
-        self.target_list_lock.release()  # unlock
+            new_event_watch_data = _EventWatchData(event, callback, delay, repeat)
+            with self.target_list_lock:
+                target_events_watch_data = self.target_events_watch_data
+                event_watch_data = target_events_watch_data.get(event_watch_data_key)
+                if event_watch_data is None:
+                    target_events_watch_data[event_watch_data_key] = new_event_watch_data
+                else:
+                    event_watch_data.add_callback(callback, repeat)
+                    if repeat is True:
+                        event_watch_data.update_delay(delay)
+
         # Start watch if not done
         if self._has_started is False:
             self._start_watch()
 
     def _setup(self) -> None:
         """Sets up the EventWatcher instance member variables so it is ready to run"""
-        self.target_list_lock.acquire()
-        self.target_events_watch_data.clear()
-        self.target_list_lock.release()
-        self._kill = False
+        with self.target_list_lock:
+            self.target_events_watch_data.clear()
+        self._watcher_stop_event = threading.Event()
         self._has_started = False
-        self._watcher_thread = Thread(target=self._loop, daemon=True)
+        self._watcher_thread = Thread(
+            target=self._loop, args=(self._watcher_stop_event,), daemon=True
+        )
 
     def _start_watch(self) -> None:
         """Starts the thread running the _loop function"""
+        if self._watcher_thread.ident is not None:
+            self._watcher_stop_event = threading.Event()
+            self._watcher_thread = Thread(
+                target=self._loop, args=(self._watcher_stop_event,), daemon=True
+            )
         self._watcher_thread.start()
         self._has_started = True
 
-    def _loop(self) -> None:
+    def _loop(self, stop_event: threading.Event) -> None:
         """
         Watches for new events. Whenever new events are detected, calls the
         '_EventWatchData._trigger_callbacks' function to run the callbacks instructions
@@ -460,29 +491,40 @@ class EventWatcher(metaclass=_Singleton):
         """
         workers_list: list[Thread] = []
 
-        while not self._kill:
-            try:
-                sleep_time: float = 1.0  # Max sleep time.
-                self.target_list_lock.acquire()  # lock
-                for _, elem in self.target_events_watch_data.items():
+        while not stop_event.is_set():
+            sleep_time: float = 1.0  # Max sleep time.
+            due_watch_data: list[tuple[str, _EventWatchData]] = []
+
+            with self.target_list_lock:
+                for key, elem in self.target_events_watch_data.items():
                     # If cooldown is not over :
                     #   skip and store time left before next check if needed.
                     time_left = elem.time_left
                     if time_left > 0:
                         sleep_time = min(sleep_time, time_left)
-                        continue
-                    # Check for new events & execute callback async if some are found
-                    latest_events = elem.get_new_events()
-                    if len(latest_events) != 0:
-                        workers_list += elem._trigger_callbacks(latest_events)
-                    elem.reset_timer()
-                    # after elem.reset_timer elem.time_left is approximately elem.delay
-                    sleep_time = min(sleep_time, elem.time_left)
-            finally:
-                self.target_list_lock.release()  # unlock
-                # Remove dead threads from the workers_list
-                workers_list = list(filter(lambda x: x.is_alive(), workers_list))
-                time.sleep(sleep_time)
+                    else:
+                        due_watch_data.append((key, elem))
+
+            for key, elem in due_watch_data:
+                if stop_event.is_set():
+                    break
+                # Check for new events without holding the watcher state lock.
+                latest_events = elem.get_new_events()
+                if stop_event.is_set():
+                    break
+                with self.target_list_lock:
+                    event_watch_data = self.target_events_watch_data.get(key)
+                    should_trigger = event_watch_data is elem and not stop_event.is_set()
+                    if should_trigger:
+                        if len(latest_events) != 0:
+                            workers_list += elem._trigger_callbacks(latest_events)
+                        elem.reset_timer()
+                        # after elem.reset_timer elem.time_left is approximately elem.delay
+                        sleep_time = min(sleep_time, elem.time_left)
+
+            # Remove dead threads from the workers_list
+            workers_list = list(filter(lambda x: x.is_alive(), workers_list))
+            stop_event.wait(sleep_time)
 
         # Join running threads when leaving function.
         for worker_instance in workers_list:

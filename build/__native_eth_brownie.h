@@ -956,12 +956,16 @@ typedef struct {
     uint32_t bitmap;
     PyObject *___mypyc_self__;
     PyObject *_self;
+    PyObject *_stop_event;
     PyObject *_workers_list;
     double _sleep_time;
-    PyObject *__;
+    PyObject *_due_watch_data;
+    PyObject *_key;
     PyObject *_elem;
     double _time_left;
     PyObject *_latest_events;
+    PyObject *_event_watch_data;
+    char _should_trigger;
 } brownie___network___event____loop_EventWatcher_envObject;
 
 typedef struct {

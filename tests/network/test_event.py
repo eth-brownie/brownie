@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from threading import Event as ThreadEvent, Lock
+from threading import Event as ThreadEvent, Lock, Thread
 
 import pytest
 from web3.datastructures import AttributeDict
@@ -32,6 +32,64 @@ def wait_for_tx(tx: TransactionReceipt, n: int = 1):
 
 def wait_for_no_callback(callback_event: ThreadEvent, timeout: float = 0.2) -> None:
     assert callback_event.wait(timeout) is False
+
+
+class _BlockingEventWatchData:
+    delay = 0.05
+
+    def __init__(self, events=None):
+        self.events = events or []
+        self.callbacks = [{"function": lambda _: None, "repeat": True}]
+        self.poll_started = ThreadEvent()
+        self.release_poll = ThreadEvent()
+        self.callback_triggered = ThreadEvent()
+        self.timer = time.time() - self.delay
+
+    @property
+    def time_left(self):
+        return 0.0
+
+    def get_new_events(self):
+        self.poll_started.set()
+        self.release_poll.wait(1.0)
+        return self.events
+
+    def reset_timer(self):
+        self.timer = time.time()
+
+    def add_callback(self, callback, repeat=True):
+        self.callbacks.append({"function": callback, "repeat": repeat})
+
+    def update_delay(self, new_delay):
+        self.delay = min(self.delay, new_delay)
+
+    def _trigger_callbacks(self, _):
+        self.callback_triggered.set()
+        return []
+
+
+class _FakeEvent:
+    address = "0x0000000000000000000000000000000000000000"
+    event_name = "FakeEvent"
+
+
+def fake_event_key(event):
+    return f"{str(event.address)}+{event.event_name}"
+
+
+def start_watcher_with_target(event_watcher_instance, watch_data):
+    with event_watcher_instance.target_list_lock:
+        event_watcher_instance.target_events_watch_data[
+            fake_event_key(_FakeEvent)
+        ] = watch_data
+    event_watcher_instance._start_watch()
+    assert watch_data.poll_started.wait(1.0) is True
+    return event_watcher_instance._watcher_thread
+
+
+def release_and_join_watcher(watch_data, watcher_thread):
+    watch_data.release_poll.set()
+    watcher_thread.join(timeout=1.0)
 
 
 def test_tuple_values(accounts, tester):
@@ -342,6 +400,124 @@ class TestEventWatcher:
 
         assert callbacks_triggered.wait(1.0) is True
         assert trigger_count == expected_trigger_count
+
+    def test_stop_does_not_hang_when_event_poll_is_blocked(
+        _, event_watcher_instance: EventWatcher, monkeypatch
+    ):
+        watch_data = _BlockingEventWatchData()
+        old_thread = None
+        try:
+            old_thread = start_watcher_with_target(event_watcher_instance, watch_data)
+            monkeypatch.setattr("brownie.network.event._WATCHER_THREAD_JOIN_TIMEOUT", 0.01)
+
+            start_time = time.time()
+            with pytest.warns(RuntimeWarning, match="Event watcher thread did not exit"):
+                event_watcher_instance.stop(wait=True)
+
+            assert time.time() - start_time < 0.5
+        finally:
+            if old_thread is not None:
+                release_and_join_watcher(watch_data, old_thread)
+            event_watcher_instance._setup()
+
+        assert old_thread is not None
+        assert old_thread.is_alive() is False
+
+    def test_polling_does_not_hold_target_list_lock(
+        _, event_watcher_instance: EventWatcher
+    ):
+        watch_data = _BlockingEventWatchData()
+        old_thread = None
+        registration_thread = None
+        registration_finished = ThreadEvent()
+        registration_errors = []
+
+        def register_callback():
+            try:
+                event_watcher_instance.add_event_callback(
+                    event=_FakeEvent, callback=(lambda _: None), delay=0.05
+                )
+            except Exception as exc:
+                registration_errors.append(exc)
+            finally:
+                registration_finished.set()
+
+        try:
+            old_thread = start_watcher_with_target(event_watcher_instance, watch_data)
+            registration_thread = Thread(target=register_callback)
+            registration_thread.start()
+
+            assert registration_finished.wait(0.5) is True
+            registration_thread.join(timeout=1.0)
+            assert registration_thread.is_alive() is False
+            assert registration_errors == []
+            assert len(watch_data.callbacks) == 2
+        finally:
+            if old_thread is not None:
+                event_watcher_instance.stop(wait=False)
+                release_and_join_watcher(watch_data, old_thread)
+            if registration_thread is not None:
+                registration_thread.join(timeout=1.0)
+            event_watcher_instance._setup()
+
+        assert old_thread is not None
+        assert old_thread.is_alive() is False
+
+    def test_late_old_generation_events_do_not_trigger_callbacks_after_reset(
+        _, event_watcher_instance: EventWatcher, monkeypatch
+    ):
+        watch_data = _BlockingEventWatchData([AttributeDict({"args": {"num": 1}})])
+        fresh_watch_data = _BlockingEventWatchData([AttributeDict({"args": {"num": 2}})])
+        old_thread = None
+        fresh_thread = None
+        try:
+            old_thread = start_watcher_with_target(event_watcher_instance, watch_data)
+            monkeypatch.setattr("brownie.network.event._WATCHER_THREAD_JOIN_TIMEOUT", 0.01)
+
+            with pytest.warns(RuntimeWarning, match="Event watcher thread did not exit"):
+                event_watcher_instance.reset()
+
+            release_and_join_watcher(watch_data, old_thread)
+
+            assert old_thread.is_alive() is False
+            wait_for_no_callback(watch_data.callback_triggered)
+
+            fresh_thread = start_watcher_with_target(event_watcher_instance, fresh_watch_data)
+            fresh_watch_data.release_poll.set()
+            assert fresh_watch_data.callback_triggered.wait(1.0) is True
+        finally:
+            if old_thread is not None:
+                release_and_join_watcher(watch_data, old_thread)
+            if fresh_thread is not None:
+                event_watcher_instance.stop(wait=False)
+                release_and_join_watcher(fresh_watch_data, fresh_thread)
+            event_watcher_instance._setup()
+
+        assert fresh_thread is not None
+        assert fresh_thread.is_alive() is False
+
+    def test_stop_wait_false_requests_shutdown_without_waiting(
+        _, event_watcher_instance: EventWatcher
+    ):
+        watch_data = _BlockingEventWatchData()
+        old_thread = None
+        try:
+            old_thread = start_watcher_with_target(event_watcher_instance, watch_data)
+            stop_event = event_watcher_instance._watcher_stop_event
+
+            start_time = time.time()
+            event_watcher_instance.stop(wait=False)
+
+            assert time.time() - start_time < 0.5
+            assert event_watcher_instance._has_started is False
+            assert stop_event.is_set() is True
+        finally:
+            if old_thread is not None:
+                release_and_join_watcher(watch_data, old_thread)
+            event_watcher_instance._setup()
+
+        assert old_thread is not None
+        assert old_thread.is_alive() is False
 
     @pytest.mark.skip(reason="For developing purpose")
     def test_scripting(_, tester: Contract):
