@@ -139,7 +139,7 @@ jobs:
         run: |
           toxenv="py${{ matrix.python-version }}"
           toxenv="${toxenv//./}"
-          tox -e "$toxenv" -- --network ganache-cli
+          tox -e "$toxenv" -- --network ganache-cli --backend ganache
           
       - name: Show ccache stats after build
         if: always() && runner.os != 'Windows'

@@ -5,6 +5,8 @@ import pytest
 import brownie
 from brownie.exceptions import RPCProcessError
 
+pytestmark = pytest.mark.backend("anvil")
+
 
 def test_launch_file_not_found(no_rpc):
     with pytest.raises(FileNotFoundError):
