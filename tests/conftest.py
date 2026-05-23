@@ -256,12 +256,25 @@ def plugintester(_project_factory, plugintesterbase, request, network_name):
 
         def synced_runner(*args, runner=runner, **kwargs):
             _sync_plugin_data_folder(plugintesterbase.tmpdir, network_name)
+            child_home = str(plugintesterbase.tmpdir)
+            child_data_folder = Path(plugintesterbase.tmpdir).joinpath(".brownie")
+            original_data_folder = brownie._config.DATA_FOLDER
+            original_home = os.environ.get("HOME")
             if not any(
                 arg == "--brownie-project" or str(arg).startswith("--brownie-project=")
                 for arg in args
             ):
                 args = ("--brownie-project", str(plugintesterbase.tmpdir), *args)
-            return runner(*args, **kwargs)
+            brownie._config.DATA_FOLDER = child_data_folder
+            os.environ["HOME"] = child_home
+            try:
+                return runner(*args, **kwargs)
+            finally:
+                brownie._config.DATA_FOLDER = original_data_folder
+                if original_home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = original_home
 
         setattr(plugintesterbase, name, synced_runner)
     yield plugintesterbase
