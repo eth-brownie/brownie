@@ -2,6 +2,8 @@
 
 import pytest
 
+from brownie.test.fixtures import PytestBrownieFixtures
+
 isolation_source = """import pytest
 from brownie import Wei
 
@@ -50,6 +52,11 @@ def test_xdist_no_isolation(plugintester):
 
 
 contract_fixture_source = """
+def test_contract_fixture_plugin_class(pytestconfig, BrownieTester):
+    fixtures = pytestconfig.pluginmanager.get_plugin("brownie-fixtures")
+    assert hasattr(type(fixtures), "BrownieTester")
+    assert BrownieTester._name == "BrownieTester"
+
 def test_contract_fixture_one(BrownieTester):
     assert BrownieTester._name == "BrownieTester"
 
@@ -58,13 +65,19 @@ def test_contract_fixture_two(BrownieTester):
 """
 
 
+def test_contract_fixtures_direct_api(testproject):
+    fixtures = PytestBrownieFixtures(None, testproject)
+    assert hasattr(fixtures, "BrownieTester")
+    assert hasattr(type(fixtures), "BrownieTester")
+
+
 def test_xdist_contract_fixtures(plugintester):
     plugintester.makepyfile(contract_fixture_source)
     result = plugintester.runpytest("-n 2")
-    result.assert_outcomes(passed=2)
+    result.assert_outcomes(passed=3)
 
 
 def test_xdist_subprocess_contract_fixtures(plugintester):
     plugintester.makepyfile(contract_fixture_source)
     result = plugintester.runpytest_subprocess("-n 1")
-    result.assert_outcomes(passed=2)
+    result.assert_outcomes(passed=3)
