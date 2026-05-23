@@ -31,7 +31,7 @@ def test_launch_sets_default_balance(monkeypatch, popen_calls, version, flag):
     ganache.launch("ganache-cli")
 
     cmd_list, _ = popen_calls.pop()
-    assert cmd_list[cmd_list.index(flag) + 1] == "100"
+    assert cmd_list[cmd_list.index(flag) + 1] == "1000"
 
 
 def test_launch_preserves_explicit_default_balance(monkeypatch, popen_calls):
