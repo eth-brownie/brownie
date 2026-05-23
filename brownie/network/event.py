@@ -274,8 +274,8 @@ class _EventWatchData:
         self._callbacks_list: list[dict] = []
         self.delay: float = delay
         # Members
-        self._event_filter: Final[filters.LogFilter] = event.create_filter(
-            fromBlock=(web3.eth.block_number - 1)
+        self._event_filter: Final[filters.LogFilter] = _create_event_filter(
+            event, from_block=(web3.eth.block_number - 1)
         )
         self._cooldown_time_over: bool = False
         self.timer = time.time()
@@ -659,6 +659,17 @@ def _decode_trace(trace: Sequence[_TraceStep], initial_address: AnyAddress) -> E
         initial_address=initial_address,
     )
     return EventDict(format_event(event) for event in events)
+
+
+def _create_event_filter(
+    event: ContractEvent, from_block: int | None = None, to_block: int | None = None
+) -> filters.LogFilter:
+    filter_kwargs = {}
+    if from_block is not None:
+        filter_kwargs["from_block"] = from_block
+    if to_block is not None:
+        filter_kwargs["to_block"] = to_block
+    return event.create_filter(**filter_kwargs)
 
 
 # dictionary of event topic ABIs specific to a single contract deployment

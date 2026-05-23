@@ -20,7 +20,6 @@ from faster_eth_abi import encode as encode_abi
 from faster_eth_utils import combomethod
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
-from web3._utils import filters
 from web3.datastructures import AttributeDict
 from web3.exceptions import Web3RPCError
 from web3.types import LogReceipt
@@ -67,7 +66,7 @@ from brownie.utils import color, hexbytes_to_hexstring
 from brownie.utils._color import bright_blue, bright_green, bright_magenta, bright_red
 
 from . import accounts, chain, rpc
-from .event import _add_deployment_topics, _get_topics, event_watcher
+from .event import _add_deployment_topics, _create_event_filter, _get_topics, event_watcher
 from .state import (
     _add_contract,
     _add_deployment,
@@ -1477,9 +1476,7 @@ class ContractEvents(_ContractEvents):
         if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
 
-        event_filter: filters.LogFilter = event_type.create_filter(
-            fromBlock=from_block, toBlock=to_block
-        )
+        event_filter = _create_event_filter(event_type, from_block=from_block, to_block=to_block)
         return event_filter.get_all_entries()
 
 
