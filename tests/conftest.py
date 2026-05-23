@@ -236,7 +236,7 @@ def plugintesterbase(project, testdir, monkeypatch, network_name):
     brownie.test.coverage.clear()
     brownie.network.connect(network_name)
     monkeypatch.setattr("brownie.network.connect", lambda k: None)
-    testdir.plugins.extend(["pytest-brownie", "pytest-cov"])
+    testdir.plugins.extend(["pytest-brownie", "pytest_cov"])
     yield testdir
     _disconnect_network()
 
@@ -283,6 +283,12 @@ def plugintester(_project_factory, plugintesterbase, request, network_name):
 def _sync_plugin_data_folder(path, network_id):
     data_folder = Path(path).joinpath(".brownie")
     brownie._config._make_data_folders(data_folder)
+    parent_packages = brownie._config._get_data_folder().joinpath("packages")
+    child_packages = data_folder.joinpath("packages")
+    if parent_packages.exists():
+        if child_packages.exists():
+            shutil.rmtree(child_packages)
+        shutil.copytree(parent_packages, child_packages)
     network_config_path = data_folder.joinpath("network-config.yaml")
     network_settings = deepcopy(brownie._config.CONFIG.networks[network_id])
 
