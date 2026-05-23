@@ -69,9 +69,10 @@ def test_revert_exceptions(devnetwork, chain):
 
 
 def test_reset(BrownieTester, accounts, chain, web3):
+    initial_balance = accounts[0].balance()
     accounts[0].transfer(accounts[1], "1 ether")
     BrownieTester.deploy(True, {"from": accounts[0]})
     chain.reset()
     assert web3.eth.block_number == 0
-    assert accounts[0].balance() == 1000000000000000000000
+    assert accounts[0].balance() == initial_balance
     assert len(BrownieTester) == 0
