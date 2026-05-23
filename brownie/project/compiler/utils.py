@@ -51,9 +51,13 @@ def _to_source(row: SourceMapRow | None) -> Source:
     if row is None:
         raise TypeError(row)
 
-    raw_source_id = cast(int, row[2])
-    source_id: SourceIndex = -1 if raw_source_id == -1 else SourceId(raw_source_id)
-    return row
+    start = cast(int, row[0])
+    stop = cast(int, row[1])
+    source_id_raw = cast(int, row[2])
+    jump_code = cast(str, row[3])
+
+    source_id: SourceIndex = -1 if source_id_raw == -1 else SourceId(source_id_raw)
+    return start, stop, source_id, jump_code
 
 
 def merge_natspec(
