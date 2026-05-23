@@ -1,22 +1,23 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index"
 
-from typing import Union
+from typing import Union, cast
 
 from semantic_version import Version
 
 from brownie._c_constants import Path
 from brownie._config import _get_data_folder
-from brownie.typing import ContractName, Source
+from brownie.typing import ContractName, Source, SourceId, SourceIndex
 
 VersionSpec = Union[str, Version]
 VersionList = list[Version]
+SourceMapRow = list[str | int | None]
 
 
 def expand_source_map(source_map_str: str | dict) -> list[Source]:
     """
     Expand the compressed sourceMap supplied by solc into a list of
-    Tuple[Start, Stop, ContractName, str].
+    tuple[start, stop, source_id | -1, jump_code].
     """
 
     if isinstance(source_map_str, dict):
@@ -33,17 +34,30 @@ def expand_source_map(source_map_str: str | dict) -> list[Source]:
         for x in range(4):
             if value[x] is None:
                 value[x] = source_map[i - 1][x]
-    return [tuple(_list) for _list in source_map]  # type: ignore [arg-type, misc]
+    return [_to_source(row) for row in source_map]
 
 
-def _expand_row(row: str) -> list[str | int | None]:
+def _expand_row(row: str) -> SourceMapRow:
     """Expand a packed string into a row of params."""
-    result: list[str | int | None] = [None] * 4
+    result: SourceMapRow = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
             result[i] = value if i == 3 else int(value)
     return result
+
+
+def _to_source(row: SourceMapRow | None) -> Source:
+    if row is None:
+        raise TypeError(row)
+
+    start = cast(int, row[0])
+    stop = cast(int, row[1])
+    source_id_raw = cast(int, row[2])
+    jump_code = cast(str, row[3])
+
+    source_id: SourceIndex = -1 if source_id_raw == -1 else SourceId(source_id_raw)
+    return start, stop, source_id, jump_code
 
 
 def merge_natspec(
