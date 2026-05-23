@@ -380,18 +380,23 @@ class Chain(metaclass=_Singleton):
         self, tx: TransactionReceipt, fn: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         with self._undo_lock:
-            tx._confirmed.wait()
-            self._undo_buffer.append(
-                (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
-            )
-            redo_buffer = self._redo_buffer
-            if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
-                redo_buffer.pop()
-            else:
-                redo_buffer.clear()
-            # Transactions can advance the backend clock, so resync from the mined block.
-            self._set_time_offset_from_block()
-            self._current_id = self._take_snapshot()
+            self._add_to_undo_buffer_unlocked(tx, fn, args, kwargs)
+
+    def _add_to_undo_buffer_unlocked(
+        self, tx: TransactionReceipt, fn: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> None:
+        tx._confirmed.wait()
+        self._undo_buffer.append(
+            (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
+        )
+        redo_buffer = self._redo_buffer
+        if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
+            redo_buffer.pop()
+        else:
+            redo_buffer.clear()
+        # Transactions can advance the backend clock, so resync from the mined block.
+        self._set_time_offset_from_block()
+        self._current_id = self._take_snapshot()
 
     def _network_connected(self) -> None:
         self._reset_id = None
@@ -437,17 +442,18 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        result = rpc.Rpc().sleep(seconds)
-        if seconds:
-            # Nonzero sleep semantics vary by backend, but the requested delta is stable.
-            self._time_offset += seconds
-        else:
-            # Zero-second sleep is used as an explicit backend offset sync.
-            self._set_time_offset_from_rpc(result)
+        with self._undo_lock:
+            result = rpc.Rpc().sleep(seconds)
+            if seconds:
+                # Nonzero sleep semantics vary by backend, but the requested delta is stable.
+                self._time_offset += seconds
+            else:
+                # Zero-second sleep is used as an explicit backend offset sync.
+                self._set_time_offset_from_rpc(result)
 
-        if seconds:
-            self._redo_buffer.clear()
-            self._current_id = self._take_snapshot()
+            if seconds:
+                self._redo_buffer.clear()
+                self._current_id = self._take_snapshot()
 
     def mine(
         self, blocks: int = 1, timestamp: int | None = None, timedelta: int | None = None
@@ -474,31 +480,31 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(blocks, int):
             raise TypeError("`blocks` must be an integer value")
+        with self._undo_lock:
+            if timedelta is not None:
+                if timestamp is not None:
+                    raise ValueError("Cannot use both `timestamp` and `timedelta`")
 
-        if timedelta is not None:
-            if timestamp is not None:
-                raise ValueError("Cannot use both `timestamp` and `timedelta`")
+                timestamp = self.time() + timedelta
 
-            timestamp = self.time() + timedelta
+            if timestamp is None:
+                params: list = [[] for _ in range(blocks)]
+            elif blocks == 1:
+                params = [[timestamp]]
+            else:
+                now = self.time()
+                duration = (timestamp - now) / (blocks - 1)
+                params = [[round(now + duration * i)] for i in range(blocks)]
 
-        if timestamp is None:
-            params: list = [[] for _ in range(blocks)]
-        elif blocks == 1:
-            params = [[timestamp]]
-        else:
-            now = self.time()
-            duration = (timestamp - now) / (blocks - 1)
-            params = [[round(now + duration * i)] for i in range(blocks)]
+            for i in range(blocks):
+                rpc.Rpc().mine(*params[i])
 
-        for i in range(blocks):
-            rpc.Rpc().mine(*params[i])
+            if blocks:
+                self._set_time_offset_from_block()
 
-        if blocks:
-            self._set_time_offset_from_block()
-
-        self._redo_buffer.clear()
-        self._current_id = self._take_snapshot()
-        return web3.eth.block_number
+            self._redo_buffer.clear()
+            self._current_id = self._take_snapshot()
+            return web3.eth.block_number
 
     def snapshot(self) -> None:
         """
