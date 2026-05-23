@@ -136,12 +136,21 @@ def sleep(seconds: int) -> int:
 
 
 def mine(timestamp: int | None = None) -> None:
-    params = [timestamp] if timestamp else []
-    _request("evm_mine", params)
-    if timestamp and web3.client_version.lower().startswith("ganache/v7"):
-        # ganache v7 does not modify the internal time when mining new blocks
-        # so we also set the time to maintain consistency with v6 behavior
+    if timestamp is None:
+        _request("evm_mine", [])
+    elif _is_ganache_v7():
+        # Ganache v7 does not persist the timestamp passed to `evm_mine` as
+        # the internal clock. Set the clock before mining so the block receives
+        # the requested timestamp, then advance it for subsequent blocks.
+        _request("evm_setTime", [timestamp * 1000])
+        _request("evm_mine", [])
         _request("evm_setTime", [(timestamp + 1) * 1000])
+    else:
+        _request("evm_mine", [timestamp])
+
+
+def _is_ganache_v7() -> bool:
+    return web3.client_version.lower().startswith("ganache/v7")
 
 
 def snapshot() -> int:
