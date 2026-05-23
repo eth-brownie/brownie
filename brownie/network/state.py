@@ -209,6 +209,8 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id: int | str | None = None
         self._reset_id: int | str | None = None
         self._current_id: int | str | None = None
+        # RPC snapshots rewind backend state, not Brownie's local Python-side clock offset.
+        self._snapshot_time_offsets: dict[int | str, int] = {}
         self._undo_lock: Final = threading.Lock()
         self._undo_buffer: Final[UndoBuffer] = []
         self._redo_buffer: Final[RedoBuffer] = []
@@ -322,17 +324,55 @@ class Chain(metaclass=_Singleton):
     def priority_fee(self) -> Wei:
         return Wei(web3.eth.max_priority_fee)
 
+    def _set_time_offset_from_block(self) -> None:
+        """
+        Sync Brownie's clock to the latest block timestamp after mined chain activity.
+
+        Backend time-travel RPC return values differ, but the block timestamp is the
+        canonical clock once a transaction or block has been mined.
+        """
+        block: BlockData | AttributeDict = web3.eth.get_block("latest")
+        self._time_offset = int(block["timestamp"]) - int(time.time())
+
+    def _set_time_offset_from_rpc(self, value: Any) -> None:
+        """
+        Sync Brownie's clock from an explicit RPC offset response.
+
+        This is only used when intentionally syncing from the backend response; values
+        may arrive as decimal integers or as strings such as hex-encoded quantities.
+        """
+        if isinstance(value, str):
+            self._time_offset = int(value, 0)
+        else:
+            self._time_offset = int(value)
+
+    def _take_snapshot(self) -> int | str:
+        """
+        Take a Brownie-managed snapshot and store its paired local time offset.
+
+        The backend snapshot id alone cannot restore Brownie's Python-side offset.
+        """
+        snapshot_id: int | str = rpc.Rpc().snapshot()
+        self._snapshot_time_offsets[snapshot_id] = self._time_offset
+        return snapshot_id
+
     def _revert(self, id_: int | str) -> int | str:
         rpc_client = rpc.Rpc()
         if web3.isConnected() and not web3.eth.block_number and not self._time_offset:
             _notify_registry(BlockNumber(0))
-            return rpc_client.snapshot()
+            return self._take_snapshot()
+        time_offset = self._snapshot_time_offsets.get(id_)
         rpc_client.revert(id_)
-        id_ = rpc_client.snapshot()
-        try:
-            self.sleep(0)
-        except NotImplementedError:
-            pass
+        if time_offset is None:
+            # Older or external snapshot ids have no paired local offset; resync from chain state.
+            try:
+                self._set_time_offset_from_block()
+            except NotImplementedError:
+                pass
+        else:
+            # Brownie-created snapshots restore both backend state and local clock offset.
+            self._time_offset = time_offset
+        id_ = self._take_snapshot()
         _notify_registry()
         return id_
 
@@ -349,9 +389,9 @@ class Chain(metaclass=_Singleton):
                 redo_buffer.pop()
             else:
                 redo_buffer.clear()
-            self._current_id = rpc.Rpc().snapshot()
-            # ensure the local time offset is correct, in case it was modified by the transaction
-            self.sleep(0)
+            # Transactions can advance the backend clock, so resync from the mined block.
+            self._set_time_offset_from_block()
+            self._current_id = self._take_snapshot()
 
     def _network_connected(self) -> None:
         self._reset_id = None
@@ -367,6 +407,9 @@ class Chain(metaclass=_Singleton):
         self._snapshot_id = None
         self._reset_id = None
         self._current_id = None
+        # Snapshot ids are backend-session scoped; offsets tied to them are invalid now.
+        self._snapshot_time_offsets.clear()
+        self._time_offset = 0
         self._chainid = None
         _notify_registry(BlockNumber(0))
 
@@ -394,11 +437,17 @@ class Chain(metaclass=_Singleton):
         """
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
-        self._time_offset = int(rpc.Rpc().sleep(seconds))
+        result = rpc.Rpc().sleep(seconds)
+        if seconds:
+            # Nonzero sleep semantics vary by backend, but the requested delta is stable.
+            self._time_offset += seconds
+        else:
+            # Zero-second sleep is used as an explicit backend offset sync.
+            self._set_time_offset_from_rpc(result)
 
         if seconds:
             self._redo_buffer.clear()
-            self._current_id = rpc.Rpc().snapshot()
+            self._current_id = self._take_snapshot()
 
     def mine(
         self, blocks: int = 1, timestamp: int | None = None, timedelta: int | None = None
@@ -444,11 +493,11 @@ class Chain(metaclass=_Singleton):
         for i in range(blocks):
             rpc.Rpc().mine(*params[i])
 
-        if timestamp is not None:
-            self.sleep(0)
+        if blocks:
+            self._set_time_offset_from_block()
 
         self._redo_buffer.clear()
-        self._current_id = rpc.Rpc().snapshot()
+        self._current_id = self._take_snapshot()
         return web3.eth.block_number
 
     def snapshot(self) -> None:
@@ -460,7 +509,7 @@ class Chain(metaclass=_Singleton):
         with self._undo_lock:
             self._undo_buffer.clear()
             self._redo_buffer.clear()
-            self._snapshot_id = self._current_id = rpc.Rpc().snapshot()
+            self._snapshot_id = self._current_id = self._take_snapshot()
 
     def revert(self) -> BlockNumber:
         """
@@ -497,7 +546,7 @@ class Chain(metaclass=_Singleton):
             self._undo_buffer.clear()
             self._redo_buffer.clear()
             if self._reset_id is None:
-                self._reset_id = self._current_id = rpc.Rpc().snapshot()
+                self._reset_id = self._current_id = self._take_snapshot()
                 _notify_registry(BlockNumber(0))
             else:
                 self._reset_id = self._current_id = self._revert(self._reset_id)
