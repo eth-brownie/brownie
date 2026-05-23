@@ -28,6 +28,11 @@ TARGET_OPTS = {
     "pm": "package_test",
     "plugin": "plugintester",
 }
+BACKEND_BY_NETWORK = {
+    "development": "anvil",
+    "ganache-cli": "ganache",
+    "hardhat": "hardhat",
+}
 _dev_network = "development"
 
 
@@ -48,6 +53,12 @@ def pytest_addoption(parser):
         "--network",
         choices=["development", "ganache-cli", "hardhat"],
         default="development",
+    )
+    parser.addoption(
+        "--backend",
+        choices=["auto", "anvil", "ganache", "hardhat"],
+        default="auto",
+        help="Select backend-specific tests; defaults to the active development network.",
     )
 
 
@@ -72,8 +83,26 @@ def pytest_collection_modifyitems(config, items):
         for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
             items.remove(test)
 
+    backend = _get_backend(config)
+    for test in list(items):
+        backend_marker = test.get_closest_marker("backend")
+        if backend_marker is not None and backend not in backend_marker.args:
+            items.remove(test)
+
+
+def _get_backend(config):
+    backend = config.getoption("--backend")
+    if backend != "auto":
+        return backend
+    return BACKEND_BY_NETWORK[config.getoption("--network")]
+
 
 def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "backend(name): mark a test as requiring a specific development RPC backend",
+    )
+
     if config.getoption("--target") == "plugin" and config.getoption("numprocesses"):
         raise pytest.UsageError("Cannot use xdist with plugin tests, try adding the '-n 0' flag")
 

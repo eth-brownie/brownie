@@ -4,6 +4,8 @@ import pytest
 
 from brownie.network.rpc import ganache
 
+pytestmark = pytest.mark.backend("ganache")
+
 
 @pytest.fixture
 def popen_calls(monkeypatch):

@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+pytestmark = pytest.mark.backend("anvil")
+
 skip_macos = pytest.mark.skipif(
     sys.platform == "darwin",
     reason="We do not want to spend time adapting this test to the new MacOS runner",
