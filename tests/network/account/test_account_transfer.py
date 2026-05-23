@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import threading
+
 import pytest
 
 from brownie import compile_source
@@ -30,6 +32,30 @@ def test_to_account(accounts):
     """Can send to an Account object"""
     tx = accounts[0].transfer(accounts[1], 10000)
     assert str(tx.receiver) == accounts[1].address
+
+
+@pytest.mark.filterwarnings("error")
+def test_to_account_sleep_raises(accounts, rpc, monkeypatch):
+    """Can transfer also for backends that do not support sleeping"""
+
+    def _raises(seconds):
+        raise NotImplementedError("Dummy geth does not support sleep")
+
+    assert rpc.is_active()
+    monkeypatch.setattr(rpc, "sleep", _raises)
+    tx = accounts[0].transfer(accounts[1], 10000)
+    assert str(tx.receiver) == accounts[1].address
+    # The transfer method spawns a daemon thread (undo_thread)
+    # to handle the undo buffer, and the exception (if any) will
+    # be raised in this thread. To be able to catch it, we will
+    # have to wait for the undo thread. An exception in a daemon
+    # thread will lead to a warning in pytest which we convert into an
+    # error using the pytest.mark above
+    for t in threading.enumerate():
+        if t is threading.current_thread():
+            pass
+        else:
+            t.join()
 
 
 def test_to_contract(accounts, tester):
