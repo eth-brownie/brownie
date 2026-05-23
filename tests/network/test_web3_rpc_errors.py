@@ -6,6 +6,7 @@ from web3.exceptions import Web3RPCError
 from brownie.exceptions import VirtualMachineError
 from brownie.network.middlewares.catch_tx_revert import TxRevertCatcherMiddleware
 from brownie.network.middlewares.ganache7 import Ganache7MiddleWare
+from brownie.network.web3 import Web3
 
 TXID = "0x" + "12" * 32
 
@@ -64,8 +65,9 @@ def test_tx_revert_catcher_converts_web3_v7_rpc_errors(method):
     def make_request(method, params):
         raise Web3RPCError("execution reverted", rpc_response=rpc_response)
 
+    middleware = Web3()._build_middleware(TxRevertCatcherMiddleware)[1]
     with pytest.raises(ValueError) as exc:
-        TxRevertCatcherMiddleware().process_request(make_request, method, [])
+        middleware.process_request(make_request, method, [])
 
     assert exc.value.args[0] == rpc_response["error"]
 
@@ -79,8 +81,9 @@ def test_tx_revert_catcher_reraises_web3_v7_rpc_errors_for_other_methods():
     def make_request(method, params):
         raise rpc_error
 
+    middleware = Web3()._build_middleware(TxRevertCatcherMiddleware)[1]
     with pytest.raises(Web3RPCError) as exc:
-        TxRevertCatcherMiddleware().process_request(make_request, "eth_sendTransaction", [])
+        middleware.process_request(make_request, "eth_sendTransaction", [])
 
     assert exc.value is rpc_error
 
@@ -91,7 +94,8 @@ def test_ganache7_middleware_normalizes_raised_web3_v7_rpc_errors():
     def make_request(method, params):
         raise Web3RPCError("execution reverted", rpc_response=rpc_response)
 
-    result = Ganache7MiddleWare().process_request(make_request, "eth_sendTransaction", [])
+    middleware = Web3()._build_middleware(Ganache7MiddleWare)[1]
+    result = middleware.process_request(make_request, "eth_sendTransaction", [])
 
     assert result["error"]["data"] == {
         TXID: {
@@ -108,7 +112,8 @@ def test_ganache7_middleware_reraises_web3_v7_rpc_errors_without_response():
     def make_request(method, params):
         raise rpc_error
 
+    middleware = Web3()._build_middleware(Ganache7MiddleWare)[1]
     with pytest.raises(Web3RPCError) as exc:
-        Ganache7MiddleWare().process_request(make_request, "eth_sendTransaction", [])
+        middleware.process_request(make_request, "eth_sendTransaction", [])
 
     assert exc.value is rpc_error
