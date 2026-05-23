@@ -102,6 +102,8 @@ class SolidityBuildJson(_ContractBuildJson):
     opcodes: NotRequired[list[str]]
     sourceMap: NotRequired[dict]  # TODO: define typed dict
     deployedSourceMap: NotRequired[dict]  # TODO: define typed dict
+    linkReferences: NotRequired[dict[str, dict[str, list[dict[str, int]]]]]
+    deployedLinkReferences: NotRequired[dict[str, dict[str, list[dict[str, int]]]]]
 
 
 @final
