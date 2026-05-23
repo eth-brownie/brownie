@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
 import warnings
+from inspect import Parameter, signature
 
 import hypothesis
-from hypothesis.errors import HypothesisDeprecationWarning
+from hypothesis.errors import HypothesisDeprecationWarning, InvalidArgument
 
 from brownie import network
 from brownie.exceptions import BrownieTestWarning
@@ -24,6 +25,7 @@ def given(*given_args, **given_kwargs):
     """
 
     def outer_wrapper(test):
+        _validate_given_kwargs(test, given_kwargs)
         first_run = True
 
         def isolation_wrapper(*args, **kwargs):
@@ -52,6 +54,26 @@ def given(*given_args, **given_kwargs):
         return hy_wrapped
 
     return outer_wrapper
+
+
+def _validate_given_kwargs(test, given_kwargs):
+    if not given_kwargs:
+        return
+
+    parameters = signature(test).parameters
+    if any(i.kind is Parameter.VAR_KEYWORD for i in parameters.values()):
+        return
+
+    valid_kwargs = {
+        key
+        for key, value in parameters.items()
+        if value.kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY)
+    }
+    for key in given_kwargs:
+        if key not in valid_kwargs:
+            raise InvalidArgument(
+                f"{test.__name__}() got an unexpected keyword argument {key!r}"
+            )
 
 
 def _given_warning_wrapper(*args, **kwargs):
