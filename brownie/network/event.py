@@ -492,44 +492,39 @@ class EventWatcher(metaclass=_Singleton):
         workers_list: list[Thread] = []
 
         while not stop_event.is_set():
-            try:
-                sleep_time: float = 1.0  # Max sleep time.
-                due_watch_data: list[_EventWatchData] = []
+            sleep_time: float = 1.0  # Max sleep time.
+            due_watch_data: list[tuple[str, _EventWatchData]] = []
 
+            with self.target_list_lock:
+                for key, elem in self.target_events_watch_data.items():
+                    # If cooldown is not over :
+                    #   skip and store time left before next check if needed.
+                    time_left = elem.time_left
+                    if time_left > 0:
+                        sleep_time = min(sleep_time, time_left)
+                    else:
+                        due_watch_data.append((key, elem))
+
+            for key, elem in due_watch_data:
+                if stop_event.is_set():
+                    break
+                # Check for new events without holding the watcher state lock.
+                latest_events = elem.get_new_events()
+                if stop_event.is_set():
+                    break
                 with self.target_list_lock:
-                    for elem in self.target_events_watch_data.values():
-                        # If cooldown is not over :
-                        #   skip and store time left before next check if needed.
-                        time_left = elem.time_left
-                        if time_left > 0:
-                            sleep_time = min(sleep_time, time_left)
-                            continue
-                        due_watch_data.append(elem)
-
-                for elem in due_watch_data:
-                    if stop_event.is_set():
-                        break
-                    # Check for new events without holding the watcher state lock.
-                    latest_events = elem.get_new_events()
-                    if stop_event.is_set():
-                        break
-                    with self.target_list_lock:
-                        if stop_event.is_set():
-                            break
-                        if not any(
-                            watch_data is elem
-                            for watch_data in self.target_events_watch_data.values()
-                        ):
-                            continue
+                    event_watch_data = self.target_events_watch_data.get(key)
+                    should_trigger = event_watch_data is elem and not stop_event.is_set()
+                    if should_trigger:
                         if len(latest_events) != 0:
                             workers_list += elem._trigger_callbacks(latest_events)
                         elem.reset_timer()
                         # after elem.reset_timer elem.time_left is approximately elem.delay
                         sleep_time = min(sleep_time, elem.time_left)
-            finally:
-                # Remove dead threads from the workers_list
-                workers_list = list(filter(lambda x: x.is_alive(), workers_list))
-                stop_event.wait(sleep_time)
+
+            # Remove dead threads from the workers_list
+            workers_list = list(filter(lambda x: x.is_alive(), workers_list))
+            stop_event.wait(sleep_time)
 
         # Join running threads when leaving function.
         for worker_instance in workers_list:
