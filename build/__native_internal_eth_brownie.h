@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2459];
+extern PyObject *CPyStatics[2462];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1737,6 +1737,8 @@ extern PyObject *CPyDef_compiler___utils___expand_source_map(PyObject *cpy_r_sou
 extern PyObject *CPyPy_compiler___utils___expand_source_map(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_compiler___utils____expand_row(PyObject *cpy_r_row);
 extern PyObject *CPyPy_compiler___utils____expand_row(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern tuple_T4IIIO CPyDef_compiler___utils____to_source(PyObject *cpy_r_row);
+extern PyObject *CPyPy_compiler___utils____to_source(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_compiler___utils___merge_natspec(PyObject *cpy_r_devdoc, PyObject *cpy_r_userdoc);
 extern PyObject *CPyPy_compiler___utils___merge_natspec(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_compiler___utils____get_alias(PyObject *cpy_r_contract_name, PyObject *cpy_r_path_str);

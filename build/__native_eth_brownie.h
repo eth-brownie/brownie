@@ -199,14 +199,14 @@ typedef struct tuple_T16OOOOOOOOOOOOOOOO {
 } tuple_T16OOOOOOOOOOOOOOOO;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T4IIOO
-#define MYPYC_DECLARED_tuple_T4IIOO
-typedef struct tuple_T4IIOO {
+#ifndef MYPYC_DECLARED_tuple_T4IIIO
+#define MYPYC_DECLARED_tuple_T4IIIO
+typedef struct tuple_T4IIIO {
     CPyTagged f0;
     CPyTagged f1;
-    PyObject *f2;
+    CPyTagged f2;
     PyObject *f3;
-} tuple_T4IIOO;
+} tuple_T4IIIO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T3IIO
