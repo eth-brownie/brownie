@@ -83,6 +83,7 @@ if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject
 
 AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+LinkReferences = dict[str, dict[str, list[dict[str, int]]]]
 
 _unverified_addresses: Final[set[ChecksumAddress]] = set()
 
@@ -169,6 +170,75 @@ class _ContractBase:
         input_args = format_input(abi, result)
 
         return function_sig, input_args
+
+
+def _get_linked_libraries_by_source(build: ContractBuildJson) -> dict[str, set[str]]:
+    link_references = build.get("linkReferences", {})
+    if link_references:
+        return {
+            source_path: set(source_references)
+            for source_path, source_references in link_references.items()
+        }
+    bytecode = build.get("bytecode", "")
+    libraries = {lib.strip("_") for lib in regex_findall("_{1,}[^_]*_{1,}", bytecode)}
+    return {build["sourcePath"]: libraries} if libraries else {}
+
+
+def _get_linked_library_names(build: ContractBuildJson) -> set[str]:
+    libraries_by_source = _get_linked_libraries_by_source(build)
+    return {library for libraries in libraries_by_source.values() for library in libraries}
+
+
+def _get_deployed_library_address(project: Any, library: str) -> str:
+    try:
+        container = project[library]
+    except KeyError:
+        container = []
+    if not container:
+        raise UndeployedLibrary(
+            f"Contract requires '{library}' library, but it has not been deployed yet"
+        )
+    return container[-1].address[-40:].lower()
+
+
+def _link_bytecode_from_references(
+    project: Any, bytecode: str, link_references: LinkReferences
+) -> str:
+    prefix_length = 2 if bytecode.startswith("0x") else 0
+    references = [
+        (location["start"], location["length"], library)
+        for source_references in link_references.values()
+        for library, locations in source_references.items()
+        for location in locations
+    ]
+    for start, length, library in sorted(references, reverse=True):
+        address = _get_deployed_library_address(project, library)
+        location = prefix_length + start * 2
+        length *= 2
+        bytecode = f"{bytecode[:location]}{address}{bytecode[location + length:]}"
+    return bytecode
+
+
+def _link_bytecode_from_markers(project: Any, bytecode: str) -> str:
+    for marker in regex_findall("_{1,}[^_]*_{1,}", bytecode):
+        library = marker.strip("_")
+        address = _get_deployed_library_address(project, library)
+        bytecode = bytecode.replace(marker, address)
+    return bytecode
+
+
+def _link_bytecode(
+    project: Any,
+    build: ContractBuildJson,
+    bytecode_key: str,
+    link_references_key: str,
+) -> str:
+    bytecode = build.get(bytecode_key, "")
+    if not bytecode:
+        return ""
+    if link_references := build.get(link_references_key, {}):
+        return _link_bytecode_from_references(project, bytecode, link_references)
+    return _link_bytecode_from_markers(project, bytecode)
 
 
 class ContractContainer(_ContractBase):
@@ -313,12 +383,16 @@ class ContractContainer(_ContractBase):
                         compiler._get_solc_remappings(config["solc"]["remappings"]),
                     )
                 )
-                libs = {lib.strip("_") for lib in regex_findall("_{1,}[^_]*_{1,}", self.bytecode)}
+                libraries = _get_linked_libraries_by_source(self._build)
                 compiler_settings = {
                     "evmVersion": self._build["compiler"]["evm_version"],
                     "optimizer": config["solc"]["optimizer"],
                     "libraries": {
-                        Path(source_fp).name: {lib: self._project[lib][-1].address for lib in libs}
+                        source_path: {
+                            library: self._project[library][-1].address
+                            for library in source_libraries
+                        }
+                        for source_path, source_libraries in libraries.items()
                     },
                 }
                 self._flattener = Flattener(source_fp, self._name, remaps, compiler_settings)
@@ -572,16 +646,13 @@ class ContractConstructor:
         return _contract_method_autosuggest(obj.abi["inputs"], True, obj.payable)
 
     def encode_input(self, *args: Any) -> str:
-        bytecode = self._parent.bytecode
         # find and replace unlinked library pointers in bytecode
-        for marker in regex_findall("_{1,}[^_]*_{1,}", bytecode):
-            library = marker.strip("_")
-            if not self._parent._project[library]:
-                raise UndeployedLibrary(
-                    f"Contract requires '{library}' library, but it has not been deployed yet"
-                )
-            address = self._parent._project[library][-1].address[-40:]
-            bytecode = bytecode.replace(marker, address)
+        bytecode = _link_bytecode(
+            self._parent._project,
+            self._parent._build,
+            "bytecode",
+            "linkReferences",
+        )
 
         abi = self.abi
         data = format_input(abi, args)
@@ -715,10 +786,22 @@ class _DeployedContractBase(_ContractBase):
         tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
-        self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
+        bytecode = self._build.get("deployedBytecode", None)
+        if bytecode and self._project is not None:
+            try:
+                bytecode = _link_bytecode(
+                    self._project,
+                    self._build,
+                    "deployedBytecode",
+                    "deployedLinkReferences",
+                )
+            except UndeployedLibrary:
+                bytecode = None
+        if not bytecode:
             # removeprefix is used for compatibility with both hexbytes<1 and >=1
-            self._build.get("deployedBytecode", None)
-            or web3.eth.get_code(address).hex().removeprefix("0x")
+            bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
+        self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
+            bytecode
         )
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")

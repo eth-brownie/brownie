@@ -325,6 +325,10 @@ def _get_unique_build_json(
         "pcMap": pc_map,
         "type": contract_node.contractKind,
     }
+    if link_references := output_evm["bytecode"].get("linkReferences", {}):
+        build_json["linkReferences"] = link_references
+    if deployed_link_references := bytecode_json.get("linkReferences", {}):
+        build_json["deployedLinkReferences"] = deployed_link_references
     return build_json
 
 

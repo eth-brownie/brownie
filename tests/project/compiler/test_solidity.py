@@ -123,7 +123,9 @@ def test_compile_input_json_evm_translates(solc5source, original, translated):
 
 def test_build_json_keys(solc5source):
     build_json = compiler.compile_and_format({"path.sol": solc5source})
-    assert set(build.BUILD_KEYS) == set(build_json["Foo"])
+    optional_keys = {"linkReferences", "deployedLinkReferences"}
+    assert set(build.BUILD_KEYS).issubset(build_json["Foo"])
+    assert set(build_json["Foo"]).issubset(set(build.BUILD_KEYS) | optional_keys)
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
@@ -135,6 +137,14 @@ def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 
+def test_build_json_preserves_link_references(solc6source):
+    build_json = compiler.compile_and_format({"path.sol": solc6source}, solc_version="0.6.2")
+    for field in ("linkReferences", "deployedLinkReferences"):
+        assert "path.sol" in build_json["Foo"][field]
+        assert "Bar" in build_json["Foo"][field]["path.sol"]
+        assert all(i["length"] == 20 for i in build_json["Foo"][field]["path.sol"]["Bar"])
+
+
 def test_format_link_references(solc4json, solc5json, solc6json):
     evm = solc4json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
@@ -142,6 +152,19 @@ def test_format_link_references(solc4json, solc5json, solc6json):
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
     evm = solc6json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
+
+
+def test_format_link_references_uses_reference_positions(solc6json):
+    evm = solc6json["contracts"]["path.sol"]["Foo"]["evm"]
+    reference = evm["bytecode"]["linkReferences"]["path.sol"]["Bar"][0]
+    start = reference["start"] * 2
+    length = reference["length"] * 2
+
+    marker = compiler.solidity._format_link_references(evm)[start : start + length]
+
+    assert marker.startswith("__Bar")
+    assert marker.endswith("__")
+    assert len(marker) == length
 
 
 def test_compiler_errors(solc4source, solc5source):
