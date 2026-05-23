@@ -380,23 +380,18 @@ class Chain(metaclass=_Singleton):
         self, tx: TransactionReceipt, fn: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         with self._undo_lock:
-            self._add_to_undo_buffer_unlocked(tx, fn, args, kwargs)
-
-    def _add_to_undo_buffer_unlocked(
-        self, tx: TransactionReceipt, fn: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> None:
-        tx._confirmed.wait()
-        self._undo_buffer.append(
-            (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
-        )
-        redo_buffer = self._redo_buffer
-        if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
-            redo_buffer.pop()
-        else:
-            redo_buffer.clear()
-        # Transactions can advance the backend clock, so resync from the mined block.
-        self._set_time_offset_from_block()
-        self._current_id = self._take_snapshot()
+            tx._confirmed.wait()
+            self._undo_buffer.append(
+                (self._current_id, fn, args, kwargs)  # type: ignore [arg-type]
+            )
+            redo_buffer = self._redo_buffer
+            if redo_buffer and (fn, args, kwargs) == redo_buffer[-1]:
+                redo_buffer.pop()
+            else:
+                redo_buffer.clear()
+            # Transactions can advance the backend clock, so resync from the mined block.
+            self._set_time_offset_from_block()
+            self._current_id = self._take_snapshot()
 
     def _network_connected(self) -> None:
         self._reset_id = None
