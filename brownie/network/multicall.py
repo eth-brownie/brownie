@@ -20,13 +20,6 @@ MULTICALL2_ABI = ujson_loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").
 MULTICALL2_SOURCE = DATA_DIR.joinpath("contracts", "Multicall2.sol").read_text()
 
 
-def _active_network_evm_version() -> str | None:
-    cmd_settings = CONFIG.active_network.get("cmd_settings") or {}
-    if not isinstance(cmd_settings, dict):
-        return None
-    return cmd_settings.get("evm_version")
-
-
 @dataclass
 class Call:
 
@@ -199,3 +192,10 @@ class Multicall:
         deployment = project.Multicall2.deploy(tx_params)
         CONFIG.active_network["multicall2"] = deployment.address
         return deployment
+
+
+def _active_network_evm_version() -> str | None:
+    cmd_settings = CONFIG.active_network.get("cmd_settings") or {}
+    if not isinstance(cmd_settings, dict):
+        return None
+    return cmd_settings.get("evm_version")
