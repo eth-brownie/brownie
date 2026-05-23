@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from threading import Event as ThreadEvent, Lock
 
 import pytest
 from web3.datastructures import AttributeDict
@@ -27,6 +28,10 @@ def event_watcher_instance():
 def wait_for_tx(tx: TransactionReceipt, n: int = 1):
     if tx.confirmations != n:
         tx.wait(n)
+
+
+def wait_for_no_callback(callback_event: ThreadEvent, timeout: float = 0.2) -> None:
+    assert callback_event.wait(timeout) is False
 
 
 def test_tuple_values(accounts, tester):
@@ -211,56 +216,59 @@ class TestEventWatcher:
     def event_watcher_reset(self, event_watcher_instance: EventWatcher):
         """Resets the event_watcher instance between each test in the class"""
         event_watcher_instance.reset()
+        yield
+        event_watcher_instance.reset()
 
     def test_can_subscribe_to_event_with_callback(_, tester: Contract):
         expected_num: int = round(time.time()) % 100  # between 0 and 99
         received_num: int = -1
-        callback_was_triggered: bool = False
+        callback_was_triggered = ThreadEvent()
 
         def _callback(data):
-            nonlocal received_num, callback_was_triggered
+            nonlocal received_num
             received_num = data["args"]["num"]
-            callback_was_triggered = True
+            callback_was_triggered.set()
 
         tester.events.subscribe("IndexedEvent", callback=_callback, delay=0.05)
         wait_for_tx(tester.emitEvents("", expected_num))
-        time.sleep(0.1)
 
-        assert callback_was_triggered is True, "Callback was not triggered."
+        assert callback_was_triggered.wait(1.0) is True, "Callback was not triggered."
         assert expected_num == received_num, "Callback was not triggered with the right event"
 
     def test_can_subscribe_to_event_with_multiple_callbacks(_, tester: Contract):
-        callback_trigger_1: bool = False
-        callback_trigger_2: bool = False
+        callback_trigger_1 = ThreadEvent()
+        callback_trigger_2 = ThreadEvent()
 
         def _cb1(_):
-            nonlocal callback_trigger_1
-            callback_trigger_1 = True
+            callback_trigger_1.set()
 
         def _cb2(_):
-            nonlocal callback_trigger_2
-            callback_trigger_2 = True
+            callback_trigger_2.set()
 
         tester.events.subscribe("IndexedEvent", callback=_cb1, delay=0.05)
         tester.events.subscribe("IndexedEvent", callback=_cb2, delay=0.05)
         wait_for_tx(tester.emitEvents("", 0))
-        time.sleep(0.1)
 
-        assert callback_trigger_1 is True, "Callback 1 was not triggered"
-        assert callback_trigger_2 is True, "Callback 2 was not triggered"
+        assert callback_trigger_1.wait(1.0) is True, "Callback 1 was not triggered"
+        assert callback_trigger_2.wait(1.0) is True, "Callback 2 was not triggered"
 
     def test_callback_can_be_triggered_multiple_times(_, tester: Contract):
         callback_trigger_count = 0
         expected_callback_trigger_count = 2
+        callbacks_triggered = ThreadEvent()
+        callback_lock = Lock()
 
         def _cb(_):
             nonlocal callback_trigger_count
-            callback_trigger_count += 1
+            with callback_lock:
+                callback_trigger_count += 1
+                if callback_trigger_count == expected_callback_trigger_count:
+                    callbacks_triggered.set()
 
         tester.events.subscribe("Debug", callback=_cb, delay=0.05)
         wait_for_tx(tester.emitEvents("", 0))
-        time.sleep(0.1)
 
+        assert callbacks_triggered.wait(1.0) is True
         assert (
             callback_trigger_count == expected_callback_trigger_count
         ), "Callback was not triggered the exact number of time it should have"
@@ -288,19 +296,22 @@ class TestEventWatcher:
     def test_not_repeating_callback_is_removed_after_triggered(_, tester: Contract):
         expected_trigger_count: int = 1
         trigger_count: int = 0
+        callback_triggered = ThreadEvent()
 
         def _cb(_):
             nonlocal trigger_count
             trigger_count += 1
+            callback_triggered.set()
 
         event_watcher.add_event_callback(
             event=tester.events.IndexedEvent, callback=_cb, delay=0.05, repeat=False
         )
 
         wait_for_tx(tester.emitEvents("", 0))
-        time.sleep(0.1)
+        assert callback_triggered.wait(1.0) is True
+        callback_triggered.clear()
         wait_for_tx(tester.emitEvents("", 0))
-        time.sleep(0.1)
+        wait_for_no_callback(callback_triggered)
 
         assert trigger_count == expected_trigger_count
 
@@ -309,10 +320,15 @@ class TestEventWatcher:
     ):
         expected_trigger_count: int = 3
         trigger_count: int = 0
+        callbacks_triggered = ThreadEvent()
+        callback_lock = Lock()
 
         def _cb(_):
             nonlocal trigger_count
-            trigger_count += 1
+            with callback_lock:
+                trigger_count += 1
+                if trigger_count == expected_trigger_count:
+                    callbacks_triggered.set()
 
         event_watcher.add_event_callback(
             event=tester.events.IndexedEvent, callback=_cb, delay=0.05, repeat=False
@@ -322,10 +338,9 @@ class TestEventWatcher:
         )
 
         wait_for_tx(tester.emitEvents("", 0))
-        time.sleep(0.1)
         wait_for_tx(tester.emitEvents("", 0))
-        time.sleep(0.1)
 
+        assert callbacks_triggered.wait(1.0) is True
         assert trigger_count == expected_trigger_count
 
     @pytest.mark.skip(reason="For developing purpose")

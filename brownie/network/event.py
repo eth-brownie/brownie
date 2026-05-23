@@ -369,7 +369,7 @@ class EventWatcher(metaclass=_Singleton):
         self._watcher_thread = Thread(target=self._loop, daemon=True)
 
     def __del__(self) -> None:
-        self.stop()
+        self.stop(wait=False)
 
     def stop(self, wait: bool = True) -> None:
         """
