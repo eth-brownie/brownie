@@ -4,6 +4,7 @@ import pytest
 from lazy_object_proxy import Proxy
 
 import brownie
+import brownie.network.multicall as multicall_module
 
 
 @pytest.mark.skip("goerli is dead, maybe fix this with another network")
@@ -98,6 +99,58 @@ def test_standard_calls_work_after_context(accounts, tester):
 def test_deploy_staticmethod(accounts, config):
     multicall = brownie.multicall.deploy({"from": accounts[0]})
     assert config.active_network["multicall2"] == multicall.address
+
+
+class _FakeDeployment:
+    address = "0x0000000000000000000000000000000000000001"
+
+
+class _FakeMulticallContainer:
+    @staticmethod
+    def deploy(tx_params):
+        return _FakeDeployment()
+
+
+class _FakeProject:
+    Multicall2 = _FakeMulticallContainer()
+
+
+def test_deploy_compiles_with_active_network_evm_version(monkeypatch):
+    active_network = {"cmd_settings": {"evm_version": "istanbul"}}
+    fake_config = type("FakeConfig", (), {"active_network": active_network})()
+    compile_calls = []
+
+    def fake_compile_source(source, **kwargs):
+        compile_calls.append((source, kwargs))
+        return _FakeProject()
+
+    monkeypatch.setattr(multicall_module, "CONFIG", fake_config)
+    monkeypatch.setattr(multicall_module, "compile_source", fake_compile_source)
+
+    deployment = multicall_module.Multicall.deploy({"from": "account"})
+
+    assert deployment.address == _FakeDeployment.address
+    assert active_network["multicall2"] == _FakeDeployment.address
+    assert compile_calls == [
+        (multicall_module.MULTICALL2_SOURCE, {"evm_version": "istanbul"})
+    ]
+
+
+def test_deploy_preserves_compile_defaults_without_evm_version(monkeypatch):
+    active_network = {"cmd_settings": {}}
+    fake_config = type("FakeConfig", (), {"active_network": active_network})()
+    compile_calls = []
+
+    def fake_compile_source(source, **kwargs):
+        compile_calls.append((source, kwargs))
+        return _FakeProject()
+
+    monkeypatch.setattr(multicall_module, "CONFIG", fake_config)
+    monkeypatch.setattr(multicall_module, "compile_source", fake_compile_source)
+
+    multicall_module.Multicall.deploy({"from": "account"})
+
+    assert compile_calls == [(multicall_module.MULTICALL2_SOURCE, {})]
 
 
 def test_using_block_identifier(accounts, tester):
