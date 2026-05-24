@@ -81,6 +81,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stabilize event watcher shutdown ([#2195](https://github.com/eth-brownie/brownie/pull/2195))
 - Normalize ganache time travel ([#2196](https://github.com/eth-brownie/brownie/pull/2196))
 - Link libraries from solc link references ([#2197](https://github.com/eth-brownie/brownie/pull/2197))
+- Harden event watcher shutdown lifecycle ([#2198](https://github.com/eth-brownie/brownie/pull/2198))
+- Serialize chain time-travel snapshots ([#2199](https://github.com/eth-brownie/brownie/pull/2199))
+- Guard empty Solidity metadata stripping ([#2200](https://github.com/eth-brownie/brownie/pull/2200))
+- Restore Ganache default account balance ([#2201](https://github.com/eth-brownie/brownie/pull/2201))
+- Compile multicall with the configured Ganache hardfork ([#2202](https://github.com/eth-brownie/brownie/pull/2202))
+- Use web3 v7 event filter keyword arguments ([#2203](https://github.com/eth-brownie/brownie/pull/2203))
+- Build web3 RPC error middleware tests with web3 objects ([#2204](https://github.com/eth-brownie/brownie/pull/2204))
+- Normalize fake solcx install versions in compiler tests ([#2205](https://github.com/eth-brownie/brownie/pull/2205))
+- Propagate project development cmd settings ([#2206](https://github.com/eth-brownie/brownie/pull/2206))
+- Honor explorer ABI fallback persistence ([#2207](https://github.com/eth-brownie/brownie/pull/2207))
+- Fix remaining bad test assumptions ([#2208](https://github.com/eth-brownie/brownie/pull/2208))
+- Run event callbacks once per nonrepeat watcher ([#2209](https://github.com/eth-brownie/brownie/pull/2209))
+- Remove pytest skip strict keyword ([#2210](https://github.com/eth-brownie/brownie/pull/2210))
+- Normalize explorer solc version checks ([#2211](https://github.com/eth-brownie/brownie/pull/2211))
+- Guard old Vyper output selection cleanup ([#2212](https://github.com/eth-brownie/brownie/pull/2212))
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
