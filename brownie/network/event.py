@@ -324,21 +324,27 @@ class _EventWatchData:
 
         self.cooldown_time_over = False
         threads: list[Thread] = []
-        for callback in self._callbacks_list:
+        callbacks_to_run = self._callbacks_list.copy()
+        self._callbacks_list.clear()
+        for callback in callbacks_to_run:
+            if callback.get("repeat"):
+                self._callbacks_list.append(callback)
+                data_to_map = events_data
+            else:
+                data_to_map = events_data[:1]
+
             # Creates a thread for each callback
             threads.append(
                 Thread(
                     target=_map_callback_on_list,
                     args=(
                         callback["function"],
-                        events_data,
+                        data_to_map,
                     ),
                     daemon=True,
                 )
             )
             threads[-1].start()
-        # Remove non-repeating callbacks from list
-        self._callbacks_list = [cb for cb in self._callbacks_list if cb.get("repeat")]
         return threads
 
     @property
