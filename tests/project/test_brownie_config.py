@@ -64,13 +64,28 @@ def test_load_project_cmd_settings(config, testproject, project_settings):
 
     # Load the project with its project specific settings and assert that the CONFIG was updated
     testproject.load_config()
-    cmd_settings_config = config.networks["development"]["cmd_settings"]
-    for k, v in project_settings["cmd_settings"].items():
-        if k != "port":
-            try:
-                assert cmd_settings_network_raw[k] == v
-            except KeyError as e:
-                raise KeyError(*e.args, cmd_settings_network_raw) from e
+    for network in ("development", "ganache-cli", "hardhat"):
+        cmd_settings_config = config.networks[network]["cmd_settings"]
+        for k, v in project_settings["cmd_settings"].items():
+            if k != "port":
+                try:
+                    assert cmd_settings_config[k] == v
+                except KeyError as e:
+                    raise KeyError(*e.args, cmd_settings_config) from e
+
+
+def test_project_cmd_settings_backend_overrides(config, testproject):
+    project_config = copy.deepcopy(BASE_PROJECT_CONFIG)
+    project_config["networks"]["ganache-cli"] = {"cmd_settings": {"accounts": 4}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(project_config, fp)
+
+    testproject.load_config()
+
+    cmd_settings = config.networks["ganache-cli"]["cmd_settings"]
+    generic_cmd_settings = BASE_PROJECT_CONFIG["networks"]["development"]["cmd_settings"]
+    assert cmd_settings["accounts"] == 4
+    assert cmd_settings["chain_id"] == generic_cmd_settings["chain_id"]
 
 
 def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_settings, network_name):

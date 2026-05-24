@@ -228,19 +228,36 @@ def _load_project_config(project_path: pathlib.Path) -> None:
 
     # Update the network config cmd_settings with project specific cmd_settings
     if "networks" in config_data and isinstance(config_data["networks"], dict):
-        for network, values in config_data["networks"].items():
+        network_configs = config_data["networks"]
+        development_values = network_configs.get("development")
+        if isinstance(development_values, dict):
+            development_cmd_settings = development_values.get("cmd_settings")
+            if isinstance(development_cmd_settings, dict):
+                for values in CONFIG.networks.values():
+                    if "cmd" not in values:
+                        continue
+                    if "cmd_settings" in values and isinstance(values["cmd_settings"], dict):
+                        _recursive_update(values["cmd_settings"], development_cmd_settings)
+                    else:
+                        values["cmd_settings"] = deepcopy(development_cmd_settings)
+
+        for network, values in network_configs.items():
             if (
                 network != "default"
                 and network in CONFIG.networks.keys()
+                and isinstance(values, dict)
+                and "cmd" in CONFIG.networks[network]
                 and "cmd_settings" in values
                 and isinstance(values["cmd_settings"], dict)
             ):
-                if "cmd_settings" in CONFIG.networks[network]:
+                if "cmd_settings" in CONFIG.networks[network] and isinstance(
+                    CONFIG.networks[network]["cmd_settings"], dict
+                ):
                     _recursive_update(
                         CONFIG.networks[network]["cmd_settings"], values["cmd_settings"]
                     )
                 else:
-                    CONFIG.networks[network]["cmd_settings"] = values["cmd_settings"]
+                    CONFIG.networks[network]["cmd_settings"] = deepcopy(values["cmd_settings"])
 
     settings = CONFIG.settings
     settings._unlock()
