@@ -92,7 +92,7 @@ setup(
         include=["brownie", "brownie.*"],
         exclude=["brownie.__pycache__", "brownie.*.__pycache__"],
     ),
-    version="1.22.0.dev4",  # don't change this manually, use bumpversion instead
+    version="1.22.0",  # don't change this manually, use bumpversion instead
     license="MIT",
     description="A Python framework for Ethereum smart contract deployment, testing and interaction.",  # noqa: E501
     long_description=long_description,
