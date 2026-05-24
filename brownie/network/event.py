@@ -518,7 +518,12 @@ class EventWatcher(metaclass=_Singleton):
                 if stop_event.is_set():
                     break
                 # Check for new events without holding the watcher state lock.
-                latest_events = elem.get_new_events()
+                try:
+                    latest_events = elem.get_new_events()
+                except AttributeError as exc:
+                    if _is_provider_teardown_error(exc):
+                        break
+                    raise
                 if stop_event.is_set():
                     break
                 with self.target_list_lock:
@@ -679,6 +684,12 @@ def _create_event_filter(
     if to_block is not None:
         filter_kwargs["to_block"] = to_block
     return event.create_filter(**filter_kwargs)
+
+
+def _is_provider_teardown_error(exc: AttributeError) -> bool:
+    return web3.provider is None and (
+        getattr(exc, "name", None) == "_is_batching" or "_is_batching" in str(exc)
+    )
 
 
 # dictionary of event topic ABIs specific to a single contract deployment

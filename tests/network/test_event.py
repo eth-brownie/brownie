@@ -15,6 +15,7 @@ from brownie.network.event import (
     EventWatcher,
     _create_event_filter,
     _EventItem,
+    _is_provider_teardown_error,
     event_watcher,
 )
 from brownie.network.transaction import TransactionReceipt
@@ -123,6 +124,17 @@ def test_create_event_filter_omits_missing_to_block():
 
     assert event_filter == "filter"
     assert event.calls == [{"from_block": 4}]
+
+
+def test_provider_teardown_error_detection_is_narrow(monkeypatch):
+    teardown_error = AttributeError("'NoneType' object has no attribute '_is_batching'")
+
+    monkeypatch.setattr("brownie.network.event.web3.provider", None)
+    assert _is_provider_teardown_error(teardown_error) is True
+    assert _is_provider_teardown_error(AttributeError("unrelated")) is False
+
+    monkeypatch.setattr("brownie.network.event.web3.provider", object())
+    assert _is_provider_teardown_error(teardown_error) is False
 
 
 def test_tuple_values(accounts, tester):
