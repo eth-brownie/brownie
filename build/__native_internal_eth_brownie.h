@@ -1246,6 +1246,8 @@ extern PyObject *CPyDef_event____decode_ds_note(PyObject *cpy_r_log, PyObject *c
 extern PyObject *CPyPy_event____decode_ds_note(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_event____decode_trace(PyObject *cpy_r_trace, PyObject *cpy_r_initial_address);
 extern PyObject *CPyPy_event____decode_trace(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern PyObject *CPyDef_event____create_event_filter(PyObject *cpy_r_event, PyObject *cpy_r_from_block, PyObject *cpy_r_to_block);
+extern PyObject *CPyPy_event____create_event_filter(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_event_____top_level__(void);
 extern PyObject *CPyStatic_middlewares___partial;
 extern PyObject *CPyStatic_middlewares____middlewares;

@@ -10,7 +10,13 @@ from web3.exceptions import ABIEventNotFound
 
 from brownie import Contract, compile_source
 from brownie.exceptions import EventLookupError
-from brownie.network.event import EventDict, EventWatcher, _EventItem, event_watcher
+from brownie.network.event import (
+    EventDict,
+    EventWatcher,
+    _create_event_filter,
+    _EventItem,
+    event_watcher,
+)
 from brownie.network.transaction import TransactionReceipt
 
 
@@ -73,6 +79,15 @@ class _FakeEvent:
     event_name = "FakeEvent"
 
 
+class _FilterRecorder:
+    def __init__(self):
+        self.calls = []
+
+    def create_filter(self, **kwargs):
+        self.calls.append(kwargs)
+        return "filter"
+
+
 def fake_event_key(event):
     return f"{str(event.address)}+{event.event_name}"
 
@@ -90,6 +105,24 @@ def start_watcher_with_target(event_watcher_instance, watch_data):
 def release_and_join_watcher(watch_data, watcher_thread):
     watch_data.release_poll.set()
     watcher_thread.join(timeout=1.0)
+
+
+def test_create_event_filter_uses_web3_v7_keywords():
+    event = _FilterRecorder()
+
+    event_filter = _create_event_filter(event, from_block=4, to_block=12)
+
+    assert event_filter == "filter"
+    assert event.calls == [{"from_block": 4, "to_block": 12}]
+
+
+def test_create_event_filter_omits_missing_to_block():
+    event = _FilterRecorder()
+
+    event_filter = _create_event_filter(event, from_block=4)
+
+    assert event_filter == "filter"
+    assert event.calls == [{"from_block": 4}]
 
 
 def test_tuple_values(accounts, tester):
