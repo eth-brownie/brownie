@@ -394,6 +394,9 @@ class EventWatcher(metaclass=_Singleton):
         stop_event = self._watcher_stop_event
         watcher_thread = self._watcher_thread
 
+        if self._has_started is False and not watcher_thread.is_alive():
+            return
+
         stop_event.set()
         if wait is True and watcher_thread.is_alive():
             watcher_thread.join(timeout=_WATCHER_THREAD_JOIN_TIMEOUT)

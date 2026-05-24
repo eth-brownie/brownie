@@ -9,6 +9,7 @@ from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentWarning
 
 from .account import Accounts
+from .event import event_watcher
 from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, _notify_registry
@@ -64,6 +65,7 @@ def disconnect(kill_rpc: bool = True) -> None:
     """Disconnects from the network."""
     if not is_connected():
         raise ConnectionError("Not connected to any network")
+    event_watcher.stop()
     CONFIG.clear_active()
     if kill_rpc and rpc.is_active() and rpc.is_child():
         rpc.kill()
