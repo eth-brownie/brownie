@@ -73,20 +73,21 @@ def test_return_value(accounts, tester):
 
 
 def test_return_value_from_rpc_result(accounts, tester, monkeypatch):
-    tx = tester.setNum(42, {"from": accounts[0]})
+    tx = tester.setNum(42, {"from": accounts[0], "_skip_undo": True})
 
     def make_request(method, params):
         assert method == "debug_traceTransaction"
         assert params[0] == tx.txid
         return {"result": {"returnValue": "0x" + "0" * 63 + "1", "structLogs": []}}
 
+    monkeypatch.setattr("brownie.network.transaction.web3._supports_traces", True)
     monkeypatch.setattr("brownie.network.transaction.web3.provider.make_request", make_request)
 
     assert tx.return_value is True
 
 
-def test_revert_msg_from_rpc_result(accounts, tester, monkeypatch):
-    tx = tester.revertStrings(0, {"from": accounts[0]})
+def test_revert_msg_from_rpc_result(accounts, tester, monkeypatch, console_mode):
+    tx = tester.revertStrings(0, {"from": accounts[0], "_skip_undo": True})
     tx._revert_msg = None
     tx._dev_revert_msg = None
     encoded_error = (
@@ -101,6 +102,7 @@ def test_revert_msg_from_rpc_result(accounts, tester, monkeypatch):
         assert params[0] == tx.txid
         return {"result": {"returnValue": encoded_error, "structLogs": []}}
 
+    monkeypatch.setattr("brownie.network.transaction.web3._supports_traces", True)
     monkeypatch.setattr("brownie.network.transaction.web3.provider.make_request", make_request)
 
     assert tx.revert_msg == "zero"
