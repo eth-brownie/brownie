@@ -52,7 +52,7 @@ def msolc(monkeypatch):
         Version("0.4.6"),
     ]
     monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
-    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append(k))
+    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append(Version(str(k))))
     monkeypatch.setattr(
         "solcx.get_installable_solc_versions",
         lambda: [
