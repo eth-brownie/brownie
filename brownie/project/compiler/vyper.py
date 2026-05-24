@@ -260,8 +260,9 @@ def compile_from_input_json(
         print(f"  Vyper version: {version}")
     if version < Version("0.1.0-beta.17"):
         outputs = input_json["settings"]["outputSelection"]["*"]["*"]
-        outputs.remove("userdoc")
-        outputs.remove("devdoc")
+        for unsupported_output in ("userdoc", "devdoc"):
+            if unsupported_output in outputs:
+                outputs.remove(unsupported_output)
     if version == Version(vyper.__version__):
         try:
             return vyper_json.compile_json(input_json)
