@@ -1,9 +1,10 @@
+import threading
 from pathlib import Path
 
 import pytest
 import solcx
 
-from brownie.project import load, new
+from brownie.project import get_loaded_projects, load, new
 from brownie.project.compiler.solidity import find_best_solc_version
 
 sources = [
@@ -48,6 +49,8 @@ contract Bar is FooSomething {}
     ),
 ]
 
+_verification_info_lock = threading.Lock()
+
 
 def _write_project_sources(dir: Path, sources: list[tuple[str, str]], header: str = "") -> dict:
     modded_sources = {}
@@ -77,32 +80,43 @@ pragma solidity {version};
 
     """
 
-    # setup directory
-    dir: Path = tmp_path_factory.mktemp("verify-project")
-    # initialize brownie project
-    new(dir.as_posix())
+    with _verification_info_lock:
+        # setup directory
+        dir: Path = tmp_path_factory.mktemp("verify-project")
+        # initialize brownie project
+        new(dir.as_posix())
 
-    modded_sources = _write_project_sources(dir, sources, header)
+        modded_sources = _write_project_sources(dir, sources, header)
 
-    find_best_solc_version(modded_sources, install_needed=True)
+        find_best_solc_version(modded_sources, install_needed=True)
 
-    project = load(dir, "TestImportProject")
+        loaded_before = get_loaded_projects()
+        project = load(dir, "TestImportProject")
+        try:
+            loaded_after_load = get_loaded_projects()
+            assert loaded_after_load.count(project) == 1
+            assert all(loaded_project in loaded_after_load for loaded_project in loaded_before)
 
-    for contract_name in ("Foo", "Bar", "Baz"):
-        contract = getattr(project, contract_name)
-        input_data, output_data = _compile_verification_info(contract)
-        source_path = contract._build["sourcePath"]
-        assert source_path in input_data["sources"]
-        build_info = output_data["contracts"][source_path][contract_name]
+            for contract_name in ("Foo", "Bar", "Baz"):
+                contract = getattr(project, contract_name)
+                input_data, output_data = _compile_verification_info(contract)
+                source_path = contract._build["sourcePath"]
+                assert source_path in input_data["sources"]
+                build_info = output_data["contracts"][source_path][contract_name]
 
-        assert build_info["abi"] == contract.abi
-        # ignore the metadata at the end of the bytecode, etherscan does the same
-        assert build_info["evm"]["bytecode"]["object"][:-96] == contract.bytecode[:-96]
-        assert (
-            build_info["evm"]["deployedBytecode"]["object"][:-96]
-            == contract._build["deployedBytecode"][:-96]
-        )
-    project.close()
+                assert build_info["abi"] == contract.abi
+                # ignore the metadata at the end of the bytecode, etherscan does the same
+                assert build_info["evm"]["bytecode"]["object"][:-96] == contract.bytecode[:-96]
+                assert (
+                    build_info["evm"]["deployedBytecode"]["object"][:-96]
+                    == contract._build["deployedBytecode"][:-96]
+                )
+        finally:
+            project.close(False)
+
+        loaded_after_close = get_loaded_projects()
+        assert project not in loaded_after_close
+        assert all(loaded_project in loaded_after_close for loaded_project in loaded_before)
 
 
 def test_verification_info_preserves_duplicate_basenames(tmp_path_factory):

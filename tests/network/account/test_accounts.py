@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 import pytest
-from eip712.messages import EIP712Message, EIP712Type
+from eip712.messages import EIP712Domain, EIP712Message, EIP712Type
 from eth_account.datastructures import SignedMessage
+from eth_pydantic_types import abi
 
 from brownie.exceptions import UnknownAccount
 from brownie.network.account import ETH_ACCOUNT_LT_0_13_0, LocalAccount
@@ -136,12 +137,12 @@ def test_mnemonic_offset_multiple(accounts):
 
 def test_sign_message(accounts):
     class TestSubType(EIP712Type):
-        inner: "uint256"  # type: ignore # noqa: F821
+        inner: abi.uint256
 
     class TestMessage(EIP712Message):
-        _name_: "string" = "Brownie Tests"  # type: ignore # noqa: F821
-        value: "uint256"  # type: ignore # noqa: F821
-        default_value: "address" = "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"  # type: ignore # noqa: F821,E501
+        eip712_domain = EIP712Domain(name="Brownie Tests")
+        value: abi.uint256
+        default_value: abi.address = "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"
         sub: TestSubType
 
     local = accounts.add(priv_key)
