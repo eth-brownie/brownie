@@ -1155,12 +1155,14 @@ class Contract(_DeployedContractBase):
         else:
             try:
                 version = cls.get_solc_version(compiler_str, address)
+                # Normalize solcx versions to Brownie's Version type for membership checks.
+                available_solc_versions = {
+                    Version(str(i))
+                    for i in solcx.get_installable_solc_versions()
+                    + solcx.get_installed_solc_versions()
+                }
 
-                is_compilable = (
-                    version >= Version("0.4.22")
-                    and version
-                    in solcx.get_installable_solc_versions() + solcx.get_installed_solc_versions()
-                )
+                is_compilable = version >= Version("0.4.22") and version in available_solc_versions
             except Exception:
                 is_compilable = False
 
