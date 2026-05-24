@@ -99,6 +99,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stop event watcher before disconnect ([#2213](https://github.com/eth-brownie/brownie/pull/2213))
 - Narrow event watcher provider teardown guard ([#2214](https://github.com/eth-brownie/brownie/pull/2214))
 - Reject empty code contract attachment ([#2215](https://github.com/eth-brownie/brownie/pull/2215))
+- Make PragmaNotFound an exception subclass ([#2216](https://github.com/eth-brownie/brownie/pull/2216))
+- Microoptimize cache middleware gate ([#2218](https://github.com/eth-brownie/brownie/pull/2218))
+- Use Petersburg for Vyper beta16 default EVM ([#2217](https://github.com/eth-brownie/brownie/pull/2217))
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
