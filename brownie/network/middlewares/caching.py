@@ -223,7 +223,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         method: RPCEndpoint,
         params: Sequence[Any],
     ) -> dict[str, Any]:
-        if method in (
+        if method in {
             # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",
             "eth_newBlockFilter",
@@ -238,7 +238,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             "eth_getTransactionByHash",
             "eth_getTransactionReceipt",
             "eth_chainId",
-        ):
+        }:
             return make_request(method, params)
 
         # try to return a cached value
