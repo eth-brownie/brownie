@@ -96,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove pytest skip strict keyword ([#2210](https://github.com/eth-brownie/brownie/pull/2210))
 - Normalize explorer solc version checks ([#2211](https://github.com/eth-brownie/brownie/pull/2211))
 - Guard old Vyper output selection cleanup ([#2212](https://github.com/eth-brownie/brownie/pull/2212))
+- Stop event watcher before disconnect ([#2213](https://github.com/eth-brownie/brownie/pull/2213))
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
