@@ -8,7 +8,7 @@ from eth_typing import HexStr
 from vvm.utils.convert import to_vyper_version
 
 from brownie._c_constants import NpmSpec, Path, regex_findall, regex_finditer, regex_sub, sha1
-from brownie.exceptions import NamespaceCollision, PragmaError
+from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.typing import ContractName, Offset
 from brownie.utils import color
 from brownie.utils._color import dark_white
@@ -216,13 +216,10 @@ def get_pragma_spec(source: str, path: str | None = None) -> semantic_version.Np
     """
 
     pragma_match = next(regex_finditer(r"pragma +solidity([^;]*);", source), None)
-    if pragma_match is not None:
-        pragma_string = pragma_match.groups()[0]
-        pragma_string = " ".join(pragma_string.split())
-        return NpmSpec(pragma_string)
-    if path:
-        raise PragmaError(f"No version pragma in '{path}'")
-    raise PragmaError("String does not contain a version pragma")
+    if pragma_match is None:
+        raise PragmaNotFound(path)
+    pragma_string = pragma_match.groups()[0]
+    return NpmSpec(" ".join(pragma_string.split()))
 
 
 def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_version.NpmSpec:
@@ -239,9 +236,7 @@ def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_vers
         regex_finditer(r"(?:\n|^)\s*#\s*(?:pragma version|@version)\s*([^\n]*)", source), None
     )
     if pragma_match is None:
-        if path:
-            raise PragmaError(f"No version pragma in '{path}'")
-        raise PragmaError("String does not contain a version pragma")
+        raise PragmaNotFound(path)
 
     pragma_string = pragma_match.groups()[0]
     pragma_string = " ".join(pragma_string.split())
