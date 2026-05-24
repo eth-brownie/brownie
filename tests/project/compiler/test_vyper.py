@@ -24,7 +24,7 @@ def test_generate_input_json(vysource):
 
 
 def test_generate_input_json_evm(vysource):
-    """Legacy Vyper defaults to Istanbul unless a newer active version is selected."""
+    """Vyper defaults to the newest EVM target supported by the active version."""
     compiler.vyper.set_vyper_version("0.2.4")
     fn = functools.partial(compiler.generate_input_json, {"path.vy": vysource}, language="Vyper")
     assert fn()["settings"]["evmVersion"] == "istanbul"
@@ -39,6 +39,7 @@ def test_generate_input_json_evm(vysource):
 @pytest.mark.parametrize(
     ("vyper_version", "expected_evm_version"),
     [
+        ("0.1.0-beta.16", "petersburg"),
         ("0.2.4", "istanbul"),
         ("0.2.12", "berlin"),
         ("0.3.7", "paris"),
