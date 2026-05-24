@@ -50,7 +50,7 @@ eth-account==0.13.7
     #   -r requirements.in
     #   eip712
     #   web3
-eth-event==1.4.7
+eth-event==1.4.8
     # via -r requirements.in
 eth-hash[pycryptodome]==0.8.0
     # via
@@ -103,7 +103,7 @@ faster-eth-utils==5.3.26
     # via
     #   -r requirements.in
     #   faster-eth-abi
-faster-hexbytes==1.3.6
+faster-hexbytes==1.3.8
     # via
     #   -r requirements.in
     #   eth-event
