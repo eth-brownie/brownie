@@ -50,7 +50,8 @@ EVM_VERSION_MAPPING: Final = [
     ("shanghai", Version("0.3.9")),
     ("paris", Version("0.3.7")),
     ("berlin", Version("0.2.12")),
-    ("istanbul", Version("0.1.0-beta.16")),
+    ("istanbul", Version("0.1.0-beta.17")),
+    ("petersburg", Version("0.1.0-beta.16")),
 ]
 
 _get_installed_vyper_versions: Final = vvm.get_installed_vyper_versions
