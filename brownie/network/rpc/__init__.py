@@ -172,9 +172,12 @@ class Rpc(metaclass=_Singleton):
         self.backend.mine(timestamp)
         return web3.eth.block_number
 
+    def _snapshot(self) -> int:
+        return self.backend.snapshot()
+
     @internal
     def snapshot(self) -> int:
-        return self.backend.snapshot()
+        return self._snapshot()
 
     @internal
     def revert(self, snapshot_id: int) -> int:

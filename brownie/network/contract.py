@@ -1949,7 +1949,7 @@ class ContractCall(_ContractMethod):
         tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
         tx["_skip_undo"] = True
         pc, revert_msg = None, None
-        snapshot_id = rpc.snapshot()
+        snapshot_id = rpc._snapshot()
 
         try:
             self.transact(*args, tx)
