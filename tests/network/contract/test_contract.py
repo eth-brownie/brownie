@@ -191,7 +191,7 @@ def test_retrieve_existing(connect_to_mainnet):
 
 
 @auto_retry
-@pytest.mark.skip(reason="Goerli on Infura is dead - the test suite needs a refactor", strict=False)
+@pytest.mark.skip(reason="Goerli on Infura is dead - the test suite needs a refactor")
 def test_existing_different_chains(network, connect_to_mainnet):
     with pytest.warns(BrownieCompilerWarning):
         Contract.from_explorer("0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2")
