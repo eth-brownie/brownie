@@ -269,9 +269,17 @@ class IncompatibleVyperVersion(Exception):
     pass
 
 
-@final
 class PragmaError(Exception):
     pass
+
+
+@final
+class PragmaNotFound(PragmaError):
+    def __init__(self, path: str | None) -> None:
+        if path:
+            super().__init__(f"No version pragma in '{path}'")
+        else:
+            super().__init__("String does not contain a version pragma")
 
 
 @final
