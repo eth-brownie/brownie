@@ -97,6 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normalize explorer solc version checks ([#2211](https://github.com/eth-brownie/brownie/pull/2211))
 - Guard old Vyper output selection cleanup ([#2212](https://github.com/eth-brownie/brownie/pull/2212))
 - Stop event watcher before disconnect ([#2213](https://github.com/eth-brownie/brownie/pull/2213))
+- Narrow event watcher provider teardown guard ([#2214](https://github.com/eth-brownie/brownie/pull/2214))
+- Reject empty code contract attachment ([#2215](https://github.com/eth-brownie/brownie/pull/2215))
 
 ## [1.21.0](https://github.com/eth-brownie/brownie/tree/v1.21.0) - 2025-05-23
 ### Fixed
