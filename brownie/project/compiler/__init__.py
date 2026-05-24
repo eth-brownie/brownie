@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index,typeddict-unknown-key"
 
-from typing import Any, Final, Union, cast
+from typing import Any, Final, TypeAlias, Union, cast
 
 import solcast
 from eth_typing import ABIElement, HexStr
@@ -52,7 +52,7 @@ STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     },
 }
 
-EvmVersionSpec = Union[EvmVersion, dict[Language, EvmVersion | None]]
+EvmVersionSpec: TypeAlias = Union[EvmVersion, dict[Language, EvmVersion | None]]
 
 
 # C constants

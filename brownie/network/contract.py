@@ -10,7 +10,7 @@ from pathlib import Path
 from re import Match
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import TYPE_CHECKING, Any, Final, Optional, Union
+from typing import TYPE_CHECKING, Any, Final, Optional, TypeAlias, Union
 
 import requests
 import solcx
@@ -81,8 +81,8 @@ from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject
 
-AnyContractMethod = Union["ContractCall", "ContractTx", "OverloadedMethod"]
-LinkReferences = dict[str, dict[str, list[dict[str, int]]]]
+AnyContractMethod: TypeAlias = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+LinkReferences: TypeAlias = dict[str, dict[str, list[dict[str, int]]]]
 
 _unverified_addresses: Final[set[ChecksumAddress]] = set()
 

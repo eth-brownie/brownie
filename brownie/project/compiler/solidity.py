@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import logging
-from typing import Any, Deque, Final, cast
+from typing import Any, Deque, Final, TypeAlias, cast
 
 import semantic_version
 import solcast
@@ -54,10 +54,10 @@ EVM_VERSION_MAPPING: Final = [
     ("byzantium", Version("0.4.0")),
 ]
 
-PcMap = dict[Count, ProgramCounter]
-StatementNodes = dict[str, set[Offset]]
-BranchNodes = dict[str, set[NodeBase]]
-SolcxVersion = VersionSpec | PVersion
+PcMap: TypeAlias = dict[Count, ProgramCounter]
+StatementNodes: TypeAlias = dict[str, set[Offset]]
+BranchNodes: TypeAlias = dict[str, set[NodeBase]]
+SolcxVersion: TypeAlias = VersionSpec | PVersion
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 

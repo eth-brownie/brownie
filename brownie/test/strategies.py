@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from collections.abc import Callable, Iterable
-from typing import Any, Literal, Union, overload
+from typing import Any, Literal, TypeAlias, Union, overload
 
 from faster_eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
@@ -14,10 +14,10 @@ from brownie.convert.utils import get_int_bounds
 
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
-ArrayLengthType = Union[int, list, None]
-NumberType = Union[float, int, None]
+ArrayLengthType: TypeAlias = Union[int, list, None]
+NumberType: TypeAlias = Union[float, int, None]
 
-EvmIntType = Literal[
+EvmIntType: TypeAlias = Literal[
     "int8",
     "int16",
     "int24",
@@ -52,7 +52,7 @@ EvmIntType = Literal[
     "int256",
 ]
 
-EvmUintType = Literal[
+EvmUintType: TypeAlias = Literal[
     "uint8",
     "uint16",
     "uint24",

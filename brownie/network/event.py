@@ -8,7 +8,7 @@ from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, ValuesView
 from pathlib import Path
 from threading import Lock, Thread
-from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar, Union, cast, final, overload
+from typing import TYPE_CHECKING, Any, Final, Generic, TypeAlias, TypeVar, Union, cast, final, overload
 
 import eth_event
 from eth_event import EventError
@@ -35,10 +35,10 @@ if TYPE_CHECKING:
 _WATCHER_THREAD_JOIN_TIMEOUT: Final = 1.0
 
 
-TopicMap = dict[HexStr, TopicMapData]
-DeploymentTopics = dict[ChecksumAddress, TopicMap]
+TopicMap: TypeAlias = dict[HexStr, TopicMapData]
+DeploymentTopics: TypeAlias = dict[ChecksumAddress, TopicMap]
 
-EventData = OrderedDict[str, Any]
+EventData: TypeAlias = OrderedDict[str, Any]
 """An OrderedDict which contains the indexed args for a single on-chain event."""
 
 
@@ -249,10 +249,10 @@ class _EventItem(Generic[_TData]):
         return ReturnValue(self._ordered[0].values())
 
 
-Event = _EventItem[EventData]
+Event: TypeAlias = _EventItem[EventData]
 """An _EventItem which represents a single event."""
 
-Events = _EventItem[Event]
+Events: TypeAlias = _EventItem[Event]
 """An _EventItem which represents a collection of events which share the same event name."""
 
 

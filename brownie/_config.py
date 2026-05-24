@@ -4,7 +4,7 @@ import pathlib
 import shutil
 import sys
 import warnings
-from typing import Any, DefaultDict, Final, Literal, NewType, final
+from typing import Any, DefaultDict, Final, Literal, NewType, TypeAlias, final
 
 import yaml
 from dotenv import dotenv_values, load_dotenv
@@ -37,7 +37,7 @@ python_version: Final = (
 REQUEST_HEADERS: Final = {"User-Agent": f"Brownie/{__version__} (Python/{python_version})"}
 
 
-NetworkType = Literal["live", "development", None]
+NetworkType: TypeAlias = Literal["live", "development", None]
 NetworkConfig = NewType("NetworkConfig", dict[str, Any])
 # TODO: Make this a typed dict
 

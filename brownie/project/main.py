@@ -11,7 +11,7 @@ from base64 import b64encode
 from collections.abc import Iterator, KeysView
 from io import BytesIO
 from types import ModuleType
-from typing import Any, Final, Literal
+from typing import Any, Final, Literal, TypeAlias
 from urllib.parse import quote
 
 import requests
@@ -91,9 +91,9 @@ GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
 
-NamespaceId = ContractName | Literal["interface"]
-ChainDeployments = dict[ContractName, list[ChecksumAddress]]
-DeploymentMap = dict[int | str, ChainDeployments]
+NamespaceId: TypeAlias = ContractName | Literal["interface"]
+ChainDeployments: TypeAlias = dict[ContractName, list[ChecksumAddress]]
+DeploymentMap: TypeAlias = dict[int | str, ChainDeployments]
 
 _loaded_projects: Final[list["Project"]] = []
 

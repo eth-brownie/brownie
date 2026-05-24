@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index"
 
-from typing import Union, cast
+from typing import TypeAlias, Union, cast
 
 from semantic_version import Version
 
@@ -9,9 +9,9 @@ from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.typing import ContractName, Source, SourceId, SourceIndex
 
-VersionSpec = Union[str, Version]
-VersionList = list[Version]
-SourceMapRow = list[str | int | None]
+VersionSpec: TypeAlias = Union[str, Version]
+VersionList: TypeAlias = list[Version]
+SourceMapRow: TypeAlias = list[str | int | None]
 
 
 def expand_source_map(source_map_str: str | dict) -> list[Source]:

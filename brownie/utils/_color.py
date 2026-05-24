@@ -3,7 +3,7 @@
 import sys
 import traceback
 from collections.abc import Sequence
-from typing import Any, Final, Literal, cast, final
+from typing import Any, Final, Literal, TypeAlias, cast, final
 
 import pygments
 from pygments.formatter import Formatter
@@ -54,7 +54,7 @@ COLORS: Final = {
 }
 
 
-NotifyType = Literal["SUCCESS", "WARNING", "ERROR"]
+NotifyType: TypeAlias = Literal["SUCCESS", "WARNING", "ERROR"]
 NOTIFY_COLORS: Final = {"WARNING": "bright red", "ERROR": "bright red", "SUCCESS": "bright green"}
 
 base_path: Final = str(Path(".").absolute())
