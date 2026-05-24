@@ -964,6 +964,7 @@ typedef struct {
     PyObject *_elem;
     double _time_left;
     PyObject *_latest_events;
+    PyObject *_exc;
     PyObject *_event_watch_data;
     char _should_trigger;
 } brownie___network___event____loop_EventWatcher_envObject;
