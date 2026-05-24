@@ -1128,7 +1128,7 @@ class Contract(_DeployedContractBase):
                 try:
                     # first try to call `implementation` per EIP897
                     # https://eips.ethereum.org/EIPS/eip-897
-                    contract = cls.from_abi(name, address, abi)
+                    contract = cls.from_abi(name, address, abi, persist=False)
                     as_proxy_for = contract.implementation.call()
                 except Exception:
                     # if that fails, fall back to the address provided by etherscan
@@ -1139,11 +1139,11 @@ class Contract(_DeployedContractBase):
 
         # if this is a proxy, fetch information for the implementation contract
         if as_proxy_for is not None:
-            implementation_contract = Contract.from_explorer(as_proxy_for)
+            implementation_contract = Contract.from_explorer(as_proxy_for, persist=persist)
             abi = implementation_contract._build["abi"]
 
         if not is_verified:
-            return cls.from_abi(name, address, abi, owner)
+            return cls.from_abi(name, address, abi, owner, persist=persist)
 
         compiler_str = data["result"][0]["CompilerVersion"]
         if compiler_str.startswith("vyper:"):
@@ -1171,7 +1171,7 @@ class Contract(_DeployedContractBase):
                     "supported by Brownie. Some debugging functionality will not be available.",
                     BrownieCompilerWarning,
                 )
-            return cls.from_abi(name, address, abi, owner)
+            return cls.from_abi(name, address, abi, owner, persist=persist)
         elif data["result"][0]["OptimizationUsed"] in ("true", "false"):
             if not silent:
                 warnings.warn(
@@ -1179,7 +1179,7 @@ class Contract(_DeployedContractBase):
                     "Some debugging functionality will not be available.",
                     BrownieCompilerWarning,
                 )
-            return cls.from_abi(name, address, abi, owner)
+            return cls.from_abi(name, address, abi, owner, persist=persist)
 
         optimizer = {
             "enabled": bool(int(data["result"][0]["OptimizationUsed"])),
@@ -1232,7 +1232,7 @@ class Contract(_DeployedContractBase):
                     " some functionality will not be available.",
                     BrownieCompilerWarning,
                 )
-            return cls.from_abi(name, address, abi, owner)
+            return cls.from_abi(name, address, abi, owner, persist=persist)
 
         build_json = build_json[name]
         if as_proxy_for is not None:
