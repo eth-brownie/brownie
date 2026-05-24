@@ -7,7 +7,7 @@ import weakref
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from sqlite3 import OperationalError
-from typing import TYPE_CHECKING, Any, Final, Union, cast, final
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, Union, cast, final
 
 from eth_typing import BlockNumber, ChecksumAddress, HexAddress, HexStr
 from web3.datastructures import AttributeDict
@@ -30,13 +30,13 @@ from .web3 import _resolve_address, web3
 if TYPE_CHECKING:
     from .contract import Contract, ProjectContract
 
-PathMap = dict[str, tuple[HexStr, str]]
-Deployment = tuple[ContractBuildJson, dict[str, Any]]
+PathMap: TypeAlias = dict[str, tuple[HexStr, str]]
+Deployment: TypeAlias = tuple[ContractBuildJson, dict[str, Any]]
 
-UndoBuffer = list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any]]]
-RedoBuffer = list[tuple[Any, tuple[Any, ...], dict[str, Any]]]
+UndoBuffer: TypeAlias = list[tuple[int | str, Any, tuple[Any, ...], dict[str, Any]]]
+RedoBuffer: TypeAlias = list[tuple[Any, tuple[Any, ...], dict[str, Any]]]
 
-AnyContract = Union["Contract", "ProjectContract"]
+AnyContract: TypeAlias = Union["Contract", "ProjectContract"]
 
 _contract_map: Final[dict[ChecksumAddress, AnyContract]] = {}
 _revert_refs: Final[list[weakref.ReferenceType]] = []

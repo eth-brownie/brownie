@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Literal, NewType, TypedDict, TypeVar, final
+from typing import TYPE_CHECKING, Any, Literal, NewType, TypeAlias, TypedDict, TypeVar, final
 
 from eth_event.main import EventData
 from eth_typing import ABIElement, ChecksumAddress, HexStr
@@ -33,9 +33,9 @@ TransactionReceiptType = TypeVar("TransactionReceiptType", bound="TransactionRec
 
 
 # PROJECT
-Start = int
-Stop = int
-Offset = tuple[Start, Stop]
+Start: TypeAlias = int
+Stop: TypeAlias = int
+Offset: TypeAlias = tuple[Start, Stop]
 
 
 # Build
@@ -65,14 +65,14 @@ class InterfaceBuildJson(_BuildJsonBase):
     ast: NotRequired[list[dict]]
 
 
-IntegerString = str
+IntegerString: TypeAlias = str
 """An integer cast as a string, as in: ``str(123)``"""
 
-Statements = dict[str, dict["Count", Offset]]
-StatementMap = dict[IntegerString, Statements]
+Statements: TypeAlias = dict[str, dict["Count", Offset]]
+StatementMap: TypeAlias = dict[IntegerString, Statements]
 
-Branches = dict[str, dict["Count", tuple[int, int, bool]]]
-BranchMap = dict[IntegerString, Branches]
+Branches: TypeAlias = dict[str, dict["Count", tuple[int, int, bool]]]
+BranchMap: TypeAlias = dict[IntegerString, Branches]
 
 
 class CoverageMap(TypedDict):
@@ -112,16 +112,16 @@ class VyperBuildJson(_ContractBuildJson):
     language: Literal["Vyper"]
 
 
-ContractBuildJson = SolidityBuildJson | VyperBuildJson
-BuildJson = ContractBuildJson | InterfaceBuildJson
+ContractBuildJson: TypeAlias = SolidityBuildJson | VyperBuildJson
+BuildJson: TypeAlias = ContractBuildJson | InterfaceBuildJson
 
 
 # Compiler
-Language = Literal["Solidity", "Vyper"]
+Language: TypeAlias = Literal["Solidity", "Vyper"]
 EvmVersion = NewType("EvmVersion", str)
 SourceId = NewType("SourceId", int)
-SourceIndex = SourceId | Literal[-1]
-Source = tuple[Start, Stop, SourceIndex, str]
+SourceIndex: TypeAlias = SourceId | Literal[-1]
+Source: TypeAlias = tuple[Start, Stop, SourceIndex, str]
 
 
 class ContractSource(TypedDict):
@@ -132,8 +132,8 @@ class InterfaceSource(TypedDict):
     abi: list[ABIElement]
 
 
-SourcesDict = dict[str, ContractSource | InterfaceSource]
-InterfaceSources = dict[str, InterfaceSource]
+SourcesDict: TypeAlias = dict[str, ContractSource | InterfaceSource]
+InterfaceSources: TypeAlias = dict[str, InterfaceSource]
 
 
 @final
@@ -168,7 +168,7 @@ class CompilerConfig(TypedDict):
     optimizer: NotRequired[OptimizerSettings]
 
 
-OutputSelection = dict[str, dict[str, list[str]]]
+OutputSelection: TypeAlias = dict[str, dict[str, list[str]]]
 
 
 class _CompilerSettings(TypedDict):
@@ -208,10 +208,10 @@ class InputJsonVyper(_InputJsonBase, total=False):
     settings: SettingsVyper
 
 
-InputJson = InputJsonSolc | InputJsonVyper
+InputJson: TypeAlias = InputJsonSolc | InputJsonVyper
 
 
-Count = int
+Count: TypeAlias = int
 
 
 class ProgramCounter(TypedDict):
@@ -231,7 +231,7 @@ class ProgramCounter(TypedDict):
     statement: NotRequired[Count]
 
 
-PcList = list[ProgramCounter]
+PcList: TypeAlias = list[ProgramCounter]
 PCMap = NewType("PCMap", dict[int, ProgramCounter])
 
 
@@ -248,4 +248,4 @@ class VyperAstNode(TypedDict):
     test: dict
 
 
-VyperAstJson = list[VyperAstNode]
+VyperAstJson: TypeAlias = list[VyperAstNode]

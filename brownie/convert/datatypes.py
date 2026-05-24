@@ -2,7 +2,7 @@
 
 import decimal
 from collections.abc import ItemsView, Iterable, KeysView, Sequence
-from typing import Any, Final, Optional, TypeVar, Union, final, overload
+from typing import Any, Final, Optional, TypeAlias, TypeVar, Union, final, overload
 
 try:
     from vyper.exceptions import DecimalOverrideException
@@ -37,7 +37,7 @@ WeiInputTypes = TypeVar("WeiInputTypes", str, float, int, bytes, decimal.Decimal
 # This is no longer used within the codebase but we leave it
 # in place in case downstream users import it
 
-WeiInputType = str | float | int | bytes | decimal.Decimal | None
+WeiInputType: TypeAlias = str | float | int | bytes | decimal.Decimal | None
 
 
 to_checksum_address: Final = cchecksum.to_checksum_address

@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from collections.abc import Iterator, Sequence
-from typing import Any, Final, cast
+from typing import Any, Final, TypeAlias, cast
 
 from eth_event.main import DecodedEvent, EventData, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
@@ -13,7 +13,7 @@ from .datatypes import EthAddress, HexString, ReturnValue
 from .main import to_bool, to_decimal, to_int, to_string, to_uint
 from .utils import get_type_strings
 
-AnyListOrTuple = list[Any] | tuple[Any, ...]
+AnyListOrTuple: TypeAlias = list[Any] | tuple[Any, ...]
 
 # Internal C constants
 
