@@ -334,6 +334,12 @@ class ContractContainer(_ContractBase):
             )
 
         build = self._build
+        # If constructor execution removed the code (e.g. selfdestruct), this
+        # address is not attachable even though the creation tx succeeded.
+        actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
+        if not actual_bytecode:
+            raise ContractNotFound(f"No contract deployed at {address}")
+
         contract = ProjectContract(self._project, build, address, owner, tx)
         if not _verify_deployed_code(address, build["deployedBytecode"], build["language"]):
             # prevent trace attempts when the bytecode doesn't match
