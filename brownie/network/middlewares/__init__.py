@@ -1,11 +1,14 @@
 import functools
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Sequence
-from typing import Any, Final
+from typing import Any, Final, TypeAlias
 
 from web3 import Web3
 from web3.middleware import Web3Middleware
 from web3.types import RPCEndpoint
+
+
+Middlewares: TypeAlias = dict[int, list[type["BrownieMiddlewareABC"]]]
+
 
 partial: Final = functools.partial
 
@@ -93,7 +96,7 @@ class BrownieMiddlewareABC(Web3Middleware, ABC):
         """
 
 
-def get_middlewares(web3: Web3, network_type: str) -> dict:
+def get_middlewares(web3: Web3, network_type: str) -> Middlewares:
     """
     Get a list of middlewares to be used for the given web3 object.
 
@@ -104,11 +107,11 @@ def get_middlewares(web3: Web3, network_type: str) -> dict:
     network_type : str
         One of "live" or "development".
     """
-    middleware_layers: dict[int, list[type[BrownieMiddlewareABC]]] = {}
-    for obj in _middlewares:
-        layer = obj.get_layer(web3, network_type)
+    middleware_layers: Middlewares = {}
+    for middleware in _middlewares:
+        layer = middleware.get_layer(web3, network_type)
         if layer is not None:
-            middleware_layers.setdefault(layer, []).append(obj)
+            middleware_layers.setdefault(layer, []).append(middleware)
 
     return middleware_layers
 
