@@ -1,6 +1,6 @@
 import functools
 from abc import ABC, abstractmethod
-from typing import Any, Final, TypeAlias
+from typing import Any, Callable, Final, Sequence, TypeAlias
 
 from web3 import Web3
 from web3.middleware import Web3Middleware
