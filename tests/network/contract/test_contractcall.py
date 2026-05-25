@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import warnings
+
 from brownie import compile_source
 
 
@@ -45,13 +47,17 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     owner = tester.owner()
     argv["always_transact"] = True
     height = web3.eth.block_number
-    result = tester.owner()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        result = tester.owner()
 
     assert owner == result
     assert web3.eth.block_number == height == len(history)
 
     monkeypatch.setattr("brownie.network.contract._revert_transact_call", lambda snapshot_id: None)
-    result = tester.owner()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        result = tester.owner()
     tx = history[-1]
 
     assert owner == result
