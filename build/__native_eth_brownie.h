@@ -997,7 +997,7 @@ typedef struct {
     PyObject *_cur;
     PyObject *_lock;
     PyObject *_event;
-    PyObject *__sleep_event;
+    PyObject *__stop_event;
     PyObject *_loop_thread;
     char _is_killed;
     PyObject *_last_block;
