@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+### Changed
+- Mark type aliases explicit ([#2220](https://github.com/eth-brownie/brownie/pull/2220))
+- Bump eth-event and faster-hexbytes ([#2222](https://github.com/eth-brownie/brownie/pull/2222))
+
 ## [1.22.0](https://github.com/eth-brownie/brownie/tree/v1.22.0) - TBD
 
 ### Changed

@@ -3,7 +3,7 @@
 from typing import Any, Final
 
 import faster_eth_utils
-from eth_typing import ChecksumAddress
+from eth_typing import ChecksumAddress, HexStr
 
 from brownie._c_constants import Decimal, HexBytes
 
@@ -73,7 +73,7 @@ def to_string(value: Any) -> str:
     """Convert a value to a string"""
     try:
         if isinstance(value, bytes):
-            return to_text(hexstr=HexBytes(value).hex())  # type: ignore [arg-type]
+            return to_text(hexstr=HexStr(HexBytes(value).hex()))
         value = str(value)
         if value.startswith("0x") and is_hex(value):
             return to_text(hexstr=value)
