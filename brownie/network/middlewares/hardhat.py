@@ -1,11 +1,10 @@
-from collections.abc import Callable, Sequence
 from typing import Any, final
 
 from web3 import Web3
 from web3.types import RPCEndpoint
 
 from brownie._c_constants import regex_findall
-from brownie.network.middlewares import BrownieMiddlewareABC
+from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
 
 
 @final
@@ -19,9 +18,9 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
 
     def process_request(
         self,
-        make_request: Callable,
+        make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: Sequence[Any],
+        params: RPCParams,
     ) -> dict[str, Any]:
         result = make_request(method, params)
 

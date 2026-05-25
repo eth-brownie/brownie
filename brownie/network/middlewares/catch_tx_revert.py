@@ -1,11 +1,10 @@
-from collections.abc import Callable, Sequence
 from typing import Any, final
 
 from web3 import Web3
 from web3.exceptions import ContractLogicError, Web3RPCError
 from web3.types import RPCEndpoint
 
-from brownie.network.middlewares import BrownieMiddlewareABC
+from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
 
 
 @final
@@ -23,9 +22,9 @@ class TxRevertCatcherMiddleware(BrownieMiddlewareABC):
 
     def process_request(
         self,
-        make_request: Callable,
+        make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: Sequence[Any],
+        params: RPCParams,
     ) -> dict[str, Any]:
         """Raise a ValueError when RPC.eth_call or RPC.eth_estimateGas errors."""
         try:

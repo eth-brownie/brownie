@@ -2,7 +2,6 @@ import sys
 import threading
 import time
 from collections import OrderedDict
-from collections.abc import Callable, Sequence
 from typing import Any, Final, final
 
 import faster_hexbytes
@@ -11,7 +10,7 @@ from web3.types import LogReceipt, RPCEndpoint
 
 from brownie._c_constants import HexBytes, ujson_dumps
 from brownie._config import CONFIG, _get_data_folder
-from brownie.network.middlewares import BrownieMiddlewareABC
+from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
 from brownie.utils.sql import Cursor
 
 # calls to the following RPC endpoints are stored in a persistent cache
@@ -231,9 +230,9 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def process_request(
         self,
-        make_request: Callable,
+        make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: Sequence[Any],
+        params: RPCParams,
     ) -> dict[str, Any]:
         if method in {
             # caching any of these means we die of recursion death so let's not do that

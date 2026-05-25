@@ -2,13 +2,17 @@ import functools
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Final, Sequence, TypeAlias
 
+from typing_extensions import override
 from web3 import Web3
 from web3.middleware import Web3Middleware
 from web3.types import RPCEndpoint
 
-
 Middlewares: TypeAlias = dict[int, list[type["BrownieMiddlewareABC"]]]
-
+RPCParams: TypeAlias = Sequence[Any]
+BatchRequest: TypeAlias = list[tuple[RPCEndpoint, Any]]
+BatchResponse: TypeAlias = Any
+MakeRequestFn: TypeAlias = Callable[[RPCEndpoint, Any], Any]
+MakeBatchRequestFn: TypeAlias = Callable[[BatchRequest], BatchResponse]
 
 partial: Final = functools.partial
 
@@ -42,7 +46,8 @@ class BrownieMiddlewareABC(Web3Middleware, ABC):
         """
         raise NotImplementedError
 
-    def wrap_make_request(self, make_request: Callable) -> Callable:
+    @override
+    def wrap_make_request(self, make_request: MakeRequestFn) -> MakeRequestFn:
         """
         Receive the initial middleware request and return `process_request`.
 
@@ -50,7 +55,10 @@ class BrownieMiddlewareABC(Web3Middleware, ABC):
         """
         return partial(self.process_request, make_request)
 
-    def wrap_make_batch_request(self, make_batch_request: Callable) -> Callable:
+    @override
+    def wrap_make_batch_request(
+        self, make_batch_request: MakeBatchRequestFn
+    ) -> MakeBatchRequestFn:
         """
         Receive the batch middleware request and return `make_batch_request`.
 
@@ -61,9 +69,9 @@ class BrownieMiddlewareABC(Web3Middleware, ABC):
     @abstractmethod
     def process_request(
         self,
-        make_request: Callable,
+        make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: Sequence[Any],
+        params: RPCParams,
     ) -> dict[str, Any]:
         """
         Process an RPC request.
