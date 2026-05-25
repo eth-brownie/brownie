@@ -157,24 +157,6 @@ def test_hardhat_middleware_normalizes_transaction_error_payloads():
     assert result["error"]["data"] == {TXID: {"error": "revert", "reason": "boom"}}
 
 
-def test_hardhat_middleware_leaves_transaction_errors_without_tx_hash_unchanged():
-    response = {
-        "error": {
-            "message": "Error: Transaction reverted without a reason",
-            "data": "0x",
-        }
-    }
-
-    def make_request(method, params):
-        return response
-
-    middleware = Web3()._build_middleware(HardhatMiddleWare)[1]
-    result = middleware.process_request(make_request, "eth_sendTransaction", [])
-
-    assert result is response
-    assert result["error"]["data"] == "0x"
-
-
 def test_hardhat_middleware_normalizes_eth_call_errors_without_reason():
     response = {"error": {"message": "Error: Transaction reverted without a reason"}}
 

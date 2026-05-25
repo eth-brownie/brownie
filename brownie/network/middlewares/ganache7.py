@@ -34,6 +34,36 @@ class _GanacheRPCError(TypedDict):
     data: NotRequired[str | GanacheVmErrorData | dict[str, LegacyGanacheErrorData]]
 
 
+def _normalize_transaction_error(error: _GanacheRPCError) -> None:
+    provider_data = cast(GanacheVmErrorData, error["data"])
+    tx_data: LegacyGanacheErrorData = {
+        "error": provider_data["message"],
+        "program_counter": provider_data["programCounter"],
+    }
+    if "result" in provider_data:
+        tx_data["result"] = provider_data["result"]
+    if "reason" in provider_data:
+        tx_data["reason"] = provider_data["reason"]
+    normalized_data: dict[str, LegacyGanacheErrorData] = {}
+    normalized_data[provider_data["hash"]] = tx_data
+    error["data"] = normalized_data
+
+
+def _normalize_call_error(error: _GanacheRPCError) -> None:
+    if error.get("message", "").startswith("VM Exception"):
+        # "VM Exception while processing transaction: {reason} {message}"
+        msg: str = error["message"]
+        msg = msg.split(": ", maxsplit=1)[-1]
+        if msg.startswith("revert"):
+            call_data: LegacyGanacheErrorData = {
+                "error": "revert",
+                "reason": cast(str, error["data"]),
+            }
+        else:
+            call_data = {"error": msg, "reason": None}
+        error["data"] = {"0x": call_data}
+
+
 @final
 class Ganache7MiddleWare(BrownieMiddlewareABC):
     @classmethod
@@ -62,44 +92,12 @@ class Ganache7MiddleWare(BrownieMiddlewareABC):
         if (
             method in {"eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
+            and "data" in (error := cast(_GanacheRPCError, result["error"]))
         ):
-            error = cast(_GanacheRPCError, result["error"])
-            raw_data = error.get("data")
-            if isinstance(raw_data, dict):
-                provider_data = cast(GanacheVmErrorData, raw_data)
-                txid = provider_data.get("hash")
-                if isinstance(txid, str):
-                    tx_data: LegacyGanacheErrorData = {}
-                    message = provider_data.get("message")
-                    if isinstance(message, str):
-                        tx_data["error"] = message
-                    program_counter: int | None = provider_data.get("programCounter")
-                    if isinstance(program_counter, int) or (
-                        "programCounter" in provider_data and program_counter is None
-                    ):
-                        tx_data["program_counter"] = program_counter
-                    result_data = provider_data.get("result")
-                    if isinstance(result_data, str):
-                        tx_data["result"] = result_data
-                    if "reason" in provider_data:
-                        reason: str | None = provider_data.get("reason")
-                        if isinstance(reason, str) or reason is None:
-                            tx_data["reason"] = reason
-                    normalized_data: dict[str, LegacyGanacheErrorData] = {txid: tx_data}
-                    error["data"] = normalized_data
+            _normalize_transaction_error(error)
 
         if method == "eth_call" and "error" in result:
             error = cast(_GanacheRPCError, result["error"])
-            if error.get("message", "").startswith("VM Exception"):
-                # "VM Exception while processing transaction: {reason} {message}"
-                msg: str = error["message"]
-                msg = msg.split(": ", maxsplit=1)[-1]
-                if msg.startswith("revert"):
-                    raw_reason = error.get("data")
-                    reason = raw_reason if isinstance(raw_reason, str) else None
-                    call_data: LegacyGanacheErrorData = {"error": "revert", "reason": reason}
-                else:
-                    call_data = {"error": msg, "reason": None}
-                error["data"] = {"0x": call_data}
+            _normalize_call_error(error)
 
         return result

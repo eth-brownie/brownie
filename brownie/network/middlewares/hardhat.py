@@ -62,14 +62,8 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     # but we still mimic it here for the sake of consistency
                     txid = "0x"
                 else:
-                    raw_data = error.get("data")
-                    if not isinstance(raw_data, dict):
-                        return result
-                    provider_data = cast(HardhatTxHashErrorData, raw_data)
-                    txid_data = provider_data.get("txHash")
-                    if not isinstance(txid_data, str):
-                        return result
-                    txid = txid_data
+                    provider_data = cast(HardhatTxHashErrorData, error["data"])
+                    txid = provider_data["txHash"]
                 data: LegacyGanacheErrorData = {}
                 normalized_data: dict[str, LegacyGanacheErrorData] = {txid: data}
                 error["data"] = normalized_data
