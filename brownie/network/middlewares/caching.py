@@ -19,6 +19,7 @@ from brownie.utils.sql import Cursor
 LONGTERM_CACHE: Final = {
     "eth_getCode": lambda w3, data: is_cacheable_bytecode(w3, data),
 }
+CACHE_FILTER_THREAD_JOIN_TIMEOUT: Final = 1.0
 
 
 def _strip_push_data(bytecode: bytes) -> bytes:
@@ -113,11 +114,12 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         self.lock: Final = threading.Lock()
         self.event: Final = threading.Event()
-        self._sleep_event: Final = threading.Event()
+        self._stop_event: Final = threading.Event()
         self.start_block_filter_loop()
 
     def start_block_filter_loop(self):
         self.event.clear()
+        self._stop_event.clear()
         self.loop_thread = threading.Thread(target=self.loop_exception_handler, daemon=True)
         self.loop_thread.start()
         self.event.wait()
@@ -151,8 +153,12 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             self.block_filter_loop()
         except Exception:
             # catch unhandled exceptions to avoid random error messages in the console
-            self.block_cache.clear()
+            block_cache = getattr(self, "block_cache", None)
+            if block_cache is not None:
+                block_cache.clear()
             self.is_killed = True
+        finally:
+            self.event.set()
 
     def block_filter_loop(self) -> None:
         # initialize required state variables within the loop to avoid recursion death
@@ -166,7 +172,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self.event.set()
 
         new_blocks: list[LogReceipt]
-        while not self.is_killed:
+        while not self.is_killed and not self._stop_event.is_set():
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
             with self.lock:
@@ -175,6 +181,8 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     self.event.clear()
             if self.time_since > 60:
                 self.event.wait(min(self.time_since / 10, 60))
+                if self._stop_event.is_set():
+                    break
 
             # query the filter for new blocks
             with self.lock:
@@ -210,13 +218,16 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             elif new_blocks and self.time_since < 15:
                 # if this update found a new block and we've been querying
                 # frequently, we can wait a few seconds before the next update
-                self._sleep_event.wait(5)
+                if self._stop_event.wait(5):
+                    break
             elif time.time() - self.last_block_seen < 15:
                 # if it's been less than 15 seconds since the last block, wait 2 seconds
-                self._sleep_event.wait(2)
+                if self._stop_event.wait(2):
+                    break
             else:
                 # if it's been more than 15 seconds, only wait 1 second
-                self._sleep_event.wait(1)
+                if self._stop_event.wait(1):
+                    break
 
     def process_request(
         self,
@@ -287,10 +298,14 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def uninstall(self) -> None:
         self.is_killed = True
-        self._sleep_event.set()
+        self._stop_event.set()
+        self.event.set()
         block_cache = getattr(self, "block_cache", None)
         if block_cache is not None:
             block_cache.clear()
         block_filter = getattr(self, "block_filter", None)
         if self.w3.isConnected() and block_filter is not None:
             self.w3.eth.uninstall_filter(block_filter.filter_id)
+        loop_thread = getattr(self, "loop_thread", None)
+        if loop_thread is not None and loop_thread is not threading.current_thread():
+            loop_thread.join(CACHE_FILTER_THREAD_JOIN_TIMEOUT)
