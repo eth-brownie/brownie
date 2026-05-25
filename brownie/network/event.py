@@ -173,7 +173,7 @@ class _EventItem(Generic[_TData]):
     ) -> None:
         self.name: Final = name
         self.address: Final = address
-        self._ordered: Final = event_data
+        self._ordered: Final[list[_TData]] = event_data
         self.pos: Final = pos
 
     @overload

@@ -1,10 +1,33 @@
-from typing import Any, final
+from typing import Any, TypedDict, cast, final
 
+from typing_extensions import NotRequired
 from web3 import Web3
-from web3.types import RPCEndpoint
+from web3.types import MakeRequestFn, RPCEndpoint, RPCResponse
 
 from brownie._c_constants import regex_findall
-from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
+from brownie.network.middlewares import BrownieMiddlewareABC
+
+
+LegacyGanacheErrorData = TypedDict(
+    "LegacyGanacheErrorData",
+    {
+        "error": str,
+        "program_counter": int | None,
+        "reason": str | None,
+        "result": str,
+        "return": str,
+    },
+    total=False,
+)
+
+
+class HardhatTxHashErrorData(TypedDict):
+    txHash: str
+
+
+class _HardhatRPCError(TypedDict):
+    message: str
+    data: NotRequired[HardhatTxHashErrorData | dict[str, LegacyGanacheErrorData]]
 
 
 @final
@@ -20,8 +43,8 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
         self,
         make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: RPCParams,
-    ) -> dict[str, Any]:
+        params: Any,
+    ) -> RPCResponse:
         result = make_request(method, params)
 
         # modify Hardhat transaction error to mimic the format that Ganache uses
@@ -29,8 +52,8 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
             method in {"eth_call", "eth_sendTransaction", "eth_sendRawTransaction"}
             and "error" in result
         ):
-            error: dict = result["error"]
-            message: str = error["message"]
+            error = cast(_HardhatRPCError, result["error"])
+            message = error["message"]
             if message.startswith("Error: VM Exception") or message.startswith(
                 "Error: Transaction reverted"
             ):
@@ -39,19 +62,31 @@ class HardhatMiddleWare(BrownieMiddlewareABC):
                     # but we still mimic it here for the sake of consistency
                     txid = "0x"
                 else:
-                    txid = error["data"]["txHash"]
-                data: dict = {}
-                error["data"] = {txid: data}
+                    raw_data = error.get("data")
+                    if not isinstance(raw_data, dict):
+                        return result
+                    provider_data = cast(HardhatTxHashErrorData, raw_data)
+                    txid_data = provider_data.get("txHash")
+                    if not isinstance(txid_data, str):
+                        return result
+                    txid = txid_data
+                data: LegacyGanacheErrorData = {}
+                normalized_data: dict[str, LegacyGanacheErrorData] = {txid: data}
+                error["data"] = normalized_data
                 message = message.split(": ", maxsplit=1)[-1]
                 if message == "Transaction reverted without a reason":
-                    data.update({"error": "revert", "reason": None})
+                    data["error"] = "revert"
+                    data["reason"] = None
                 elif message.startswith("revert"):
-                    data.update({"error": "revert", "reason": message[7:]})
+                    data["error"] = "revert"
+                    data["reason"] = message[7:]
                 elif "reverted with reason string '" in message:
-                    data.update(error="revert", reason=regex_findall(".*?'(.*)'$", message)[0])
+                    data["error"] = "revert"
+                    data["reason"] = regex_findall(".*?'(.*)'$", message)[0]
                 elif "reverted with an unrecognized custom error" in message:
                     message = message[message.index("0x") : -1]
-                    data.update(error="revert", reason=message)
+                    data["error"] = "revert"
+                    data["reason"] = message
                 else:
                     data["error"] = message
         return result

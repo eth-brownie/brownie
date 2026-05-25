@@ -6,11 +6,11 @@ from typing import Any, Final, final
 
 import faster_hexbytes
 from web3 import Web3
-from web3.types import LogReceipt, RPCEndpoint
+from web3.types import LogReceipt, MakeRequestFn, RPCEndpoint, RPCResponse
 
 from brownie._c_constants import HexBytes, ujson_dumps
 from brownie._config import CONFIG, _get_data_folder
-from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
+from brownie.network.middlewares import BrownieMiddlewareABC
 from brownie.utils.sql import Cursor
 
 # calls to the following RPC endpoints are stored in a persistent cache
@@ -232,8 +232,8 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         self,
         make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: RPCParams,
-    ) -> dict[str, Any]:
+        params: Any,
+    ) -> RPCResponse:
         if method in {
             # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",

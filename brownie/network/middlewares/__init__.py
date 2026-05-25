@@ -1,18 +1,18 @@
 import functools
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Final, Sequence, TypeAlias
+from typing import Any, Final, TypeAlias
 
 from typing_extensions import override
 from web3 import Web3
 from web3.middleware import Web3Middleware
-from web3.types import RPCEndpoint
+from web3.types import (
+    MakeBatchRequestFn,
+    MakeRequestFn,
+    RPCEndpoint,
+    RPCResponse,
+)
 
 Middlewares: TypeAlias = dict[int, list[type["BrownieMiddlewareABC"]]]
-RPCParams: TypeAlias = Sequence[Any]
-BatchRequest: TypeAlias = list[tuple[RPCEndpoint, Any]]
-BatchResponse: TypeAlias = Any
-MakeRequestFn: TypeAlias = Callable[[RPCEndpoint, Any], Any]
-MakeBatchRequestFn: TypeAlias = Callable[[BatchRequest], BatchResponse]
 
 partial: Final = functools.partial
 
@@ -71,8 +71,8 @@ class BrownieMiddlewareABC(Web3Middleware, ABC):
         self,
         make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: RPCParams,
-    ) -> dict[str, Any]:
+        params: Any,
+    ) -> RPCResponse:
         """
         Process an RPC request.
 
