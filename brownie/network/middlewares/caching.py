@@ -113,6 +113,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
         self.lock: Final = threading.Lock()
         self.event: Final = threading.Event()
+        self._sleep_event: Final = threading.Event()
         self.start_block_filter_loop()
 
     def start_block_filter_loop(self):
@@ -209,13 +210,13 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             elif new_blocks and self.time_since < 15:
                 # if this update found a new block and we've been querying
                 # frequently, we can wait a few seconds before the next update
-                time.sleep(5)
+                self._sleep_event.wait(5)
             elif time.time() - self.last_block_seen < 15:
                 # if it's been less than 15 seconds since the last block, wait 2 seconds
-                time.sleep(2)
+                self._sleep_event.wait(2)
             else:
                 # if it's been more than 15 seconds, only wait 1 second
-                time.sleep(1)
+                self._sleep_event.wait(1)
 
     def process_request(
         self,
@@ -286,6 +287,7 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
 
     def uninstall(self) -> None:
         self.is_killed = True
+        self._sleep_event.set()
         block_cache = getattr(self, "block_cache", None)
         if block_cache is not None:
             block_cache.clear()
