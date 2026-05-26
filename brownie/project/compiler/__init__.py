@@ -392,23 +392,20 @@ def generate_build_json(
                     (0, len(source)),
                 )
 
-            build_json[contract_alias].update(
-                {
-                    "abi": abi,
-                    "ast": ast,
-                    "compiler": compiler_data,  # type: ignore [typeddict-item]
-                    "contractName": contract_name,
-                    "deployedBytecode": bytecode,
-                    "deployedSourceMap": deployed_bytecode["sourceMap"],
-                    "language": language,  # type: ignore [typeddict-item]
-                    "natspec": natspec,
-                    "opcodes": deployed_bytecode["opcodes"],
-                    "sha1": HexStr(sha1(source.encode()).hexdigest()),
-                    "source": source,
-                    "sourceMap": output_evm["bytecode"].get("sourceMap", ""),
-                    "sourcePath": path_str,
-                }
-            )
+            contract_build_json = build_json[contract_alias]
+            contract_build_json["abi"] = abi
+            contract_build_json["ast"] = ast
+            contract_build_json["compiler"] = cast(CompilerConfig, compiler_data)
+            contract_build_json["contractName"] = contract_name
+            contract_build_json["deployedBytecode"] = bytecode
+            contract_build_json["deployedSourceMap"] = deployed_bytecode["sourceMap"]
+            contract_build_json["language"] = language  # type: ignore [typeddict-item]
+            contract_build_json["natspec"] = natspec
+            contract_build_json["opcodes"] = deployed_bytecode["opcodes"]
+            contract_build_json["sha1"] = HexStr(sha1(source.encode()).hexdigest())
+            contract_build_json["source"] = source
+            contract_build_json["sourceMap"] = output_evm["bytecode"].get("sourceMap", "")
+            contract_build_json["sourcePath"] = path_str
             size = len(bytecode.removeprefix("0x")) / 2
             if size > 24577:
                 notify(
