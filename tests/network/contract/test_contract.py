@@ -2,11 +2,11 @@
 from copy import deepcopy
 
 import pytest
-import requests
 import yaml
 from eth_retry import auto_retry
 from semantic_version import Version
 
+import brownie.network.contract
 from brownie import Wei
 from brownie.exceptions import BrownieCompilerWarning, BrownieEnvironmentWarning, ContractNotFound
 from brownie.network.contract import (
@@ -256,21 +256,50 @@ def test_autofetch(config, connect_to_mainnet):
     Contract("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 
 
-@auto_retry
-def test_autofetch_missing(config, mocker, connect_to_mainnet):
-    # an issue with pytest-mock prevents spying on Contract.from_explorer,
-    # so we watch requests.get which is only called inside Contract.from_explorer
-    mocker.spy(requests, "get")
+def test_autofetch_missing(config, devnetwork, monkeypatch):
+    class MockExplorerResponse:
+        status_code = 200
+        text = ""
+
+        def __init__(self, data):
+            self._data = data
+
+        def json(self):
+            return self._data
+
+    actions = []
+
+    def explorer_response(_url, params, **_kwargs):
+        action = params["action"]
+        actions.append(action)
+
+        if action == "getsourcecode":
+            return MockExplorerResponse({"status": "1", "result": [{"SourceCode": ""}]})
+
+        assert action == "getabi"
+        return MockExplorerResponse(
+            {"status": "0", "result": "Contract source code not verified"}
+        )
 
     config.settings["autofetch_sources"] = True
+    config.active_network["explorer"] = "etherscan"
+    monkeypatch.setattr(brownie.network.contract.requests, "get", explorer_response)
 
-    with pytest.raises(ValueError):
-        Contract("0xff031750F29b24e6e5552382F6E0c065830085d2")
-    assert requests.get.call_count == 2
+    address = brownie.network.contract._resolve_address(
+        "0xff031750F29b24e6e5552382F6E0c065830085d2"
+    )
+    brownie.network.contract._unverified_addresses.discard(address)
 
-    with pytest.raises(ValueError):
-        Contract("0xff031750F29b24e6e5552382F6E0c065830085d2")
-    assert requests.get.call_count == 2
+    try:
+        with pytest.raises(ValueError):
+            Contract(address)
+        assert actions == ["getsourcecode", "getabi"]
+
+        with pytest.raises(ValueError):
+            Contract(address)
+        assert actions == ["getsourcecode", "getabi"]
+    finally:
+        brownie.network.contract._unverified_addresses.discard(address)
 
 
 @pytest.mark.skip("TODO: maybe fix this with another network")
