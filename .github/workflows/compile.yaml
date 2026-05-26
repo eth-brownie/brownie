@@ -4,9 +4,21 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'brownie/**.py'
+      - '.github/workflows/compile.yaml'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - 'setup.py'
   pull_request:
     branches:
       - master
+    paths:
+      - 'brownie/**.py'
+      - '.github/workflows/compile.yaml'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - 'setup.py'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
