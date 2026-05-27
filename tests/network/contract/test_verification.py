@@ -156,9 +156,7 @@ contract UsesShared is SharedA, SharedB {}
     project = load(dir, "DuplicateBasenameProject")
     input_data, output_data = _compile_verification_info(project.UsesShared)
 
-    assert {"contracts/a/Shared.sol", "contracts/b/Shared.sol"}.issubset(
-        input_data["sources"]
-    )
+    assert {"contracts/a/Shared.sol", "contracts/b/Shared.sol"}.issubset(input_data["sources"])
     assert "UsesShared" in output_data["contracts"]["contracts/UsesShared.sol"]
     project.close()
 

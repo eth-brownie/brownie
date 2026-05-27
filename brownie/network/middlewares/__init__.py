@@ -1,6 +1,7 @@
 import functools
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Final, Sequence, TypeAlias
+from collections.abc import Callable, Sequence
+from typing import Any, Final, TypeAlias
 
 from typing_extensions import override
 from web3 import Web3
@@ -56,9 +57,7 @@ class BrownieMiddlewareABC(Web3Middleware, ABC):
         return partial(self.process_request, make_request)
 
     @override
-    def wrap_make_batch_request(
-        self, make_batch_request: MakeBatchRequestFn
-    ) -> MakeBatchRequestFn:
+    def wrap_make_batch_request(self, make_batch_request: MakeBatchRequestFn) -> MakeBatchRequestFn:
         """
         Receive the batch middleware request and return `make_batch_request`.
 

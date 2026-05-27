@@ -2,7 +2,8 @@
 
 import asyncio
 import time
-from threading import Event as ThreadEvent, Lock, Thread
+from threading import Event as ThreadEvent
+from threading import Lock, Thread
 
 import pytest
 from web3.datastructures import AttributeDict
@@ -95,9 +96,7 @@ def fake_event_key(event):
 
 def start_watcher_with_target(event_watcher_instance, watch_data):
     with event_watcher_instance.target_list_lock:
-        event_watcher_instance.target_events_watch_data[
-            fake_event_key(_FakeEvent)
-        ] = watch_data
+        event_watcher_instance.target_events_watch_data[fake_event_key(_FakeEvent)] = watch_data
     event_watcher_instance._start_watch()
     assert watch_data.poll_started.wait(1.0) is True
     return event_watcher_instance._watcher_thread
@@ -468,9 +467,7 @@ class TestEventWatcher:
         assert old_thread is not None
         assert old_thread.is_alive() is False
 
-    def test_polling_does_not_hold_target_list_lock(
-        _, event_watcher_instance: EventWatcher
-    ):
+    def test_polling_does_not_hold_target_list_lock(_, event_watcher_instance: EventWatcher):
         watch_data = _BlockingEventWatchData()
         old_thread = None
         registration_thread = None

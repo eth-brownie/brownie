@@ -71,9 +71,7 @@ def _validate_given_kwargs(test, given_kwargs):
     }
     for key in given_kwargs:
         if key not in valid_kwargs:
-            raise InvalidArgument(
-                f"{test.__name__}() got an unexpected keyword argument {key!r}"
-            )
+            raise InvalidArgument(f"{test.__name__}() got an unexpected keyword argument {key!r}")
 
 
 def _given_warning_wrapper(*args, **kwargs):

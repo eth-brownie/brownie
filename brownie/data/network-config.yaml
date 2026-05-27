@@ -175,7 +175,7 @@ live:
       - name: Mainnet
         chainid: 10
         id: optimism-main
-        host:  https://optimism-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
+        host: https://optimism-mainnet.infura.io/v3/$WEB3_INFURA_PROJECT_ID
         explorer: https://api-optimistic.etherscan.io/api
         multicall2: "0x2DC0E2aa608532Da689e89e237dF582B783E552C"
       - name: Goerli
@@ -224,8 +224,6 @@ live:
         host: https://mainnet.base.org
         id: base-main
         name: Base mainnet
-
-
 
 development:
   - name: Anvil

@@ -805,9 +805,7 @@ class _DeployedContractBase(_ContractBase):
         if not bytecode:
             # removeprefix is used for compatibility with both hexbytes<1 and >=1
             bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
-        self.bytecode: Final[HexStr] = (  # type: ignore [assignment]
-            bytecode
-        )
+        self.bytecode: Final[HexStr] = bytecode  # type: ignore [assignment]
         if not self.bytecode:
             raise ContractNotFound(f"No contract deployed at {address}")
         self._owner: Final = owner

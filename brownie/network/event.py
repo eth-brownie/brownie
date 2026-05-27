@@ -8,7 +8,18 @@ from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence, ValuesView
 from pathlib import Path
 from threading import Lock, Thread
-from typing import TYPE_CHECKING, Any, Final, Generic, TypeAlias, TypeVar, Union, cast, final, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Final,
+    Generic,
+    TypeAlias,
+    TypeVar,
+    Union,
+    cast,
+    final,
+    overload,
+)
 
 import eth_event
 from eth_event import EventError

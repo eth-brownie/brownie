@@ -47,7 +47,10 @@ def format_event(event: DecodedEvent | NonDecodedEvent) -> FormattedEvent:
     if event["decoded"] is False:
         data = _format_single("bytes", event["data"])
         formatted_event = cast(FormattedEvent, event)
-        formatted_event["data"] = [*_iter_event_topics(event), {"type": "bytes", "name": "data", "value": data}]
+        formatted_event["data"] = [
+            *_iter_event_topics(event),
+            {"type": "bytes", "name": "data", "value": data},
+        ]
         formatted_event["name"] = "(anonymous)" if "anonymous" in event else "(unknown)"
         return formatted_event
 
