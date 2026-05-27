@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2486];
+extern PyObject *CPyStatics[2490];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1310,8 +1310,14 @@ extern PyObject *CPyPy_catch_tx_revert___TxRevertCatcherMiddleware___get_layer(P
 extern PyObject *CPyDef_catch_tx_revert___TxRevertCatcherMiddleware___process_request(PyObject *cpy_r_self, PyObject *cpy_r_make_request, PyObject *cpy_r_method, PyObject *cpy_r_params);
 extern PyObject *CPyPy_catch_tx_revert___TxRevertCatcherMiddleware___process_request(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_catch_tx_revert_____top_level__(void);
+extern PyTypeObject *CPyType_ganache7___GanacheVmErrorData;
+extern PyTypeObject *CPyType_ganache7____GanacheRPCError;
 extern PyTypeObject *CPyType_ganache7___Ganache7MiddleWare;
 extern PyObject *CPyDef_ganache7___Ganache7MiddleWare(PyObject *cpy_r_w3);
+extern char CPyDef_ganache7____normalize_transaction_error(PyObject *cpy_r_error);
+extern PyObject *CPyPy_ganache7____normalize_transaction_error(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
+extern char CPyDef_ganache7____normalize_call_error(PyObject *cpy_r_error);
+extern PyObject *CPyPy_ganache7____normalize_call_error(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_ganache7___Ganache7MiddleWare___get_layer(PyObject *cpy_r_cls, PyObject *cpy_r_w3, PyObject *cpy_r_network_type);
 extern PyObject *CPyPy_ganache7___Ganache7MiddleWare___get_layer(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_ganache7___Ganache7MiddleWare___process_request(PyObject *cpy_r_self, PyObject *cpy_r_make_request, PyObject *cpy_r_method, PyObject *cpy_r_params);
@@ -1324,6 +1330,8 @@ extern PyObject *CPyPy_geth_poa___GethPOAMiddleware___get_layer(PyObject *self, 
 extern PyObject *CPyDef_geth_poa___GethPOAMiddleware___process_request(PyObject *cpy_r_self, PyObject *cpy_r_make_request, PyObject *cpy_r_method, PyObject *cpy_r_params);
 extern PyObject *CPyPy_geth_poa___GethPOAMiddleware___process_request(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_geth_poa_____top_level__(void);
+extern PyTypeObject *CPyType_hardhat___HardhatTxHashErrorData;
+extern PyTypeObject *CPyType_hardhat____HardhatRPCError;
 extern PyTypeObject *CPyType_hardhat___HardhatMiddleWare;
 extern PyObject *CPyDef_hardhat___HardhatMiddleWare(PyObject *cpy_r_w3);
 extern PyObject *CPyDef_hardhat___HardhatMiddleWare___get_layer(PyObject *cpy_r_cls, PyObject *cpy_r_w3, PyObject *cpy_r_network_type);
