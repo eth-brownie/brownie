@@ -1,0 +1,46 @@
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: '0 9 * * *'  # Daily 0900 UTC
+  workflow_dispatch:
+
+name: live explorer smoke
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ETHERSCAN_TOKEN: 9MKURTHE8FNA9NRUUJBHMUEVY6IQ5K1EGY
+  WEB3_INFURA_PROJECT_ID: 44c6300c5e5b4b2da5fc42b06bf18a8e
+
+jobs:
+  live-explorer:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            setup.py
+            requirements*.in
+            requirements*.txt
+
+      - name: Install Tox
+        run: pip install tox
+
+      - name: Cache tox environment
+        uses: actions/cache@v5
+        with:
+          path: .tox
+          key: live-explorer-${{ runner.os }}-3.13-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements*.in', 'requirements*.txt', 'tox.ini') }}
+
+      - name: Run live explorer smoke
+        run: tox -e live-explorer

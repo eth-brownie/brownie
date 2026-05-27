@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 from copy import deepcopy
 
 import pytest
@@ -271,6 +272,34 @@ def test_from_explorer_unverified(mock_explorer):
         Contract.from_explorer(address)
 
     assert mock_explorer.actions(address) == ["getsourcecode", "getabi"]
+
+
+@pytest.mark.live_explorer
+@pytest.mark.skipif(
+    not os.getenv("ETHERSCAN_TOKEN") or not os.getenv("WEB3_INFURA_PROJECT_ID"),
+    reason="requires ETHERSCAN_TOKEN and WEB3_INFURA_PROJECT_ID",
+)
+@auto_retry
+def test_from_explorer_live_smoke(connect_to_mainnet, monkeypatch):
+    monkeypatch.setattr(
+        brownie.network.contract.solcx,
+        "get_installable_solc_versions",
+        lambda: [],
+    )
+    monkeypatch.setattr(
+        brownie.network.contract.solcx,
+        "get_installed_solc_versions",
+        lambda: [],
+    )
+
+    contract = Contract.from_explorer(
+        "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2",
+        persist=False,
+        silent=True,
+    )
+
+    assert contract._name == "DSToken"
+    assert hasattr(contract, "transfer")
 
 
 @pytest.mark.skip(
