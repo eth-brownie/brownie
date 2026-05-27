@@ -2,6 +2,7 @@
 
 import pytest
 from ens.exceptions import InvalidName
+from hexbytes import HexBytes
 
 from brownie.exceptions import UnsetENSName
 from brownie.network.contract import Contract
@@ -15,7 +16,7 @@ UNSET_ENS_DOMAIN = "pleasedonot.buythisoryouwill.breakmytests.eth"
 
 def test_lookup(fake_ens, monkeypatch):
     fake_ens({ENS_DOMAIN: ENS_ADDRESS})
-    monkeypatch.setattr(web3.eth, "get_code", lambda address: b"")
+    monkeypatch.setattr(web3.eth, "get_code", lambda address: HexBytes("0x6000"))
 
     c = Contract.from_abi("Test", ENS_DOMAIN, [], persist=False)
     assert c == ENS_ADDRESS
