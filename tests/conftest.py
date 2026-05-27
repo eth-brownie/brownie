@@ -60,6 +60,12 @@ def pytest_addoption(parser):
         default="auto",
         help="Select backend-specific tests; defaults to the active development network.",
     )
+    parser.addoption(
+        "--live-explorer",
+        action="store_true",
+        default=False,
+        help="Run tests that call live block explorer APIs.",
+    )
 
 
 # remove tests based on config flags and fixture names
@@ -89,6 +95,12 @@ def pytest_collection_modifyitems(config, items):
         if backend_marker is not None and backend not in backend_marker.args:
             items.remove(test)
 
+    if not config.getoption("--live-explorer"):
+        skip_live_explorer = pytest.mark.skip(reason="requires --live-explorer")
+        for test in items:
+            if test.get_closest_marker("live_explorer"):
+                test.add_marker(skip_live_explorer)
+
 
 def _get_backend(config):
     backend = config.getoption("--backend")
@@ -101,6 +113,10 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "backend(name): mark a test as requiring a specific development RPC backend",
+    )
+    config.addinivalue_line(
+        "markers",
+        "live_explorer: mark a test as requiring live block explorer API access",
     )
 
     if config.getoption("--target") == "plugin" and config.getoption("numprocesses"):
