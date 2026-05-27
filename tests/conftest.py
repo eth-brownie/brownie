@@ -543,9 +543,15 @@ def _connect_to_mainnet(network) -> None:
 
 
 def _disconnect_network() -> None:
+    config = brownie._config.CONFIG
+    web3 = brownie.network.web3
+
     try:
         brownie.network.disconnect(False)
-    except ConnectionError:
-        # this happens in the test runners sometimes, most likely
-        # from a race condition we see no reason to debug
-        pass
+    except ConnectionError as exc:
+        if str(exc) != "Not connected to any network":
+            raise
+    finally:
+        if web3.provider is not None or config._active_network is not None:
+            web3.disconnect()
+            config.clear_active()
