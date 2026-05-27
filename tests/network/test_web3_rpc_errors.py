@@ -6,6 +6,7 @@ from web3.exceptions import Web3RPCError
 from brownie.exceptions import VirtualMachineError
 from brownie.network.middlewares.catch_tx_revert import TxRevertCatcherMiddleware
 from brownie.network.middlewares.ganache7 import Ganache7MiddleWare
+from brownie.network.middlewares.hardhat import HardhatMiddleWare
 from brownie.network.web3 import Web3
 
 TXID = "0x" + "12" * 32
@@ -106,6 +107,23 @@ def test_ganache7_middleware_normalizes_raised_web3_v7_rpc_errors():
     }
 
 
+def test_ganache7_middleware_normalizes_eth_call_errors():
+    response = {
+        "error": {
+            "message": "VM Exception while processing transaction: revert boom",
+            "data": "boom",
+        }
+    }
+
+    def make_request(method, params):
+        return response
+
+    middleware = Web3()._build_middleware(Ganache7MiddleWare)[1]
+    result = middleware.process_request(make_request, "eth_call", [])
+
+    assert result["error"]["data"] == {"0x": {"error": "revert", "reason": "boom"}}
+
+
 def test_ganache7_middleware_reraises_web3_v7_rpc_errors_without_response():
     rpc_error = Web3RPCError("execution reverted")
 
@@ -117,3 +135,35 @@ def test_ganache7_middleware_reraises_web3_v7_rpc_errors_without_response():
         middleware.process_request(make_request, "eth_sendTransaction", [])
 
     assert exc.value is rpc_error
+
+
+def test_hardhat_middleware_normalizes_transaction_error_payloads():
+    response = {
+        "error": {
+            "message": (
+                "Error: VM Exception while processing transaction: "
+                "reverted with reason string 'boom'"
+            ),
+            "data": {"txHash": TXID},
+        }
+    }
+
+    def make_request(method, params):
+        return response
+
+    middleware = Web3()._build_middleware(HardhatMiddleWare)[1]
+    result = middleware.process_request(make_request, "eth_sendTransaction", [])
+
+    assert result["error"]["data"] == {TXID: {"error": "revert", "reason": "boom"}}
+
+
+def test_hardhat_middleware_normalizes_eth_call_errors_without_reason():
+    response = {"error": {"message": "Error: Transaction reverted without a reason"}}
+
+    def make_request(method, params):
+        return response
+
+    middleware = Web3()._build_middleware(HardhatMiddleWare)[1]
+    result = middleware.process_request(make_request, "eth_call", [])
+
+    assert result["error"]["data"] == {"0x": {"error": "revert", "reason": None}}

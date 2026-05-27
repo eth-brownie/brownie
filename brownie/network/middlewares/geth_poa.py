@@ -3,9 +3,9 @@ from typing import Any, final
 from web3 import Web3
 from web3.exceptions import ExtraDataLengthError
 from web3.middleware import ExtraDataToPOAMiddleware
-from web3.types import RPCEndpoint
+from web3.types import MakeRequestFn, RPCEndpoint, RPCResponse
 
-from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
+from brownie.network.middlewares import BrownieMiddlewareABC
 
 
 @final
@@ -28,7 +28,7 @@ class GethPOAMiddleware(BrownieMiddlewareABC):
         self,
         make_request: MakeRequestFn,
         method: RPCEndpoint,
-        params: RPCParams,
-    ) -> dict[str, Any]:
+        params: Any,
+    ) -> RPCResponse:
         middleware_fn = ExtraDataToPOAMiddleware(self.w3).wrap_make_request(make_request)
         return middleware_fn(method, params)
