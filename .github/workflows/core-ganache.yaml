@@ -74,6 +74,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
+          # Ganache's uWS native dependency ships Node 20 binaries, not newer runner-default ABIs.
           node-version: "20"
 
       - name: Install Ganache
