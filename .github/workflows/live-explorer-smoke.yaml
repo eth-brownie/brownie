@@ -1,4 +1,6 @@
 on:
+  pull_request:
+  push:
   schedule:
     - cron: '0 9 * * *'  # Daily 0900 UTC
   workflow_dispatch:
