@@ -131,9 +131,7 @@ def test_deploy_compiles_with_active_network_evm_version(monkeypatch):
 
     assert deployment.address == _FakeDeployment.address
     assert active_network["multicall2"] == _FakeDeployment.address
-    assert compile_calls == [
-        (multicall_module.MULTICALL2_SOURCE, {"evm_version": "istanbul"})
-    ]
+    assert compile_calls == [(multicall_module.MULTICALL2_SOURCE, {"evm_version": "istanbul"})]
 
 
 def test_deploy_preserves_compile_defaults_without_evm_version(monkeypatch):

@@ -390,9 +390,7 @@ def test_autofetch(config, mock_explorer):
 
 def test_autofetch_missing(config, mock_explorer):
     config.settings["autofetch_sources"] = True
-    address = mock_explorer.add_unverified(
-        "0xff031750F29b24e6e5552382F6E0c065830085d2"
-    )
+    address = mock_explorer.add_unverified("0xff031750F29b24e6e5552382F6E0c065830085d2")
 
     with pytest.raises(ValueError):
         Contract(address)
