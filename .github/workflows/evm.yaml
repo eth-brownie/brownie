@@ -108,11 +108,13 @@ jobs:
     - name: Download wheel
       uses: actions/download-artifact@v8
       with:
-        path: .
+        path: dist-wheel
         name: ${{ needs.build-wheel.outputs.artifact-name }}
 
     - name: Run Tox with prebuilt wheel
-      run: python -m tox run -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
+      uses: ./.github/actions/run-tox-with-wheel
+      with:
+        tox-command: python -m tox run -e ${{ matrix.job }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v6

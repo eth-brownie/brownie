@@ -1,0 +1,24 @@
+name: Run tox with prebuilt wheel
+description: Run a tox command with exactly one downloaded Brownie wheel.
+inputs:
+  tox-command:
+    description: Base tox command to run before --installpkg is appended.
+    required: true
+  wheel-dir:
+    description: Directory containing the downloaded Brownie wheel.
+    required: false
+    default: dist-wheel
+runs:
+  using: composite
+  steps:
+    - name: Run tox with wheel
+      shell: bash
+      run: |
+        shopt -s nullglob
+        wheels=("${{ inputs.wheel-dir }}"/eth_brownie-*.whl)
+        if [[ ${#wheels[@]} -ne 1 ]]; then
+          echo "Expected exactly one Brownie wheel in ${{ inputs.wheel-dir }}, found ${#wheels[@]}"
+          printf '%s\n' "${wheels[@]}"
+          exit 1
+        fi
+        ${{ inputs.tox-command }} --installpkg="${wheels[0]}"
