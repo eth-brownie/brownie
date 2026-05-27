@@ -21,6 +21,8 @@ env:
 jobs:
   build-wheel:
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.wheel.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@v6
 
@@ -95,11 +97,13 @@ jobs:
     - name: Download wheel
       uses: actions/download-artifact@v8
       with:
-        path: .
-        name: ${{ steps.wheel.outputs.artifact-name }}
+        path: dist-wheel
+        name: ${{ needs.build-wheel.outputs.artifact-name }}
 
     - name: Run Tox
-      run: tox -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
+      uses: ./.github/actions/run-tox-with-wheel
+      with:
+        tox-command: tox -e ${{ matrix.job }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v6
