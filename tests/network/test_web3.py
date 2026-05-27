@@ -49,12 +49,13 @@ def test_mainnet(config, web3, monkeypatch):
     assert mainnet is not web3
     assert web3._mainnet is mainnet
 
-    try:
-        config.set_active_network("mainnet")
-        monkeypatch.setattr(web3, "is_connected", lambda: True)
-        assert web3._mainnet is web3
-    finally:
-        config._active_network = active_network
+    with monkeypatch.context() as active_mainnet:
+        try:
+            config.set_active_network("mainnet")
+            active_mainnet.setattr(web3, "is_connected", lambda: True)
+            assert web3._mainnet is web3
+        finally:
+            config._active_network = active_network
 
     del config.networks["mainnet"]
     with pytest.raises(MainnetUndefined):
