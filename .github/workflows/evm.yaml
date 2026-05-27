@@ -115,6 +115,6 @@ jobs:
       run: python -m tox run -e ${{ matrix.job }} --installpkg=$(find . -name '*.whl')
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v6
       with:
-        file: ./coverage.xml
+        files: ./coverage.xml
