@@ -8,8 +8,8 @@ on:
       - '.github/workflows/core-ganache.yaml'
       - 'pyproject.toml'
       - 'setup.py'
-      - 'requirements*.in'
-      - 'requirements*.txt'
+      - 'requirements.txt'
+      - 'uv.lock'
       - 'tox.ini'
   pull_request:
     paths:
@@ -17,8 +17,8 @@ on:
       - '.github/workflows/core-ganache.yaml'
       - 'pyproject.toml'
       - 'setup.py'
-      - 'requirements*.in'
-      - 'requirements*.txt'
+      - 'requirements.txt'
+      - 'uv.lock'
       - 'tox.ini'
   schedule:
     - cron: '0 6 * * *'  # Daily 0600 UTC
@@ -94,8 +94,11 @@ jobs:
           cache-dependency-path: |
             pyproject.toml
             setup.py
-            requirements*.in
-            requirements*.txt
+            requirements.txt
+            uv.lock
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
       
       - name: Cache .mypy_cache
         uses: actions/cache@v5
@@ -103,16 +106,13 @@ jobs:
           path: .mypy_cache
           key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
-      - name: Install Tox
-        run: python -m pip install --upgrade tox
-
       - name: Cache tox environment and hypothesis examples
         uses: actions/cache@v5
         with:
           path: |
             .tox
             .hypothesis
-          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements*.in', 'requirements*.txt', 'tox.ini') }}
+          key: ${{ runner.os }}-tox-${{ matrix.python-version }}-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.txt', 'uv.lock', 'tox.ini', '.python-version') }}
 
       - name: Restore ccache cache
         if: runner.os != 'Windows'
@@ -142,7 +142,7 @@ jobs:
         run: |
           toxenv="py${{ matrix.python-version }}"
           toxenv="${toxenv//./}"
-          tox -e "$toxenv" -- --network ganache-cli --backend ganache
+          uv run --locked --only-group dev tox -e "$toxenv" -- --network ganache-cli --backend ganache
           
       - name: Show ccache stats after build
         if: always() && runner.os != 'Windows'

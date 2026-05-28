@@ -1,8 +1,8 @@
 include CHANGELOG.md
 include LICENSE
 include README.md
-include requirements*.in
-include requirements*.txt
+include requirements.in
+include requirements.txt
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]

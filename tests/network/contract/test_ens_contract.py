@@ -8,7 +8,6 @@ from brownie.exceptions import UnsetENSName
 from brownie.network.contract import Contract
 from brownie.network.web3 import web3
 
-
 ENS_ADDRESS = "0x808B53bF4D70A24bA5cb720D37A4835621A9df00"
 ENS_DOMAIN = "ens.snakecharmers.eth"
 UNSET_ENS_DOMAIN = "pleasedonot.buythisoryouwill.breakmytests.eth"

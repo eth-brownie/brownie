@@ -13,9 +13,11 @@ RUN npm install n -g \
 RUN npm install -g ganache
 
 COPY requirements.txt .
-COPY requirements-dev.txt .
+COPY pyproject.toml uv.lock ./
 
-RUN pip install -r requirements.txt
-RUN pip install -r requirements-dev.txt
+RUN pip install uv
+RUN uv pip install --system -r requirements.txt
+RUN uv export --locked --only-group dev --no-hashes --output-file /tmp/brownie-dev-requirements.txt \
+ && uv pip install --system -r /tmp/brownie-dev-requirements.txt
 
 WORKDIR /code

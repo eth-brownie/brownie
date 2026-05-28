@@ -41,8 +41,8 @@ jobs:
           pip-cache-dependency-path: |
             pyproject.toml
             setup.py
-            requirements*.in
-            requirements*.txt
+            requirements.txt
+            uv.lock
 
   evm:
     needs: build-wheel
@@ -86,8 +86,11 @@ jobs:
         cache-dependency-path: |
           pyproject.toml
           setup.py
-          requirements*.in
-          requirements*.txt
+          requirements.txt
+          uv.lock
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
 
     - name: Cache .mypy_cache
       uses: actions/cache@v5
@@ -95,14 +98,11 @@ jobs:
         path: .mypy_cache
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
-    - name: Install Tox
-      run: pip install tox
-
     - name: Cache tox environment
       uses: actions/cache@v5
       with:
         path: .tox
-        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements*.in', 'requirements*.txt', 'tox.ini') }}
+        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.txt', 'uv.lock', 'tox.ini', '.python-version') }}
 
     # Download the wheel artifact built by mypycify
     - name: Download wheel
@@ -114,7 +114,7 @@ jobs:
     - name: Run Tox with prebuilt wheel
       uses: ./.github/actions/run-tox-with-wheel
       with:
-        tox-command: python -m tox run -e ${{ matrix.job }}
+        tox-command: uv run --locked --only-group dev tox -e ${{ matrix.job }}
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v6
