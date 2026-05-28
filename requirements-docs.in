@@ -1,5 +1,0 @@
--c requirements.txt
--c requirements-dev.txt
-
-sphinx
-sphinx_rtd_theme

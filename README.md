@@ -93,10 +93,12 @@ python3 -m venv venv
 ```
 
 Upgrading the pinned versions of dependencies is easy:
-```
-./venv/bin/pip-compile --upgrade
-./venv/bin/pip-compile --upgrade requirements-dev.in
-./venv/bin/pip-compile --upgrade requirements-windows.in
+```bash
+./venv/bin/uv lock --upgrade
+./venv/bin/uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
+./venv/bin/uv export --locked --only-group dev --no-hashes --output-file requirements-dev.txt
+./venv/bin/uv export --locked --only-group test --no-hashes --output-file requirements-test.txt
+./venv/bin/uv export --locked --only-group docs --no-hashes --output-file requirements-docs.txt
 ```
 
 Even small upgrades of patch versions have broken things in the past, so be sure to run all tests after upgrading things!

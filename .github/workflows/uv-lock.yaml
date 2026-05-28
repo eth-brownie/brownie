@@ -1,0 +1,69 @@
+name: UV Lock
+
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  uv-lock:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        ref: ${{ github.head_ref || github.ref_name }}  # Check out the PR branch
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version-file: .python-version
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Cache .mypy_cache
+      uses: actions/cache@v5
+      with:
+        path: .mypy_cache
+        key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
+
+    - name: Update uv lock
+      run: uv lock --upgrade
+
+    - name: Export runtime requirements
+      run: uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
+
+    - name: Export dev requirements
+      run: uv export --locked --only-group dev --no-hashes --output-file requirements-dev.txt
+
+    - name: Export test requirements
+      run: uv export --locked --only-group test --no-hashes --output-file requirements-test.txt
+
+    - name: Export docs requirements
+      run: uv export --locked --only-group docs --no-hashes --output-file requirements-docs.txt
+
+    - name: Check for changes
+      id: changes
+      run: |
+        if [[ -n $(git status --porcelain) ]]; then
+          echo "changes_detected=true" >> $GITHUB_ENV
+        else
+          echo "changes_detected=false" >> $GITHUB_ENV
+        fi
+
+    - name: Commit changes
+      if: env.changes_detected == 'true'
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "chore: `uv lock`"
+        git push
