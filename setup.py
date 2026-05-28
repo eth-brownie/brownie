@@ -10,12 +10,7 @@ with open("README.md") as fh:
     long_description = fh.read()
 
 if os.environ.get("BROWNIE_LIB", "0") == "1":
-    if sys.platform == "windows":
-        requirements_filename = "requirements-windows.in"
-    else:
-        requirements_filename = "requirements.in"
-elif sys.platform == "windows":
-    requirements_filename = "requirements-windows.txt"
+    requirements_filename = "requirements.in"
 else:
     requirements_filename = "requirements.txt"
 

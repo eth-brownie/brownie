@@ -41,9 +41,6 @@ jobs:
     - name: Export runtime requirements
       run: uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
 
-    - name: Export Windows runtime requirements
-      run: uv export --locked --only-group windows-runtime --no-hashes --output-file requirements-windows.txt
-
     - name: Export dev requirements
       run: uv export --locked --only-group dev --no-hashes --output-file requirements-dev.txt
 

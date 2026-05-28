@@ -96,7 +96,6 @@ Upgrading the pinned versions of dependencies is easy:
 ```bash
 ./venv/bin/uv lock --upgrade
 ./venv/bin/uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
-./venv/bin/uv export --locked --only-group windows-runtime --no-hashes --output-file requirements-windows.txt
 ./venv/bin/uv export --locked --only-group dev --no-hashes --output-file requirements-dev.txt
 ./venv/bin/uv export --locked --only-group test --no-hashes --output-file requirements-test.txt
 ./venv/bin/uv export --locked --only-group docs --no-hashes --output-file requirements-docs.txt

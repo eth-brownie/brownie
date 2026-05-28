@@ -75,40 +75,6 @@ test = [
     { name = "pytest-mock", specifier = "==3.3.1" },
     { name = "setuptools", marker = "python_full_version >= '3.12'", specifier = "==80.9.0" },
 ]
-windows-runtime = [
-    { name = "cchecksum", specifier = ">=0.1.0" },
-    { name = "colorama", specifier = ">=0.4.1,<1" },
-    { name = "eip712" },
-    { name = "eth-account" },
-    { name = "eth-event", specifier = ">=1.4.3,<2" },
-    { name = "eth-hash", extras = ["pycryptodome"] },
-    { name = "eth-typing", specifier = ">=4.2.1,<6" },
-    { name = "faster-eth-abi", specifier = ">=5.2.12" },
-    { name = "faster-eth-utils", specifier = ">=5.3.11" },
-    { name = "faster-hexbytes", specifier = ">=1.3.2,<2" },
-    { name = "hypothesis", specifier = "<6.28.0" },
-    { name = "lazy-object-proxy", specifier = ">=1.6.0,<2" },
-    { name = "prompt-toolkit", specifier = "<4" },
-    { name = "psutil", specifier = ">=5.7.3,<6" },
-    { name = "py", specifier = ">=1.5.0,<2" },
-    { name = "py-solc-ast", specifier = ">=1.2.8,<2" },
-    { name = "py-solc-x", specifier = ">=2.0.5,<3" },
-    { name = "pygments", specifier = "<3" },
-    { name = "pygments-lexer-solidity", specifier = "<1" },
-    { name = "pytest", specifier = ">=8.4.2,<10" },
-    { name = "pytest-xdist", specifier = ">=3.8,<4" },
-    { name = "python-dotenv", specifier = ">=0.16.0,<0.17.0" },
-    { name = "pyyaml", specifier = ">=6,<7" },
-    { name = "requests", specifier = ">=2.25.0,<3" },
-    { name = "rlp" },
-    { name = "semantic-version", specifier = "<3" },
-    { name = "tqdm", specifier = "<5" },
-    { name = "ujson" },
-    { name = "vvm", specifier = "==0.3.2" },
-    { name = "vyper", specifier = ">=0.4.0,<0.5" },
-    { name = "web3", specifier = ">=7,<8" },
-    { name = "wrapt", specifier = ">=1.12.1,<2" },
-]
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -1491,7 +1457,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
