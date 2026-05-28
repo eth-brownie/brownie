@@ -1,16 +1,16 @@
-name: Pip Compile
+name: UV Lock
 
 on:
   pull_request:
     branches:
       - master
-      
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  pip-compile:
+  uv-lock:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
@@ -24,7 +24,10 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.13'
+        python-version-file: .python-version
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v7
 
     - name: Cache .mypy_cache
       uses: actions/cache@v5
@@ -32,27 +35,24 @@ jobs:
         path: .mypy_cache
         key: mypy-cache-${{ runner.os }}-${{ hashFiles('**/*.py', 'pyproject.toml') }}
 
-    - name: Pin pip to <25.0 for pip-tools compatibility
-      run: pip install "pip<25.0"
+    - name: Update uv lock
+      run: uv lock --upgrade
 
-    - name: Install Pip Tools
-      run: pip install -U pip-tools
-      
-    - name: Run Pip Compile
-      run: pip-compile -U --no-strip-extras
+    - name: Export runtime requirements
+      run: uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
 
-    - name: Run Pip Compile for Windows
-      run: pip-compile -U requirements-windows.in --no-strip-extras
+    - name: Export Windows runtime requirements
+      run: uv export --locked --only-group windows-runtime --no-hashes --output-file requirements-windows.txt
 
-    - name: Run Pip Compile for Dev Deps
-      run: pip-compile -U requirements-dev.in --no-strip-extras
+    - name: Export dev requirements
+      run: uv export --locked --only-group dev --no-hashes --output-file requirements-dev.txt
 
-    - name: Run Pip Compile for Test Deps
-      run: pip-compile -U requirements-test.in --no-strip-extras --allow-unsafe
+    - name: Export test requirements
+      run: uv export --locked --only-group test --no-hashes --output-file requirements-test.txt
 
-    - name: Run Pip Compile for Docs Deps
-      run: pip-compile -U requirements-docs.in --no-strip-extras
-    
+    - name: Export docs requirements
+      run: uv export --locked --only-group docs --no-hashes --output-file requirements-docs.txt
+
     - name: Check for changes
       id: changes
       run: |
@@ -68,5 +68,5 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git add .
-        git commit -m "chore: \`pip-compile\`"
+        git commit -m "chore: `uv lock`"
         git push

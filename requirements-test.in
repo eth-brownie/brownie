@@ -1,7 +1,0 @@
--c requirements.txt
-
-coverage==7.13.5
-eth-retry==0.3.5
-pytest-cov==2.10.1
-pytest-mock==3.3.1
-setuptools==80.9.0; python_version >= "3.12"
