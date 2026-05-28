@@ -1,18 +1,25 @@
 #!/usr/bin/python3
 
+import pathlib
 import sys
-from pathlib import Path
+from typing import TypeAlias
 
 import pytest
 
 from brownie import project
+from brownie._c_constants import Path
 from brownie._config import CONFIG, _modify_hypothesis_settings
 from brownie.test.fixtures import PytestBrownieFixtures
 from brownie.test.managers import PytestBrownieMaster, PytestBrownieRunner, PytestBrownieXdistRunner
 from brownie.utils import color
 
 
-def _get_project_path() -> Path | None:
+PytestBrownieType: TypeAlias = type[
+    PytestBrownieMaster | PytestBrownieXdistRunner | PytestBrownieRunner
+]
+
+
+def _get_project_path() -> pathlib.Path | None:
     key = next((i for i in sys.argv if i.startswith("--brownie-project")), "")
     if key == "--brownie-project":
         idx = sys.argv.index(key)
@@ -100,11 +107,11 @@ def pytest_configure(config):
 
     if not config.getoption("showinternal"):
         # do not include brownie internals in tracebacks
-        base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()
+        base_path = Path(sys.modules["brownie"].__file__).parent.as_posix()  # type: ignore [arg-type]
         for module in sys.modules.values():
-            if getattr(module, "__file__", None) and module.__file__.startswith(base_path):
-                module.__tracebackhide__ = True
-                module.__hypothesistracebackhide__ = True
+            if getattr(module, "__file__", None) and module.__file__.startswith(base_path):  # type: ignore [union-attr]
+                module.__tracebackhide__ = True  # type: ignore [attr-defined]
+                module.__hypothesistracebackhide__ = True  # type: ignore [attr-defined]
 
     # enable verbose output if stdout capture is disabled
     if config.getoption("capture") == "no":
@@ -115,6 +122,7 @@ def pytest_configure(config):
         _modify_hypothesis_settings({"verbosity": 2}, "brownie-verbose")
 
     is_xdist_worker = hasattr(config, "workerinput")
+    Plugin: PytestBrownieType
     if is_xdist_worker:
         Plugin = PytestBrownieXdistRunner
     elif config.getoption("numprocesses"):
