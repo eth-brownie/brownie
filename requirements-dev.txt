@@ -160,7 +160,7 @@ urllib3==2.7.0
     #   requests
     #   twine
 uv==0.11.16
-virtualenv==21.4.0
+virtualenv==21.4.1
     # via tox
 wheel==0.47.0
 zipp==4.1.0 ; python_full_version < '3.12' and platform_machine != 'ppc64le' and platform_machine != 's390x'
