@@ -84,6 +84,7 @@ dev = [
   "pytest-cov",
   "pytest-mock",
   "tox",
+  "tox-uv",
   "twine",
   "uv",
   "wheel",

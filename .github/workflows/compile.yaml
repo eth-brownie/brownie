@@ -8,7 +8,8 @@ on:
       - 'brownie/**.py'
       - '.github/workflows/compile.yaml'
       - 'pyproject.toml'
-      - 'requirements*.txt'
+      - 'requirements.txt'
+      - 'uv.lock'
       - 'setup.py'
   pull_request:
     branches:
@@ -17,7 +18,8 @@ on:
       - 'brownie/**.py'
       - '.github/workflows/compile.yaml'
       - 'pyproject.toml'
-      - 'requirements*.txt'
+      - 'requirements.txt'
+      - 'uv.lock'
       - 'setup.py'
 
 concurrency:

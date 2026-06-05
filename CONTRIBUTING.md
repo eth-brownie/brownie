@@ -11,11 +11,12 @@ cd brownie
 python3 -m venv venv
 source venv/bin/activate
 
-# install brownie into the virtual environment
-python setup.py install
+# install the developer dependencies from the uv lock
+python -m pip install uv
+uv sync --locked --active --group dev
 
-# install the developer dependencies
-pip install -r requirements-dev.txt
+# install brownie into the virtual environment
+uv pip install -e .
 ```
 
 ## Pre-Commit Hooks

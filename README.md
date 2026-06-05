@@ -87,18 +87,15 @@ There are extra tools that are helpful when developing:
 ```bash
 git clone https://github.com/eth-brownie/brownie.git
 cd brownie
-python3 -m venv venv
-./venv/bin/pip install wheel
-./venv/bin/pip install -e . -r requirements-dev.txt
+python3 -m pip install --user uv
+uv sync --locked --group dev
+uv pip install -e .
 ```
 
 Upgrading the pinned versions of dependencies is easy:
 ```bash
-./venv/bin/uv lock --upgrade
-./venv/bin/uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
-./venv/bin/uv export --locked --only-group dev --no-hashes --output-file requirements-dev.txt
-./venv/bin/uv export --locked --only-group test --no-hashes --output-file requirements-test.txt
-./venv/bin/uv export --locked --only-group docs --no-hashes --output-file requirements-docs.txt
+uv lock --upgrade
+uv export --locked --only-group runtime --no-hashes --output-file requirements.txt
 ```
 
 Even small upgrades of patch versions have broken things in the past, so be sure to run all tests after upgrading things!
@@ -124,7 +121,8 @@ If you have any questions about how to use Brownie, feel free to ask on [Ethereu
 To run the tests, first install the developer dependencies:
 
 ```bash
-pip install -e . -r requirements-dev.txt
+uv sync --locked --group dev
+uv pip install -e .
 ```
 
 Then use [`tox`](https://github.com/tox-dev/tox) to run the complete suite against the full set of build targets, or [`pytest`](https://github.com/pytest-dev/pytest) to run tests against a specific version of Python. If you are using [`pytest`](https://github.com/pytest-dev/pytest) you must include the `-p no:pytest-brownie` flag to prevent it from loading the Brownie plugin.
