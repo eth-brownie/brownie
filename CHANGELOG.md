@@ -7,11 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.22.1](https://github.com/eth-brownie/brownie/tree/v1.22.1) - 2026-06-06
+
 ### Changed
 - Mark type aliases explicit ([#2220](https://github.com/eth-brownie/brownie/pull/2220))
+- Add Middlewares type alias ([#2221](https://github.com/eth-brownie/brownie/pull/2221))
 - Bump eth-event and faster-hexbytes ([#2222](https://github.com/eth-brownie/brownie/pull/2222))
+- Centralize middleware request typing ([#2226](https://github.com/eth-brownie/brownie/pull/2226))
+- Scope native compile workflow ([#2230](https://github.com/eth-brownie/brownie/pull/2230))
+- Microoptimize compiler build JSON updates ([#2234](https://github.com/eth-brownie/brownie/pull/2234))
+- Bump core Ganache actions for Node 24 ([#2235](https://github.com/eth-brownie/brownie/pull/2235))
+- Pin Ganache node toolchain to 20 ([#2237](https://github.com/eth-brownie/brownie/pull/2237))
+- Lint ([#2239](https://github.com/eth-brownie/brownie/pull/2239))
+- Add live explorer smoke test ([#2241](https://github.com/eth-brownie/brownie/pull/2241))
+- Bump Codecov action for Node 24 ([#2242](https://github.com/eth-brownie/brownie/pull/2242))
+- Scope prebuilt wheel lookup ([#2244](https://github.com/eth-brownie/brownie/pull/2244))
+- Bump python-dotenv from 0.16.0 to 1.2.2 ([#2245](https://github.com/eth-brownie/brownie/pull/2245))
+- Make tox consume uv lock ([#2247](https://github.com/eth-brownie/brownie/pull/2247))
+- Clarify compiled runtime contract for agents ([#2248](https://github.com/eth-brownie/brownie/pull/2248))
+- Run EVM tests on OS matrix ([#2249](https://github.com/eth-brownie/brownie/pull/2249))
 
-## [1.22.0](https://github.com/eth-brownie/brownie/tree/v1.22.0) - TBD
+### Fixed
+- Fix release-blocking type errors ([#2223](https://github.com/eth-brownie/brownie/pull/2223))
+- Wake cache middleware sleep during uninstall ([#2224](https://github.com/eth-brownie/brownie/pull/2224))
+- Stop cache middleware filter thread ([#2225](https://github.com/eth-brownie/brownie/pull/2225))
+- Avoid public snapshot warning in always-transact ([#2228](https://github.com/eth-brownie/brownie/pull/2228))
+- Make missing autofetch tests hermetic ([#2229](https://github.com/eth-brownie/brownie/pull/2229))
+- Make from_explorer tests hermetic ([#2231](https://github.com/eth-brownie/brownie/pull/2231))
+- Synchronize alert message assertion ([#2232](https://github.com/eth-brownie/brownie/pull/2232))
+- Use dev artifacts for persistence tests ([#2233](https://github.com/eth-brownie/brownie/pull/2233))
+- Make mainnet web3 selection hermetic ([#2236](https://github.com/eth-brownie/brownie/pull/2236))
+- Synchronize alert callbacks ([#2238](https://github.com/eth-brownie/brownie/pull/2238))
+- Harden network fixture disconnect cleanup ([#2240](https://github.com/eth-brownie/brownie/pull/2240))
+- Make ENS resolution tests hermetic ([#2243](https://github.com/eth-brownie/brownie/pull/2243))
+- Resolve anvil executable on Windows ([#2250](https://github.com/eth-brownie/brownie/pull/2250))
+- Remove stale Vyper pragma xfail ([#2251](https://github.com/eth-brownie/brownie/pull/2251))
+
+## [1.22.0](https://github.com/eth-brownie/brownie/tree/v1.22.0) - 2026-05-24
 
 ### Changed
 - Compile brownie to C to make it much faster and efficient ([#1875](https://github.com/eth-brownie/brownie/pull/1875) and others)
