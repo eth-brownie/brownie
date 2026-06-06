@@ -30,7 +30,7 @@ def test_anvil_launcher_keeps_falsy_command_values(popen_calls):
         steps_tracing=True,
     )
 
-    cmd_list, _ = calls.pop()
+    cmd_list, _ = popen_calls.pop()
 
     assert cmd_list == [
         "anvil",
@@ -43,6 +43,32 @@ def test_anvil_launcher_keeps_falsy_command_values(popen_calls):
     ]
     assert "--fork-url" not in cmd_list
     assert "--block-time" not in cmd_list
+
+
+def test_anvil_launcher_uses_resolved_windows_executable(monkeypatch, popen_calls):
+    monkeypatch.setattr(anvil.sys, "platform", "win32")
+    monkeypatch.setattr(
+        anvil.shutil,
+        "which",
+        lambda executable: r"C:\Users\runner\.foundry\bin\anvil.exe"
+        if executable == "anvil"
+        else None,
+    )
+
+    anvil.launch("anvil")
+
+    cmd_list, _ = popen_calls.pop()
+    assert cmd_list[0] == r"C:\Users\runner\.foundry\bin\anvil.exe"
+
+
+def test_anvil_launcher_falls_back_to_cmd_on_windows(monkeypatch, popen_calls):
+    monkeypatch.setattr(anvil.sys, "platform", "win32")
+    monkeypatch.setattr(anvil.shutil, "which", lambda _: None)
+
+    anvil.launch("anvil")
+
+    cmd_list, _ = popen_calls.pop()
+    assert cmd_list[0] == "anvil.cmd"
 
 
 def test_anvil_launcher_does_not_set_default_balance(popen_calls):
