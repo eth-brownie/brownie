@@ -21,9 +21,13 @@ env:
 
 jobs:
   build-wheel:
-    runs-on: ubuntu-latest
-    outputs:
-      artifact-name: ${{ steps.wheel.outputs.artifact-name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
     steps:
       - uses: actions/checkout@v6
 
@@ -37,7 +41,7 @@ jobs:
             pyproject.toml
             setup.py
             requirements.txt
-          ccache: true
+          ccache: ${{ runner.os != 'Windows' }}
           pip-cache-dependency-path: |
             pyproject.toml
             setup.py
@@ -46,11 +50,12 @@ jobs:
 
   evm:
     needs: build-wheel
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         job:
           - evm-byzantium
           - evm-petersburg
@@ -102,14 +107,22 @@ jobs:
       uses: actions/cache@v5
       with:
         path: .tox
-        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ matrix.architecture }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.txt', 'uv.lock', 'tox.ini', '.python-version') }}
+        key: ${{ runner.os }}-${{ matrix.job }}-3.10-${{ runner.arch }}-${{ hashFiles('pyproject.toml', 'setup.py', 'requirements.txt', 'uv.lock', 'tox.ini', '.python-version') }}
 
-    # Download the wheel artifact built by mypycify
+    - name: Compute wheel artifact name
+      id: wheel
+      shell: bash
+      run: |
+        architecture="$(uname -m)"
+        artifact_name="BobTheBuidler_mypycified_wheel-${{ runner.os }}-${architecture}-py3.10-source-${{ hashFiles('brownie/**/*.py', 'pyproject.toml', 'setup.py', 'requirements.txt') }}"
+        echo "artifact-name=${artifact_name}" >> "$GITHUB_OUTPUT"
+
+    # Download the OS-local wheel artifact built by mypycify
     - name: Download wheel
       uses: actions/download-artifact@v8
       with:
         path: dist-wheel
-        name: ${{ needs.build-wheel.outputs.artifact-name }}
+        name: ${{ steps.wheel.outputs.artifact-name }}
 
     - name: Run Tox with prebuilt wheel
       uses: ./.github/actions/run-tox-with-wheel
