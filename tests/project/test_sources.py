@@ -90,9 +90,6 @@ def test_get_pragma_spec():
         ("<=0.2.4", NpmSpec("<=0.2.4")),
     ],
 )
-@pytest.mark.xfail
-# this might fail on the beta versions due to a dependency change,
-# but the failing vyper versions are too old for us to care
 def test_get_vyper_pragma_spec(version, spec):
     source = f"""# @version {version}"""
     assert sources.get_vyper_pragma_spec(source) == spec
