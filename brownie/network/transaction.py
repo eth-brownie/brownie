@@ -48,7 +48,7 @@ _marker = deque("-/|\\-/|\\")
 
 
 def trace_property(fn: Callable[["TransactionReceipt"], _T]) -> "property[_T]":
-    # attributes that are only available after querying the tranasaction trace
+    # attributes that are only available after querying the transaction trace
 
     @property
     def wrapper(self: "TransactionReceipt") -> _T:
