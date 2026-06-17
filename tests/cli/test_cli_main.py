@@ -51,6 +51,9 @@ def test_cli_init(cli_tester):
     parameters = (args, kwargs)
     cli_tester.run_and_test_parameters("init test/path --force", parameters)
 
+    _, _, was_forced = cli_tester.mock_subroutines.call_args[0]
+    assert type(was_forced) is bool and was_forced
+
     assert cli_tester.mock_subroutines.called is True
     assert cli_tester.mock_subroutines.call_count == 2
 
@@ -66,6 +69,9 @@ def test_cli_bake(cli_tester):
     args = ("token", "test/path", True)
     parameters = (args, kwargs)
     cli_tester.run_and_test_parameters("bake token test/path --force", parameters)
+
+    _, _, was_forced = cli_tester.mock_subroutines.call_args[0]
+    assert type(was_forced) is bool and was_forced
 
     assert cli_tester.mock_subroutines.called is True
     assert cli_tester.mock_subroutines.call_count == 2
