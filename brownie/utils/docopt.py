@@ -174,9 +174,9 @@ class _LeafPattern(_Pattern):
             return False, left, collected
         left_ = left[:pos] + left[(pos + 1) :]
         same_name = [a for a in collected if a.name == self.name]
-        if isinstance(self.value, int):
+        if type(self.value) is int:
             if same_name:
-                if isinstance(same_name[0].value, int):
+                if type(same_name[0].value) is int:
                     same_name[0].value += 1
                 return True, left_, collected
             else:
