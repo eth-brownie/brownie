@@ -151,7 +151,7 @@ class Build:
         self,
         path: str | None = None,
     ) -> list[tuple[ContractName, BuildJson]]:
-        """Provides an list of tuples as (key,value), similar to calling dict.items.
+        """Provides a list of tuples as (key, value), similar to calling dict.items.
         If a path is given, only contracts derived from that source file are returned."""
         items = [*self._contracts.items(), *self._interfaces.items()]
         if path is None:
