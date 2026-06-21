@@ -70,12 +70,7 @@ test = [
   "pytest-mock==3.3.1",
   "setuptools==80.9.0; python_version >= '3.12'",
 ]
-lint = [
-  "black>=20.8b1",
-  "flake8",
-  "isort",
-  "pygments-lexer-solidity",
-]
+lint = ["black>=20.8b1", "flake8", "isort", "pygments-lexer-solidity"]
 dev = [
   { include-group = "lint" },
   "bumpversion",
@@ -89,10 +84,7 @@ dev = [
   "uv",
   "wheel",
 ]
-docs = [
-  "sphinx",
-  "sphinx_rtd_theme",
-]
+docs = ["sphinx", "sphinx_rtd_theme"]
 
 [tool.uv]
 package = false
