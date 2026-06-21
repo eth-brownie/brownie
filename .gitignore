@@ -28,4 +28,5 @@ c_pytest.py
 # C Stuff
 *.o
 *.so
+*.pyd
 build/ops.txt

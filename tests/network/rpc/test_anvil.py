@@ -50,9 +50,9 @@ def test_anvil_launcher_uses_resolved_windows_executable(monkeypatch, popen_call
     monkeypatch.setattr(
         anvil.shutil,
         "which",
-        lambda executable: r"C:\Users\runner\.foundry\bin\anvil.exe"
-        if executable == "anvil"
-        else None,
+        lambda executable: (
+            r"C:\Users\runner\.foundry\bin\anvil.exe" if executable == "anvil" else None
+        ),
     )
 
     anvil.launch("anvil")
