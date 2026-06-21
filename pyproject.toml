@@ -13,7 +13,7 @@ requires = [
   # to build on 32-bit Linux distros so we exclude it in that one specific case
   "eip712==0.3.3; platform_system == 'MacOS' or platform_system == 'Linux'",
   "eth-account==0.13.7; platform_system == 'MacOS' or platform_system == 'Linux'",
-  "eth-event==1.4.8; platform_system != 'Linux' or platform_machine != 'i686'",
+  "eth-event==1.4.10; platform_system != 'Linux' or platform_machine != 'i686'",
   "eth-keys==0.7.0",
   "eth-typing==5.2.1",
   "faster-eth-abi==5.2.30; platform_system != 'Linux' or platform_machine != 'i686'",
