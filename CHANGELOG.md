@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/eth-brownie/brownie)
 
+## [1.22.2](https://github.com/eth-brownie/brownie/tree/v1.22.2) - 2026-06-21
+
+### Added
+- Add BattleChain to network config ([#2255](https://github.com/eth-brownie/brownie/pull/2255)
+
+### Fixed
+- [Fix parity](https://github.com/BobTheBuidler/faster-eth-utils/pull/319) between [eth-utils](https://github.com/ethereum/eth-utils) and [faster-eth-utils](https://github.com/BobTheBuidler/faster-eth-utils/) ([#2258](https://github.com/eth-brownie/brownie/pull/2258))
+- Fix typos in docstrings ([#2254](https://github.com/eth-brownie/brownie/pull/2254))
+- Fix init bake with `--force` ([#2257](https://github.com/eth-brownie/brownie/pull/2257)
+
+  
 ## [1.22.1](https://github.com/eth-brownie/brownie/tree/v1.22.1) - 2026-06-06
 
 ### Changed
