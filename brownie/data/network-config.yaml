@@ -224,6 +224,18 @@ live:
         host: https://mainnet.base.org
         id: base-main
         name: Base mainnet
+  - name: BattleChain
+    networks:
+      - chainid: 626
+        explorer: https://block-explorer-api.battlechain.com/api
+        host: https://mainnet.battlechain.com
+        id: battlechain-main
+        name: BattleChain Mainnet
+      - chainid: 627
+        explorer: https://block-explorer-api.testnet.battlechain.com/api
+        host: https://testnet.battlechain.com
+        id: battlechain-test
+        name: BattleChain Testnet
 
 development:
   - name: Anvil
