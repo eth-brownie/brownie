@@ -1,7 +1,7 @@
 cchecksum>=0.4.4
 eip712
 eth-account
-eth-event>=1.4.3,<2
+eth-event>=1.4.10,<2
 eth-hash[pycryptodome]
 eth-typing>=4.2.1,<6
 faster-eth-abi>=5.2.30
