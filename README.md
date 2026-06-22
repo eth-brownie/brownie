@@ -4,8 +4,6 @@
 
 Brownie is a Python-based development and testing framework for smart contracts targeting the [Ethereum Virtual Machine](https://solidity.readthedocs.io/en/v0.6.0/introduction-to-smart-contracts.html#the-ethereum-virtual-machine).
 
-**Brownie is no longer actively maintained**. Future releases may come sporadically - or never at all. Check out [Ape Framework](https://github.com/ApeWorX/ape) for all your python Ethereum development needs.
-
 ## Features
 
 * Full support for [Solidity](https://github.com/ethereum/solidity) (`>=0.4.22`) and [Vyper](https://github.com/vyperlang/vyper) (`>=0.1.0-beta.16`)
