@@ -517,7 +517,7 @@ class EventWatcher(metaclass=_Singleton):
 
             with self.target_list_lock:
                 for key, elem in self.target_events_watch_data.items():
-                    # If cooldown is not over :
+                    # If cooldown is not over:
                     #   skip and store time left before next check if needed.
                     time_left = elem.time_left
                     if time_left > 0:

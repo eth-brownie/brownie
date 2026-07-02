@@ -98,7 +98,7 @@ def test_nonce_manual_transact(tester, accounts):
 # in hardhat we should still include it
 
 # @pytest.mark.parametrize("nonce", (-1, 1, 15))
-# def test_rasises_on_incorrect_nonce_manual_transact(tester, accounts, nonce):
+# def test_raises_on_incorrect_nonce_manual_transact(tester, accounts, nonce):
 #     """raises on incorrect manual nonce with transact"""
 #     nonce += accounts[0].nonce
 #     with pytest.raises(ValueError):

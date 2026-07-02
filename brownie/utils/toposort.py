@@ -47,7 +47,7 @@ _reduce: Final = functools.reduce
 class CircularDependencyError(ValueError):
     def __init__(self, data):
         # Sort the data just to make the output consistent, for use in
-        #  error messages.  That's convenient for doctests.
+        # error messages. That's convenient for doctests.
         super().__init__(
             "Circular dependencies exist among these items: {{{}}}".format(
                 ", ".join(f"{key!r}:{value!r}" for key, value in sorted(data.items()))

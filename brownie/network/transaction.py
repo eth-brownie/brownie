@@ -714,7 +714,7 @@ class TransactionReceipt:
                 if fix_gas:
                     # handle traces where numeric values are returned as hex (Nethermind)
                     step["gas"] = int(step["gas"], 16)
-                    # Check if gasCost is  hex before converting.
+                    # Check if gasCost is hex before converting.
                     if isinstance(step["gasCost"], str):
                         step["gasCost"] = int.from_bytes(
                             HexBytes(step["gasCost"]), "big", signed=True
