@@ -115,6 +115,15 @@ Available Gas Strategies
 
 .. py:class:: brownie.network.gas.strategies.GasNowStrategy(speed="fast")
 
+    .. warning::
+
+        The GasNow API was discontinued in 2021 and this strategy no longer works.
+        The ``www.gasnow.org`` domain now serves unrelated content. See the
+        `GethMempoolStrategy`_ below for a self-hosted alternative that uses the
+        same underlying technique (sorting the mempool by gas price). For an
+        independent cross-provider gas oracle accuracy comparison, see the
+        `OpenChainBench gas benchmark <https://openchainbench.com/benchmarks/gas-estimation>`_.
+
     Simple gas strategy for determining a price using the `GasNow <https://www.gasnow.org/>`_ API.
 
     * ``speed``: The gas price to use based on the API call. Options are rapid, fast, standard and slow.
@@ -127,6 +136,11 @@ Available Gas Strategies
             >>> accounts[0].transfer(accounts[1], "1 ether", gas_price=gas_strategy)
 
 .. py:class:: brownie.network.gas.strategies.GasNowScalingStrategy(initial_speed="standard", max_speed="rapid", increment=1.125, block_duration=2)
+
+    .. warning::
+
+        The GasNow API was discontinued in 2021 and this strategy no longer works.
+        See the note on ``GasNowStrategy`` above for alternatives.
 
     Block based scaling gas strategy using the GasNow API.
 
