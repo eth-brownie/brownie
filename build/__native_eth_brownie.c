@@ -57724,7 +57724,7 @@ CPyL3: ;
     CPy_INCREF(cpy_r_val);
     return cpy_r_val;
 CPyL4: ;
-    cpy_r_r1 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'true', 'True', 'on'}) */
+    cpy_r_r1 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'True', 'on', 'true'}) */
     CPy_INCREF(cpy_r_val);
     if (likely(PyUnicode_Check(cpy_r_val)))
         cpy_r_r2 = cpy_r_val;
@@ -57744,7 +57744,7 @@ CPyL4: ;
     cpy_r_r6 = 1 ? Py_True : Py_False;
     return cpy_r_r6;
 CPyL8: ;
-    cpy_r_r7 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'False', 'off', 'false'}) */
+    cpy_r_r7 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'false', 'False', 'off'}) */
     CPy_INCREF(cpy_r_val);
     if (likely(PyUnicode_Check(cpy_r_val)))
         cpy_r_r8 = cpy_r_val;
@@ -112214,7 +112214,7 @@ CPyL3: ;
     if (!cpy_r_r7) goto CPyL21;
     cpy_r_r8 = CPy_GetExcValue();
     cpy_r_exc = cpy_r_r8;
-    cpy_r_r9 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'eth_call', 'eth_estimateGas'}) */
+    cpy_r_r9 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'eth_estimateGas', 'eth_call'}) */
     cpy_r_r10 = PySet_Contains(cpy_r_r9, cpy_r_method);
     cpy_r_r11 = cpy_r_r10 >= 0;
     if (unlikely(!cpy_r_r11)) {
@@ -112330,7 +112330,7 @@ CPyL21: ;
     if (!cpy_r_r32) goto CPyL39;
     cpy_r_r33 = CPy_GetExcValue();
     cpy_r_exc = cpy_r_r33;
-    cpy_r_r34 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'eth_call', 'eth_estimateGas'}) */
+    cpy_r_r34 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'eth_estimateGas', 'eth_call'}) */
     cpy_r_r35 = PySet_Contains(cpy_r_r34, cpy_r_method);
     cpy_r_r36 = cpy_r_r35 >= 0;
     if (unlikely(!cpy_r_r36)) {
@@ -112436,7 +112436,7 @@ CPyL41: ;
     if (!cpy_r_r57) goto CPyL54;
     CPy_Unreachable();
 CPyL43: ;
-    cpy_r_r58 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'eth_call', 'eth_estimateGas'}) */
+    cpy_r_r58 = CPyStatics[DIFFCHECK_PLACEHOLDER]; /* frozenset({'eth_estimateGas', 'eth_call'}) */
     cpy_r_r59 = PySet_Contains(cpy_r_r58, cpy_r_method);
     cpy_r_r60 = cpy_r_r59 >= 0;
     if (unlikely(!cpy_r_r60)) {
@@ -184285,19 +184285,19 @@ CPyL20: ;
     if (!cpy_r_r41) goto CPyL44;
 CPyL21: ;
     cpy_r_r42 = CPySequenceTuple_GetItemUnsafe(cpy_r_r38, cpy_r_r40);
-    if (PyUnicode_Check(cpy_r_r42))
-        cpy_r_r43 = cpy_r_r42;
-    else {
-        cpy_r_r43 = NULL;
-    }
-    if (cpy_r_r43 != NULL) goto __LL1108;
     if (PyLong_Check(cpy_r_r42))
         cpy_r_r43 = cpy_r_r42;
     else {
         cpy_r_r43 = NULL;
     }
     if (cpy_r_r43 != NULL) goto __LL1108;
-    CPy_TypeErrorTraceback("brownie/project/compiler/vyper.py", "_convert_to_semver", 525, CPyStatic_vyper___globals, "union[str, int]", cpy_r_r42);
+    if (PyUnicode_Check(cpy_r_r42))
+        cpy_r_r43 = cpy_r_r42;
+    else {
+        cpy_r_r43 = NULL;
+    }
+    if (cpy_r_r43 != NULL) goto __LL1108;
+    CPy_TypeErrorTraceback("brownie/project/compiler/vyper.py", "_convert_to_semver", 525, CPyStatic_vyper___globals, "union[int, str]", cpy_r_r42);
     goto CPyL45;
 __LL1108: ;
     cpy_r_r44 = PyObject_Str(cpy_r_r43);
@@ -277515,10 +277515,10 @@ const char * const CPyLit_Str[] = {
     "\004\002w3\020load_middlewares\"brownie.network.middlewares._setup\f_middlewares",
     "\004\bget_code\006latest\bcache.db\033CREATE TABLE IF NOT EXISTS ",
     "\004\031 (method, params, result)\005clear\026loop_exception_handler\reager_caching",
-    "\006\tget_block\ttimestamp\006number\vblock_cache\004hash\veth_chainId",
-    "\003\030eth_getTransactionByHash\026eth_sendRawTransaction\022web3_clientVersion",
-    "\003\023eth_uninstallFilter\024eth_getFilterChanges\031eth_getTransactionReceipt",
-    "\004\beth_sign\023eth_sendTransaction\023eth_signTransaction\022eth_newBlockFilter",
+    "\006\tget_block\ttimestamp\006number\vblock_cache\004hash\031eth_getTransactionReceipt",
+    "\004\030eth_getTransactionByHash\veth_chainId\beth_sign\026eth_sendRawTransaction",
+    "\003\022web3_clientVersion\023eth_sendTransaction\023eth_uninstallFilter",
+    "\003\022eth_newBlockFilter\024eth_getFilterChanges\023eth_signTransaction",
     "\004\nseparators\023SELECT result FROM \034 WHERE method=\? AND params=\?\amaxsize",
     "\a\ajsonrpc\0032.0\006result\nsetdefault\fblock_filter\visConnected\tfilter_id",
     "\003\020uninstall_filter\vloop_thread\016current_thread",
@@ -277526,8 +277526,8 @@ const char * const CPyLit_Str[] = {
     "\003\021brownie.utils.sql\veth_getCode\016LONGTERM_CACHE",
     "\002 CACHE_FILTER_THREAD_JOIN_TIMEOUT#brownie.network.middlewares.caching",
     "\a\ttable_key\003cur\004lock\v_stop_event\tis_killed\nlast_block\017last_block_seen",
-    "\004\flast_request\030RequestCachingMiddleware\fWeb3RPCError\beth_call",
-    "\005\017eth_estimateGas\frpc_response\005error\022ContractLogicError\017web3.exceptions",
+    "\004\flast_request\030RequestCachingMiddleware\fWeb3RPCError\017eth_estimateGas",
+    "\005\beth_call\frpc_response\005error\022ContractLogicError\017web3.exceptions",
     "\002+brownie.network.middlewares.catch_tx_revert\031TxRevertCatcherMiddleware",
     "\005\016client_version\nganache/v7\016programCounter\017program_counter\fVM Exception",
     "\004\006revert\006reason$brownie.network.middlewares.ganache7\022Ganache7MiddleWare",
@@ -277883,9 +277883,9 @@ const int CPyLit_Tuple[] = {
     2252, 2, 47, 51
 };
 const int CPyLit_FrozenSet[] = {
-    7, 3, 469, 670, 671, 3, 672, 673, 470, 11, 1043, 1044, 1045, 1046,
-    1047, 1048, 1049, 1050, 1051, 1052, 1053, 2, 1086, 1087, 2, 1051,
-    1045, 3, 1086, 1051, 1045, 2, 2086, 2087
+    7, 3, 670, 671, 469, 3, 470, 672, 673, 11, 1043, 1044, 1045, 1046,
+    1047, 1048, 1049, 1050, 1051, 1052, 1053, 2, 1086, 1087, 2, 1047,
+    1049, 3, 1047, 1049, 1087, 2, 2086, 2087
 };
 CPyModule *CPyModule_brownie____c_constants__internal = NULL;
 CPyModule *CPyModule_brownie____c_constants;
