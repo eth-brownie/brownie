@@ -46,7 +46,7 @@ def test_coverage_save_report(plugintester):
     assert [i.name for i in path.glob("*")] == ["coverage.json"]
     plugintester.runpytest("-C")
     assert [i.name for i in path.glob("*")] == ["coverage.json"]
-    next(path.glob("*")).open("w").write("this isn't json, is it?")
+    next(path.glob("*")).write_text("this isn't json, is it?", encoding="utf-8")
     plugintester.runpytest("-C")
     assert [i.name for i in path.glob("*")] == ["coverage.json"]
 
