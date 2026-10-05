@@ -6,8 +6,7 @@ from xdist.scheduler import LoadFileScheduling
 from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG
 from brownie.test import coverage
-
-from .base import PytestBrownieBase
+from brownie.test.managers.base import PytestBrownieBase
 
 
 class PytestBrownieMaster(PytestBrownieBase):

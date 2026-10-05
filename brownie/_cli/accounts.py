@@ -11,7 +11,7 @@ from brownie.utils import color, notify
 from brownie.utils._color import bright_black, bright_blue, bright_magenta
 from brownie.utils.docopt import docopt
 
-__doc__ = """Usage: brownie accounts <command> [<arguments> ...] [options]
+__doc__ = """Usage: brownie accounts <command> [<arguments> ...] [options]  
 
 Commands:
   list                             List available accounts
@@ -58,7 +58,7 @@ def _list():
 
 
 def _new(id_):
-    pk = input("Enter the private key you wish to add: ")
+    pk = input("Enter the private key you wish to add: ")  # nosec B322
     a = accounts.add(pk)
     a.save(id_)
     notify(

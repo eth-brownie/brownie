@@ -14,21 +14,19 @@ from web3.datastructures import AttributeDict
 from web3.types import BlockData
 
 import brownie.network.rpc as rpc
-from brownie._c_constants import sha1
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentError, CompilerError
+from brownie.network.transaction import TransactionReceipt
+from brownie.network.web3 import _resolve_address, web3
 from brownie.project.build import DEPLOYMENT_KEYS
 from brownie.typing import ContractBuildJson, ContractName, Count, PCMap, ProgramCounter
-from brownie.utils import bytes_to_hexstring
+from brownie.utils import bytes_to_hexstring, hash_source
 from brownie.utils.sql import Cursor
 
-from .transaction import TransactionReceipt
-from .web3 import _resolve_address, web3
-
 if TYPE_CHECKING:
-    from .contract import Contract, ProjectContract
+    from brownie.network.contract import Contract, ProjectContract
 
 PathMap: TypeAlias = dict[str, tuple[HexStr, str]]
 Deployment: TypeAlias = tuple[ContractBuildJson, dict[str, Any]]
@@ -322,7 +320,11 @@ class Chain(metaclass=_Singleton):
 
     @property
     def priority_fee(self) -> Wei:
-        return Wei(web3.eth.max_priority_fee)
+        try:
+            return Wei(web3.eth.max_priority_fee)
+        except ValueError:
+            # fallback to legacy transactions if network does not support EIP1559
+            return Wei(0)
 
     def _set_time_offset_from_block(self) -> None:
         """
@@ -613,6 +615,9 @@ class Chain(metaclass=_Singleton):
             return web3.eth.block_number
 
 
+chain = Chain()
+
+
 # objects that will update whenever the RPC is reset or reverted must register
 # by calling to this function. The must also include _revert and _reset methods
 # to receive notifications from this object
@@ -680,7 +685,7 @@ def _get_deployment(
         query = f"alias='{alias}'"
 
     try:
-        name = f"chain{CONFIG.active_network['chainid']}"
+        name = f"chain{CONFIG.active_network['chainid']}"  # @UndefinedVariable
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
     try:
@@ -718,7 +723,7 @@ def _add_deployment(
         return
 
     address = _resolve_address(contract.address)
-    name = f"chain{CONFIG.active_network['chainid']}"
+    name = f"chain{CONFIG.active_network['chainid']}"  # @UndefinedVariable
 
     cur.execute(
         f"CREATE TABLE IF NOT EXISTS {name} "
@@ -740,7 +745,7 @@ def _add_deployment(
             source = contract_sources.get(path)
             if source is None:
                 source = Path(path).read_text()
-            hash_ = sha1(source.encode()).hexdigest()
+            hash_ = hash_source(source)
             cur.insert("sources", hash_, source)
             all_sources[key] = [hash_, path]
 
@@ -761,7 +766,7 @@ def _remove_deployment(
         query = f"alias='{alias}'"
 
     try:
-        name = f"chain{CONFIG.active_network['chainid']}"
+        name = f"chain{CONFIG.active_network['chainid']}"  # @UndefinedVariable
     except KeyError:
         raise BrownieEnvironmentError("Functionality not available in local environment") from None
 
@@ -774,7 +779,7 @@ def _remove_deployment(
             source = contract._sources.get(path)
             if source is None:
                 source = Path(path).read_text()
-            hash_ = sha1(source.encode()).hexdigest()
+            hash_ = hash_source(source)
             cur.execute(f"DELETE FROM sources WHERE hash='{hash_}'")
 
     return deployment

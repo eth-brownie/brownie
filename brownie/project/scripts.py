@@ -3,7 +3,6 @@
 
 import pathlib
 import sys
-import warnings
 from ast import FunctionDef, Import, ImportFrom, dump, parse
 from collections.abc import Sequence
 from importlib import reload
@@ -13,10 +12,10 @@ from pathlib import WindowsPath
 from types import FunctionType, ModuleType
 from typing import Any, Final
 
-from brownie._c_constants import Path, import_module, sha1
+from brownie._c_constants import Path, import_module
 from brownie.exceptions import ProjectNotFound
 from brownie.project.main import Project, check_for_project, get_loaded_projects
-from brownie.utils import color
+from brownie.utils import color, hash_source
 from brownie.utils._color import bright_blue, bright_cyan
 
 # C Constants
@@ -202,15 +201,16 @@ def _get_ast_hash(path: str | pathlib.Path) -> str:
         try:
             origin = _find_spec(name).origin
         except Exception:
-            warnings.warn(
-                f"{Path(path).name}, unable to determine import spec for '{name}',"
-                " the --update flag may not work correctly with this test file",
-                ImportWarning,
-            )
+            # Commenting this out because I don't care about this warning.
+            # warnings.warn(
+            #     f"{Path(path).name}, unable to determine import spec for '{name}',"
+            #     " the --update flag may not work correctly with this test file",
+            #     ImportWarning,
+            # )
             continue
         if origin is not None and base_path in origin:
             with open(origin) as fp:
                 ast_list.append(_parse(fp.read(), origin))
 
     dump = "\n".join(_dump(i) for i in ast_list)
-    return sha1(dump.encode()).hexdigest()
+    return hash_source(dump)

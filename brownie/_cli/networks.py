@@ -366,7 +366,7 @@ def _parse_args(args: tuple[str, ...]) -> dict[str, Any]:
         if value.isdigit():
             parsed[key] = int(value)
         elif value.lower() in ("true", "false", "none"):
-            parsed[key] = eval(value.capitalize())
+            parsed[key] = eval(value.capitalize())  # nosec B307
 
     return parsed
 

@@ -1,19 +1,16 @@
 #!/usr/bin/python3
 
-import warnings
 from typing import Final
 
 from brownie import project
 from brownie._config import CONFIG
 from brownie.convert import Wei
-from brownie.exceptions import BrownieEnvironmentWarning
-
-from .account import Accounts
-from .event import event_watcher
-from .gas.bases import GasABC
-from .rpc import Rpc
-from .state import Chain, _notify_registry
-from .web3 import web3
+from brownie.network.account import Accounts
+from brownie.network.event import event_watcher
+from brownie.network.gas.bases import GasABC
+from brownie.network.rpc import Rpc
+from brownie.network.state import Chain, _notify_registry
+from brownie.network.web3 import web3
 
 chain: Final = Chain()
 rpc: Final = Rpc()
@@ -27,9 +24,11 @@ def connect(network: str | None = None, launch_rpc: bool = True) -> None:
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
-        raise ConnectionError(f"Already connected to network '{CONFIG.active_network['id']}'")
+        raise ConnectionError(
+            f"Already connected to network '{CONFIG.active_network['id']}'"
+        )  # @UndefinedVariable
     try:
-        active = CONFIG.set_active_network(network)
+        active = CONFIG.set_active_network(network)  # @UndefinedVariable
         host = active["host"]
 
         if ":" not in host.split("//", maxsplit=1)[-1]:
@@ -39,24 +38,31 @@ def connect(network: str | None = None, launch_rpc: bool = True) -> None:
                 pass
 
         web3.connect(host, active.get("timeout", 30))
-        if CONFIG.network_type == "development" and launch_rpc and not rpc.is_active():
+        if (
+            CONFIG.network_type == "development" and launch_rpc and not rpc.is_active()
+        ):  # @UndefinedVariable
             if is_connected():
-                if web3.eth.block_number != 0:
-                    warnings.warn(
-                        f"Development network has a block height of {web3.eth.block_number}",
-                        BrownieEnvironmentWarning,
-                    )
+                # Why is this a warning? I could not give less of a shit what the block number is
+                # when I connect to my development network.
+                #
+                # if web3.eth.block_number != 0:
+                #     warnings.warn(
+                #         f"Development network has a block height of {web3.eth.block_number}",
+                #         BrownieEnvironmentWarning,
+                #     )
                 rpc.attach(host)
             else:
                 rpc.launch(active["cmd"], **active["cmd_settings"])
         else:
             Accounts()._reset()
-        if CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]:
+        if (
+            CONFIG.network_type == "live" or CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             for p in project.get_loaded_projects():
                 p._load_deployments()
 
     except Exception:
-        CONFIG.clear_active()
+        CONFIG.clear_active()  # @UndefinedVariable
         web3.disconnect()
         raise
 
@@ -80,7 +86,9 @@ def show_active() -> str | None:
 
 def is_connected() -> bool:
     """Returns a bool indicating if the Web3 object is currently connected"""
-    return web3.isConnected()
+    # Ask twice, because if connection has timed out, first attempt will return False
+    # but will wake up the connection, and the second will return True
+    return web3.isConnected() or web3.isConnected()
 
 
 def gas_limit(*args: int | str | bool | None) -> int | bool:
@@ -93,7 +101,7 @@ def gas_limit(*args: int | str | bool | None) -> int | bool:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False, True, "auto"):
-            CONFIG.active_network["settings"]["gas_limit"] = False
+            CONFIG.active_network["settings"]["gas_limit"] = False  # @UndefinedVariable
         else:
             try:
                 limit: int = int(args[0])
@@ -101,8 +109,8 @@ def gas_limit(*args: int | str | bool | None) -> int | bool:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
                 raise ValueError("Minimum gas limit is 21000")
-            CONFIG.active_network["settings"]["gas_limit"] = limit
-    return CONFIG.active_network["settings"]["gas_limit"]
+            CONFIG.active_network["settings"]["gas_limit"] = limit  # @UndefinedVariable
+    return CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
 
 
 def gas_price(*args: int | str | bool | None) -> int | bool:
@@ -133,12 +141,12 @@ def gas_buffer(*args: float | None) -> float | None:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] is None:
-            CONFIG.active_network["settings"]["gas_buffer"] = 1
+            CONFIG.active_network["settings"]["gas_buffer"] = 1  # @UndefinedVariable
         elif isinstance(args[0], (float, int)):
-            CONFIG.active_network["settings"]["gas_buffer"] = args[0]
+            CONFIG.active_network["settings"]["gas_buffer"] = args[0]  # @UndefinedVariable
         else:
             raise TypeError("Invalid gas buffer - must be given as a float, int or None")
-    return CONFIG.active_network["settings"]["gas_buffer"]
+    return CONFIG.active_network["settings"]["gas_buffer"]  # @UndefinedVariable
 
 
 def max_fee(*args: int | str | bool | None) -> int | bool:
@@ -152,14 +160,14 @@ def max_fee(*args: int | str | bool | None) -> int | bool:
         raise ConnectionError("Not connected to any network")
     if args:
         if args[0] in (None, False):
-            CONFIG.active_network["settings"]["max_fee"] = None
+            CONFIG.active_network["settings"]["max_fee"] = None  # @UndefinedVariable
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid max fee '{args[0]}'")
-            CONFIG.active_network["settings"]["max_fee"] = price
-    return CONFIG.active_network["settings"]["max_fee"]
+            CONFIG.active_network["settings"]["max_fee"] = price  # @UndefinedVariable
+    return CONFIG.active_network["settings"]["max_fee"]  # @UndefinedVariable
 
 
 def priority_fee(*args: int | str | bool | None) -> int | bool:

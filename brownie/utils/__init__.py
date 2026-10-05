@@ -2,11 +2,12 @@
 
 from typing import Final
 
-from . import hex
-from ._color import Color, notify
+from brownie.utils import hex
+from brownie.utils._color import Color, notify
 
 color: Final = Color()
 bytes_to_hexstring: Final = hex.bytes_to_hexstring
 hexbytes_to_hexstring: Final = hex.hexbytes_to_hexstring
+hash_source: Final = hex.hash_source
 
-__all__ = ["Color", "color", "notify", "bytes_to_hexstring", "hexbytes_to_hexstring"]
+__all__ = ["Color", "color", "notify", "bytes_to_hexstring", "hexbytes_to_hexstring", "hash_source"]

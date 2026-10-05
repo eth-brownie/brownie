@@ -53,6 +53,9 @@ def test_load_project_cmd_settings(config, testproject, project_settings):
     config_path_network = _get_data_folder().joinpath("network-config.yaml")
     cmd_settings_network_raw = _load_config(config_path_network)["development"][0]["cmd_settings"]
 
+    print(f"project_settings: {project_settings}")
+    print(f"cmd_settings_network_raw: {_load_config(config_path_network)}")
+
     # compare the manually loaded network cmd_settings to the cmd_settings in the CONFIG singleton
     cmd_settings_config = config.networks["development"]["cmd_settings"]
     for k, v in cmd_settings_config.items():
@@ -98,9 +101,9 @@ def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_setti
 
     # Check if rpc time is roughly the start time in the config file
     # Use diff < 25h to dodge potential timezone differences
-    assert cmd_project_settings["time"].timestamp() - devnetwork.chain.time() < 60 * 60 * 25
+    assert cmd_project_settings["time"].timestamp() - devnetwork.state.chain.time() < 60 * 60 * 25
 
-    accounts = devnetwork.accounts
+    accounts = devnetwork.account.accounts
     assert cmd_project_settings["accounts"] + len(cmd_project_settings["unlock"]) == len(accounts)
     assert cmd_project_settings["default_balance"] == accounts[0].balance()
 

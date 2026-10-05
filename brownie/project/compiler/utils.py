@@ -3,11 +3,12 @@
 
 from typing import TypeAlias, Union, cast
 
-from semantic_version import Version
+from packaging.version import Version
 
 from brownie._c_constants import Path
 from brownie._config import _get_data_folder
 from brownie.typing import ContractName, Source, SourceId, SourceIndex
+from packaging.version import Version
 
 VersionSpec: TypeAlias = Union[str, Version]
 VersionList: TypeAlias = list[Version]

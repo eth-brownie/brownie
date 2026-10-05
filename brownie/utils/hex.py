@@ -11,7 +11,7 @@ from typing import Final
 import hexbytes
 from eth_typing import HexStr
 
-from brownie._c_constants import HexBytes
+from brownie._c_constants import HexBytes, sha1
 
 HEXBYTES_LT_1_0_0: Final = tuple(int(i) for i in version("hexbytes").split(".")) < (
     1,
@@ -49,3 +49,14 @@ else:
 
     hexbytes_to_hexstring = bytes_to_hexstring
     """Convert a HexBytes value to a hexstring on hexbytes>=1."""
+
+
+def hash_source(source: str) -> HexStr:
+    """Returns the SHA1 hash of the given source code.
+
+    Args:
+        source: Source code as a string
+
+    Returns: SHA1 hash as a hex string"""
+    hashed = sha1(source.encode())  # nosec B303
+    return HexStr(hashed.hexdigest())

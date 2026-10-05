@@ -158,7 +158,8 @@ class VirtualMachineError(Exception):
             return
 
         try:
-            txid = next(key for key in exc_data if key.startswith("0x"))
+            txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
+            self.revert_type = data["error"]
         except StopIteration:
             raise ValueError(exc["message"]) from None
         else:

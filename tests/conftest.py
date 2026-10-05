@@ -414,7 +414,7 @@ def rpc():
 
 @pytest.fixture(scope="session")
 def chain():
-    return brownie.network.chain
+    return brownie.network.state.chain
 
 
 @pytest.fixture(scope="session")

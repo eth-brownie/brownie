@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 import yaml
 from eth_retry import auto_retry
-from semantic_version import Version
+from packaging.version import Version
 from vvm.utils.convert import to_vyper_version
 
 import brownie.network.contract

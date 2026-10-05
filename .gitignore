@@ -30,3 +30,8 @@ c_pytest.py
 *.so
 *.pyd
 build/ops.txt
+
+
+.project
+.pydevproject
+.vscode

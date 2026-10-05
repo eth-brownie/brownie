@@ -18,7 +18,7 @@ from brownie._expansion import expand_posix_vars
 from brownie._singleton import _Singleton
 from brownie.typing import EvmVersion
 
-__version__: Final = "1.22.0"
+__version__: Final = "1001.22.2.3"
 
 BROWNIE_FOLDER: Final = Path(sys.modules["brownie"].__file__).parent  # type: ignore [arg-type]
 DATA_FOLDER: Final = Path.home().joinpath(".brownie")

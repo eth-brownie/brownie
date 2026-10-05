@@ -3,17 +3,19 @@
 from operator import attrgetter
 from pathlib import Path
 
-import hypothesis
+import hypothesis.extra
+import hypothesis.extra.pytestplugin
+import hypothesis.reporting
 from eth_utils.toolz import compose, concat
 from ujson import JSONDecodeError
 
 import brownie
-from brownie._c_constants import sha1, ujson_load
+from brownie._c_constants import ujson_load
 from brownie._config import CONFIG
 from brownie.project.scripts import _get_ast_hash
 from brownie.test import _apply_given_wrapper, coverage, output
-
-from .utils import convert_outcome
+from brownie.test.managers.utils import convert_outcome
+from brownie.utils import hash_source
 
 
 class PytestBrownieBase:
@@ -95,7 +97,7 @@ class PytestBrownieBase:
         hash_ = _get_ast_hash(self.project_path.joinpath(path))
         for confpath in filter(lambda k: k in path, sorted(self.conf_hashes)):
             hash_ += self.conf_hashes[confpath]
-        return sha1(hash_.encode()).hexdigest()
+        return hash_source(hash_)
 
     def pytest_configure(self, config):
         config.addinivalue_line(

@@ -10,7 +10,7 @@ from vvm.utils.convert import to_vyper_version
 from brownie._c_constants import NpmSpec, Path, regex_findall, regex_finditer, regex_sub, sha1
 from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.typing import ContractName, Offset
-from brownie.utils import color
+from brownie.utils import color, hash_source
 from brownie.utils._color import dark_white
 
 
@@ -101,10 +101,7 @@ class Sources:
 
     def get_interface_hashes(self) -> dict[ContractName, HexStr]:
         """Returns a dict of interface hashes in the form of {name: hash}"""
-        return {
-            k: sha1(self._interface_sources[v].encode()).hexdigest()  # type: ignore [misc]
-            for k, v in self._interfaces.items()
-        }
+        return {k: hash_source(self._interface_sources[v]) for k, v in self._interfaces.items()}
 
     def get_interface_sources(self) -> dict[str, str]:
         """Returns a dict of interfaces sources in the form {path: source}"""

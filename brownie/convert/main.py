@@ -6,9 +6,8 @@ import faster_eth_utils
 from eth_typing import ChecksumAddress, HexStr
 
 from brownie._c_constants import Decimal, HexBytes
-
-from .datatypes import EthAddress, Fixed, HexString, Wei
-from .utils import get_int_bounds
+from brownie.convert.datatypes import EthAddress, Fixed, HexString, Wei
+from brownie.convert.utils import get_int_bounds
 
 is_hex: Final = faster_eth_utils.is_hex
 to_text: Final = faster_eth_utils.to_text

@@ -29,7 +29,6 @@ from brownie._c_constants import (
     import_module,
     mapcat,
     regex_match,
-    sha1,
     ujson_dump,
     ujson_load,
 )
@@ -60,7 +59,7 @@ from brownie.network.contract import (
 )
 from brownie.network.state import _add_contract, _remove_contract, _revert_register
 from brownie.project import compiler
-from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
+from brownie.project.build import INTERFACE_KEYS, Build
 from brownie.project.sources import Sources, get_pragma_spec
 from brownie.typing import (
     BuildJson,
@@ -73,7 +72,7 @@ from brownie.typing import (
     SolcConfig,
     VyperConfig,
 )
-from brownie.utils import notify
+from brownie.utils import hash_source, notify
 
 BUILD_FOLDERS: Final = "contracts", "deployments", "interfaces"
 MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
@@ -252,22 +251,22 @@ class Project(_ProjectBase):
 
         for path in build_path.glob("contracts/*.json"):
             contract_build_json = _load_contract_build_json_from_disk(path)
-            if not set(BUILD_KEYS).issubset(contract_build_json):
-                path.unlink()
-                continue
-            if path.stem not in contract_list:
-                potential_dependencies.append((path, contract_build_json))
-                continue
-            if isinstance(contract_build_json["allSourcePaths"], list):
-                # this handles the format change in v1.7.0, it can be removed in a future release
-                path.unlink()
-                test_path = build_path.joinpath("tests.json")
-                if test_path.exists():
-                    test_path.unlink()
-                continue
-            if not project_path.joinpath(contract_build_json["sourcePath"]).exists():
-                path.unlink()
-                continue
+            # if not set(BUILD_KEYS).issubset(contract_build_json):
+            #     path.unlink()
+            #     continue
+            # if path.stem not in contract_list:
+            #     potential_dependencies.append((path, contract_build_json))
+            #     continue
+            # if isinstance(contract_build_json["allSourcePaths"], list):
+            #     # this handles the format change in v1.7.0, it can be removed in a future release
+            #     path.unlink()
+            #     test_path = build_path.joinpath("tests.json")
+            #     if test_path.exists():
+            #         test_path.unlink()
+            #     continue
+            # if not project_path.joinpath(contract_build_json["sourcePath"]).exists():
+            #     path.unlink()
+            #     continue
             build._add_contract(contract_build_json)
 
         for path, contract_build_json in potential_dependencies:
@@ -359,7 +358,7 @@ class Project(_ProjectBase):
         except KeyError:
             return True
         # compare source hashes
-        if build_json["sha1"] != sha1(source.encode()).hexdigest():
+        if build_json["sha1"] != hash_source(source):
             return True
         # compare compiler settings
         compiler = build_json["compiler"]
@@ -410,23 +409,28 @@ class Project(_ProjectBase):
         dep_build_path = self._build_path.joinpath("contracts/dependencies/")
         for path in list(dep_build_path.glob("**/*.json")):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
-            if build.get_dependents(contract_alias):
-                with path.open() as fp:
-                    build_json = ujson_load(fp)
-                # json.load turns arrays into python lists but for "offset" we need tuples
-                build_json["offset"] = tuple(build_json["offset"])
-                pc_map: dict[Any, dict] = build_json["pcMap"]
-                for counter in pc_map.values():
-                    if "offset" in counter:
-                        counter["offset"] = tuple(counter["offset"])
-                build._add_contract(build_json, contract_alias)
-            else:
-                path.unlink()
+            # if build.get_dependents(contract_alias):
+            build.get_dependents(contract_alias)
+            with path.open() as fp:
+                build_json = ujson_load(fp)
+            # json.load turns arrays into python lists but for "offset" we need tuples
+            build_json["offset"] = tuple(build_json["offset"])
+            pc_map: dict[Any, dict] = build_json["pcMap"]
+            for counter in pc_map.values():
+                if "offset" in counter:
+                    counter["offset"] = tuple(counter["offset"])
+            build._add_contract(build_json, contract_alias)
+            # else:
+            #     path.unlink()
 
     def _load_deployments(self) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+        if (
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         path = self._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         deployments = list(path.glob("*.json"))
@@ -474,9 +478,13 @@ class Project(_ProjectBase):
             ujson_dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+        if (
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             return
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         deployment_map = self._load_deployment_map()
         try:
             deployment_map[chainid][contract._name].remove(contract.address)
@@ -490,10 +498,14 @@ class Project(_ProjectBase):
         self._save_deployment_map(deployment_map)
 
     def _add_to_deployment_map(self, contract: ProjectContract) -> None:
-        if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
+        if (
+            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+        ):  # @UndefinedVariable
             return
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         deployment_map = self._load_deployment_map()
         try:
             deployment_map[chainid][contract._name].remove(contract.address)
@@ -764,7 +776,7 @@ def compile_source(
     if vyper_version is None:
         # if no vyper compiler version is given, try to compile using solidity
         compiler_config["solc"] = {
-            "version": solc_version or str(compiler.solidity.get_version().truncate()),
+            "version": solc_version or str(compiler.solidity.get_version().public),
             "optimize": bool(optimize),
             "runs": runs or 0,
         }
@@ -784,7 +796,7 @@ def compile_source(
         except (PragmaError, VyperNotInstalled):
             pass
 
-    compiler_config["vyper"] = {"version": vyper_version or compiler.vyper.get_version()}
+    compiler_config["vyper"] = {"version": vyper_version or str(compiler.vyper.get_version())}
     try:
         return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
     except Exception as exc:
