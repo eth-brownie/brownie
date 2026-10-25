@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-  "setuptools",
+  "setuptools>=83",
   "wheel",
   "packaging>=24.2,<25",
   "mypy[mypyc]==1.19.0",
@@ -31,6 +31,10 @@ requires = [
 
 [dependency-groups]
 runtime = [
+  "aiohttp>=3.14.5,<4",
+  "certifi>=2026.10.19",
+  "multidict>=6.9.1,<7",
+  "urllib3>=2.8.0,<3",
   "cchecksum>=0.4.4",
   "eip712",
   "eth-account",
@@ -51,7 +55,7 @@ runtime = [
   "pygments-lexer-solidity<1",
   "pytest>=8.4.2,<10",
   "pytest-xdist>=3.8,<4",
-  "python-dotenv>=0.16.0,<0.17.0",
+  "python-dotenv>=1.2.4,<2",
   "pyyaml>=6,<7",
   "requests>=2.25.0,<3",
   "rlp",
@@ -68,14 +72,9 @@ test = [
   "eth-retry==0.3.5",
   "pytest-cov==2.10.1",
   "pytest-mock==3.3.1",
-  "setuptools==80.9.0; python_version >= '3.12'",
+  "setuptools>=83; python_version >= '3.12'",
 ]
-lint = [
-  "black>=20.8b1",
-  "flake8",
-  "isort",
-  "pygments-lexer-solidity",
-]
+lint = ["black>=20.8b1", "flake8", "isort", "pygments-lexer-solidity"]
 dev = [
   { include-group = "lint" },
   "bumpversion",
@@ -89,14 +88,11 @@ dev = [
   "uv",
   "wheel",
 ]
-docs = [
-  "sphinx",
-  "sphinx_rtd_theme",
-]
+docs = ["sphinx", "sphinx_rtd_theme"]
 
 [tool.uv]
 package = false
-required-version = ">=0.11.16,<0.12"
+required-version = ">=0.13.4,<0.14"
 
 # Brownie configuration for Black.
 

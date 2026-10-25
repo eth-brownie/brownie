@@ -1,3 +1,7 @@
+aiohttp>=3.14.5,<4
+certifi>=2026.10.19
+multidict>=6.9.1,<7
+urllib3>=2.8.0,<3
 cchecksum>=0.4.4
 eip712
 eth-account
@@ -18,7 +22,7 @@ pygments-lexer-solidity<1
 pygments<3
 pytest-xdist>=3.8,<4
 pytest>=8.4.2,<10
-python-dotenv>=0.16.0,<0.17.0
+python-dotenv>=1.2.4,<2
 pyyaml>=6,<7
 requests>=2.25.0,<3
 rlp

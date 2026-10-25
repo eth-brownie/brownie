@@ -7,7 +7,6 @@ import semantic_version
 import vvm
 import vyper
 from eth_typing import ABIElement, HexStr
-from packaging.version import Version as PVersion
 from requests.exceptions import ConnectionError
 from vyper.cli import vyper_json
 from vyper.exceptions import VyperException
@@ -32,6 +31,7 @@ from brownie.typing import (
     VyperAstNode,
     VyperBuildJson,
 )
+from brownie.utils import _to_vyper_semver
 
 vvm_logger: Final = logging.getLogger("vvm")
 vvm_logger.setLevel(10)
@@ -110,13 +110,15 @@ def get_abi(contract_source: str, name: ContractName) -> dict[ContractName, list
 
 def _get_vyper_version_list() -> tuple[VersionList, VersionList]:
     global AVAILABLE_VYPER_VERSIONS
-    installed_versions = _convert_to_semver(_get_installed_vyper_versions())
+    installed_versions = [_to_vyper_semver(version) for version in _get_installed_vyper_versions()]
     lib_version = Version(vyper.__version__)
     if lib_version not in installed_versions:
         installed_versions.append(lib_version)
     if AVAILABLE_VYPER_VERSIONS is None:
         try:
-            AVAILABLE_VYPER_VERSIONS = _convert_to_semver(_get_installable_vyper_versions())
+            AVAILABLE_VYPER_VERSIONS = [
+                _to_vyper_semver(version) for version in _get_installable_vyper_versions()
+            ]
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Vyper not installed and cannot connect to GitHub")
@@ -505,24 +507,3 @@ def _get_statement_nodes(ast_json: VyperAstJson) -> VyperAstJson:
         else:
             stmt_nodes.append(node)
     return stmt_nodes
-
-
-def _convert_to_semver(versions: list[PVersion]) -> VersionList:
-    """
-    Converts a list of `packaging.version.Version` objects to a list of
-    `semantic_version.Version` objects.
-
-    vvm 0.2.0 switched to packaging.version but we are not ready to
-    migrate brownie off of semantic-version.
-
-    This function serves as a stopgap.
-    """
-    return [
-        Version(
-            major=version.major,
-            minor=version.minor,
-            patch=version.micro,
-            prerelease="".join(str(x) for x in version.pre) if version.pre else None,
-        )
-        for version in versions
-    ]

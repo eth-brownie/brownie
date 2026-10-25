@@ -10,7 +10,7 @@ from vvm.utils.convert import to_vyper_version
 from brownie._c_constants import NpmSpec, Path, regex_findall, regex_finditer, regex_sub, sha1
 from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.typing import ContractName, Offset
-from brownie.utils import color
+from brownie.utils import _to_vyper_semver, color
 from brownie.utils._color import dark_white
 
 
@@ -246,7 +246,7 @@ def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_vers
         pass
     try:
         # special case for Vyper 0.1.0-beta.X
-        version = to_vyper_version(pragma_string)
+        version = _to_vyper_semver(to_vyper_version(pragma_string))
         return NpmSpec(str(version))
     except Exception:
         pass

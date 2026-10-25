@@ -4,24 +4,24 @@ on:
     branches:
       - master
     paths:
-      - '**.py'
-      - '.github/workflows/core-ganache.yaml'
-      - 'pyproject.toml'
-      - 'setup.py'
-      - 'requirements.txt'
-      - 'uv.lock'
-      - 'tox.ini'
+      - "**.py"
+      - ".github/workflows/core-ganache.yaml"
+      - "pyproject.toml"
+      - "setup.py"
+      - "requirements.txt"
+      - "uv.lock"
+      - "tox.ini"
   pull_request:
     paths:
-      - '**.py'
-      - '.github/workflows/core-ganache.yaml'
-      - 'pyproject.toml'
-      - 'setup.py'
-      - 'requirements.txt'
-      - 'uv.lock'
-      - 'tox.ini'
+      - "**.py"
+      - ".github/workflows/core-ganache.yaml"
+      - "pyproject.toml"
+      - "setup.py"
+      - "requirements.txt"
+      - "uv.lock"
+      - "tox.ini"
   schedule:
-    - cron: '0 6 * * *'  # Daily 0600 UTC
+    - cron: "0 6 * * *" # Daily 0600 UTC
   workflow_dispatch:
 
 concurrency:
@@ -78,14 +78,16 @@ jobs:
           node-version: "20"
 
       - name: Install Ganache
+        # Invoke the pinned npm directly; global npm paths differ across runners.
+        # Its node-gyp supports the Windows runner's Visual Studio 2026.
         shell: bash
         run: |
           if [[ "${{ matrix.python-version }}" == "3.10" ]]; then
-            npm install -g ganache@7.0.2
+            npx --yes npm@11.19.1 install -g ganache@7.0.2
           else
-            npm install -g ganache@7.9.2
+            npx --yes npm@11.19.1 install -g ganache@7.9.2
           fi
-        
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -99,7 +101,7 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
-      
+
       - name: Cache .mypy_cache
         uses: actions/cache@v5
         with:
@@ -129,7 +131,7 @@ jobs:
       - name: Install ccache (Macos)
         if: runner.os == 'MacOs'
         run: brew install ccache
-        
+
       - name: Show ccache config and stats before build
         if: runner.os != 'Windows'
         run: ccache --version && ccache -p -s
@@ -143,7 +145,7 @@ jobs:
           toxenv="py${{ matrix.python-version }}"
           toxenv="${toxenv//./}"
           uv run --locked --only-group dev tox -e "$toxenv" -- --network ganache-cli --backend ganache
-          
+
       - name: Show ccache stats after build
         if: always() && runner.os != 'Windows'
         run: ccache -s

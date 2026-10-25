@@ -121,7 +121,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
-    
+
       - name: Drop build folder to prevent shadowing issues w/ the PyPA “build” module
         run: rm -rf build
 
