@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2487];
+extern PyObject *CPyStatics[2496];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -1823,8 +1823,6 @@ extern PyObject *CPyDef_vyper____find_node_by_offset(PyObject *cpy_r_ast_json, t
 extern PyObject *CPyPy_vyper____find_node_by_offset(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_vyper____get_statement_nodes(PyObject *cpy_r_ast_json);
 extern PyObject *CPyPy_vyper____get_statement_nodes(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_vyper____convert_to_semver(PyObject *cpy_r_versions);
-extern PyObject *CPyPy_vyper____convert_to_semver(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_vyper_____top_level__(void);
 extern tuple_T4OOOO CPyStatic_build___INTERFACE_KEYS;
 extern tuple_T13OOOOOOOOOOOOO CPyStatic_build___DEPLOYMENT_KEYS;
@@ -2386,6 +2384,8 @@ extern char CPyDef_typing_____top_level__(void);
 extern PyObject *CPyStatic_brownie___utils___color;
 extern PyObject *CPyStatic_brownie___utils___bytes_to_hexstring;
 extern PyObject *CPyStatic_brownie___utils___hexbytes_to_hexstring;
+extern PyObject *CPyDef_brownie___utils____to_vyper_semver(PyObject *cpy_r_version);
+extern PyObject *CPyPy_brownie___utils____to_vyper_semver(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern char CPyDef_brownie___utils_____top_level__(void);
 extern PyObject *CPyStatic__color___formatter;
 extern PyObject *CPyStatic__color___MODIFIERS;
