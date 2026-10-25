@@ -57,6 +57,8 @@ def test_revert_clears_undo_buffer(accounts, chain):
 
 def test_does_not_undo_sleep(accounts, chain):
     accounts[0].transfer(accounts[1], 100)
+    # Synchronize the backend clock after the pending undo registration finishes.
+    chain.sleep(0)
     time = chain.time()
     chain.sleep(100000)
     accounts[0].transfer(accounts[1], 100)
