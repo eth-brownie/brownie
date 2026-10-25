@@ -5,22 +5,22 @@ on:
     branches:
       - master
     paths:
-      - 'brownie/**.py'
-      - '.github/workflows/compile.yaml'
-      - 'pyproject.toml'
-      - 'requirements.txt'
-      - 'uv.lock'
-      - 'setup.py'
+      - "brownie/**.py"
+      - ".github/workflows/compile.yaml"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "uv.lock"
+      - "setup.py"
   pull_request:
     branches:
       - master
     paths:
-      - 'brownie/**.py'
-      - '.github/workflows/compile.yaml'
-      - 'pyproject.toml'
-      - 'requirements.txt'
-      - 'uv.lock'
-      - 'setup.py'
+      - "brownie/**.py"
+      - ".github/workflows/compile.yaml"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "uv.lock"
+      - "setup.py"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,23 +35,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-    - name: Build wheel
-      uses: BobTheBuidler/mypycify@v0.4.0
-      with:
-        python-version: '3.13'
-        hash-key: |
-          **/*.py
-          pyproject.toml
-          setup.py
-        ccache: 'true'
-        push-source: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        normalize-source: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        direct-push: ${{ github.event_name == 'pull_request' }}
-        pr-branch: mypycify/${{ github.head_ref || github.ref_name }}
-        pr-base: ${{ github.head_ref || github.ref_name }}
-        pr-branch-strategy: update
-        trigger-branch-name: ${{ github.head_ref || github.ref_name }}
-        commit-message: "chore: compile C files for source control"
+      - name: Build wheel
+        uses: BobTheBuidler/mypycify@v0.4.0
+        with:
+          python-version: "3.13"
+          hash-key: |
+            **/*.py
+            pyproject.toml
+            setup.py
+          ccache: "true"
+          push-source: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          normalize-source: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          direct-push: ${{ github.event_name == 'pull_request' }}
+          pr-branch: mypycify/${{ github.head_ref || github.ref_name }}
+          pr-base: ${{ github.head_ref || github.ref_name }}
+          pr-branch-strategy: update
+          trigger-branch-name: ${{ github.head_ref || github.ref_name }}
+          commit-message: "chore: compile C files for source control"

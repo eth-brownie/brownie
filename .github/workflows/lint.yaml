@@ -5,14 +5,14 @@ on:
     branches:
       - master
     paths:
-      - '**.py'
-      - '.github/workflows/lint.yaml'
+      - "**.py"
+      - ".github/workflows/lint.yaml"
   pull_request:
     branches:
       - master
     paths:
-      - '**.py'
-      - '.github/workflows/lint.yaml'
+      - "**.py"
+      - ".github/workflows/lint.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
