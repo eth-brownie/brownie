@@ -77,6 +77,10 @@ jobs:
           # Ganache's uWS native dependency ships Node 20 binaries, not newer runner-default ABIs.
           node-version: "20"
 
+      - name: Install npm with Visual Studio 2026 support
+        # Node 20's bundled node-gyp cannot detect the runner's Visual Studio 18.
+        run: npm install --global npm@11.19.1
+
       - name: Install Ganache
         shell: bash
         run: |
