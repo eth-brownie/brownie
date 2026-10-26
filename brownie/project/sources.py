@@ -58,7 +58,7 @@ class Sources:
                     collisions.setdefault(name, set()).update([path, self._interfaces[name]])
                 self._interfaces[name] = path
 
-        if collisions:
+        if collisions and not brownie._config.disable_namespace_collisions :
             raise NamespaceCollision(
                 "Multiple contracts or interfaces with the same name\n  "
                 + "\n  ".join(f"{k}: {', '.join(sorted(v))}" for k, v in collisions.items())
