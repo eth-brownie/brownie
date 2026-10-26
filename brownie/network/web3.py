@@ -93,7 +93,7 @@ class Web3(_Web3):
             raise ConnectionError("web3 is not currently connected")
         self._remove_middlewares()
 
-        middleware_layers = get_middlewares(self, CONFIG.network_type)
+        middleware_layers = get_middlewares(self, CONFIG.network_type)  # @UndefinedVariable
 
         # middlewares with a layer below zero are injected
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
@@ -139,7 +139,7 @@ class Web3(_Web3):
         if self._supports_traces is None:
             try:
                 response = self.provider.make_request("debug_traceTransaction", [])
-                self._supports_traces = response["error"]["code"] != -32601
+                self._supports_traces = response["error"]["code"] not in (-32601, -32600)
             except HTTPError:
                 self._supports_traces = False
 

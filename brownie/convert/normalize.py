@@ -7,11 +7,10 @@ from eth_event.main import DecodedEvent, EventData, NonDecodedEvent
 from eth_typing import ABIComponent, ABIFunction
 from faster_eth_abi.grammar import ABIType, TupleType, parse
 
+from brownie.convert.datatypes import EthAddress, HexString, ReturnValue
+from brownie.convert.main import to_bool, to_decimal, to_int, to_string, to_uint
+from brownie.convert.utils import get_type_strings
 from brownie.typing import FormattedEvent
-
-from .datatypes import EthAddress, HexString, ReturnValue
-from .main import to_bool, to_decimal, to_int, to_string, to_uint
-from .utils import get_type_strings
 
 AnyListOrTuple: TypeAlias = list[Any] | tuple[Any, ...]
 

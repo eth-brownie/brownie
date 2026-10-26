@@ -1,15 +1,18 @@
 #!/usr/bin/python3
 # mypy: disable-error-code="index,typeddict-unknown-key"
 
+from hashlib import sha1
 from typing import Any, Final, TypeAlias, Union, cast
 
 import solcast
 from eth_typing import ABIElement, HexStr
+from packaging.version import Version
 
-from brownie._c_constants import Path, Version, deepcopy, sha1, ujson_loads
+from brownie._c_constants import Path, deepcopy, ujson_loads
 from brownie._config import _get_data_folder
 from brownie.exceptions import UnsupportedLanguage
 from brownie.project import sources
+from brownie.project.compiler import solidity, vyper
 from brownie.project.compiler.solidity import (  # NOQA: F401
     find_best_solc_version,
     find_solc_versions,
@@ -33,9 +36,7 @@ from brownie.typing import (
     SettingsSolc,
     SourcesDict,
 )
-from brownie.utils import notify
-
-from . import solidity, vyper
+from brownie.utils import hash_source, notify
 
 STANDARD_JSON: Final[InputJson] = {  # type: ignore [assignment]
     "language": None,
@@ -210,8 +211,8 @@ def generate_input_json(
 
     if evm_version is None:
         _module = solidity if language == "Solidity" else vyper
-        evm_version = next(
-            i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1]
+        evm_version = EvmVersion(
+            next(i[0] for i in _module.EVM_VERSION_MAPPING if _module.get_version() >= i[1])
         )
 
     input_json = deepcopy(STANDARD_JSON)
@@ -471,7 +472,7 @@ def get_abi(
             "type": "interface",
             "source": None,
             "offset": None,
-            "sha1": HexStr(sha1(v.encode()).hexdigest()),
+            "sha1": hash_source(v),
         }
         for k, v in contract_sources.items()
         if (p := Path(k)).suffix == ".json"
@@ -494,7 +495,7 @@ def get_abi(
                 "type": "interface",
                 "source": source,
                 "offset": (0, len(source)),
-                "sha1": HexStr(sha1(contract_sources[path].encode()).hexdigest()),
+                "sha1": hash_source(contract_sources[path]),
             }
 
     solc_sources = {k: v for k, v in contract_sources.items() if Path(k).suffix == ".sol"}
@@ -540,7 +541,7 @@ def get_abi(
                     "type": "interface",
                     "source": path_source,
                     "offset": contract_node.offset,
-                    "sha1": HexStr(sha1(path_source.encode()).hexdigest()),
+                    "sha1": hash_source(path_source),
                 }
 
     return final_output

@@ -16,16 +16,19 @@ from faster_eth_abi import decode
 from web3.exceptions import TransactionNotFound
 from web3.types import TxReceipt
 
-from brownie._c_constants import HexBytes, deque, regex_compile, sha1
+from brownie._c_constants import HexBytes, deque, regex_compile
 from brownie._config import CONFIG
 from brownie.convert import EthAddress, Wei
 from brownie.exceptions import ContractNotFound, RPCRequestError, decode_typed_error
+from brownie.network import state
+from brownie.network.event import EventDict, _decode_logs, _decode_trace
+from brownie.network.web3 import web3
 from brownie.project import build
 from brownie.project import main as project_main
 from brownie.project.sources import highlight_source
 from brownie.test import coverage
 from brownie.typing import ContractName
-from brownie.utils import bytes_to_hexstring, color, hexbytes_to_hexstring
+from brownie.utils import bytes_to_hexstring, color, hash_source, hexbytes_to_hexstring
 from brownie.utils._color import (
     bright_blue,
     bright_cyan,
@@ -36,10 +39,6 @@ from brownie.utils._color import (
     red,
 )
 from brownie.utils.output import build_tree
-
-from . import state
-from .event import EventDict, _decode_logs, _decode_trace
-from .web3 import web3
 
 _T = TypeVar("_T")
 _P = ParamSpec("_P")
@@ -92,6 +91,27 @@ class Status(IntEnum):
     Pending = -1
     Reverted = 0
     Confirmed = 1
+
+def load_transaction(tx_id: str, max_retries: int = 5, required_confs: int = 3):
+    attempt = 1
+    sleep_time = 1.0
+
+    while attempt <= max_retries:
+        time.sleep(sleep_time)
+        try:
+            tx: TransactionReceipt = TransactionReceipt(
+                tx_id,
+                is_blocking=True,
+                required_confs=required_confs,
+            )
+            if tx.timestamp:
+                return tx
+        except TransactionNotFound:
+            pass
+
+        sleep_time *= 1.5
+
+    return None
 
 
 class TransactionReceipt:
@@ -250,7 +270,7 @@ class TransactionReceipt:
         if self._events is None:
             if self.status:
                 # relay contract map so we can decode ds-note logs
-                addrs = {log.address for log in self.logs} if self.logs else set()
+                addrs = {log["address"] for log in self.logs} if self.logs else set()
                 contracts = {addr: state._find_contract(addr) for addr in addrs}
                 self._events = _decode_logs(self.logs, contracts=contracts)
             else:
@@ -392,7 +412,8 @@ class TransactionReceipt:
         if isinstance(sender, EthAddress):
             # if the transaction wasn't broadcast during this brownie session,
             # check if the sender is unlocked - we might be able to replace anyway
-            from brownie import accounts
+            # from brownie import accounts
+            from brownie.network.account import accounts
 
             if sender in accounts:
                 sender = accounts.at(sender)
@@ -440,7 +461,7 @@ class TransactionReceipt:
         self._await_confirmation(tx["blockNumber"], required_confs)
 
     def _raise_if_reverted(self, exc: Any) -> None:
-        if self.status or CONFIG.mode == "console":
+        if self.status or CONFIG.mode == "console":  # @UndefinedVariable
             return
         if not web3.supports_traces:
             # if traces are not available, do not attempt to determine the revert reason
@@ -467,104 +488,117 @@ class TransactionReceipt:
         )
 
     def _await_confirmation(self, block_number: int = None, required_confs: int = 1) -> None:
-        # await first confirmation
-        block_number = block_number or self.block_number
-        nonce_time = 0.0
-        sender_nonce = 0
-        eth = web3.eth
-        stdout_write = sys.stdout.write
-        stdout_flush = sys.stdout.flush
-        while True:
-            # every 15 seconds, check if the nonce increased without a confirmation of
-            # this specific transaction. if this happens, the tx has likely dropped
-            # and we should stop waiting.
-            if time.time() - nonce_time > 15:
-                sender_nonce = eth.get_transaction_count(str(self.sender))
-                nonce_time = time.time()
+        try:
+            # await first confirmation
+            block_number = block_number or self.block_number
+            nonce_time = 0.0
+            sender_nonce = 0
+            eth = web3.eth
+            stdout_write = sys.stdout.write
+            stdout_flush = sys.stdout.flush
+            while True:
+                # every 15 seconds, check if the nonce increased without a confirmation of
+                # this specific transaction. if this happens, the tx has likely dropped
+                # and we should stop waiting.
+                if time.time() - nonce_time > 15:
+                    sender_nonce = eth.get_transaction_count(str(self.sender))
+                    nonce_time = time.time()
 
-            try:
-                receipt = eth.get_transaction_receipt(HexBytes(self.txid))
-            except TransactionNotFound:
-                receipt = None
-            # the null blockHash check is required for older versions of Parity
-            # taken from `web3._utils.transactions.wait_for_transaction_receipt`
-            if receipt is not None and receipt["blockHash"] is not None:
-                break
+                try:
+                    receipt = eth.get_transaction_receipt(HexBytes(self.txid))
+                except TransactionNotFound:
+                    receipt = None
+                except Exception as ex:
+                    print(f"Caught exception {ex} in tx._await_confirmation")
+                    self.status = Status.Reverted
+                    self._revert_msg = str(ex)
+                    self._confirmed.set()
+                    raise ex
 
-            # continuation of the nonce logic 2 sections prior. we must check the receipt
-            # after querying the nonce, because in the other order there is a chance that
-            # the tx would confirm after checking the receipt but before checking the nonce
-            if sender_nonce > self.nonce:
-                self.status = Status(-2)
-                self._confirmed.set()
-                return
+                # the null blockHash check is required for older versions of Parity
+                # taken from `web3._utils.transactions.wait_for_transaction_receipt`
+                if receipt is not None and receipt["blockHash"] is not None:
+                    break
 
-            if not block_number and not self._silent and required_confs > 0:
-                if required_confs == 1:
-                    stdout_write(f"  Waiting for confirmation... {_marker[0]}\r")
-                else:
-                    stdout_write(
-                        f"  Required confirmations: {bright_yellow}0/"
-                        f"{required_confs}{color}   {_marker[0]}\r"
-                    )
-                _marker.rotate(1)
-                stdout_flush()
+                # continuation of the nonce logic 2 sections prior. we must check the receipt
+                # after querying the nonce, because in the other order there is a chance that
+                # the tx would confirm after checking the receipt but before checking the nonce
+                if sender_nonce > self.nonce:
+                    self.status = Status(-2)
+                    self._confirmed.set()
+                    return
 
-            time.sleep(1)
-
-        # silence other dropped tx's immediately after confirmation to avoid output weirdness
-        for dropped_tx in state.TxHistory().filter(
-            sender=self.sender, nonce=self.nonce, key=lambda k: k != self
-        ):
-            dropped_tx._silent = True
-
-        self.block_number = receipt["blockNumber"]
-        # wait for more confirmations if required and handle uncle blocks
-        remaining_confs = required_confs
-        while remaining_confs > 0 and required_confs > 1:
-            try:
-                receipt = eth.get_transaction_receipt(self.txid)
-                self.block_number = receipt["blockNumber"]
-            except TransactionNotFound:
-                if not self._silent:
-                    stdout_write(f"\r{red}Transaction was lost...{color}{' ' * 8}")
+                if not block_number and not self._silent and required_confs > 0:
+                    if required_confs == 1:
+                        stdout_write(f"  Waiting for confirmation... {_marker[0]}\r")
+                    else:
+                        stdout_write(
+                            f"  Required confirmations: {bright_yellow}0/"
+                            f"{required_confs}{color}   {_marker[0]}\r"
+                        )
+                    _marker.rotate(1)
                     stdout_flush()
-                # check if tx is still in mempool, this will raise otherwise
-                tx = eth.get_transaction(self.txid)
-                self.block_number = None
-                return self._await_confirmation(tx.get("blockNumber"), required_confs)
-            if required_confs - self.confirmations != remaining_confs:
-                remaining_confs = required_confs - self.confirmations
-                if not self._silent:
-                    stdout_write(
-                        f"\rRequired confirmations: {bright_yellow}{self.confirmations}/"
-                        f"{required_confs}{color}  "
-                    )
-                    if remaining_confs == 0:
-                        stdout_write("\n")
-                    stdout_flush()
-            if remaining_confs > 0:
+    
                 time.sleep(1)
 
-        self._set_from_receipt(receipt)
-        try:
-            # if coverage evaluation is active, evaluate the trace
-            if (
-                CONFIG.argv["coverage"]
-                and not coverage._check_cached(self.coverage_hash)
-                and self.trace
-            ):
-                self._expand_trace()
-            if not self._silent and required_confs > 0:
-                print(self._confirm_output())
-        finally:
-            # set the confirmation event and mark other tx's with the same nonce as dropped
-            self._confirmed.set()
+            # silence other dropped tx's immediately after confirmation to avoid output weirdness
             for dropped_tx in state.TxHistory().filter(
                 sender=self.sender, nonce=self.nonce, key=lambda k: k != self
             ):
-                dropped_tx.status = Status(-2)
-                dropped_tx._confirmed.set()
+                dropped_tx._silent = True
+
+            self.block_number = receipt["blockNumber"]
+            # wait for more confirmations if required and handle uncle blocks
+            remaining_confs = required_confs
+            while remaining_confs > 0 and required_confs > 1:
+                try:
+                    receipt = eth.get_transaction_receipt(self.txid)
+                    self.block_number = receipt["blockNumber"]
+                except TransactionNotFound:
+                    if not self._silent:
+                        stdout_write(f"\r{red}Transaction was lost...{color}{' ' * 8}")
+                        stdout_flush()
+                    # check if tx is still in mempool, this will raise otherwise
+                    tx = eth.get_transaction(self.txid)
+                    self.block_number = None
+                    return self._await_confirmation(tx.get("blockNumber"), required_confs)
+                except Exception as ex:
+                    print(f"Caught exception {ex} in tx._await_confirmation")
+                    self.status = Status.Reverted
+                    self._revert_msg = str(ex)
+                    self._confirmed.set()
+                    raise ex
+
+                if required_confs - self.confirmations != remaining_confs:
+                    remaining_confs = required_confs - self.confirmations
+                    if not self._silent:
+                        stdout_write(f"\rRequired confirmations: {bright_yellow}{self.confirmations}/{required_confs}{color}  ")
+                        if remaining_confs == 0:
+                            stdout_write("\n")
+                        stdout_flush()
+                if remaining_confs > 0:
+                    time.sleep(1)
+
+            self._set_from_receipt(receipt)
+            try:
+            # if coverage evaluation is active, evaluate the trace
+                if (
+                    CONFIG.argv["coverage"]
+                    and not coverage._check_cached(self.coverage_hash)
+                    and self.trace
+                ):
+                    self._expand_trace()
+                if not self._silent and required_confs > 0:
+                    print(self._confirm_output())
+            finally:
+                # set the confirmation event and mark other tx's with the same nonce as dropped
+                for dropped_tx in state.TxHistory().filter(
+                    sender=self.sender, nonce=self.nonce, key=lambda k: k != self
+                ):
+                    dropped_tx.status = Status(-2)
+                    dropped_tx._confirmed.set()
+        finally:
+            self._confirmed.set()
 
     def _set_from_tx(self, tx: dict) -> None:
         if not self.sender:
@@ -612,7 +646,7 @@ class TransactionReceipt:
             f"{self.nonce}{self.block_number}{self.sender}{self.receiver}"
             f"{self.value}{self.input}{int(self.status)}{self.gas_used}{self.txindex}"
         )
-        self.coverage_hash = sha1(base.encode()).hexdigest()
+        self.coverage_hash = hash_source(base)
 
         if self.fn_name:
             state.TxHistory()._gas(self._full_name(), receipt["gasUsed"], self.status == Status(1))
@@ -671,6 +705,9 @@ class TransactionReceipt:
             self._trace_exc = RPCRequestError(trace["error"]["message"])
             raise self._trace_exc
 
+        if "result" not in trace or trace["result"] is None or "structLogs" not in trace["result"]:
+            return
+        
         result = trace["result"]
         return_value = result.get("returnValue")
         # Anvil exposes tx return/revert data directly as `returnValue`.
@@ -1164,7 +1201,7 @@ class TransactionReceipt:
             event_tree = build_tree([call_tree], multiline_pad=0, pad_depth=[0, 1])
             result = f"{result}\nEvents In This Transaction\n{event_tree}"
 
-        result = color.highlight(result)
+        result = color.highlight(result)  # @UndefinedVariable
         status = ""
         if not self.status:
             status = f"({bright_red}{self.revert_msg or 'reverted'}{color})"

@@ -3,17 +3,19 @@
 import logging
 from typing import Any, Deque, Final, TypeAlias, cast
 
-import semantic_version
+# import semantic_version
 import solcast
 import solcx
+import solcx.exceptions
 from eth_typing import ABIElement, HexStr
-from packaging.version import Version as PVersion
+from packaging.version import Version
 from requests.exceptions import ConnectionError
 from solcast.nodes import NodeBase, is_inside_offset
 
-from brownie._c_constants import Version, deque, sha1
+from brownie._c_constants import deque, sha1
 from brownie._config import EVM_EQUIVALENTS
 from brownie.exceptions import CompilerError, IncompatibleSolcVersion  # noqa
+from brownie.project.compiler import sources
 from brownie.project.compiler.utils import VersionList, VersionSpec, _get_alias, expand_source_map
 from brownie.typing import (
     BranchMap,
@@ -30,8 +32,7 @@ from brownie.typing import (
     Source,
     StatementMap,
 )
-
-from . import sources
+from brownie.utils import hash_source
 
 solcx_logger: Final = logging.getLogger("solcx")
 solcx_logger.setLevel(10)
@@ -57,19 +58,13 @@ EVM_VERSION_MAPPING: Final = [
 PcMap: TypeAlias = dict[Count, ProgramCounter]
 StatementNodes: TypeAlias = dict[str, set[Offset]]
 BranchNodes: TypeAlias = dict[str, set[NodeBase]]
-SolcxVersion: TypeAlias = VersionSpec | PVersion
+SolcxVersion: TypeAlias = VersionSpec | Version
 
 _BINOPS_PARAMS: Final = {"nodeType": "BinaryOperation", "typeDescriptions.typeString": "bool"}
 
 
-def _as_version(version: SolcxVersion) -> semantic_version.Version:
-    if isinstance(version, Version):
-        return version
-    return Version(str(version))
-
-
-def get_version() -> semantic_version.Version:
-    return _as_version(solcx.get_solc_version(with_commit_hash=True))
+def get_version() -> Version:
+    return solcx.get_solc_version(with_commit_hash=True)
 
 
 def compile_from_input_json(
@@ -200,7 +195,7 @@ def find_solc_versions(
     # install new versions if needed
     if to_install:
         install_solc(*to_install)
-        installed_versions = list(map(_as_version, solcx.get_installed_solc_versions()))
+        installed_versions = solcx.get_installed_solc_versions()
     elif new_versions and not silent:
         print(
             f"New compatible solc version{'s' if len(new_versions) > 1 else ''}"
@@ -263,10 +258,10 @@ def find_best_solc_version(
 
 def _get_solc_version_list() -> tuple[VersionList, VersionList]:
     global AVAILABLE_SOLC_VERSIONS
-    installed_versions: VersionList = list(map(_as_version, solcx.get_installed_solc_versions()))
+    installed_versions: VersionList = solcx.get_installed_solc_versions()
     if AVAILABLE_SOLC_VERSIONS is None:
         try:
-            AVAILABLE_SOLC_VERSIONS = list(map(_as_version, solcx.get_installable_solc_versions()))
+            AVAILABLE_SOLC_VERSIONS = solcx.get_installed_solc_versions()
         except ConnectionError:
             if not installed_versions:
                 raise ConnectionError("Solc not installed and cannot connect to GitHub")

@@ -1,14 +1,20 @@
 #!/usr/bin/python3
 
 from collections.abc import Sequence
-from typing import Final
+from typing import Final, TypeGuard, Union
 
 import eth_hash.auto
-from eth_typing import ABIComponent, ABIFunction, HexStr
+from eth_typing import ABIComponent, ABIElement, ABIError, ABIEvent, ABIFunction, HexStr
 
 keccak: Final = eth_hash.auto.keccak
 
 _cached_int_bounds: Final[dict[str, tuple[int, int]]] = {}
+
+ABICallable = Union[ABIFunction, ABIEvent, ABIError]
+
+
+def is_abi_callable(abi_element: ABIElement) -> TypeGuard[ABICallable]:
+    return abi_element["type"] in ("function", "error", "event")
 
 
 def get_int_bounds(type_str: str) -> tuple[int, int]:
@@ -46,7 +52,7 @@ def get_type_strings(
     for i in abi_params:
         type_str = i["type"]
         if type_str.startswith("tuple"):
-            params = get_type_strings(i["components"], substitutions)
+            params = get_type_strings(i.get("components", list()), substitutions)
             array_size = type_str[5:]
             types_list.append(f"({','.join(params)}){array_size}")
         else:
@@ -58,11 +64,11 @@ def get_type_strings(
     return types_list
 
 
-def build_function_signature(abi: ABIFunction) -> str:
-    types_list = get_type_strings(abi["inputs"])
+def build_function_signature(abi: ABICallable) -> str:
+    types_list = get_type_strings(abi.get("inputs", list()))
     return f"{abi['name']}({','.join(types_list)})"
 
 
-def build_function_selector(abi: ABIFunction) -> HexStr:
+def build_function_selector(abi: ABICallable) -> HexStr:
     sig = build_function_signature(abi)
     return f"0x{keccak(sig.encode()).hex()[:8]}"  # type: ignore [return-value]

@@ -59,7 +59,7 @@ def main():
         if args["--raise"]:
             raise e
 
-        print(color.format_tb(e))
+        print(color.format_tb(e))  # @UndefinedVariable
 
         frame = next(
             (i.frame for i in inspect.trace()[::-1] if Path(i.filename).as_posix() == path_str),

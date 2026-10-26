@@ -3,15 +3,17 @@
 import asyncio
 import io
 import os
+import random
 import time
 import warnings
-from collections.abc import Callable, Coroutine, Iterator
+from collections.abc import Callable, Coroutine, Iterator, Sequence
 from pathlib import Path
 from re import Match
 from textwrap import TextWrapper
 from threading import get_ident  # noqa
-from typing import TYPE_CHECKING, Any, Final, Optional, TypeAlias, Union, cast
+from typing import TYPE_CHECKING, Any, Final, Optional, Sequence, TypeAlias, Union, cast
 
+import eth_event
 import requests
 import solcx
 from eth_typing import ABIConstructor, ABIElement, ABIFunction, ChecksumAddress, HexAddress, HexStr
@@ -21,7 +23,7 @@ from faster_eth_utils import combomethod
 from vvm import get_installable_vyper_versions
 from vvm.utils.convert import to_vyper_version
 from web3.datastructures import AttributeDict
-from web3.exceptions import Web3RPCError
+from web3.exceptions import ContractCustomError, Web3RPCError
 from web3.types import LogReceipt
 
 from brownie._c_constants import (
@@ -37,6 +39,7 @@ from brownie._config import BROWNIE_FOLDER, CONFIG, REQUEST_HEADERS, _load_proje
 from brownie.convert.datatypes import Wei
 from brownie.convert.normalize import format_input, format_output
 from brownie.convert.utils import (
+    ABICallable,
     build_function_selector,
     build_function_signature,
     get_type_strings,
@@ -51,6 +54,19 @@ from brownie.exceptions import (
     decode_typed_error,
     parse_errors_from_abi,
 )
+from brownie.network.account import accounts
+from brownie.network.event import _add_deployment_topics, _get_topics, event_watcher
+from brownie.network.state import (
+    _add_contract,
+    _add_deployment,
+    _find_contract,
+    _get_deployment,
+    _remove_contract,
+    _remove_deployment,
+    _revert_register,
+    chain,
+)
+from brownie.network.web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 from brownie.project import compiler
 from brownie.project.flattener import Flattener
 from brownie.typing import (
@@ -65,9 +81,10 @@ from brownie.typing import (
 from brownie.utils import color, hexbytes_to_hexstring
 from brownie.utils._color import bright_blue, bright_green, bright_magenta, bright_red
 
-from . import accounts, chain, rpc
-from .event import _add_deployment_topics, _create_event_filter, _get_topics, event_watcher
-from .state import (
+from brownie.network.account import accounts, rpc
+from brownie.network.event import _add_deployment_topics, _create_event_filter, _get_topics, event_watcher
+from brownie.network.state import (
+    chain,
     _add_contract,
     _add_deployment,
     _find_contract,
@@ -76,15 +93,35 @@ from .state import (
     _remove_deployment,
     _revert_register,
 )
-from .web3 import ContractEvent, _ContractEvents, _resolve_address, web3
+from brownie.network.web3 import ContractEvent, _ContractEvents, _resolve_address, web3
 
 if TYPE_CHECKING:
     from brownie.project.main import Project, TempProject
 
-AnyContractMethod: TypeAlias = Union["ContractCall", "ContractTx", "OverloadedMethod"]
+AnyContractMethod: TypeAlias = Union["ContractCall", "ContractTx", "OverloadedMethod", "ContractError", "ContractEmittedEvent"]
 LinkReferences: TypeAlias = dict[str, dict[str, list[dict[str, int]]]]
 
 _unverified_addresses: Final[set[ChecksumAddress]] = set()
+
+_explorer_tokens = {
+    "optimistic": "OPTIMISMSCAN_TOKEN",
+    "etherscan": "ETHERSCAN_TOKEN",
+    "bscscan": "BSCSCAN_TOKEN",
+    "zkevm": "ZKEVMSCAN_TOKEN",
+    "polygonscan": "POLYGONSCAN_TOKEN",
+    "ftmscan": "FTMSCAN_TOKEN",
+    "arbiscan": "ARBISCAN_TOKEN",
+    "snowtrace": "SNOWTRACE_TOKEN",
+    "snowscan": "SNOWTRACE_TOKEN",
+    "aurorascan": "AURORASCAN_TOKEN",
+    "moonscan": "MOONSCAN_TOKEN",
+    "gnosisscan": "GNOSISSCAN_TOKEN",
+    "base": "BASESCAN_TOKEN",
+    "blastscan": "BLASTSCAN_TOKEN",
+    "zksync": "ZKSYNCSCAN_TOKEN",
+}
+
+_rng = random.Random()
 
 
 class _ContractBase:
@@ -101,15 +138,17 @@ class _ContractBase:
         self._sources: Final = sources
 
         abi = self.abi
-        self.topics: Final = _get_topics(abi)
-        self.selectors: Final[dict[Selector, FunctionName]] = {
-            build_function_selector(i): FunctionName(i["name"])
+        self.topics = _get_topics(abi)
+        self.selectors: dict[Selector, FunctionName] = {
+            build_function_selector(i): f"{i['type']} {build_function_signature(i)}"
             for i in abi
-            if i["type"] == "function"
+            if i["type"] in ("function", "error", "event")
         }
-        # this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
-        self.signatures: Final[dict[FunctionName, Selector]] = {
-            v: k for k, v in self.selectors.items()
+        # JPD fixed: this isn't fully accurate because of overloaded methods - will be removed in `v2.0.0`
+        self.signatures: dict[FunctionName, Selector] = {
+            build_function_signature(i): build_function_selector(i)
+            for i in self.abi
+            if i["type"] in ("function", "error", "event")
         }
         parse_errors_from_abi(abi)
 
@@ -155,12 +194,22 @@ class _ContractBase:
 
         abi: ABIFunction | None = None
         for i in self.abi:
-            if i["type"] == "function" and build_function_selector(i) == fn_selector:
+            if (
+                i["type"] in ("function", "error", "event")
+                and build_function_selector(i) == fn_selector
+            ):
                 abi = i
                 break
 
         if abi is None:
-            raise ValueError("Four byte selector does not match the ABI for this contract")
+            if fn_selector == "0x08c379a0":
+                abi = {
+                    "inputs": [{"name": "message", "type": "string"}],
+                    "name": "Error",
+                    "type": "error",
+                }
+            else:
+                raise ValueError("Four byte selector does not match the ABI for this contract")
 
         function_sig = build_function_signature(abi)
 
@@ -416,7 +465,12 @@ class ContractContainer(_ContractBase):
         else:
             raise TypeError(f"Unsupported language for source verification: {language}")
 
-    def publish_source(self, contract: "Contract", silent: bool = False) -> bool:
+    def publish_source(
+        self,
+        contract: "Contract",
+        silent: bool = False,
+        constructor_args: Sequence[Any] | None = None,
+    ) -> bool:
         """Flatten contract and publish source on the selected explorer"""
 
         api_key = os.getenv("ETHERSCAN_TOKEN")
@@ -464,42 +518,47 @@ class ContractContainer(_ContractBase):
 
         # get constructor arguments
         url = "https://api.etherscan.io/v2/api"
-        params_tx: dict = {
-            "chainid": web3.chain_id,
-            "apikey": api_key,
-            "module": "account",
-            "action": "txlist",
-            "address": address,
-            "page": 1,
-            "sort": "asc",
-            "offset": 1,
-        }
-        i = 0
-        while True:
-            response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
-            if response.status_code != 200:
-                raise ConnectionError(
-                    f"Status {response.status_code} when querying {url}: {response.text}"
-                )
-            data = response.json()
-            if int(data["status"]) == 1:
-                # Constructor arguments received
-                break
+        if constructor_args is None:
+            params_tx: dict = {
+                "chainid": web3.chain_id,
+                "apikey": api_key,
+                "module": "account",
+                "action": "txlist",
+                "address": address,
+                "page": 1,
+                "sort": "asc",
+                "offset": 1,
+            }
+            i = 0
+            while True:
+                response = requests.get(url, params=params_tx, headers=REQUEST_HEADERS)
+                if response.status_code != 200:
+                    raise ConnectionError(
+                        f"Status {response.status_code} when querying {url}: {response.text}"
+                    )
+                data = response.json()
+                if int(data["status"]) == 1:
+                    # Constructor arguments received
+                    break
 
-            # Wait for contract to be recognized by etherscan
-            # This takes a few seconds after the contract is deployed
-            # After 10 loops we throw with the API result message (includes address)
-            if i >= 10:
-                raise ValueError(f"API request failed with: {data['result']}")
-            elif i == 0 and not silent:
-                print(f"Waiting for {url} to process contract...")
-            i += 1
-            time.sleep(10)
+                # Wait for contract to be recognized by etherscan
+                # This takes a few seconds after the contract is deployed
+                # After 10 loops we throw with the API result message (includes address)
+                if i >= 10:
+                    raise ValueError(f"API request failed with: {data['result']}")
+                elif i == 0 and not silent:
+                    print(f"Waiting for {url} to process contract...")
+                i += 1
+                time.sleep(10)
 
-        if data["message"] == "OK":
-            constructor_arguments = data["result"][0]["input"][contract_info["bytecode_len"] + 2 :]
+            if data["message"] == "OK":
+                constructor_arguments = data["result"][0]["input"][
+                    contract_info["bytecode_len"] + 2 :
+                ]
+            else:
+                constructor_arguments = ""
         else:
-            constructor_arguments = ""
+            constructor_arguments = self.deploy.encode_constructor_args(constructor_args)
 
         # Submit verification
         payload_verification: dict = {
@@ -554,10 +613,11 @@ class ContractContainer(_ContractBase):
                 if not silent:
                     print("Verification pending...")
             else:
+                success = data["message"] == "OK" or data["message"] == "Already Verified"
                 if not silent:
-                    color = bright_green if data["message"] == "OK" else bright_red
+                    color = bright_green if success else bright_red
                     print(f"Verification complete. Result: {color}{data['result']}{color}")
-                return data["message"] == "OK"
+                return success
             time.sleep(10)
 
     def _slice_source(self, source: str, offset: list) -> str:
@@ -659,10 +719,14 @@ class ContractConstructor:
             "linkReferences",
         )
 
+        return bytecode + self.encode_constructor_args(args)
+
+    def encode_constructor_args(self, args):
         abi = self.abi
         data = format_input(abi, args)
         types_list = get_type_strings(abi["inputs"])
-        return bytecode + encode_abi(types_list, data).hex()
+        constructor_args = encode_abi(types_list, data).hex()
+        return constructor_args
 
     def estimate_gas(self, *args: Any) -> int:
         """
@@ -721,9 +785,9 @@ class InterfaceConstructor:
         self._name: Final = name
         self.abi: Final = abi
         self.selectors: Final[dict[Selector, FunctionName]] = {
-            build_function_selector(i): FunctionName(i["name"])
+            build_function_selector(i): FunctionName(build_function_signature(i))
             for i in abi
-            if i["type"] == "function"
+            if i["type"] in ("function", "error", "event")
         }
 
     def __call__(self, address: str, owner: AccountsType | None = None) -> "Contract":
@@ -755,7 +819,10 @@ class InterfaceConstructor:
 
         abi: ABIFunction | None = None
         for _abi in self.abi:
-            if _abi["type"] == "function" and build_function_selector(_abi) == fn_selector:
+            if (
+                _abi["type"] in ("function", "error", "event")
+                and build_function_selector(_abi) == fn_selector
+            ):
                 abi = _abi
                 break
 
@@ -791,6 +858,7 @@ class _DeployedContractBase(_ContractBase):
         tx: TransactionReceiptType = None,
     ) -> None:
         address = _resolve_address(address)
+        web3.isConnected()
         bytecode = self._build.get("deployedBytecode", None)
         if bytecode and self._project is not None:
             try:
@@ -814,8 +882,10 @@ class _DeployedContractBase(_ContractBase):
         self.events = ContractEvents(self)
         _add_deployment_topics(address, self.abi)
 
-        fn_abis = [abi for abi in self.abi if abi["type"] == "function"]
+        fn_abis = [abi for abi in self.abi if abi["type"] in ("function", "error", "event")]
         fn_names = [abi["name"] for abi in fn_abis]
+
+        self.functions_by_selector: dict[HexStr, AnyContractMethod] = dict()
 
         contract_name = self._name
         contract_natspec: dict = self._build.get("natspec") or {}
@@ -823,11 +893,13 @@ class _DeployedContractBase(_ContractBase):
         for abi, abi_name in zip(fn_abis, fn_names):
             name = f"{contract_name}.{abi_name}"
             sig = build_function_signature(abi)
+            selector = build_function_selector(abi)
             natspec = methods_natspec.get(sig, {})
 
             if fn_names.count(abi_name) == 1:
                 fn = _get_method_object(address, abi, name, owner, natspec)
                 self._check_and_set(abi_name, fn)
+                self.functions_by_selector[selector] = fn
                 continue
 
             # special logic to handle function overloading
@@ -835,6 +907,7 @@ class _DeployedContractBase(_ContractBase):
                 overloaded = OverloadedMethod(address, name, owner)
                 self._check_and_set(abi_name, overloaded)
             getattr(self, abi_name)._add_fn(abi, natspec)
+            self.functions_by_selector[selector] = getattr(self, abi_name)  # type: ignore
 
         self._initialized = True
 
@@ -898,35 +971,42 @@ class _DeployedContractBase(_ContractBase):
         """
         Given a calldata hex string, returns a `ContractMethod` object.
         """
-        sig = calldata[:10].lower()
-        if sig not in self.selectors:
+        sig = HexStr(calldata[:10].lower())
+        if sig not in self.functions_by_selector:
             return None
-        fn = getattr(self, self.selectors[sig], None)
+        fn = self.functions_by_selector.get(sig)
         if isinstance(fn, OverloadedMethod):
             return next((v for v in fn.methods.values() if v.signature == sig), None)
         return fn
 
     def balance(self) -> Wei:
         """Returns the current ether balance of the contract, in wei."""
+        web3.isConnected()
         balance = web3.eth.get_balance(self.address)
         return Wei(balance)
 
     def _deployment_path(self) -> Path | None:
         if not self._project._path or (
-            CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]
+            CONFIG.network_type != "live"
+            and not CONFIG.settings["dev_deployment_artifacts"]  # @UndefinedVariable
         ):
             return None
 
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         path = self._project._build_path.joinpath(f"deployments/{chainid}")
         path.mkdir(exist_ok=True)
         return path.joinpath(f"{self.address}.json")
 
     def _save_deployment(self) -> None:
         path = self._deployment_path()
-        chainid = CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        chainid = (
+            CONFIG.active_network["chainid"] if CONFIG.network_type == "live" else "dev"
+        )  # @UndefinedVariable
         deployment_build = self._build.copy()
 
+        web3.isConnected()
         deployment_build["deployment"] = {
             "address": self.address,
             "chainid": chainid,
@@ -993,8 +1073,8 @@ class Contract(_DeployedContractBase):
         if build is None or sources is None:
             if (
                 not address
-                or not CONFIG.settings.get("autofetch_sources")
-                or not CONFIG.active_network.get("explorer")
+                or not CONFIG.settings.get("autofetch_sources")  # @UndefinedVariable
+                or not CONFIG.active_network.get("explorer")  # @UndefinedVariable
             ):
                 if not address:
                     raise ValueError(f"Unknown alias: '{address_or_alias}'")
@@ -1050,13 +1130,37 @@ class Contract(_DeployedContractBase):
             will be performed using this account.
         """
         address = _resolve_address(address)
+        try:
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
+            deployedBytecode = web3.eth.get_code(address).hex().removeprefix("0x")
+        except Exception:
+            # random junk that looks like bytecode
+            deployedBytecode = (
+                "6080"
+                "ec29651ea57e9aa98bd340eba56e6b1fc767e9738a85fe35e62bad4993e36470"
+                "e112d08934f17475f2fc5dfa78c8683663d623c1cca81c4426c55401ee3cb926"
+                "f54d33f69d2f08e5ae55441c31256bc221eb4b9281537cf74c8ae5d3d4ae278e"
+                "dd9f9b398ef414e5e3ec51883adbe3f48a006edcb8ec05db2a5dd84afe40816a"
+                "1ccffe3910ca1c5d6371d0526e4ec6c65d58cd94c2458c33fe55fc4d4dcbf914"
+                "3fc18a2704c01c6425d96fbada3a16c4151c2fb52ca6205ebae119a6bf4878d6"
+                "54f7d0b19dbd90500d071af1a909a5835caaac19ea14b8e16d10a9912087b190"
+                "fb56443789a17cb9569e80e345f20c1630ba179f2f48c0bfe5959953657f30ce"
+                "b021ef313c177a1a32826720c1d20000f45e85f6db991266148c05a47e2640ff"
+                "8aa04d6852af7eda7657d0c54449afd89f70df63b11adfc7bd81a1dca2daf0c5"
+                "d53bb5c921f9c43bc20713dc0b2627640397124bdff4cf71e2a1e9f4f03d489f"
+                "fd44cfb4fb6770336935d752d9d5b97514083b646ec945b067c70d19808af170"
+                "66f9065cd7ebc5e120399d074a050e718d72da3752fc655b42ef3430f32e5ba8"
+                "75df38d0b0dbe7ab4cd929f054777dc6cfe585d99156ae6f4a35ffc50d435d55"
+                "df175523928f8e020377f8a8c5a321985f985985453b05ce69c8bc0117ca0fdb"
+                "49fb92ddbb536079e4ca22547a1a15b193740f8e36be15c08fd8714a471f6327"
+            )
+
         build = {
             "abi": abi,
             "address": address,
             "contractName": name,
             "type": "contract",
-            # removeprefix is used for compatibility with both hexbytes<1 and >=1
-            "deployedBytecode": web3.eth.get_code(address).hex().removeprefix("0x"),
+            "deployedBytecode": deployedBytecode,
         }
 
         self = cls.__new__(cls)
@@ -1094,6 +1198,7 @@ class Contract(_DeployedContractBase):
         address = _resolve_address(address)
         data = _fetch_from_explorer(address, "getsourcecode", silent)
         is_verified = bool(data["result"][0].get("SourceCode"))
+        web3.isConnected()
 
         if is_verified:
             abi = ujson_loads(data["result"][0]["ABI"])
@@ -1262,7 +1367,7 @@ class Contract(_DeployedContractBase):
         return self
 
     @classmethod
-    def get_solc_version(cls, compiler_str: str, address: str) -> Version:
+    def get_solc_version(cls, compiler_str: str, address: str) -> Version:  # type: ignore
         """
         Return the solc compiler version either from the passed compiler string
         or try to find the latest available patch semver compiler version.
@@ -1323,7 +1428,7 @@ class Contract(_DeployedContractBase):
         alias: str | None
             An alias to apply. If `None`, any existing alias is removed.
         """
-        if "chainid" not in CONFIG.active_network:
+        if "chainid" not in CONFIG.active_network:  # @UndefinedVariable
             raise ValueError("Cannot set aliases in a development environment")
 
         if alias is not None:
@@ -1404,6 +1509,7 @@ class ContractEvents(_ContractEvents):
                 event_logbook [dict]: Dictionary of events of the contract that occurred
                 between 'from_block' and 'to_block'.
         """
+        web3.isConnected()
         if to_block is None or to_block > web3.eth.block_number:
             to_block = web3.eth.block_number
 
@@ -1478,6 +1584,7 @@ class ContractEvents(_ContractEvents):
         Retrieves all log receipts from 'event_type' between 'from_block' and 'to_block' blocks
         """
         if to_block is None:
+            web3.isConnected()
             to_block = web3.eth.block_number
         if from_block is None and isinstance(to_block, int):
             from_block = to_block - 10
@@ -1494,7 +1601,7 @@ class OverloadedMethod:
         self.methods: Final[dict[Any, ContractCall | ContractTx]] = {}
         self.natspec: Final[dict[str, Any]] = {}
 
-    def _add_fn(self, abi: ABIFunction, natspec: dict[str, Any]) -> None:
+    def _add_fn(self, abi: ABICallable, natspec: dict[str, Any]) -> None:
         fn = _get_method_object(self._address, abi, self._name, self._owner, natspec)
         key = tuple(i["type"].replace("256", "") for i in abi["inputs"])
         self.methods[key] = fn
@@ -1658,7 +1765,7 @@ class OverloadedMethod:
         _print_natspec(self.natspec)
 
 
-class _ContractMethod:
+class _ContractFragment:
     _dir_color: Final = "bright magenta"
 
     def __init__(
@@ -1677,6 +1784,125 @@ class _ContractMethod:
         self._input_sig: Final = build_function_signature(abi)
         self.natspec: Final[dict[str, Any]] = natspec or {}
 
+    def info(self) -> None:
+        """
+        Display NatSpec documentation for this method.
+        """
+        print(f"{self.abi['name']}({_inputs(self.abi)})")
+        _print_natspec(self.natspec)
+
+    def decode_input(self, hexstr: str) -> list:
+        """
+        Decode input call data for this method.
+
+        Arguments
+        ---------
+        hexstr : str
+            Hexstring of input call data
+
+        Returns
+        -------
+        Decoded values
+        """
+        abi = self.abi
+        types_list = get_type_strings(abi["inputs"])
+        result = decode_abi(types_list, HexBytes(hexstr)[4:])
+        return format_input(abi, result)
+
+    def encode_input(self, *args: Any) -> str:
+        """
+        Generate encoded ABI data to call the method with the given arguments.
+
+        Arguments
+        ---------
+        *args
+            Contract method inputs
+
+        Returns
+        -------
+        str
+            Hexstring of encoded ABI data
+        """
+        abi = self.abi
+        data = format_input(abi, args)
+        types_list = get_type_strings(abi["inputs"])
+        return self.signature + encode_abi(types_list, data).hex()
+
+    def decode_output(self, hexstr: str) -> tuple:
+        """
+        Decode hexstring data returned by this method.
+
+        Arguments
+        ---------
+        hexstr : str
+            Hexstring of returned call data
+
+        Returns
+        -------
+        Decoded values
+        """
+        abi = self.abi
+        types_list = get_type_strings(abi["outputs"])
+        result = decode_abi(types_list, HexBytes(hexstr))
+        result = format_output(abi, result)
+        if len(result) == 1:
+            result = result[0]
+        return result
+
+
+class ContractEmittedEvent(_ContractFragment):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.topic = eth_event.get_log_topic(self.abi)
+
+    def __repr__(self) -> str:
+        return f"<{self.abi['type']} '{self.abi['name']}({_inputs(self.abi)})'>"
+
+    def call(self, *args, **kwargs) -> Any:
+        return self(*args)
+
+    def __call__(self, *args: Any) -> Any:
+        encoded = self.encode_input(*args)
+        decoded = self.decode_input(encoded)
+
+        event_data = ", ".join(
+            [
+                f"{input['name'] if 'name' in input else f'arg{idx}': arg}"
+                for idx, (input, arg) in enumerate(zip(self.abi["inputs"], decoded))
+            ]
+            if "inputs" in self.abi
+            else []
+        )
+
+        return f"{self._name}({event_data})"
+
+
+class ContractError(_ContractFragment):
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} '{self.abi['name']}({_inputs(self.abi)})'>"
+
+    def call(self, *args: Any, original_error: Exception | None = None, **kwargs) -> Any:
+        return self(*args, original_error=original_error)
+
+    def __call__(self, *args: Any, original_error: Exception | None = None) -> Any:
+        encoded = self.encode_input(*args)
+        decoded = self.decode_input(encoded)
+
+        error_data = (
+            {
+                input["name"] if "name" in input else f"arg{idx}": arg
+                for idx, (input, arg) in enumerate(zip(self.abi["inputs"], decoded))
+            }
+            if "inputs" in self.abi
+            else {}
+        )
+        params = ", ".join([f"{name}={value}" for name, value in error_data])
+        message = f"{self._name}({params})"
+
+        raise ContractCustomError(message, error_data) from original_error
+
+
+class _ContractMethod(_ContractFragment):
     def __repr__(self) -> str:
         pay = "payable " if self.payable else ""
         return f"<{type(self).__name__} {pay}'{self.abi['name']}({_inputs(self.abi)})'>"
@@ -1705,7 +1931,11 @@ class _ContractMethod:
         _print_natspec(self.natspec)
 
     def call(
-        self, *args: Any, block_identifier: int | str | bytes = None, override: dict = None
+        self,
+        *args: Any,
+        block_identifier: int | str | bytes | None = None,
+        override: dict | None = None,
+        max_retries=5,
     ) -> Any:
         """
         Call the contract method without broadcasting a transaction.
@@ -1728,23 +1958,36 @@ class _ContractMethod:
             Contract method return value(s).
         """
 
-        args, tx = _get_tx(self._owner, args)
-        if tx["from"]:
-            tx["from"] = str(tx["from"])
-        del tx["required_confs"]
-        tx.update({"to": self._address, "data": self.encode_input(*args)})
-
         try:
-            data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
-        except (ValueError, Web3RPCError) as e:
-            raise VirtualMachineError(e) from None
+            args, tx = _get_tx(self._owner, args)
+            if tx["from"]:
+                tx["from"] = str(tx["from"])
+            del tx["required_confs"]
+            tx.update({"to": self._address, "data": self.encode_input(*args)})
 
-        if self.abi["outputs"] and not data:
-            raise ValueError("No data was returned - the call likely reverted")
-        try:
-            return self.decode_output(data)
+            try:
+                web3.isConnected()
+                data = web3.eth.call({k: v for k, v in tx.items() if v}, block_identifier, override)
+            except (ValueError, Web3RPCError) as e:
+                raise VirtualMachineError(e) from None
+
+            if self.abi["outputs"] and not data:
+                raise ValueError("No data was returned - the call likely reverted")
+            try:
+                return self.decode_output(data)
+            except Exception:
+                raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
         except Exception:
-            raise ValueError(f"Call reverted: {decode_typed_error(data)}") from None
+            if max_retries <= 0:
+                raise
+
+            time.sleep(_rng.random() * 0.4 + 0.1)
+            return self.call(
+                *args,
+                block_identifier=block_identifier,
+                override=override,
+                max_retries=max_retries - 1,
+            )
 
     def transact(self, *args: Any, silent: bool = False) -> TransactionReceiptType:
         """
@@ -1769,6 +2012,8 @@ class _ContractMethod:
                 "includes a `from` field specifying the sender of the transaction"
             )
 
+        print(f"{tx['from'].address}: calling {self._name}{args}")
+
         return tx["from"].transfer(
             self._address,
             tx["value"],
@@ -1783,6 +2028,8 @@ class _ContractMethod:
             allow_revert=tx["allow_revert"],
             silent=silent,
             skip_undo=tx.get("_skip_undo", False),
+            test_function=tx.get("test_function"),
+            max_retries=tx.get("max_retries", 5),
         )
 
     def decode_input(self, hexstr: str) -> list:
@@ -1939,40 +2186,45 @@ class ContractCall(_ContractMethod):
         -------
             Contract method return value(s).
         """
-
-        if not CONFIG.argv["always_transact"] or block_identifier is not None:
-            return self.call(*args, block_identifier=block_identifier, override=override)
-
-        args, tx = _get_tx(self._owner, args)
-        tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
-        tx["_skip_undo"] = True
-        pc, revert_msg = None, None
-        snapshot_id = rpc._snapshot()
-
         try:
-            self.transact(*args, tx)
-        except VirtualMachineError as exc:
-            pc, revert_msg = exc.pc, exc.revert_msg
-        except Exception:
-            pass
-        finally:
-            _revert_transact_call(snapshot_id)
+            if not CONFIG.argv["always_transact"] or block_identifier is not None:
+                return self.call(*args, block_identifier=block_identifier, override=override)
 
-        try:
-            return self.call(*args)
-        except VirtualMachineError as exc:
-            if pc == exc.pc and revert_msg and exc.revert_msg is None:
-                # in case we miss a dev revert string
-                exc.revert_msg = revert_msg
-            raise exc
+            args, tx = _get_tx(self._owner, args)
+            tx.update({"gas_price": 0, "from": self._owner or accounts[0]})
+            tx["_skip_undo"] = True
+            pc, revert_msg = None, None
+            snapshot_id = rpc._snapshot()
+
+            try:
+                self.transact(*args, tx)
+            except VirtualMachineError as exc:
+                pc, revert_msg = exc.pc, exc.revert_msg
+            except Exception:
+                pass
+            finally:
+                _revert_transact_call(snapshot_id)
+
+            try:
+                return self.call(*args)
+            except VirtualMachineError as exc:
+                if pc == exc.pc and revert_msg and exc.revert_msg is None:
+                    # in case we miss a dev revert string
+                    exc.revert_msg = revert_msg
+                raise exc
+        except Exception as ex:
+            print(f"Caught {ex} calling {self.abi['name']}({args}) on {self._address}")
+            raise ex
 
 
 def _get_tx(owner: AccountsType | None, args: tuple) -> tuple:
     # set / remove default sender
     if owner is None:
         owner = accounts.default
-    default_owner = CONFIG.active_network["settings"]["default_contract_owner"]
-    if CONFIG.mode == "test" and default_owner is False:
+    default_owner = CONFIG.active_network["settings"][
+        "default_contract_owner"
+    ]  # @UndefinedVariable
+    if CONFIG.mode == "test" and default_owner is False:  # @UndefinedVariable
         owner = None
 
     # separate contract inputs from tx dict and set default tx values
@@ -2008,11 +2260,16 @@ def _revert_transact_call(snapshot_id: int | str) -> None:
 
 def _get_method_object(
     address: ChecksumAddress,
-    abi: ABIFunction,
+    abi: ABICallable,
     name: str,
     owner: AccountsType | None,
     natspec: dict[str, Any],
-) -> ContractCall | ContractTx:
+) -> AnyContractMethod:
+    if abi["type"] == "error":
+        return ContractError(address, abi, name, owner, natspec)
+    if abi["type"] == "event":
+        return ContractEmittedEvent(address, abi, name, owner, natspec)
+
     if "constant" in abi:
         constant = abi["constant"]
     else:
@@ -2038,6 +2295,7 @@ def _inputs(abi: ABIFunction | ABIConstructor) -> str:
 def _verify_deployed_code(
     address: ChecksumAddress, expected_bytecode: HexStr, language: Language
 ) -> bool:
+    web3.isConnected()
     # removeprefix is used for compatibility with both hexbytes<1 and >=1
     actual_bytecode = web3.eth.get_code(address).hex().removeprefix("0x")
     expected_bytecode = expected_bytecode.removeprefix("0x")
@@ -2103,6 +2361,7 @@ def _fetch_from_explorer(address: ChecksumAddress, action: str, silent: bool) ->
     if address in _unverified_addresses:
         raise ValueError(f"Source for {address} has not been verified")
 
+    web3.isConnected()
     # removeprefix is used for compatibility with both hexbytes<1 and >=1
     code = web3.eth.get_code(address).hex().removeprefix("0x")
     # EIP-1167: Minimal Proxy Contract

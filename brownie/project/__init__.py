@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from .main import (  # NOQA 401
+from brownie.project.main import (  # NOQA 401
     check_for_project,
     compile_source,
     from_brownie_mix,
@@ -8,7 +8,7 @@ from .main import (  # NOQA 401
     load,
     new,
 )
-from .scripts import run
+from brownie.project.scripts import run
 
 __all__ = ["run"]
 

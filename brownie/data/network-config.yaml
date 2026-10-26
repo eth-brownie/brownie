@@ -65,7 +65,7 @@ live:
   - name: Avalanche
     networks:
       - chainid: 43114
-        explorer: https://api.snowtrace.io/api
+        explorer: https://api.snowscan.xyz/api
         host: https://api.avax.network/ext/bc/C/rpc
         id: avax-main
         name: Mainnet

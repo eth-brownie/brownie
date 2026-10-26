@@ -2,8 +2,8 @@
 
 import tkinter as tk
 
-from .bases import ToggleButton
-from .styles import TEXT_STYLE
+from brownie._gui.bases import ToggleButton
+from brownie._gui.styles import TEXT_STYLE
 
 
 class ConsoleButton(ToggleButton):

@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
+import re
 import sys
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from getpass import getpass
 from importlib.metadata import version
 from pathlib import Path
@@ -32,14 +33,13 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
+from brownie.network.gas.bases import GasABC
+from brownie.network.rpc import Rpc
+from brownie.network.state import Chain, TxHistory, _revert_register
+from brownie.network.transaction import TransactionReceipt, load_transaction
+from brownie.network.web3 import _resolve_address, web3
 from brownie.utils import bytes_to_hexstring, color
 from brownie.utils._color import bright_blue, bright_cyan
-
-from .gas.bases import GasABC
-from .rpc import Rpc
-from .state import Chain, TxHistory, _revert_register
-from .transaction import TransactionReceipt
-from .web3 import _resolve_address, web3
 
 ETH_ACCOUNT_LT_0_13_0 = tuple(map(int, version("eth_account").split("."))) < (
     0,
@@ -52,6 +52,10 @@ rpc = Rpc()
 
 eth_account.Account.enable_unaudited_hdwallet_features()
 _marker = deque("-/|\\-/|\\")
+
+_dropped_tx_pattern = re.compile(r"Tx dropped without known replacement: (0x[0-9a-f]{64})")
+_lost_tx_pattern = re.compile(r"Transaction with hash: '(0x[0-9a-f]{64})' not found")
+_already_known_pattern = re.compile(r"already known")
 
 
 class Accounts(metaclass=_Singleton):
@@ -84,7 +88,9 @@ class Accounts(metaclass=_Singleton):
 
         # Check if accounts were manually unlocked and add them
         try:
-            unlocked_accounts = CONFIG.active_network["cmd_settings"]["unlock"]
+            unlocked_accounts = CONFIG.active_network["cmd_settings"][
+                "unlock"
+            ]  # @UndefinedVariable
             if not isinstance(unlocked_accounts, list):
                 unlocked_accounts = [unlocked_accounts]
             for address in unlocked_accounts:
@@ -273,7 +279,9 @@ class Accounts(metaclass=_Singleton):
         if acct is None and (address in web3.eth.accounts or force):
             acct = Account(address)
 
-            if CONFIG.network_type == "development" and address not in web3.eth.accounts:
+            if (
+                CONFIG.network_type == "development" and address not in web3.eth.accounts
+            ):  # @UndefinedVariable
                 rpc.unlock_account(address)
 
             self._accounts.append(acct)
@@ -303,7 +311,7 @@ class Accounts(metaclass=_Singleton):
         """
         self._accounts.clear()
 
-    def connect_to_clef(self, uri: str = None, timeout: int = 120) -> None:
+    def connect_to_clef(self, uri: str | None = None, timeout: int = 120) -> None:
         """
         Connect to Clef and import open accounts.
 
@@ -350,6 +358,12 @@ class Accounts(metaclass=_Singleton):
         Removes all `ClefAccount` objects from the container.
         """
         self._accounts = [i for i in self._accounts if not isinstance(i, ClefAccount)]
+
+
+accounts = Accounts()
+
+
+accounts = Accounts()
 
 
 class PublicKeyAccount:
@@ -445,12 +459,14 @@ class _PrivateKeyAccount(PublicKeyAccount):
         gas_buffer: float | None,
         data: str | None = None,
     ) -> int:
-        gas_limit = CONFIG.active_network["settings"]["gas_limit"]
+        gas_limit = CONFIG.active_network["settings"]["gas_limit"]  # @UndefinedVariable
         if gas_limit == "max":
             return Chain().block_gas_limit
 
         if isinstance(gas_limit, bool) or gas_limit in (None, "auto"):
-            gas_buffer = gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
+            gas_buffer = (
+                gas_buffer or CONFIG.active_network["settings"]["gas_buffer"]
+            )  # @UndefinedVariable
             gas_limit = self.estimate_gas(to, amount, 0, data or "")
             if gas_limit > 21000 and gas_buffer != 1:
                 gas_limit = Wei(gas_limit * gas_buffer)
@@ -461,7 +477,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
     def _gas_price(self, gas_price: Any = None) -> tuple[Wei, GasABC | None, Iterator | None]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
-            gas_price = CONFIG.active_network["settings"]["gas_price"]
+            gas_price = CONFIG.active_network["settings"]["gas_price"]  # @UndefinedVariable
 
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
@@ -586,7 +602,11 @@ class _PrivateKeyAccount(PublicKeyAccount):
             return receipt
 
     def estimate_gas(
-        self, to: "Account" = None, amount: int = 0, gas_price: int = None, data: str = None
+        self,
+        to: "Account" = None,
+        amount: int = 0,
+        gas_price: int = None,
+        data: str = None,
     ) -> int:
         """
         Estimate the gas cost for a transaction.
@@ -622,7 +642,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
-                CONFIG.active_network["settings"]["reverting_tx_gas_limit"] = revert_gas_limit
+                CONFIG.active_network["settings"][
+                    "reverting_tx_gas_limit"
+                ] = revert_gas_limit  # @UndefinedVariable
             if revert_gas_limit:
                 return revert_gas_limit
 
@@ -647,6 +669,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
         allow_revert: bool = None,
         silent: bool = None,
         skip_undo: bool = False,
+        test_function: Callable[[], bool] | None = None,
+        max_retries: int = 5,
+        **kwargs,
     ) -> TransactionReceipt:
         """
         Broadcast a transaction from this account.
@@ -667,46 +692,141 @@ class _PrivateKeyAccount(PublicKeyAccount):
             TransactionReceipt object
         """
 
-        receipt, exc = self._make_transaction(
-            to,
-            amount,
-            gas_limit,
-            gas_buffer,
-            gas_price,
-            max_fee,
-            priority_fee,
-            data or "",
-            nonce,
-            "",
-            required_confs,
-            allow_revert,
-            silent,
-        )
-
-        if rpc.is_active() and not skip_undo:
-            undo_thread = threading.Thread(
-                target=Chain()._add_to_undo_buffer,
-                args=(
-                    receipt,
-                    self.transfer,
-                    (),
-                    {
-                        "to": to,
-                        "amount": amount,
-                        "gas_limit": gas_limit,
-                        "gas_buffer": gas_buffer,
-                        "gas_price": gas_price,
-                        "max_fee": max_fee,
-                        "priority_fee": priority_fee,
-                        "data": data,
-                    },
-                ),
-                daemon=True,
+        receipt: TransactionReceipt | None = None
+        try:
+            web3.isConnected()
+            receipt, exc = self._make_transaction(
+                to,
+                amount,
+                gas_limit,
+                gas_buffer,
+                gas_price,
+                max_fee,
+                priority_fee,
+                data or "",
+                nonce,
+                "",
+                required_confs,
+                allow_revert,
+                silent,
             )
-            undo_thread.start()
 
-        receipt._raise_if_reverted(exc)
-        return receipt
+            if rpc.is_active() and not skip_undo:
+                undo_thread = threading.Thread(
+                    target=Chain()._add_to_undo_buffer,
+                    args=(
+                        receipt,
+                        self.transfer,
+                        (),
+                        {
+                            "to": to,
+                            "amount": amount,
+                            "gas_limit": gas_limit,
+                            "gas_buffer": gas_buffer,
+                            "gas_price": gas_price,
+                            "max_fee": max_fee,
+                            "priority_fee": priority_fee,
+                            "data": data,
+                        },
+                    ),
+                    daemon=True,
+                )
+                undo_thread.start()
+
+            receipt._raise_if_reverted(exc)
+            self.wait_for_complete(
+                receipt,
+                test_function=test_function,
+                max_retries=max_retries,
+                required_confs=required_confs,
+            )
+            return receipt
+        except Exception as ex:
+            if max_retries <= 0 or test_function is None:
+                raise ex
+
+            ex_string = str(ex)
+            lost_tx_match = _dropped_tx_pattern.search(ex_string) or _lost_tx_pattern.search(
+                ex_string
+            )
+
+            if lost_tx_match:
+                tx_id = lost_tx_match.group(1)
+                receipt = self.wait_for_complete(
+                    tx_id,
+                    test_function=test_function,
+                    max_retries=max_retries,
+                    required_confs=required_confs,
+                )
+                if receipt:
+                    print(
+                        f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}"
+                    )
+                    return receipt
+
+            if _already_known_pattern.search(ex_string):
+                time.sleep(3.0)
+
+            if test_function():
+                print(
+                    f"{type(ex).__name__}({ex}) thrown despite successful completion: {ex.__dict__}"
+                )
+                if receipt is not None and receipt.txid is not None and receipt.timestamp is None:
+                    reloaded_receipt = load_transaction(
+                        receipt.txid,
+                        max_retries=max_retries,
+                        required_confs=required_confs,
+                    )
+                    return reloaded_receipt or receipt
+                return receipt
+
+            raise
+
+    def wait_for_complete(
+        self,
+        receipt: TransactionReceipt | str,
+        test_function: Callable[[], bool] | None = None,
+        max_retries: int = 5,
+        required_confs: int = 1,
+    ) -> TransactionReceipt | None:
+        attempt = 0
+        sleep_time = 1.0
+
+        test_passed = test_function is None or test_function()
+        if isinstance(receipt, str):
+            txid = receipt
+            receipt_timestamp = None
+        else:
+            txid = receipt.txid
+            try:
+                receipt_timestamp = receipt.timestamp
+            except Exception:
+                receipt_timestamp = None
+
+        while True:
+            attempt += 1
+            if test_passed or attempt >= max_retries:
+
+                if not receipt_timestamp:
+                    try:
+                        reloaded_receipt = load_transaction(
+                            txid,
+                            max_retries=max_retries,
+                            required_confs=required_confs,
+                        )
+                        if reloaded_receipt:
+                            return reloaded_receipt
+                    except Exception as ex1:
+                        print(f"Could not load transaction {txid}: {type(ex1).__name__}({ex1})")
+
+                if attempt >= max_retries:
+                    return receipt if isinstance(receipt, TransactionReceipt) else None
+
+                time.sleep(sleep_time)
+                sleep_time *= 1.5
+
+    def _format_gwei(self, value):
+        return value.to("gwei") if isinstance(value, Wei) else value
 
     def _make_transaction(
         self,
@@ -728,22 +848,22 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
         if silent is None:
-            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])
+            silent = bool(CONFIG.mode == "test" or CONFIG.argv["silent"])  # @UndefinedVariable
 
+        priority_fee_increment = 1.1
+
+        network_settings = (
+            CONFIG.settings["networks"][CONFIG.active_network["id"]]  # @UndefinedVariable
+            if CONFIG.active_network["id"] in CONFIG.settings["networks"]  # @UndefinedVariable
+            else CONFIG.active_network["settings"]  # @UndefinedVariable
+        )
         if gas_price is None:
             # if gas price is not explicitly set, load the default max fee and priority fee
             if max_fee is None:
-                max_fee = CONFIG.active_network["settings"]["max_fee"] or None
+                max_fee = network_settings.get("max_fee") or None
             if priority_fee is None:
-                priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
-
-        if priority_fee == "auto":
-            try:
-                priority_fee = Chain().priority_fee
-            except ValueError:
-                # fallback to legacy transactions if network does not support EIP1559
-                CONFIG.active_network["settings"]["priority_fee"] = None
-                priority_fee = None
+                priority_fee = network_settings.get("priority_fee") or None
+            priority_fee_increment = network_settings.get("priority_fee_incr") or 1.1
 
         try:
             # if max fee and priority fee are not set, use gas price
@@ -755,7 +875,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 to, amount, gas_price or max_fee, gas_buffer, data
             )
         except ValueError as e:
-            raise VirtualMachineError(e) from None
+            raise VirtualMachineError(e) from e
+
+        min_fee = Wei(network_settings.get("min_fee") or 0)
 
         with self._lock:
             # we use a lock here to prevent nonce issues when sending many tx's at once
@@ -768,11 +890,25 @@ class _PrivateKeyAccount(PublicKeyAccount):
             }
             if to:
                 tx["to"] = to_address(str(to))
-            tx = _apply_fee_to_tx(tx, gas_price, max_fee, priority_fee)
+
             txid = None
+            if priority_fee == "auto":
+                chain_priority_fee = Chain().priority_fee
+                priority_fee_to_send = (
+                    max(chain_priority_fee, min_fee) if chain_priority_fee else min_fee
+                )
+            else:
+                priority_fee_to_send = priority_fee
+
             while True:
                 try:
-                    response = self._transact(tx, allow_revert)
+                    tx = _apply_fee_to_tx(
+                        tx,
+                        gas_price,
+                        max_fee,
+                        priority_fee_to_send,
+                    )
+                    response = self._transact(tx, allow_revert)  # type: ignore
                     exc, revert_data = None, None
                     if txid is None:
                         txid = bytes_to_hexstring(response)
@@ -781,28 +917,62 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 except (ValueError, Web3RPCError) as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
+                        if exc.message == "replacement transaction underpriced":
+                            print(f"Caught ${exc}, trying again")
+                            continue
                         if not hasattr(exc, "txid"):
-                            raise exc from None
+                            raise exc from e
                         txid = exc.txid
                         print(f"\rTransaction sent: {bright_blue}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
-                try:
-                    receipt = TransactionReceipt(
-                        txid,
-                        self,
-                        silent=silent,
-                        required_confs=required_confs,
-                        is_blocking=False,
-                        name=fn_name,
-                        revert_data=revert_data,
-                    )
+
+                done = False
+                for _ in range(3):
+                    try:
+                        receipt = TransactionReceipt(
+                            txid,
+                            self,
+                            silent=silent,
+                            required_confs=required_confs,
+                            is_blocking=False,
+                            name=fn_name,
+                            revert_data=revert_data,
+                        )  # type: ignore
+                        done = True
+                        break
+                    except (TransactionNotFound, ValueError):
+                        if not silent:
+                            sys.stdout.write(
+                                f"  Awaiting transaction in the mempool... {_marker[0]}\r"
+                            )
+                            sys.stdout.flush()
+                            _marker.rotate(1)
+                        time.sleep(1)
+                        try:
+                            receipt = TransactionReceipt(
+                                txid,
+                                self,
+                                silent=silent,
+                                required_confs=required_confs,
+                                is_blocking=False,
+                                name=fn_name,
+                                revert_data=revert_data,
+                            )  # type: ignore
+                            done = True
+                            break
+                        except (TransactionNotFound, ValueError):
+                            pass
+
+                if done:
                     break
-                except (TransactionNotFound, ValueError):
-                    if not silent:
-                        sys.stdout.write(f"  Awaiting transaction in the mempool... {_marker[0]}\r")
-                        sys.stdout.flush()
-                        _marker.rotate(1)
-                    time.sleep(1)
+
+                if priority_fee == "auto":
+                    priority_fee_to_send: Wei = max(
+                        Chain().priority_fee,
+                        Wei(priority_fee_to_send * priority_fee_increment),
+                    )
+                    if max_fee is not None:
+                        priority_fee_to_send = min(Wei(max_fee), priority_fee_to_send)
 
         receipt = self._await_confirmation(receipt, required_confs, gas_strategy, gas_iter)
         if receipt.status != 1 and exc is None:
@@ -881,9 +1051,9 @@ class Account(_PrivateKeyAccount):
         address: Public address of the account.
         nonce: Current nonce of the account."""
 
-    def _transact(self, tx: dict, allow_revert: bool) -> Any:
+    def _transact(self, tx: dict, allow_revert: bool | None = None) -> Any:
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         return web3.eth.send_transaction(tx)
@@ -898,7 +1068,7 @@ class LocalAccount(_PrivateKeyAccount):
         private_key: Account private key.
         public_key: Account public key."""
 
-    def __init__(self, address: str, account: Account, priv_key: int | bytes | str) -> None:
+    def __init__(self, address: str, account: Account, priv_key: int | bytes | str):
         self._acct = account
         if not isinstance(priv_key, str):
             priv_key = bytes_to_hexstring(priv_key)
@@ -1000,9 +1170,9 @@ class LocalAccount(_PrivateKeyAccount):
                 signature=HexBytes(eth_signature_bytes),
             )
 
-    def _transact(self, tx: dict, allow_revert: bool) -> None:
+    def _transact(self, tx: dict, allow_revert: bool | None = None):
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
@@ -1017,13 +1187,13 @@ class ClefAccount(_PrivateKeyAccount):
     Class for interacting with an Ethereum account where signing is handled in Clef.
     """
 
-    def __init__(self, address: str, provider: HTTPProvider | IPCProvider) -> None:
+    def __init__(self, address: str, provider: HTTPProvider | IPCProvider):
         self._provider = provider
         super().__init__(address)
 
-    def _transact(self, tx: dict, allow_revert: bool) -> None:
+    def _transact(self, tx: dict, allow_revert: bool | None):
         if allow_revert is None:
-            allow_revert = bool(CONFIG.network_type == "development")
+            allow_revert = bool(CONFIG.network_type == "development")  # @UndefinedVariable
         if not allow_revert:
             self._check_for_revert(tx)
 
@@ -1066,15 +1236,19 @@ def _apply_fee_to_tx(
         raise InvalidTransaction("priority_fee must be defined")
     priority_fee = Wei(priority_fee)
 
+    base_fee = Chain().base_fee
+
     # no max_fee specified, infer from base_fee
     if max_fee is None:
-        base_fee = Chain().base_fee
         max_fee = base_fee * 2 + priority_fee
     else:
         max_fee = Wei(max_fee)
 
     if priority_fee > max_fee:
         raise InvalidTransaction("priority_fee must not exceed max_fee")
+
+    if max_fee < base_fee + priority_fee:
+        raise TransactionError("The gas is too damn high")
 
     tx["maxFeePerGas"] = to_hex(max_fee)
     tx["maxPriorityFeePerGas"] = to_hex(priority_fee)

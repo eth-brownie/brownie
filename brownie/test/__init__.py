@@ -8,9 +8,8 @@ from hypothesis.errors import HypothesisDeprecationWarning, InvalidArgument
 
 from brownie import network
 from brownie.exceptions import BrownieTestWarning
-
-from .stateful import state_machine  # NOQA: F401
-from .strategies import contract_strategy, strategy  # NOQA: F401
+from brownie.test.stateful import state_machine  # NOQA: F401
+from brownie.test.strategies import contract_strategy, strategy  # NOQA: F401
 
 # hypothesis warns against combining function-scoped fixtures with @given
 # but in brownie this is a documented and useful behaviour
@@ -33,12 +32,12 @@ def given(*given_args, **given_kwargs):
             if first_run:
                 # prior to the first test run, take a snapshot to ensure
                 # consistent chain state for each run
-                network.chain.snapshot()
+                network.state.chain.snapshot()
                 first_run = False
             else:
                 # revert at the start of subsequent tests runs so the chain is
                 # not reverted prior to launching the interactive debugger
-                network.chain.revert()
+                network.state.chain.revert()
             test(*args, **kwargs)
 
         # hypothesis.given must wrap the target test to correctly

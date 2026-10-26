@@ -16,11 +16,10 @@ from brownie._config import CONFIG
 from brownie.exceptions import VirtualMachineError
 from brownie.network.state import _get_current_dependencies
 from brownie.test import coverage, output
+from brownie.test.managers.base import PytestBrownieBase
+from brownie.test.managers.utils import convert_outcome
 from brownie.utils import color
 from brownie.utils._color import yellow
-
-from .base import PytestBrownieBase
-from .utils import convert_outcome
 
 SCOPE_ORDER = ("session", "package", "module", "class", "function")
 
@@ -261,8 +260,10 @@ class PytestBrownieRunner(PytestBrownieBase):
         """
         outcome = yield
         # handled as a hookwrapper to ensure connecting is the last action for this hook
-        if not outcome.get_result() and session.items and not brownie.network.is_connected():
-            brownie.network.connect(CONFIG.argv["network"])
+        if (
+            not outcome.get_result() and session.items and not brownie.network.is_connected()
+        ):  # @UndefinedVariable
+            brownie.network.connect(CONFIG.argv["network"])  # @UndefinedVariable
 
     def pytest_runtest_protocol(self, item):
         """
@@ -306,7 +307,7 @@ class PytestBrownieRunner(PytestBrownieBase):
         if marker is not None:
             if not len(marker.args):
                 raise ValueError("`require_network` marker must include a network name")
-            if brownie.network.show_active() not in marker.args:
+            if brownie.network.show_active() not in marker.args:  # @UndefinedVariable
                 pytest.skip("Active network does not match `require_network` marker")
                 return
 

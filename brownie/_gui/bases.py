@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-from .styles import BUTTON_STYLE
+from brownie._gui.styles import BUTTON_STYLE
 
 
 class ToggleButton(tk.Button):

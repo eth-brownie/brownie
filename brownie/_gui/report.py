@@ -3,8 +3,7 @@
 import warnings
 
 from brownie._c_constants import Path
-
-from .bases import SelectBox
+from brownie._gui.bases import SelectBox
 
 
 class ReportSelect(SelectBox):
