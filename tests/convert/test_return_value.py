@@ -188,3 +188,12 @@ function foo() public returns (Foo[2][2] memory, Foo[2] memory) {
         ([(42, "hello"), (0, "")], [(0, ""), (69, "")]),
         [(0, ""), (69, "")],
     ]
+
+
+@pytest.mark.parametrize("value", [1, 10**19, "1 ether", "bar baz"])
+def test_plain_return_value_comparison(value):
+    converted = Wei(value) if value != "bar baz" else value
+    result = ReturnValue([converted])
+    assert result == [value]
+    assert result != ["different value"]
+    assert value in result

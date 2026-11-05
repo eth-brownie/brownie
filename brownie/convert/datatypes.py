@@ -452,7 +452,7 @@ def _kwargtuple_compare(a: Any, b: Any) -> bool:
     return all(_kwargtuple_compare(ai, bi) for ai, bi in zip(a, b))
 
 
-def _convert_str(value: Any) -> Wei:
+def _convert_str(value: Any) -> Any:
     if not isinstance(value, str):
         if not hasattr(value, "address"):
             return value
