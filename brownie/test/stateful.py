@@ -3,7 +3,7 @@
 import sys
 from inspect import getmembers
 from types import FunctionType
-from typing import Any, ClassVar, Final, final
+from typing import Any, ClassVar, Final
 
 from hypothesis import settings as hp_settings
 from hypothesis import stateful as sf
@@ -19,8 +19,7 @@ sf.__tracebackhide__ = True  # type: ignore [attr-defined]
 marker: Final = deque("-/|\\-/|\\")
 
 
-@final
-@mypyc_attr(native_class=False)
+@mypyc_attr(allow_interpreted_subclasses=True)
 class _BrownieStateMachine:
 
     _failed: ClassVar[bool] = False
