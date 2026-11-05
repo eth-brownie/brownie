@@ -129,9 +129,9 @@ typedef struct tuple_T2IO {
 } tuple_T2IO;
 #endif
 
-#ifndef MYPYC_DECLARED_tuple_T8OOOOFOOC
-#define MYPYC_DECLARED_tuple_T8OOOOFOOC
-typedef struct tuple_T8OOOOFOOC {
+#ifndef MYPYC_DECLARED_tuple_T8OOOOFOOO
+#define MYPYC_DECLARED_tuple_T8OOOOFOOO
+typedef struct tuple_T8OOOOFOOO {
     PyObject *f0;
     PyObject *f1;
     PyObject *f2;
@@ -139,8 +139,8 @@ typedef struct tuple_T8OOOOFOOC {
     double f4;
     PyObject *f5;
     PyObject *f6;
-    char f7;
-} tuple_T8OOOOFOOC;
+    PyObject *f7;
+} tuple_T8OOOOFOOO;
 #endif
 
 #ifndef MYPYC_DECLARED_tuple_T1I
@@ -1652,8 +1652,8 @@ typedef struct {
     PyObject *_branches;
     PyObject *_results;
     PyObject *_fn_name;
-    PyObject *_statement_cov;
-    PyObject *_branch_cov;
+    tuple_T2II _statement_cov;
+    tuple_T3III _branch_cov;
 } brownie___test___output____build_coverage_output_envObject;
 
 typedef struct {
@@ -1666,20 +1666,7 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
-} brownie___test___stateful_____init___3__BrownieStateMachine_objObject;
-
-typedef struct {
-    PyObject_HEAD
-    CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
-} brownie___test___stateful___execute_step__BrownieStateMachine_objObject;
-
-typedef struct {
-    PyObject_HEAD
-    CPyVTableItem *vtable;
-    vectorcallfunc vectorcall;
-} brownie___test___stateful___check_invariants__BrownieStateMachine_objObject;
+} brownie___test___stateful____BrownieStateMachineObject;
 
 typedef struct {
     PyObject_HEAD
