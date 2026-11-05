@@ -225,3 +225,8 @@ def test_project_empty_config_merge():
     original = {}
     _recursive_update(original, {"networks": {"default": "mainnet"}})
     assert original == {"networks": {"default": "mainnet"}}
+
+
+def test_data_folder_override(monkeypatch, tmp_path):
+    monkeypatch.setattr("brownie._config.DATA_FOLDER", tmp_path)
+    assert _get_data_folder() == tmp_path
