@@ -233,13 +233,17 @@ def _load_project_config(project_path: pathlib.Path) -> None:
         if isinstance(development_values, dict):
             development_cmd_settings = development_values.get("cmd_settings")
             if isinstance(development_cmd_settings, dict):
-                for values in CONFIG.networks.values():
-                    if "cmd" not in values:
+                for network_defaults in CONFIG.networks.values():
+                    if "cmd" not in network_defaults:
                         continue
-                    if "cmd_settings" in values and isinstance(values["cmd_settings"], dict):
-                        _recursive_update(values["cmd_settings"], development_cmd_settings)
+                    if "cmd_settings" in network_defaults and isinstance(
+                        network_defaults["cmd_settings"], dict
+                    ):
+                        _recursive_update(
+                            network_defaults["cmd_settings"], development_cmd_settings
+                        )
                     else:
-                        values["cmd_settings"] = deepcopy(development_cmd_settings)
+                        network_defaults["cmd_settings"] = deepcopy(development_cmd_settings)
 
         for network, values in network_configs.items():
             if (
@@ -336,10 +340,8 @@ def _modify_hypothesis_settings(settings, name, parent=None):
 
 def _recursive_update(original: dict, new: dict) -> None:
     """Recursively merges a new dict into the original dict"""
-    if not original:
-        original = {}
     for k in new:
-        if k in original and isinstance(new[k], dict):
+        if isinstance(original.get(k), dict) and isinstance(new[k], dict):
             _recursive_update(original[k], new[k])
         else:
             original[k] = new[k]

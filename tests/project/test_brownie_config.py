@@ -5,7 +5,7 @@ import copy
 import pytest
 import yaml
 
-from brownie._config import _get_data_folder, _load_config
+from brownie._config import _get_data_folder, _load_config, _load_project_config, _recursive_update
 from brownie.network import web3
 from brownie.network.rpc.ganache import _validate_cmd_settings
 
@@ -196,3 +196,32 @@ def test_dotenv_imports(config, testproject, env_file, project_settings_with_dot
     testproject.load_config()
     assert config.settings["console"]["show_colors"] == False  # noqa: E712
     assert config.settings["networks"]["development"]["default_balance"] == "42 miliether"
+
+
+@pytest.mark.parametrize("default", ["mainnet", "development"])
+def test_project_network_default_string(config, tmp_path, default):
+    tmp_path.joinpath("brownie-config.yaml").write_text(
+        yaml.safe_dump({"networks": {"default": default}})
+    )
+    _load_project_config(tmp_path)
+    assert config.settings["networks"]["default"] == default
+
+
+@pytest.mark.parametrize(
+    "previous, expected",
+    [
+        (None, {"accounts": 4}),
+        ({}, {"accounts": 4}),
+        ({"port": 8545}, {"port": 8545, "accounts": 4}),
+    ],
+)
+def test_project_cmd_settings_merge(previous, expected):
+    original = {"cmd_settings": previous}
+    _recursive_update(original, {"cmd_settings": {"accounts": 4}})
+    assert original == {"cmd_settings": expected}
+
+
+def test_project_empty_config_merge():
+    original = {}
+    _recursive_update(original, {"networks": {"default": "mainnet"}})
+    assert original == {"networks": {"default": "mainnet"}}
