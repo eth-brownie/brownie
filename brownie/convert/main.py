@@ -44,7 +44,7 @@ def to_decimal(value: Any) -> Fixed:
     return d
 
 
-def to_address(value: str | bytes) -> ChecksumAddress:
+def to_address(value: Any) -> ChecksumAddress:
     """Convert a value to an address"""
     return str(EthAddress(value))  # type: ignore [return-value]
 

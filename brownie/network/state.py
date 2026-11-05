@@ -159,15 +159,15 @@ class TxHistory(metaclass=_Singleton):
                 return
             pending._confirmed.wait()
 
-    def from_sender(self, account: str) -> list[TransactionReceipt]:
+    def from_sender(self, account: Any) -> list[TransactionReceipt]:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: str) -> list[TransactionReceipt]:
+    def to_receiver(self, account: Any) -> list[TransactionReceipt]:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: str) -> list[TransactionReceipt]:
+    def of_address(self, account: Any) -> list[TransactionReceipt]:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
