@@ -8,7 +8,9 @@ We must be sure it is patched before pytest starts up and attempts
 to load any plugins.
 """
 
+import importlib
 import sys
+from importlib.machinery import ExtensionFileLoader
 from typing import Any, NewType
 
 import eth_typing
@@ -18,6 +20,12 @@ import pytest
 if not hasattr(eth_typing, "ContractName"):
     eth_typing.ContractName = NewType("ContractName", str)
     eth_typing.Manifest = NewType("Manifest", dict[str, Any])
+
+# The test suite must exercise the installed mypyc extensions.
+for module_name in ("brownie._config", "brownie.project.sources"):
+    module = importlib.import_module(module_name)
+    if not isinstance(module.__spec__.loader, ExtensionFileLoader):
+        raise RuntimeError(f"{module_name} must load from a compiled extension: {module.__file__}")
 
 # Now run pytest, forwarding all CLI arguments
 sys.exit(pytest.main(sys.argv[1:]))

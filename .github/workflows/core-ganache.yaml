@@ -41,7 +41,8 @@ jobs:
       max-parallel: 9
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Ganache 7.0.2 builds with node-gyp 10, which requires Visual Studio 2022.
+        os: [ubuntu-latest, macos-latest, windows-2022]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
           - python-version: "3.10"
