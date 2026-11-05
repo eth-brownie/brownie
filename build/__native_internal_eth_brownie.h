@@ -6,7 +6,7 @@
 
 int CPyGlobalsInit(void);
 
-extern PyObject *CPyStatics[2496];
+extern PyObject *CPyStatics[2499];
 extern const char * const CPyLit_Str[];
 extern const char * const CPyLit_Bytes[];
 extern const char * const CPyLit_Int[];
@@ -2311,7 +2311,7 @@ extern PyObject *CPyDef_test___output____get_highlights(PyObject *cpy_r_build, P
 extern PyObject *CPyPy_test___output____get_highlights(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_test___output____statement_highlights(PyObject *cpy_r_coverage_eval, PyObject *cpy_r_coverage_map);
 extern PyObject *CPyPy_test___output____statement_highlights(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
-extern PyObject *CPyDef_test___output____statement_color(CPyTagged cpy_r_i, PyObject *cpy_r_coverage_eval, PyObject *cpy_r_path);
+extern PyObject *CPyDef_test___output____statement_color(PyObject *cpy_r_i, PyObject *cpy_r_coverage_eval, PyObject *cpy_r_path);
 extern PyObject *CPyPy_test___output____statement_color(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
 extern PyObject *CPyDef_test___output____branch_highlights(PyObject *cpy_r_coverage_eval, PyObject *cpy_r_coverage_map);
 extern PyObject *CPyPy_test___output____branch_highlights(PyObject *self, PyObject *const *args, size_t nargs, PyObject *kwnames);
