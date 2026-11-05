@@ -352,7 +352,7 @@ class Chain(metaclass=_Singleton):
 
         The backend snapshot id alone cannot restore Brownie's Python-side offset.
         """
-        snapshot_id: int | str = rpc.Rpc().snapshot()
+        snapshot_id: int | str = rpc.Rpc()._snapshot()
         self._snapshot_time_offsets[snapshot_id] = self._time_offset
         return snapshot_id
 
@@ -362,7 +362,7 @@ class Chain(metaclass=_Singleton):
             _notify_registry(BlockNumber(0))
             return self._take_snapshot()
         time_offset = self._snapshot_time_offsets.get(id_)
-        rpc_client.revert(id_)
+        rpc_client.backend.revert(id_)
         if time_offset is None:
             # Older or external snapshot ids have no paired local offset; resync from chain state.
             try:
@@ -438,7 +438,7 @@ class Chain(metaclass=_Singleton):
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
         with self._undo_lock:
-            result = rpc.Rpc().sleep(seconds)
+            result = rpc.Rpc().backend.sleep(seconds)
             if seconds:
                 # Nonzero sleep semantics vary by backend, but the requested delta is stable.
                 self._time_offset += seconds
@@ -492,7 +492,7 @@ class Chain(metaclass=_Singleton):
                 params = [[round(now + duration * i)] for i in range(blocks)]
 
             for i in range(blocks):
-                rpc.Rpc().mine(*params[i])
+                rpc.Rpc().backend.mine(*params[i])
 
             if blocks:
                 self._set_time_offset_from_block()
