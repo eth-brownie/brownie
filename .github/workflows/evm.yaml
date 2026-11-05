@@ -81,7 +81,7 @@ jobs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: v1.7.1
+        version: v1.9.0
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v6
