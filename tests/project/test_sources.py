@@ -4,7 +4,7 @@ import pytest
 from semantic_version import NpmSpec
 
 from brownie import compile_source
-from brownie.exceptions import NamespaceCollision
+from brownie.exceptions import NamespaceCollision, PragmaError, PragmaNotFound
 from brownie.project import sources
 
 MESSY_SOURCE = """
@@ -86,10 +86,23 @@ def test_get_pragma_spec():
     [
         ("0.1.0b16", NpmSpec("0.1.0-beta.16")),
         ("0.1.0Beta17", NpmSpec("0.1.0-beta.17")),
+        ("0.1.0-beta.16", NpmSpec("0.1.0-beta.16")),
         ("^0.2.0", NpmSpec("^0.2.0")),
         ("<=0.2.4", NpmSpec("<=0.2.4")),
     ],
 )
-def test_get_vyper_pragma_spec(version, spec):
-    source = f"""# @version {version}"""
+@pytest.mark.parametrize("directive", ["@version", "pragma version"])
+def test_get_vyper_pragma_spec(version, spec, directive):
+    source = f"# {directive} {version}"
     assert sources.get_vyper_pragma_spec(source) == spec
+
+
+@pytest.mark.parametrize("version", ["potato", "0.1.0b16 garbage", "0.1.0b16 || potato"])
+def test_get_vyper_pragma_spec_invalid(version):
+    with pytest.raises(PragmaError, match="path.vy: Cannot parse Vyper version"):
+        sources.get_vyper_pragma_spec(f"# @version {version}", "path.vy")
+
+
+def test_get_vyper_pragma_spec_missing():
+    with pytest.raises(PragmaNotFound):
+        sources.get_vyper_pragma_spec("@external\ndef foo(): pass", "path.vy")

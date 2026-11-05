@@ -124,7 +124,7 @@ def _get_vyper_version_list() -> tuple[VersionList, VersionList]:
     return AVAILABLE_VYPER_VERSIONS, installed_versions
 
 
-def install_vyper(*versions: str) -> None:
+def install_vyper(*versions: VersionSpec) -> None:
     """Installs vyper versions."""
     for version in versions:
         _vvm_install_vyper(str(version), show_progress=False)
@@ -522,7 +522,11 @@ def _convert_to_semver(versions: list[PVersion]) -> VersionList:
             major=version.major,
             minor=version.minor,
             patch=version.micro,
-            prerelease="".join(str(x) for x in version.pre) if version.pre else None,
+            prerelease=(
+                ("beta" if version.pre[0] == "b" else version.pre[0], str(version.pre[1]))
+                if version.pre
+                else None
+            ),
         )
         for version in versions
     ]

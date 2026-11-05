@@ -3,10 +3,11 @@
 import functools
 
 import pytest
+from packaging.version import Version as PVersion
 from semantic_version import Version
 
 from brownie.exceptions import CompilerError
-from brownie.project import build, compiler
+from brownie.project import build, compiler, sources
 from brownie.project.compiler import solidity, vyper
 
 
@@ -111,3 +112,10 @@ def test_size_limit(capfd):
     code = f"@external\ndef baz():\n    assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'"
     compiler.compile_and_format({"foo.vy": code}, vyper_version="0.2.4")
     assert "exceeds EIP-170 limit of 24577" in capfd.readouterr()[0]
+
+
+@pytest.mark.parametrize("version", ["0.1.0b16", "0.1.0Beta17", "0.2.4"])
+def test_vvm_versions_match_source_pragmas(version):
+    installed = vyper._convert_to_semver([PVersion(version)])
+    pragma = sources.get_vyper_pragma_spec(f"# @version {version}")
+    assert pragma.select(installed) == installed[0]
