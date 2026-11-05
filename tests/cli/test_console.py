@@ -105,12 +105,18 @@ def test_exceptions(console):
         _run_cmd(shell, ["x=[]", 'x[11] = "hello"'])
 
 
-def test_syntax(console):
+def test_syntax(console, capsys):
     shell = console()
-    with pytest.raises(SyntaxError):
-        shell.push("x = [)")
-    with pytest.raises(SyntaxError):
-        _run_cmd(shell, ["x = [", "", ")"])
+    shell.push("x = [)")
+    assert "SyntaxError" in capsys.readouterr().err
+    assert shell.buffer == []
+
+    _run_cmd(shell, ["x = [", "", ")"])
+    assert "SyntaxError" in capsys.readouterr().err
+    assert shell.buffer == []
+
+    shell.push("x = 42")
+    assert shell.locals["x"] == 42
 
 
 def test_dir(console):

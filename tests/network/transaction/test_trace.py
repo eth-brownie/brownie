@@ -13,10 +13,11 @@ from brownie.project import build
 
 @pytest.fixture
 def norevertmap():
-    revert_map = build._revert_map
-    build._revert_map = {}
+    revert_map = build._revert_map.copy()
+    build._revert_map.clear()
     yield
-    build._revert_map = revert_map
+    build._revert_map.clear()
+    build._revert_map.update(revert_map)
 
 
 @pytest.fixture(autouse=True)

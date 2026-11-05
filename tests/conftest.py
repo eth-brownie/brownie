@@ -7,6 +7,7 @@ import shutil
 import sys
 import threading
 from copy import deepcopy
+from importlib.machinery import ExtensionFileLoader
 from pathlib import Path
 from typing import Any
 
@@ -110,6 +111,12 @@ def _get_backend(config):
 
 
 def pytest_configure(config):
+    for module in (brownie._config, brownie.project.sources):
+        if not isinstance(module.__spec__.loader, ExtensionFileLoader):
+            raise pytest.UsageError(
+                f"{module.__name__} must load from a compiled extension: {module.__file__}"
+            )
+
     config.addinivalue_line(
         "markers",
         "backend(name): mark a test as requiring a specific development RPC backend",
