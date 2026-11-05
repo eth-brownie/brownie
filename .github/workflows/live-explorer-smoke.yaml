@@ -2,7 +2,7 @@ on:
   pull_request:
   push:
   schedule:
-    - cron: '0 9 * * *'  # Daily 0900 UTC
+    - cron: "0 9 * * *" # Daily 0900 UTC
   workflow_dispatch:
 
 name: live explorer smoke
