@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from collections.abc import Collection
 from typing import Final, NewType
 
 from eth_typing import HexStr
@@ -7,7 +8,9 @@ from eth_typing import HexStr
 from brownie._c_constants import deepcopy
 from brownie.typing import ContractName, IntegerString
 
-CoverageEval = NewType("CoverageEval", dict[ContractName, dict[IntegerString, list[set[int]]]])
+CoverageEval = NewType(
+    "CoverageEval", dict[ContractName, dict[IntegerString, list[Collection[int]]]]
+)
 
 # Coverage evaluation is stored on a per-tx basis. We use a special "coverage hash"
 # with additional inforarmation included to ensure no two transactions will produce

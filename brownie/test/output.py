@@ -2,6 +2,7 @@
 
 import pathlib
 import warnings
+from collections.abc import Collection
 from typing import Any, Final, TypedDict
 
 from brownie._c_constants import Path, ujson_dump, ujson_dumps, ujson_loads
@@ -10,7 +11,7 @@ from brownie.exceptions import BrownieConfigWarning
 from brownie.network.state import TxHistory
 from brownie.project import get_loaded_projects
 from brownie.project.build import Build
-from brownie.typing import ContractName, CoverageMap
+from brownie.typing import ContractName, CoverageIndex, CoverageMap
 from brownie.utils import color
 from brownie.utils._color import bright_green, bright_magenta, bright_red, bright_yellow
 
@@ -241,7 +242,10 @@ def _get_totals(
 def _split_by_fn(
     build: Build,
     coverage_eval: CoverageEval,
-) -> dict[ContractName, dict[str, dict[str, tuple[list[int], list[int], list[int]]]]]:
+) -> dict[
+    ContractName,
+    dict[str, dict[str, tuple[list[CoverageIndex], list[CoverageIndex], list[CoverageIndex]]]],
+]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
     results: dict[ContractName, dict[str, dict[str, Any]]] = {
         i: {"statements": {}, "branches": {"true": {}, "false": {}}} for i in coverage_eval
@@ -256,10 +260,10 @@ def _split_by_fn(
 
 
 def _split(
-    coverage_eval: list[set[int]],
+    coverage_eval: list[Collection[int]],
     coverage_map: CoverageMap,
     key: str,
-) -> dict[str, tuple[list[int], list[int], list[int]]]:
+) -> dict[str, tuple[list[CoverageIndex], list[CoverageIndex], list[CoverageIndex]]]:
     branches = coverage_map["branches"][key]
     statements = coverage_map["statements"][key]
     # not too sure what to call these but we don't want to getitem repeatedly
@@ -277,8 +281,10 @@ def _split(
 
 
 def _statement_totals(
-    coverage_eval: dict[str, dict[str, tuple[list[int], list[int], list[int]]]],
-    coverage_map: dict[str, dict[str, dict[int, Any]]],
+    coverage_eval: dict[
+        str, dict[str, tuple[list[CoverageIndex], list[CoverageIndex], list[CoverageIndex]]]
+    ],
+    coverage_map: dict[str, dict[str, dict[CoverageIndex, Any]]],
     exclude_contracts,
 ) -> tuple[dict[str, tuple[int, int]], tuple[int, int]]:
     result: dict[str, tuple[int, int]] = {}
@@ -298,8 +304,10 @@ def _statement_totals(
 
 
 def _branch_totals(
-    coverage_eval: dict[str, dict[str, tuple[list[int], list[int], list[int]]]],
-    coverage_map: dict[str, dict[str, dict[int, Any]]],
+    coverage_eval: dict[
+        str, dict[str, tuple[list[CoverageIndex], list[CoverageIndex], list[CoverageIndex]]]
+    ],
+    coverage_map: dict[str, dict[str, dict[CoverageIndex, Any]]],
     exclude_contracts: list[str],
 ) -> tuple[dict[str, tuple[int, int, int]], tuple[int, int, int]]:
     result: dict[str, tuple[int, int, int]] = {}
@@ -344,8 +352,8 @@ def _get_highlights(build, coverage_eval) -> dict[str, dict[str, dict[str, list]
 
 
 def _statement_highlights(
-    coverage_eval: dict[str, list[set[int]]],
-    coverage_map: dict[str, dict[str, dict[int, Any]]],
+    coverage_eval: dict[str, list[Collection[int]]],
+    coverage_map: dict[str, dict[str, dict[CoverageIndex, Any]]],
 ) -> dict[str, list]:
     results: dict[str, list] = {i: [] for i in coverage_map}
     for path, fns in coverage_map.items():
@@ -358,8 +366,8 @@ def _statement_highlights(
 
 
 def _statement_color(
-    i: int,
-    coverage_eval: dict[str, list[set[int]]],
+    i: CoverageIndex,
+    coverage_eval: dict[str, list[Collection[int]]],
     path: str,
 ) -> str:
     if path in coverage_eval and int(i) in coverage_eval[path][0]:
@@ -368,8 +376,8 @@ def _statement_color(
 
 
 def _branch_highlights(
-    coverage_eval: dict[str, list[set[int]]],
-    coverage_map: dict[str, dict[str, dict[int, Any]]],
+    coverage_eval: dict[str, list[Collection[int]]],
+    coverage_map: dict[str, dict[str, dict[CoverageIndex, Any]]],
 ) -> dict[str, list]:
     results: dict[str, list] = {i: [] for i in coverage_map}
     for path, fns in coverage_map.items():
@@ -383,7 +391,7 @@ def _branch_highlights(
 
 def _branch_color(
     i: int,
-    coverage_eval: dict[str, list[set[int]]],
+    coverage_eval: dict[str, list[Collection[int]]],
     path: str,
     jump: bool,
 ) -> str:

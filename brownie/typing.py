@@ -68,10 +68,13 @@ class InterfaceBuildJson(_BuildJsonBase):
 IntegerString: TypeAlias = str
 """An integer cast as a string, as in: ``str(123)``"""
 
-Statements: TypeAlias = dict[str, dict["Count", Offset]]
+# JSON object keys are strings; freshly compiled maps use integer counts.
+CoverageIndex: TypeAlias = int | IntegerString
+
+Statements: TypeAlias = dict[str, dict[CoverageIndex, Offset]]
 StatementMap: TypeAlias = dict[IntegerString, Statements]
 
-Branches: TypeAlias = dict[str, dict["Count", tuple[int, int, bool]]]
+Branches: TypeAlias = dict[str, dict[CoverageIndex, tuple[int, int, bool]]]
 BranchMap: TypeAlias = dict[IntegerString, Branches]
 
 
