@@ -683,7 +683,9 @@ def get_loaded_projects() -> list["Project"]:
 
 
 def new(
-    project_path_str: str = ".", ignore_subfolder: bool = False, ignore_existing: bool = False
+    project_path_str: pathlib.Path | str = ".",
+    ignore_subfolder: bool = False,
+    ignore_existing: bool = False,
 ) -> str:
     """Initializes a new project.
 
