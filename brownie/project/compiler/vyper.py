@@ -327,7 +327,7 @@ def _is_revert_jump(pc_list: PcList, revert_pc: int) -> bool:
 
 
 def _generate_coverage_data(
-    source_map_str: str,
+    source_map_str: str | dict,
     opcodes_str: str,
     contract_name: ContractName,
     ast_json: VyperAstJson,

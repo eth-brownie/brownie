@@ -786,7 +786,7 @@ def compile_source(
         except (PragmaError, VyperNotInstalled):
             pass
 
-    compiler_config["vyper"] = {"version": vyper_version or compiler.vyper.get_version()}
+    compiler_config["vyper"] = {"version": vyper_version or str(compiler.vyper.get_version())}
     try:
         return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
     except Exception as exc:

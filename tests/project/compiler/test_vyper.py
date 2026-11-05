@@ -5,6 +5,7 @@ import functools
 import pytest
 from packaging.version import Version as PVersion
 from semantic_version import Version
+from vyper import __version__ as native_vyper_version
 
 from brownie.exceptions import CompilerError
 from brownie.project import build, compiler, sources
@@ -119,3 +120,19 @@ def test_vvm_versions_match_source_pragmas(version):
     installed = vyper._convert_to_semver([PVersion(version)])
     pragma = sources.get_vyper_pragma_spec(f"# @version {version}")
     assert pragma.select(installed) == installed[0]
+
+
+@pytest.mark.parametrize("version", ["0.2.4", Version("0.2.4")])
+def test_install_cached_vyper_version(monkeypatch, tmp_path, version):
+    monkeypatch.setenv("VVM_BINARY_PATH", str(tmp_path))
+    tmp_path.joinpath("vyper-0.2.4").touch()
+    vyper.install_vyper(version)
+
+
+def test_native_vyper_structured_source_map():
+    compiled = compiler.compile_and_format(
+        {"VyperMap.vy": "@external\ndef foo() -> uint256:\n    return 1\n"},
+        vyper_version=native_vyper_version,
+    )
+    assert compiled["VyperMap"]["pcMap"]
+    assert compiled["VyperMap"]["coverageMap"]["statements"]
