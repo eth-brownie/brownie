@@ -2,7 +2,7 @@
 
 import pathlib
 import warnings
-from typing import Any, Final
+from typing import Any, Final, TypedDict
 
 from brownie._c_constants import Path, ujson_dump, ujson_dumps, ujson_loads
 from brownie._config import CONFIG
@@ -15,6 +15,18 @@ from brownie.utils import color
 from brownie.utils._color import bright_green, bright_magenta, bright_red, bright_yellow
 
 from .coverage import CoverageEval
+
+
+class _CoverageTotals(TypedDict):
+    statements: tuple[int, int]
+    branches: tuple[int, int, int]
+
+
+class _ContractCoverage(TypedDict):
+    statements: dict[str, tuple[int, int]]
+    branches: dict[str, tuple[int, int, int]]
+    totals: _CoverageTotals
+
 
 COVERAGE_COLORS: Final[list[tuple[float, str]]] = [
     (0.8, bright_red),
@@ -62,9 +74,10 @@ def _load_report_exclude_data(settings: dict[str, Any]) -> tuple[list[str], list
 
     exclude_contracts = []
     if settings["exclude_contracts"]:
-        exclude_contracts = settings["exclude_contracts"]
-        if not isinstance(exclude_contracts, list):
-            exclude_contracts = [exclude_contracts]
+        contract_setting = settings["exclude_contracts"]
+        exclude_contracts = (
+            contract_setting if isinstance(contract_setting, list) else [contract_setting]
+        )
 
     return exclude_paths, exclude_contracts
 
@@ -190,17 +203,17 @@ def _get_totals(
     build: Build,
     coverage_eval: CoverageEval,
     exclude_contracts: list[str] | None = None,
-) -> dict[ContractName, dict[str, dict[str, dict[str, Any]]]]:
+) -> dict[ContractName, _ContractCoverage]:
     # Returns a modified coverage eval dict showing counts and totals for each function.
 
     if exclude_contracts is None:
         exclude_contracts = []
     split_by_fn = _split_by_fn(build, coverage_eval)
-    results: dict[ContractName, dict[str, dict[str, Any]]] = {
-        i: {  # ty
+    results: dict[ContractName, _ContractCoverage] = {
+        i: {
             "statements": {},
-            "totals": {"statements": 0, "branches": [0, 0]},
-            "branches": {"true": {}, "false": {}},
+            "totals": {"statements": (0, 0), "branches": (0, 0, 0)},
+            "branches": {},
         }
         for i in split_by_fn
     }
@@ -227,7 +240,7 @@ def _get_totals(
 
 def _split_by_fn(
     build: Build,
-    coverage_eval: dict[ContractName, dict[str, dict[int, set[int]]]],
+    coverage_eval: CoverageEval,
 ) -> dict[ContractName, dict[str, dict[str, tuple[list[int], list[int], list[int]]]]]:
     # Splits a coverage eval dict so that coverage indexes are stored by function.
     results: dict[ContractName, dict[str, dict[str, Any]]] = {
@@ -243,7 +256,7 @@ def _split_by_fn(
 
 
 def _split(
-    coverage_eval: dict[int, set[int]],
+    coverage_eval: list[set[int]],
     coverage_map: CoverageMap,
     key: str,
 ) -> dict[str, tuple[list[int], list[int], list[int]]]:
@@ -331,7 +344,7 @@ def _get_highlights(build, coverage_eval) -> dict[str, dict[str, dict[str, list]
 
 
 def _statement_highlights(
-    coverage_eval: dict[str, dict[int, set]],
+    coverage_eval: dict[str, list[set[int]]],
     coverage_map: dict[str, dict[str, dict[int, Any]]],
 ) -> dict[str, list]:
     results: dict[str, list] = {i: [] for i in coverage_map}
@@ -346,7 +359,7 @@ def _statement_highlights(
 
 def _statement_color(
     i: int,
-    coverage_eval: dict[str, dict[int, set]],
+    coverage_eval: dict[str, list[set[int]]],
     path: str,
 ) -> str:
     if path in coverage_eval and int(i) in coverage_eval[path][0]:
@@ -355,7 +368,7 @@ def _statement_color(
 
 
 def _branch_highlights(
-    coverage_eval: dict[str, dict[int, set]],
+    coverage_eval: dict[str, list[set[int]]],
     coverage_map: dict[str, dict[str, dict[int, Any]]],
 ) -> dict[str, list]:
     results: dict[str, list] = {i: [] for i in coverage_map}
@@ -370,9 +383,9 @@ def _branch_highlights(
 
 def _branch_color(
     i: int,
-    coverage_eval: dict[str, dict[int, set]],
+    coverage_eval: dict[str, list[set[int]]],
     path: str,
-    jump: None,
+    jump: bool,
 ) -> str:
     if path not in coverage_eval:
         return "red"
