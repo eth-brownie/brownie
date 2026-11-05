@@ -389,8 +389,11 @@ class Chain(metaclass=_Singleton):
                 redo_buffer.pop()
             else:
                 redo_buffer.clear()
-            # Transactions can advance the backend clock, so resync from the mined block.
-            self._set_time_offset_from_block()
+            # Transactions can advance the clock, but delayed registration must not
+            # rewind time that callers have already observed since the block was mined.
+            block: BlockData | AttributeDict = web3.eth.get_block("latest")
+            mined_offset = int(block["timestamp"]) - int(time.time())
+            self._time_offset = max(self._time_offset, mined_offset)
             self._current_id = self._take_snapshot()
 
     def _network_connected(self) -> None:
