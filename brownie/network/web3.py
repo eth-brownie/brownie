@@ -14,6 +14,7 @@ from web3 import Web3 as _Web3
 from web3.contract.contract import ContractEvent  # noqa
 from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
+from web3.providers.base import BaseProvider
 
 from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
@@ -29,7 +30,7 @@ class Web3(_Web3):
 
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
-        self.provider = None
+        self.provider: BaseProvider | None = None
         self._mainnet_w3: _Web3 | None = None
         self._genesis_hash: HexStr | None = None
         self._chain_uri: str | None = None
