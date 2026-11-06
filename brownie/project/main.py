@@ -683,7 +683,9 @@ def get_loaded_projects() -> list["Project"]:
 
 
 def new(
-    project_path_str: str = ".", ignore_subfolder: bool = False, ignore_existing: bool = False
+    project_path_str: pathlib.Path | str = ".",
+    ignore_subfolder: bool = False,
+    ignore_existing: bool = False,
 ) -> str:
     """Initializes a new project.
 
@@ -784,7 +786,7 @@ def compile_source(
         except (PragmaError, VyperNotInstalled):
             pass
 
-    compiler_config["vyper"] = {"version": vyper_version or compiler.vyper.get_version()}
+    compiler_config["vyper"] = {"version": vyper_version or str(compiler.vyper.get_version())}
     try:
         return TempProject("TempVyperProject", {"<stdin>.vy": source}, compiler_config)
     except Exception as exc:

@@ -247,8 +247,9 @@ def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_vers
     try:
         # special case for Vyper 0.1.0-beta.X
         version = to_vyper_version(pragma_string)
-        return NpmSpec(str(version))
-    except Exception:
+        if version.release == (0, 1, 0) and version.pre and version.pre[0] == "b":
+            return NpmSpec(f"0.1.0-beta.{version.pre[1]}")
+    except ValueError:
         pass
 
     path = "" if path is None else f"{path}: "

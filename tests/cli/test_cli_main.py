@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 
 import sys
+from io import BytesIO
+from zipfile import ZipFile
 
 import pytest
+from requests import Response
 
+from brownie import project
 from brownie._cli import __main__ as cli_main
 
 
@@ -39,53 +43,67 @@ class CliTester:
         sys.argv = self.argv
 
 
-def test_cli_init(cli_tester):
-    cli_tester.monkeypatch.setattr("brownie.project.new", cli_tester.mock_subroutines)
+def test_cli_init(cli_tester, tmp_path):
+    cli_tester.monkeypatch.setattr(sys, "argv", ["brownie", "init"])
+    cli_main.main()
+    assert tmp_path.joinpath("contracts").is_dir()
+    assert tmp_path.joinpath(".gitignore").is_file()
 
-    args = (".", False, False)
-    kwargs = {}
-    parameters = (args, kwargs)
-    cli_tester.run_and_test_parameters("init", parameters)
-
-    args = ("test/path", True, True)
-    parameters = (args, kwargs)
-    cli_tester.run_and_test_parameters("init test/path --force", parameters)
-
-    _, _, was_forced = cli_tester.mock_subroutines.call_args[0]
-    assert type(was_forced) is bool and was_forced
-
-    assert cli_tester.mock_subroutines.called is True
-    assert cli_tester.mock_subroutines.call_count == 2
-
-
-def test_cli_bake(cli_tester):
-    cli_tester.monkeypatch.setattr("brownie.project.from_brownie_mix", cli_tester.mock_subroutines)
-
-    args = ("token", None, False)
-    kwargs = {}
-    parameters = (args, kwargs)
-    cli_tester.run_and_test_parameters("bake token", parameters)
-
-    args = ("token", "test/path", True)
-    parameters = (args, kwargs)
-    cli_tester.run_and_test_parameters("bake token test/path --force", parameters)
-
-    _, _, was_forced = cli_tester.mock_subroutines.call_args[0]
-    assert type(was_forced) is bool and was_forced
-
-    assert cli_tester.mock_subroutines.called is True
-    assert cli_tester.mock_subroutines.call_count == 2
+    target = tmp_path.joinpath("test/path")
+    target.mkdir(parents=True)
+    marker = target.joinpath("existing.txt")
+    marker.write_text("keep")
+    cli_tester.monkeypatch.setattr(sys, "argv", ["brownie", "init", str(target)])
+    with pytest.raises(SystemExit, match="Directory is not empty"):
+        cli_main.main()
+    cli_tester.monkeypatch.setattr(sys, "argv", ["brownie", "init", str(target), "--force"])
+    cli_main.main()
+    assert target.joinpath("contracts").is_dir()
+    assert marker.read_text() == "keep"
 
 
-def test_cli_compile(cli_tester, testproject):
-    cli_tester.monkeypatch.setattr("brownie.project.load", cli_tester.mock_subroutines)
+def test_cli_bake(cli_tester, tmp_path):
+    source = "contract Token {}\n"
+    archive = BytesIO()
+    with ZipFile(archive, "w") as mix:
+        mix.writestr("token-mix-main/contracts/Token.sol", source)
 
-    parameters = ((), {})
-    cli_tester.run_and_test_parameters("compile", parameters)
-    cli_tester.run_and_test_parameters("compile --all", parameters)
+    responses = {
+        "https://api.github.com/repos/brownie-mix/token-mix": b'{"default_branch": "main"}',
+        "https://github.com/brownie-mix/token-mix/archive/main.zip": archive.getvalue(),
+    }
 
-    assert cli_tester.mock_subroutines.called is True
-    assert cli_tester.mock_subroutines.call_count == 2
+    def get_response(url, **kwargs):
+        response = Response()
+        response.status_code = 200
+        response.raw = BytesIO(responses[url])
+        response.headers["content-length"] = str(len(responses[url]))
+        return response
+
+    cli_tester.monkeypatch.setattr("requests.get", get_response)
+    cli_tester.monkeypatch.setattr(sys, "argv", ["brownie", "bake", "token"])
+    cli_main.main()
+    assert tmp_path.joinpath("token/contracts/Token.sol").read_text() == source
+
+    target = tmp_path.joinpath("test/path")
+    cli_tester.monkeypatch.setattr(
+        sys, "argv", ["brownie", "bake", "token", str(target), "--force"]
+    )
+    cli_main.main()
+    assert target.joinpath("contracts/Token.sol").read_text() == source
+
+
+def test_cli_compile(cli_tester, testproject, capfd):
+    project_path = testproject._path
+    testproject.close()
+    for args in (["brownie", "compile"], ["brownie", "compile", "--all"]):
+        cli_tester.monkeypatch.setattr(sys, "argv", args)
+        cli_main.main()
+        assert "Project has been compiled." in capfd.readouterr().out
+        artifacts = project_path.joinpath("build/contracts")
+        assert artifacts.joinpath("BrownieTester.json").is_file()
+        for loaded in project.get_loaded_projects():
+            loaded.close()
 
 
 def test_cli_compile_and_analyze_projectnotfound_exception(cli_tester):

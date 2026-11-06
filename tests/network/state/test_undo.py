@@ -61,7 +61,31 @@ def test_does_not_undo_sleep(accounts, chain):
     chain.sleep(100000)
     accounts[0].transfer(accounts[1], 100)
     chain.undo()
-    assert chain.time() >= time + 100000
+    restored_time = chain.time()
+    assert restored_time >= time + 100000
+
+
+def test_sleep_preserves_elapsed_time_during_undo_registration(accounts, chain, monkeypatch):
+    lock = _block_first_undo_lock(chain, monkeypatch)
+    try:
+        accounts[0].transfer(accounts[1], 100)
+        assert lock.blocked.wait(5)
+        mined_time = chain[-1].timestamp
+        deadline = time.monotonic() + 3
+        while int(time.time()) <= mined_time:
+            assert time.monotonic() < deadline, "Wall clock did not advance past the mined block"
+            time.sleep(0.01)
+        start_time = chain.time()
+    finally:
+        lock.release_block.set()
+
+    chain.sleep(100000)
+    accounts[0].transfer(accounts[1], 100)
+    _wait_for_undo_buffer(chain, 2)
+    assert not lock.errors, lock.errors[0]
+    chain.undo()
+    restored_time = chain.time()
+    assert restored_time >= start_time + 100000
 
 
 def test_does_not_undo_mining(accounts, chain, web3):

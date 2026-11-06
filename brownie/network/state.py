@@ -159,15 +159,15 @@ class TxHistory(metaclass=_Singleton):
                 return
             pending._confirmed.wait()
 
-    def from_sender(self, account: str) -> list[TransactionReceipt]:
+    def from_sender(self, account: Any) -> list[TransactionReceipt]:
         """Returns a list of transactions where the sender is account"""
         return [i for i in self._list if i.sender == account]
 
-    def to_receiver(self, account: str) -> list[TransactionReceipt]:
+    def to_receiver(self, account: Any) -> list[TransactionReceipt]:
         """Returns a list of transactions where the receiver is account"""
         return [i for i in self._list if i.receiver == account]
 
-    def of_address(self, account: str) -> list[TransactionReceipt]:
+    def of_address(self, account: Any) -> list[TransactionReceipt]:
         """Returns a list of transactions where account is the sender or receiver"""
         return [i for i in self._list if i.receiver == account or i.sender == account]
 
@@ -352,7 +352,7 @@ class Chain(metaclass=_Singleton):
 
         The backend snapshot id alone cannot restore Brownie's Python-side offset.
         """
-        snapshot_id: int | str = rpc.Rpc().snapshot()
+        snapshot_id: int | str = rpc.Rpc()._snapshot()
         self._snapshot_time_offsets[snapshot_id] = self._time_offset
         return snapshot_id
 
@@ -362,7 +362,7 @@ class Chain(metaclass=_Singleton):
             _notify_registry(BlockNumber(0))
             return self._take_snapshot()
         time_offset = self._snapshot_time_offsets.get(id_)
-        rpc_client.revert(id_)
+        rpc_client.backend.revert(id_)
         if time_offset is None:
             # Older or external snapshot ids have no paired local offset; resync from chain state.
             try:
@@ -389,8 +389,11 @@ class Chain(metaclass=_Singleton):
                 redo_buffer.pop()
             else:
                 redo_buffer.clear()
-            # Transactions can advance the backend clock, so resync from the mined block.
-            self._set_time_offset_from_block()
+            # Transactions can advance the clock, but delayed registration must not
+            # rewind time that callers have already observed since the block was mined.
+            block: BlockData | AttributeDict = web3.eth.get_block("latest")
+            mined_offset = int(block["timestamp"]) - int(time.time())
+            self._time_offset = max(self._time_offset, mined_offset)
             self._current_id = self._take_snapshot()
 
     def _network_connected(self) -> None:
@@ -438,7 +441,7 @@ class Chain(metaclass=_Singleton):
         if not isinstance(seconds, int):
             raise TypeError("seconds must be an integer value")
         with self._undo_lock:
-            result = rpc.Rpc().sleep(seconds)
+            result = rpc.Rpc().backend.sleep(seconds)
             if seconds:
                 # Nonzero sleep semantics vary by backend, but the requested delta is stable.
                 self._time_offset += seconds
@@ -492,7 +495,7 @@ class Chain(metaclass=_Singleton):
                 params = [[round(now + duration * i)] for i in range(blocks)]
 
             for i in range(blocks):
-                rpc.Rpc().mine(*params[i])
+                rpc.Rpc().backend.mine(*params[i])
 
             if blocks:
                 self._set_time_offset_from_block()
