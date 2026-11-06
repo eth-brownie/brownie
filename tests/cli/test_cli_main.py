@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
 import sys
+from io import BytesIO
+from zipfile import ZipFile
 
 import pytest
+from requests import Response
 
 from brownie import project
 from brownie._cli import __main__ as cli_main
@@ -60,16 +63,34 @@ def test_cli_init(cli_tester, tmp_path):
 
 
 def test_cli_bake(cli_tester, tmp_path):
+    source = "contract Token {}\n"
+    archive = BytesIO()
+    with ZipFile(archive, "w") as mix:
+        mix.writestr("token-mix-main/contracts/Token.sol", source)
+
+    responses = {
+        "https://api.github.com/repos/brownie-mix/token-mix": b'{"default_branch": "main"}',
+        "https://github.com/brownie-mix/token-mix/archive/main.zip": archive.getvalue(),
+    }
+
+    def get_response(url, **kwargs):
+        response = Response()
+        response.status_code = 200
+        response.raw = BytesIO(responses[url])
+        response.headers["content-length"] = str(len(responses[url]))
+        return response
+
+    cli_tester.monkeypatch.setattr("requests.get", get_response)
     cli_tester.monkeypatch.setattr(sys, "argv", ["brownie", "bake", "token"])
     cli_main.main()
-    assert tmp_path.joinpath("token/contracts/Token.sol").is_file()
+    assert tmp_path.joinpath("token/contracts/Token.sol").read_text() == source
 
     target = tmp_path.joinpath("test/path")
     cli_tester.monkeypatch.setattr(
         sys, "argv", ["brownie", "bake", "token", str(target), "--force"]
     )
     cli_main.main()
-    assert target.joinpath("contracts/Token.sol").is_file()
+    assert target.joinpath("contracts/Token.sol").read_text() == source
 
 
 def test_cli_compile(cli_tester, testproject, capfd):
