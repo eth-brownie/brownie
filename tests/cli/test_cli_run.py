@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import shutil
 import sys
 
 import pytest
@@ -26,6 +27,20 @@ def test_run_no_args_from_subdirectory_lists_scripts(testproject, monkeypatch, c
     out = capsys.readouterr().out
     assert "Available scripts in path" in out
     assert "token" in out
+    assert "Usage: brownie run <filename>" in str(excinfo.value.code)
+
+
+def test_run_no_args_without_loaded_project(_project_factory, tmp_path, monkeypatch, capsys):
+    path = tmp_path.joinpath("rawproject")
+    shutil.copytree(_project_factory, path)
+    monkeypatch.chdir(path)
+    monkeypatch.setattr(sys, "argv", ["brownie", "run"])
+    with pytest.raises(SystemExit) as excinfo:
+        cli_run.main()
+    out = capsys.readouterr().out
+    assert "Available scripts in path scripts:" in out
+    assert "token" in out
+    assert "main" in out
     assert "Usage: brownie run <filename>" in str(excinfo.value.code)
 
 

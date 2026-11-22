@@ -92,13 +92,17 @@ def test_scripts_tree_rebinding(tmp_path):
     scripts = tmp_path.joinpath("scripts")
     scripts.mkdir(parents=True)
     scripts.joinpath("deploy.py").write_text(
-        "def _deploy():\n    pass\n\n\ndef main():\n    pass\n\n\nasync def fetch():\n    pass\n\n\nmain = None\ndeploy = _deploy\n"
+        "def _deploy():\n    pass\n\n\ndef main():\n    pass\n\n\nasync def fetch():\n    pass\n\n\nmain = None\ndeploy = _deploy\nlaunch = deploy\nhandler = lambda: None\nrun_handler = handler\nstale = main\n"
     )
     scripts.joinpath("cleanup.py").write_text("def temp():\n    pass\n\n\ndel temp\n")
     tree = _get_scripts_tree(scripts)
     assert "deploy" in tree
+    assert "launch" in tree
     assert "fetch" in tree
+    assert "handler" in tree
+    assert "run_handler" in tree
     assert "main" not in tree
+    assert "stale" not in tree
     assert "_deploy" not in tree
     assert "temp" not in tree
 

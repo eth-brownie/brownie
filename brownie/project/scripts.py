@@ -227,12 +227,10 @@ def _get_script_methods(path: pathlib.Path) -> list[str]:
             if not node.name.startswith("_"):
                 methods[node.name] = None
         elif isinstance(node, _Assign):
-            for target in node.targets:
-                if isinstance(target, _Name):
-                    _track_assignment(methods, functions, target.id, node.value)
+            _track_assignments(methods, functions, node.targets, node.value)
         elif isinstance(node, _AnnAssign):
             if node.value is not None and isinstance(node.target, _Name):
-                _track_assignment(methods, functions, node.target.id, node.value)
+                _track_assignments(methods, functions, [node.target], node.value)
         elif isinstance(node, _Delete):
             for target in node.targets:
                 if isinstance(target, _Name):
@@ -241,19 +239,26 @@ def _get_script_methods(path: pathlib.Path) -> list[str]:
     return list(methods)
 
 
-def _track_assignment(
-    methods: dict[str, None], functions: set[str], target: str, value: Any
+def _track_assignments(
+    methods: dict[str, None], functions: set[str], targets: list, value: Any
 ) -> None:
     # Updates the tracked methods for `target = value`: aliasing a known
-    # function or a lambda adds a public method, any other value removes it.
-    if isinstance(value, _Name) and value.id in functions:
-        if not target.startswith("_"):
-            methods[target] = None
-    elif isinstance(value, _Lambda):
-        if not target.startswith("_"):
-            methods[target] = None
+    # function or a lambda adds a callable under every target, any other value
+    # removes it. The right-hand side is classified once, before any target
+    # is updated, so chained assignments and aliases after rebinding resolve
+    # against the previous state. Targets are kept in `functions` too, even
+    # private ones, so aliases of aliases resolve.
+    if (isinstance(value, _Name) and value.id in functions) or isinstance(value, _Lambda):
+        for target in targets:
+            if isinstance(target, _Name):
+                functions.add(target.id)
+                if not target.id.startswith("_"):
+                    methods[target.id] = None
     else:
-        methods.pop(target, None)
+        for target in targets:
+            if isinstance(target, _Name):
+                functions.discard(target.id)
+                methods.pop(target.id, None)
 
 
 def _get_scripts_tree(scripts_dir: pathlib.Path) -> str:
