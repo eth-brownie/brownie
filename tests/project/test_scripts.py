@@ -86,3 +86,41 @@ def test_scripts_tree(tmp_path):
     assert "sub" in tree
     assert "deploy" in tree
     assert "notes" not in tree
+
+
+def test_scripts_tree_rebinding(tmp_path):
+    scripts = tmp_path.joinpath("scripts")
+    scripts.mkdir(parents=True)
+    scripts.joinpath("deploy.py").write_text(
+        "def _deploy():\n    pass\n\n\ndef main():\n    pass\n\n\nasync def fetch():\n    pass\n\n\nmain = None\ndeploy = _deploy\n"
+    )
+    scripts.joinpath("cleanup.py").write_text("def temp():\n    pass\n\n\ndel temp\n")
+    tree = _get_scripts_tree(scripts)
+    assert "deploy" in tree
+    assert "fetch" in tree
+    assert "main" not in tree
+    assert "_deploy" not in tree
+    assert "temp" not in tree
+
+
+def test_no_script_lists_all_projects(testproject, otherproject):
+    with testproject._path.joinpath("scripts/only_testproject.py").open("w") as fp:
+        fp.write("def main(): pass\n")
+    with otherproject._path.joinpath("scripts/only_other.py").open("w") as fp:
+        fp.write("def main(): pass\n")
+    with pytest.raises(FileNotFoundError) as excinfo:
+        run("scripts/foo")
+    assert "only_testproject" in str(excinfo.value)
+    assert "only_other" in str(excinfo.value)
+
+
+def test_no_script_absolute_lists_matching_project(testproject, otherproject):
+    with testproject._path.joinpath("scripts/only_testproject.py").open("w") as fp:
+        fp.write("def main(): pass\n")
+    with otherproject._path.joinpath("scripts/only_other.py").open("w") as fp:
+        fp.write("def main(): pass\n")
+    missing = otherproject._path.joinpath("scripts/missing.py")
+    with pytest.raises(FileNotFoundError) as excinfo:
+        run(missing.as_posix())
+    assert "only_other" in str(excinfo.value)
+    assert "only_testproject" not in str(excinfo.value)
