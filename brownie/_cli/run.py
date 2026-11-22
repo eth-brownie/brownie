@@ -7,7 +7,13 @@ from brownie import network, project
 from brownie._c_constants import Path
 from brownie._cli.console import Console
 from brownie._config import CONFIG, _update_argv_from_docopt
-from brownie.project.scripts import _get_path, run
+from brownie.project.scripts import (
+    _display_path,
+    _get_path,
+    _get_scripts_dirs,
+    _get_scripts_tree,
+    run,
+)
 from brownie.test.output import _build_gas_profile_output
 from brownie.utils import color
 from brownie.utils.docopt import docopt
@@ -33,6 +39,13 @@ interactions, or for gas profiling."""
 
 
 def main():
+    if len(sys.argv) == 2:
+        # `brownie run` with no script given - list available scripts before showing usage
+        for scripts_dir in _get_scripts_dirs():
+            if scripts_dir.is_dir():
+                tree = _get_scripts_tree(scripts_dir)
+                if tree:
+                    print(f"Available scripts in path {_display_path(scripts_dir)}:\n\n{tree}\n")
     args = docopt(__doc__)
     _update_argv_from_docopt(args)
 
