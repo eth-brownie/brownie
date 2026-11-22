@@ -5,7 +5,7 @@ import pathlib
 import sys
 import warnings
 from ast import FunctionDef, Import, ImportFrom, dump, parse
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from importlib import reload
 from importlib.machinery import SourceFileLoader
 from importlib.util import find_spec
@@ -84,7 +84,11 @@ def run(
 
         func = getattr(module, method_name, None)
         if not isinstance(func, _FunctionType):
-            raise AttributeError(f"Module '{module_name}' has no method '{method_name}'")
+            message = f"Module '{module_name}' has no method '{method_name}'"
+            methods = _get_callable_methods(module)
+            if methods:
+                message += f"\n\nAvailable methods: {', '.join(methods)}"
+            raise AttributeError(message)
 
         file = module.__file__
         absolute_path = Path(file)
@@ -149,7 +153,7 @@ def _get_path(path_str: str) -> tuple[pathlib.Path, Project | None]:
 
     if not get_loaded_projects():
         if not path.exists():
-            raise FileNotFoundError(f"Cannot find {path_str}")
+            raise FileNotFoundError(_cannot_find_message(path_str))
         return path.resolve(), None
 
     if not path.is_absolute():
@@ -162,16 +166,86 @@ def _get_path(path_str: str) -> tuple[pathlib.Path, Project | None]:
                 script_path = project._path.joinpath(project_scripts).joinpath(path)
             if script_path.exists():
                 return script_path.resolve(), project
-        raise FileNotFoundError(f"Cannot find {path_str}")
+        raise FileNotFoundError(_cannot_find_message(path_str))
 
     if not path.exists():
-        raise FileNotFoundError(f"Cannot find {path_str}")
+        raise FileNotFoundError(_cannot_find_message(path_str))
 
     for project in get_loaded_projects():
         if path_str.startswith(project._path.as_posix()):
             return path.resolve(), project
 
     raise ProjectNotFound(f"{path_str} is not part of an active project")
+
+
+def _get_callable_methods(module: ModuleType) -> list[str]:
+    # Returns the names of public functions that may be called in a module.
+    return sorted(
+        name
+        for name, func in vars(module).items()
+        if isinstance(func, _FunctionType) and not name.startswith("_")
+    )
+
+
+def _get_script_methods(path: pathlib.Path) -> list[str]:
+    # Returns the names of public top-level functions defined in a script,
+    # without importing it. Unparsable scripts have no listed methods.
+    try:
+        with path.open() as fp:
+            tree = _parse(fp.read())
+    except (OSError, SyntaxError, ValueError):
+        return []
+    return [
+        node.name
+        for node in tree.body
+        if isinstance(node, _FunctionDef) and not node.name.startswith("_")
+    ]
+
+
+def _get_scripts_tree(scripts_dir: pathlib.Path) -> str:
+    # Returns a tree of the scripts and their callable methods within a directory.
+    return "\n".join(_scripts_tree_lines(scripts_dir))
+
+
+def _scripts_tree_lines(path: pathlib.Path, prefix: str = "") -> Iterator[str]:
+    try:
+        contents = sorted(path.iterdir(), key=lambda p: p.name)
+    except OSError:
+        return
+    contents = [
+        p
+        for p in contents
+        if not p.name.startswith((".", "_")) and (p.is_dir() or p.suffix == ".py")
+    ]
+    pointers = ["├── "] * (len(contents) - 1) + ["└── "]
+    for pointer, child in zip(pointers, contents):
+        extension = "│   " if pointer == "├── " else "    "
+        if child.is_dir():
+            yield f"{prefix}{pointer}{child.name}"
+            yield from _scripts_tree_lines(child, prefix + extension)
+        else:
+            yield f"{prefix}{pointer}{child.stem}"
+            methods = _get_script_methods(child)
+            method_pointers = ["├── "] * (len(methods) - 1) + ["└── "]
+            for method_pointer, method in zip(method_pointers, methods):
+                yield f"{prefix}{extension}{method_pointer}{method}"
+
+
+def _get_scripts_dir() -> pathlib.Path:
+    # Returns the scripts directory of the first loaded project, or ./scripts.
+    for project in get_loaded_projects():
+        return project._path.joinpath(project._structure["scripts"])
+    return Path("scripts")
+
+
+def _cannot_find_message(path_str: str) -> str:
+    message = f"Cannot find {path_str}"
+    scripts_dir = _get_scripts_dir()
+    if scripts_dir.is_dir():
+        tree = _get_scripts_tree(scripts_dir)
+        if tree:
+            message += f"\n\nAvailable scripts in path {scripts_dir}:\n\n{tree}"
+    return message
 
 
 def _import_from_path(path: pathlib.Path) -> ModuleType:
