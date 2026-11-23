@@ -12,6 +12,7 @@ build/**/*.yaml
 coverage.xml
 dist/
 docs/_build
+node_modules/
 venv*/
 env/
 *egg-info/
