@@ -5,6 +5,7 @@ import time
 from tkinter import ttk
 
 from brownie.project.sources import is_inside_offset
+from brownie.typing import PCMap
 
 from .bases import ToggleButton
 
@@ -48,30 +49,33 @@ class OpcodeList(ttk.Treeview):
     def insert(self, values, tags=[]):
         super().insert("", "end", iid=values[0], text=values[0], values=values[1:], tags=tags)
 
-    def delete_all(self):
+    def delete_all(self) -> None:
         for item in self.get_children():
             self.delete(item)
 
-    def clear_selection(self):
+    def clear_selection(self) -> None:
         self.selection_remove(self.selection())
 
-    def selection_set(self, id_):
+    def selection_set(self, id_: str | int) -> None:
         self.see(id_)
         super().selection_set(id_)
         self.focus_set()
         self.focus(id_)
 
-    def set_opcodes(self, pcMap):
+    def set_opcodes(self, pcMap: PCMap) -> None:
         self.delete_all()
-        for pc, op in [(i, pcMap[i]) for i in sorted(pcMap)]:
+        first = pcMap[0]
+        for pc, op in ((i, pcMap[i]) for i in sorted(pcMap)):
             if "path" not in op or (
-                op["path"] == pcMap[0]["path"] and op["offset"] == pcMap[0]["offset"]
+                op["path"] == first["path"] and op["offset"] == first["offset"]
             ):
                 tag = "NoSource"
             else:
                 # used to find all the opcodes with the same source offset
-                tag = f"{op['path']}:{op['offset'][0]}:{op['offset'][1]}"
-            self.insert([str(pc), op["op"]], [tag, op["op"], str(pc)])
+                start, stop = op["offset"]
+                tag = f"{op['path']}:{start}:{stop}"
+            op_op = op["op"]
+            self.insert([str(pc), op_op], [tag, op_op, str(pc)])
 
     def _select_bind(self, event=None):
         for tag in self._last:

@@ -7,7 +7,7 @@ import pytest
 
 from brownie import Contract
 from brownie.exceptions import RPCRequestError
-from brownie.network.transaction import TransactionReceipt
+from brownie.network.transaction import TransactionReceipt, _get_memory
 from brownie.project import build
 
 
@@ -172,6 +172,17 @@ def test_trace_transfer(accounts):
     assert not tx.trace
 
 
+def test_trace_memory_accepts_prefixed_words():
+    step = {
+        "memory": [
+            "0x" + "00" * 31 + "11",
+            "0x" + "22" + "00" * 31,
+        ],
+        "stack": ["02", "1f"],
+    }
+    assert _get_memory(step, -1) == b"\x11\x22"
+
+
 def test_expand_first(tester):
     """can call _expand_trace without _get_trace first"""
     tx = tester.doNothing()
@@ -253,10 +264,12 @@ def test_contractabi(ExternalCallTester, accounts, tester, ext_tester):
     tx.call_trace()
 
 
+@pytest.mark.skip("TODO: maybe fix this with another network")
 def test_traces_not_supported(network, chain):
-    network.connect("ropsten")
+    network.connect("goerli")
 
-    tx = chain.get_transaction("0xfd9f98a245d3cff68dd67546fa7e89009a291101f045f81eb9afd14abcbdc6aa")
+    # this tx reverted
+    tx = chain.get_transaction("0xbb75b5cccc0c009f2073097252e76a1f8452ba6b3b7c5a5837c59a37bfaee305")
 
     # the confirmation output should work even without traces
     tx._confirm_output()

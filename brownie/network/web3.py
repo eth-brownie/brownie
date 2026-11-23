@@ -1,50 +1,58 @@
 #!/usr/bin/python3
 
-import json
 import os
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Dict, Optional, Set
 
 from ens import ENS
-from web3 import HTTPProvider, IPCProvider
+from eth_typing import ChecksumAddress, HexStr
+from requests import HTTPError
+from ujson import JSONDecodeError
+from web3 import HTTPProvider, IPCProvider, LegacyWebSocketProvider
 from web3 import Web3 as _Web3
-from web3 import WebsocketProvider
-from web3.contract import ContractEvent  # noqa
-from web3.contract import ContractEvents as _ContractEvents  # noqa
+from web3.contract.contract import ContractEvent  # noqa
+from web3.contract.contract import ContractEvents as _ContractEvents  # noqa
 from web3.gas_strategies.rpc import rpc_gas_price_strategy
 
+from brownie._c_constants import ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie.convert import to_address
 from brownie.exceptions import MainnetUndefined, UnsetENSName
 from brownie.network.middlewares import get_middlewares
 
-_chain_uri_cache: Dict = {}
+_chain_uri_cache: dict = {}
 
 
 class Web3(_Web3):
-
     """Brownie Web3 subclass"""
 
     def __init__(self) -> None:
         super().__init__(HTTPProvider("null"))
-        self.enable_unstable_package_management_api()
         self.provider = None
-        self._mainnet_w3: Optional[_Web3] = None
-        self._genesis_hash: Optional[str] = None
-        self._chain_uri: Optional[str] = None
-        self._custom_middleware: Set = set()
+        self._mainnet_w3: _Web3 | None = None
+        self._genesis_hash: HexStr | None = None
+        self._chain_uri: str | None = None
+        self._custom_middleware: list[tuple[Callable[["_Web3"], object], object]] = []
         self._supports_traces = None
-        self._chain_id: Optional[int] = None
+        self._chain_id: int | None = None
 
     def _remove_middlewares(self) -> None:
-        for middleware in self._custom_middleware:
+        for builder, middleware in self._custom_middleware:
             try:
-                self.middleware_onion.remove(middleware)
+                self.middleware_onion.remove(builder)
             except ValueError:
                 pass
             middleware.uninstall()
         self._custom_middleware.clear()
+
+    def _build_middleware(self, middleware_cls: type) -> tuple[Callable[["_Web3"], object], object]:
+        middleware = middleware_cls(self)
+
+        def builder(_w3: _Web3) -> object:
+            return middleware
+
+        return builder, middleware
 
     def connect(self, uri: str, timeout: int = 30) -> None:
         """Connects to a provider"""
@@ -60,7 +68,7 @@ class Web3(_Web3):
 
         if self.provider is None:
             if uri.startswith("ws"):
-                self.provider = WebsocketProvider(uri, {"close_timeout": timeout})
+                self.provider = LegacyWebSocketProvider(uri, websocket_timeout=timeout)
             elif uri.startswith("http"):
 
                 self.provider = HTTPProvider(uri, {"timeout": timeout})
@@ -89,17 +97,19 @@ class Web3(_Web3):
 
         # middlewares with a layer below zero are injected
         to_inject = sorted((i for i in middleware_layers if i < 0), reverse=True)
-        for layer, obj in [(k, x) for k in to_inject for x in middleware_layers[k]]:
-            middleware = obj(self)
-            self.middleware_onion.inject(middleware, layer=0)
-            self._custom_middleware.add(middleware)
+        for layer in to_inject:
+            for obj in middleware_layers[layer]:
+                builder, middleware = self._build_middleware(obj)
+                self.middleware_onion.inject(builder, layer=0)
+                self._custom_middleware.append((builder, middleware))
 
         # middlewares with a layer of zero or greater are added
         to_add = sorted(i for i in middleware_layers if i >= 0)
-        for layer, obj in [(k, x) for k in to_add for x in middleware_layers[k]]:
-            middleware = obj(self)
-            self.middleware_onion.add(middleware)
-            self._custom_middleware.add(middleware)
+        for layer in to_add:
+            for obj in middleware_layers[layer]:
+                builder, middleware = self._build_middleware(obj)
+                self.middleware_onion.add(builder)
+                self._custom_middleware.append((builder, middleware))
 
     def disconnect(self) -> None:
         """Disconnects from a provider"""
@@ -111,10 +121,12 @@ class Web3(_Web3):
             self._chain_id = None
             self._remove_middlewares()
 
+    def is_connected(self) -> bool:
+        return super().is_connected() if self.provider else False
+
     def isConnected(self) -> bool:
-        if not self.provider:
-            return False
-        return super().isConnected()
+        # retained to avoid breaking an interface explicitly defined in brownie
+        return self.is_connected()
 
     @property
     def supports_traces(self) -> bool:
@@ -125,15 +137,18 @@ class Web3(_Web3):
         # returned is -32601 "endpoint does not exist/is not available" we know
         # traces are not possible. Any other error code means the endpoint is open.
         if self._supports_traces is None:
-            response = self.provider.make_request("debug_traceTransaction", [])
-            self._supports_traces = bool(response["error"]["code"] != -32601)
+            try:
+                response = self.provider.make_request("debug_traceTransaction", [])
+                self._supports_traces = response["error"]["code"] != -32601
+            except HTTPError:
+                self._supports_traces = False
 
         return self._supports_traces
 
     @property
     def _mainnet(self) -> _Web3:
         # a web3 instance connected to the mainnet
-        if self.isConnected() and CONFIG.active_network["id"] == "mainnet":
+        if self.is_connected() and CONFIG.active_network["id"] == "mainnet":
             return self
         try:
             mainnet = CONFIG.networks["mainnet"]
@@ -142,28 +157,30 @@ class Web3(_Web3):
         if not self._mainnet_w3:
             uri = _expand_environment_vars(mainnet["host"])
             self._mainnet_w3 = _Web3(HTTPProvider(uri))
-            self._mainnet_w3.enable_unstable_package_management_api()
         return self._mainnet_w3
 
     @property
-    def genesis_hash(self) -> str:
+    def genesis_hash(self) -> HexStr:
         """The genesis hash of the currently active network."""
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
         if self._genesis_hash is None:
-            self._genesis_hash = self.eth.get_block(0)["hash"].hex()[2:]
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
+            self._genesis_hash = HexStr(self.eth.get_block(0)["hash"].hex().removeprefix("0x"))
         return self._genesis_hash
 
     @property
     def chain_uri(self) -> str:
         if self.provider is None:
             raise ConnectionError("web3 is not currently connected")
-        if self.genesis_hash not in _chain_uri_cache:
+        genesis_hash = self.genesis_hash
+        if genesis_hash not in _chain_uri_cache:
             block_number = max(self.eth.block_number - 16, 0)
-            block_hash = self.eth.get_block(block_number)["hash"].hex()[2:]
-            chain_uri = f"blockchain://{self.genesis_hash}/block/{block_hash}"
-            _chain_uri_cache[self.genesis_hash] = chain_uri
-        return _chain_uri_cache[self.genesis_hash]
+            # removeprefix is used for compatibility with both hexbytes<1 and >=1
+            block_hash = self.eth.get_block(block_number)["hash"].hex().removeprefix("0x")
+            chain_uri = f"blockchain://{genesis_hash}/block/{block_hash}"
+            _chain_uri_cache[genesis_hash] = chain_uri
+        return _chain_uri_cache[genesis_hash]
 
     @property
     def chain_id(self) -> int:
@@ -189,20 +206,20 @@ def _get_path() -> Path:
     return _get_data_folder().joinpath("ens.json")
 
 
-def _resolve_address(domain: str) -> str:
+def _resolve_address(domain: str) -> ChecksumAddress:
     # convert ENS domain to address
     if not isinstance(domain, str) or "." not in domain:
         return to_address(domain)
     domain = domain.lower()
     if domain not in _ens_cache or time.time() - _ens_cache[domain][1] > 86400:
         try:
-            ns = ENS.fromWeb3(web3._mainnet)
+            ns = ENS.from_web3(web3._mainnet)
         except MainnetUndefined as e:
             raise MainnetUndefined(f"Cannot resolve ENS address - {e}") from None
         address = ns.address(domain)
         _ens_cache[domain] = [address, int(time.time())]
         with _get_path().open("w") as fp:
-            json.dump(_ens_cache, fp)
+            ujson_dump(_ens_cache, fp)
     if _ens_cache[domain][0] is None:
         raise UnsetENSName(f"ENS domain '{domain}' is not set")
     return _ens_cache[domain][0]
@@ -213,6 +230,6 @@ web3.eth.set_gas_price_strategy(rpc_gas_price_strategy)
 
 try:
     with _get_path().open() as fp:
-        _ens_cache: Dict = json.load(fp)
-except (FileNotFoundError, json.decoder.JSONDecodeError):
+        _ens_cache: dict = ujson_load(fp)
+except (FileNotFoundError, JSONDecodeError):
     _ens_cache = {}

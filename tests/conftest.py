@@ -5,15 +5,16 @@ import json
 import os
 import shutil
 import sys
+import threading
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, List
+from typing import Any
 
+import eth_retry
 import pytest
 import solcx
+import yaml
 from _pytest.monkeypatch import MonkeyPatch
-from ethpm._utils.ipfs import dummy_ipfs_pin
-from ethpm.backends.ipfs import BaseIPFSBackend
 from prompt_toolkit.input.defaults import create_pipe_input
 
 import brownie
@@ -26,6 +27,11 @@ TARGET_OPTS = {
     "evm": "evmtester",
     "pm": "package_test",
     "plugin": "plugintester",
+}
+BACKEND_BY_NETWORK = {
+    "development": "anvil",
+    "ganache-cli": "ganache",
+    "hardhat": "hardhat",
 }
 _dev_network = "development"
 
@@ -45,8 +51,20 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "--network",
-        choices=["development", "hardhat"],
+        choices=["development", "ganache-cli", "hardhat"],
         default="development",
+    )
+    parser.addoption(
+        "--backend",
+        choices=["auto", "anvil", "ganache", "hardhat"],
+        default="auto",
+        help="Select backend-specific tests; defaults to the active development network.",
+    )
+    parser.addoption(
+        "--live-explorer",
+        action="store_true",
+        default=False,
+        help="Run tests that call live block explorer APIs.",
     )
 
 
@@ -71,20 +89,48 @@ def pytest_collection_modifyitems(config, items):
         for test in [i for i in items if not fixtures.intersection(i.fixturenames)]:
             items.remove(test)
 
+    backend = _get_backend(config)
+    for test in list(items):
+        backend_marker = test.get_closest_marker("backend")
+        if backend_marker is not None and backend not in backend_marker.args:
+            items.remove(test)
+
+    if not config.getoption("--live-explorer"):
+        skip_live_explorer = pytest.mark.skip(reason="requires --live-explorer")
+        for test in items:
+            if test.get_closest_marker("live_explorer"):
+                test.add_marker(skip_live_explorer)
+
+
+def _get_backend(config):
+    backend = config.getoption("--backend")
+    if backend != "auto":
+        return backend
+    return BACKEND_BY_NETWORK[config.getoption("--network")]
+
 
 def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "backend(name): mark a test as requiring a specific development RPC backend",
+    )
+    config.addinivalue_line(
+        "markers",
+        "live_explorer: mark a test as requiring live block explorer API access",
+    )
+
     if config.getoption("--target") == "plugin" and config.getoption("numprocesses"):
         raise pytest.UsageError("Cannot use xdist with plugin tests, try adding the '-n 0' flag")
 
     if config.getoption("--evm"):
         # reformat evm options - only do this once to avoid repeat queries for latest solc version
-        solc_versions, evm_verions, runs = [i.split(",") for i in config.option.evm]
+        solc_versions, evm_versions, runs = (i.split(",") for i in config.option.evm)
         runs = [int(i) for i in runs]
         if "latest" in solc_versions:
             latest_version = solcx.get_installable_solc_versions()[0]
             solc_versions.remove("latest")
             solc_versions.append(latest_version)
-        config.option.evm = (evm_verions, runs, solc_versions)
+        config.option.evm = (evm_versions, runs, solc_versions)
 
 
 def pytest_generate_tests(metafunc):
@@ -108,9 +154,9 @@ def xdist_id(worker_id):
     return int(worker_id.lstrip("gw"))
 
 
-# ensure a clean data folder, and set unique ganache ports for each xdist worker
+# ensure a clean data folder, and set unique RPC ports for each xdist worker
 @pytest.fixture(scope="session", autouse=True)
-def _base_config(tmp_path_factory, xdist_id, network_name):
+def _base_config(tmp_path_factory, xdist_id, network_name, pytestconfig):
     brownie._config.DATA_FOLDER = tmp_path_factory.mktemp(f"data-{xdist_id}")
     brownie._config._make_data_folders(brownie._config.DATA_FOLDER)
 
@@ -122,6 +168,8 @@ def _base_config(tmp_path_factory, xdist_id, network_name):
     if xdist_id:
         port = 8545 + xdist_id
         brownie._config.CONFIG.networks[network_name]["cmd_settings"]["port"] = port
+    if pytestconfig.getoption("--evm") or pytestconfig.getoption("--target") == "plugin":
+        brownie._config.CONFIG.networks[network_name]["cmd_settings"]["steps_tracing"] = True
 
 
 @pytest.fixture(scope="session")
@@ -130,7 +178,7 @@ def _project_factory(tmp_path_factory):
     path.rmdir()
     shutil.copytree("tests/data/brownie-test-project", path)
 
-    p = brownie.project.load(path, "TestProject")
+    p = _load_project(brownie.project, path, "TestProject")
     p.close()
     return path
 
@@ -147,22 +195,27 @@ def _copy_all(src_folder, dest_folder):
 
 # project fixtures
 
+
+_project_lock = threading.Lock()
+
+
 # creates a temporary folder and sets it as the working directory
 @pytest.fixture
 def project(tmp_path):
-    original_path = os.getcwd()
-    os.chdir(tmp_path)
-    yield brownie.project
-    os.chdir(original_path)
-    for p in brownie.project.get_loaded_projects():
-        p.close(False)
+    with _project_lock:
+        original_path = os.getcwd()
+        os.chdir(tmp_path)
+        yield brownie.project
+        os.chdir(original_path)
+        for p in brownie.project.get_loaded_projects():
+            p.close(False)
 
 
 # yields a newly initialized Project that is not loaded
 @pytest.fixture
 def newproject(project, tmp_path):
     path = project.new(tmp_path)
-    p = project.load(path, "NewProject")
+    p = _load_project(project, path, "NewProject")
     p.close()
     yield p
 
@@ -178,7 +231,16 @@ def testproject(_project_factory, project, tmp_path):
     path = tmp_path.joinpath("testproject")
     _copy_all(_project_factory, path)
     os.chdir(path)
-    return project.load(path, "TestProject")
+    return _load_project(project, path, "TestProject")
+
+
+# same as function above but doesn't compile
+@pytest.fixture
+def testproject_nocompile(_project_factory, project, tmp_path):
+    path = tmp_path.joinpath("testproject")
+    _copy_all(_project_factory, path)
+    os.chdir(path)
+    return _load_project(project, path, "TestProject", compile=False)
 
 
 @pytest.fixture
@@ -189,7 +251,7 @@ def tp_path(testproject):
 @pytest.fixture
 def otherproject(_project_factory, project, tmp_path):  # testproject):
     _copy_all(_project_factory, tmp_path.joinpath("otherproject"))
-    return project.load(tmp_path.joinpath("otherproject"), "OtherProject")
+    return _load_project(project, tmp_path.joinpath("otherproject"), "OtherProject")
 
 
 # yields a deployed EVMTester contract
@@ -203,12 +265,14 @@ def evmtester(_project_factory, project, tmp_path, accounts, request):
         tmp_path.joinpath("contracts/EVMTester.sol"),
     )
     conf_json = {
-        "evm_version": evm_version,
-        "compiler": {"solc": {"version": str(solc_version), "optimize": runs > 0, "runs": runs}},
+        "compiler": {
+            "evm_version": evm_version,
+            "solc": {"version": str(solc_version), "optimize": runs > 0, "runs": runs},
+        },
     }
     with tmp_path.joinpath("brownie-config.yaml").open("w") as fp:
         json.dump(conf_json, fp)
-    p = project.load(tmp_path, "EVMProject")
+    p = _load_project(project, tmp_path, "EVMProject")
     return p.EVMTester.deploy({"from": accounts[0]})
 
 
@@ -217,14 +281,14 @@ def plugintesterbase(project, testdir, monkeypatch, network_name):
     brownie.test.coverage.clear()
     brownie.network.connect(network_name)
     monkeypatch.setattr("brownie.network.connect", lambda k: None)
-    testdir.plugins.extend(["pytest-brownie", "pytest-cov"])
+    testdir.plugins.extend(["pytest-brownie", "pytest_cov"])
     yield testdir
-    brownie.network.disconnect()
+    _disconnect_network()
 
 
 # setup for pytest-brownie plugin testing
 @pytest.fixture
-def plugintester(_project_factory, plugintesterbase, request):
+def plugintester(_project_factory, plugintesterbase, request, network_name):
     _copy_all(_project_factory, plugintesterbase.tmpdir)
     test_source = getattr(request.module, "test_source", None)
     if test_source is not None:
@@ -232,16 +296,80 @@ def plugintester(_project_factory, plugintesterbase, request):
             test_source = [test_source]
         test_source = {f"tests/test_{i}.py": test_source[i] for i in range(len(test_source))}
         plugintesterbase.makepyfile(**test_source)
+    for name in ("runpytest", "runpytest_inprocess", "runpytest_subprocess"):
+        runner = getattr(plugintesterbase, name)
+
+        def synced_runner(*args, runner=runner, **kwargs):
+            _sync_plugin_data_folder(plugintesterbase.tmpdir, network_name)
+            child_home = str(plugintesterbase.tmpdir)
+            child_data_folder = Path(plugintesterbase.tmpdir).joinpath(".brownie")
+            original_data_folder = brownie._config.DATA_FOLDER
+            original_home = os.environ.get("HOME")
+            if not any(
+                arg == "--brownie-project" or str(arg).startswith("--brownie-project=")
+                for arg in args
+            ):
+                args = ("--brownie-project", str(plugintesterbase.tmpdir), *args)
+            brownie._config.DATA_FOLDER = child_data_folder
+            os.environ["HOME"] = child_home
+            try:
+                return runner(*args, **kwargs)
+            finally:
+                brownie._config.DATA_FOLDER = original_data_folder
+                if original_home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = original_home
+
+        setattr(plugintesterbase, name, synced_runner)
     yield plugintesterbase
+
+
+def _sync_plugin_data_folder(path, network_id):
+    data_folder = Path(path).joinpath(".brownie")
+    brownie._config._make_data_folders(data_folder)
+    parent_packages = brownie._config._get_data_folder().joinpath("packages")
+    child_packages = data_folder.joinpath("packages")
+    if parent_packages.exists():
+        if child_packages.exists():
+            shutil.rmtree(child_packages)
+        shutil.copytree(parent_packages, child_packages)
+    network_config_path = data_folder.joinpath("network-config.yaml")
+    network_settings = deepcopy(brownie._config.CONFIG.networks[network_id])
+
+    with network_config_path.open() as fp:
+        network_config = yaml.safe_load(fp)
+
+    for networks in network_config.values():
+        if not isinstance(networks, list):
+            continue
+        for network in networks:
+            if network.get("id") == network_id:
+                network.update(network_settings)
+
+    with network_config_path.open("w") as fp:
+        yaml.safe_dump(network_config, fp)
+
+
+_devnetwork_lock = threading.Lock()
 
 
 # launches and connects to ganache, yields the brownie.network module
 @pytest.fixture
 def devnetwork(network, rpc, chain, network_name):
-    brownie.network.connect(network_name)
-    yield brownie.network
-    if rpc.is_active():
-        chain.reset()
+    with _devnetwork_lock:
+        try:
+            network.connect(network_name)
+        except ConnectionError as e:
+            if not e.args[0].startswith("Already connected to network "):
+                raise
+            if network_name not in e.args[0]:
+                _disconnect_network()
+                network.connect(network_name)
+
+        yield network
+        if rpc.is_active():
+            chain.reset()
 
 
 # brownie object fixtures
@@ -249,8 +377,8 @@ def devnetwork(network, rpc, chain, network_name):
 
 @pytest.fixture
 def accounts(devnetwork):
-    yield brownie.network.accounts
-    brownie.network.accounts.default = None
+    yield devnetwork.accounts
+    devnetwork.accounts.default = None
 
 
 @pytest.fixture(scope="session")
@@ -258,13 +386,25 @@ def history():
     return brownie.network.history
 
 
+_network_lock = threading.Lock()
+
+
 @pytest.fixture
-def network():
-    if brownie.network.is_connected():
-        brownie.network.disconnect(False)
-    yield brownie.network
-    if brownie.network.is_connected():
-        brownie.network.disconnect(False)
+def network():  # sourcery skip: use-contextlib-suppress
+    with _network_lock:
+        if brownie.network.is_connected():
+            _disconnect_network()
+
+        yield brownie.network
+
+        if brownie.network.is_connected():
+            _disconnect_network()
+
+
+@pytest.fixture
+def connect_to_mainnet(network):
+    _connect_to_mainnet(network)
+    yield network
 
 
 @pytest.fixture(scope="session")
@@ -368,50 +508,6 @@ def vypertester(testproject, devnetwork, accounts):
 # ipfs fixtures
 
 
-class DummyIPFSBackend(BaseIPFSBackend):
-
-    _assets: Dict = {}
-    _path = Path("./tests/data/ipfs-cache-mock").resolve()
-
-    def fetch_uri_contents(self, ipfs_uri: str) -> bytes:
-        ipfs_uri = ipfs_uri.replace("ipfs://", "")
-        if ipfs_uri not in self._assets:
-            with self._path.joinpath(ipfs_uri).open() as fp:
-                self._assets[ipfs_uri] = fp.read()
-        return self._assets[ipfs_uri].encode()
-
-    def pin_assets(self, file_or_dir_path: Path) -> List:
-        """
-        Return a dict containing the IPFS hash, file name, and size of a file.
-        """
-        if file_or_dir_path.is_dir():
-            for path in file_or_dir_path.glob("*"):
-                with path.open() as fp:
-                    self._assets[path.name] = fp.read()
-            asset_data = [dummy_ipfs_pin(path) for path in file_or_dir_path.glob("*")]
-        elif file_or_dir_path.is_file():
-            asset_data = [dummy_ipfs_pin(file_or_dir_path)]
-            with file_or_dir_path.open() as fp:
-                self._assets[file_or_dir_path.name] = fp.read()
-            self._assets[asset_data[0]["Hash"]] = self._assets[file_or_dir_path.name]
-        else:
-            raise FileNotFoundError(f"{file_or_dir_path} is not a valid file or directory path.")
-        return asset_data
-
-
-@pytest.fixture
-def ipfs_mock(monkeypatch):
-    monkeypatch.setattr("brownie.project.ethpm.InfuraIPFSBackend", DummyIPFSBackend)
-    ipfs_path = brownie._config._get_data_folder().joinpath("ipfs_cache")
-    temp_path = ipfs_path.parent.joinpath("_ipfs_cache")
-    ipfs_path.mkdir(exist_ok=True)
-    ipfs_path.rename(temp_path)
-    yield DummyIPFSBackend()
-    if ipfs_path.exists():
-        shutil.rmtree(ipfs_path)
-    temp_path.rename(ipfs_path)
-
-
 @pytest.fixture
 def package_test():
     pass
@@ -438,3 +534,40 @@ def console():
     sys.argv = ["brownie", "console"]
     yield Console
     sys.argv = argv
+
+
+@eth_retry.auto_retry(min_sleep_time=2, max_sleep_time=5)
+def _load_project(project, path: Path, name: str, **kwargs: Any):
+    for _ in range(5):
+        try:
+            return project.load(path, name, **kwargs)
+        except PermissionError:
+            # This happens sometimes in the runner, I think its just a race condition
+            # due to multithreaded testing and doesn't need to be debugged.
+            pass
+
+
+def _connect_to_mainnet(network) -> None:
+    # This recursive helper helps us with a race condition.
+    # Usually the first call of this func will work fine, but in edge cases we need to call
+    # it more than once to make all of the tests succeed.
+    try:
+        network.connect("mainnet")
+    except ConnectionError:
+        _disconnect_network()
+        _connect_to_mainnet(network)
+
+
+def _disconnect_network() -> None:
+    config = brownie._config.CONFIG
+    web3 = brownie.network.web3
+
+    try:
+        brownie.network.disconnect(False)
+    except ConnectionError as exc:
+        if str(exc) != "Not connected to any network":
+            raise
+    finally:
+        if web3.provider is not None or config._active_network is not None:
+            web3.disconnect()
+            config.clear_active()

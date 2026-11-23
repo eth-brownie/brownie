@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from typing import Any, Callable, Iterable, Optional, Tuple, Union
+from collections.abc import Callable, Iterable
+from typing import Any, Literal, TypeAlias, Union, overload
 
-from eth_abi.grammar import BasicType, TupleType, parse
+from faster_eth_abi.grammar import BasicType, TupleType, parse
 from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 from hypothesis.strategies._internal.deferred import DeferredStrategy
@@ -13,8 +14,78 @@ from brownie.convert.utils import get_int_bounds
 
 TYPE_STR_TRANSLATIONS = {"byte": "bytes1", "decimal": "fixed168x10"}
 
-ArrayLengthType = Union[int, list, None]
-NumberType = Union[float, int, None]
+ArrayLengthType: TypeAlias = Union[int, list, None]
+NumberType: TypeAlias = Union[float, int, None]
+
+EvmIntType: TypeAlias = Literal[
+    "int8",
+    "int16",
+    "int24",
+    "int32",
+    "int40",
+    "int48",
+    "int56",
+    "int64",
+    "int72",
+    "int80",
+    "int88",
+    "int96",
+    "int104",
+    "int112",
+    "int120",
+    "int128",
+    "int136",
+    "int144",
+    "int152",
+    "int160",
+    "int168",
+    "int176",
+    "int184",
+    "int192",
+    "int200",
+    "int208",
+    "int216",
+    "int224",
+    "int232",
+    "int240",
+    "int248",
+    "int256",
+]
+
+EvmUintType: TypeAlias = Literal[
+    "uint8",
+    "uint16",
+    "uint24",
+    "uint32",
+    "uint40",
+    "uint48",
+    "uint56",
+    "uint64",
+    "uint72",
+    "uint80",
+    "uint88",
+    "uint96",
+    "uint104",
+    "uint112",
+    "uint120",
+    "uint128",
+    "uint136",
+    "uint144",
+    "uint152",
+    "uint160",
+    "uint168",
+    "uint176",
+    "uint184",
+    "uint192",
+    "uint200",
+    "uint208",
+    "uint216",
+    "uint224",
+    "uint232",
+    "uint240",
+    "uint248",
+    "uint256",
+]
 
 
 class _DeferredStrategyRepr(DeferredStrategy):
@@ -27,7 +98,7 @@ class _DeferredStrategyRepr(DeferredStrategy):
 
 
 def _exclude_filter(fn: Callable) -> Callable:
-    def wrapper(*args: Tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
+    def wrapper(*args: tuple, exclude: Any = None, **kwargs: int) -> SearchStrategy:
         strat = fn(*args, **kwargs)
         if exclude is None:
             return strat
@@ -46,7 +117,7 @@ def _exclude_filter(fn: Callable) -> Callable:
 
 def _check_numeric_bounds(
     type_str: str, min_value: NumberType, max_value: NumberType, num_class: type
-) -> Tuple:
+) -> tuple:
     lower, upper = get_int_bounds(type_str)
     min_final = lower if min_value is None else num_class(min_value)
     max_final = upper if max_value is None else num_class(max_value)
@@ -61,7 +132,7 @@ def _check_numeric_bounds(
 
 @_exclude_filter
 def _integer_strategy(
-    type_str: str, min_value: Optional[int] = None, max_value: Optional[int] = None
+    type_str: str, min_value: int | None = None, max_value: int | None = None
 ) -> SearchStrategy:
     min_value, max_value = _check_numeric_bounds(type_str, min_value, max_value, Wei)
     return st.integers(min_value=min_value, max_value=max_value)
@@ -76,15 +147,15 @@ def _decimal_strategy(
 
 
 @_exclude_filter
-def _address_strategy(length: Optional[int] = None) -> SearchStrategy:
+def _address_strategy(length: int | None = None, include: list = []) -> SearchStrategy:
     return _DeferredStrategyRepr(
-        lambda: st.sampled_from(list(network.accounts)[:length]), "accounts"
+        lambda: st.sampled_from(list(network.accounts)[:length] + include), "accounts"
     )
 
 
 @_exclude_filter
 def _bytes_strategy(
-    abi_type: BasicType, min_size: Optional[int] = None, max_size: Optional[int] = None
+    abi_type: BasicType, min_size: int | None = None, max_size: int | None = None
 ) -> SearchStrategy:
     size = abi_type.sub
     if not size:
@@ -133,7 +204,7 @@ def _array_strategy(
     strat = st.lists(base_strategy, min_size=min_len, max_size=max_len, unique=unique)
     # swap 'size' for 'length' in the repr
     repr_ = "length".join(strat.__repr__().rsplit("size", maxsplit=2))
-    strat._LazyStrategy__representation = repr_  # type: ignore
+    strat._LazyStrategy__representation = repr_
     return strat
 
 
@@ -153,6 +224,22 @@ def contract_strategy(contract_name: str) -> SearchStrategy:
     return _DeferredStrategyRepr(lambda: _contract_deferred(contract_name), contract_name)
 
 
+@overload
+def strategy(
+    type_str: Literal["address"],
+    length: int | None = None,
+    include: list = [],
+) -> SearchStrategy: ...
+
+
+@overload
+def strategy(
+    type_str: EvmIntType | EvmUintType,
+    min_value: int | None = None,
+    max_value: int | None = None,
+) -> SearchStrategy: ...
+
+
 def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     type_str = TYPE_STR_TRANSLATIONS.get(type_str, type_str)
     if type_str == "fixed168x10":
@@ -160,7 +247,7 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if type_str == "address":
         return _address_strategy(**kwargs)
     if type_str == "bool":
-        return st.booleans(**kwargs)  # type: ignore
+        return st.booleans(**kwargs)
     if type_str == "string":
         return _string_strategy(**kwargs)
 
@@ -168,7 +255,7 @@ def strategy(type_str: str, **kwargs: Any) -> SearchStrategy:
     if abi_type.is_array:
         return _array_strategy(abi_type, **kwargs)
     if isinstance(abi_type, TupleType):
-        return _tuple_strategy(abi_type, **kwargs)  # type: ignore
+        return _tuple_strategy(abi_type, **kwargs)
 
     base = abi_type.base
     if base in ("int", "uint"):

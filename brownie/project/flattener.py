@@ -1,36 +1,50 @@
 import re
-from collections import defaultdict
-from pathlib import Path
-from typing import DefaultDict, Dict, Set
+from collections.abc import Iterator
+from typing import Any, DefaultDict, Final, final
 
+from brownie._c_constants import Path, defaultdict, mapcat, regex_compile, regex_sub
 from brownie.utils.toposort import toposort_flatten
 
-# Patten matching Solidity `import-directive`, capturing path component
+# Pattern matching Solidity `import-directive`, capturing path component
 # https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.importDirective
-IMPORT_PATTERN = re.compile(
+IMPORT_PATTERN: Final = regex_compile(
     r"(?<=\n)?import(?P<prefix>.*)(?P<quote>[\"'])(?P<path>.*)(?P=quote)(?P<suffix>.*)(?=\n)"
 )
-PRAGMA_PATTERN = re.compile(r"^pragma.*;$", re.MULTILINE)
-LICENSE_PATTERN = re.compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
+PRAGMA_PATTERN: Final = regex_compile(r"^pragma.*;$", re.MULTILINE)
+LICENSE_PATTERN: Final = regex_compile(r"^// SPDX-License-Identifier: (.*)$", re.MULTILINE)
 
 
+@final
 class Flattener:
     """Brownie's Robust Solidity Flattener."""
 
     def __init__(
-        self, primary_source_fp: str, contract_name: str, remappings: dict, compiler_settings: dict
+        self,
+        primary_source_fp: str,
+        contract_name: str,
+        remappings: dict[str, str],
+        compiler_settings: dict[str, Any],
     ) -> None:
-        self.sources: Dict[str, str] = {}
-        self.dependencies: DefaultDict[str, Set[str]] = defaultdict(set)
-        self.compiler_settings = compiler_settings
-        self.contract_name = contract_name
-        self.contract_file = Path(primary_source_fp).name
-        self.remappings = remappings
+        self.sources: Final[dict[str, str]] = {}
+        self.dependencies: Final[DefaultDict[str, set[str]]] = defaultdict(set)
+        self.compiler_settings: Final = compiler_settings
+        self.contract_name: Final = contract_name
+        self.contract_file: Final = self.path_to_name(primary_source_fp)
+        self.remappings: Final = remappings
 
         self.traverse(primary_source_fp)
 
-        license_search = LICENSE_PATTERN.search(self.sources[Path(primary_source_fp).name])
-        self.license = license_search.group(1) if license_search else "NONE"
+        license_search = _LICENSE_PATTERN_SEARCH(self.path_to_name(primary_source_fp))
+        self.license: Final = license_search.group(1) if license_search else "NONE"
+
+    @classmethod
+    def path_to_name(cls, pth: str) -> str:
+        """Turn the full-path of every Solidity file to a unique shorten name.
+
+        Note, that sometimes there could be several different files with the same name in a project,
+        so these files should keep uniq name to correct verification.
+        """
+        return "contracts/" + pth.split("/contracts/")[1]
 
     def traverse(self, fp: str) -> None:
         """Traverse a contract source files dependencies.
@@ -42,8 +56,9 @@ class Flattener:
             fp: The contract source file to traverse, if it's already been traversed, return early.
         """
         # if already traversed file, return early
+        name = self.path_to_name(fp)
         fp_obj = Path(fp)
-        if fp_obj.name in self.sources:
+        if name in self.sources:
             return
 
         # read in the source file
@@ -56,49 +71,46 @@ class Flattener:
         # replacement function for re.sub, we just sanitize the path
         repl = (  # noqa: E731
             lambda m: f'import{m.group("prefix")}'
-            + f'"{Path(sanitize(m.group("path"))).name}"'
+            + f'"{self.path_to_name(sanitize(m.group("path")))}"'
             + f'{m.group("suffix")}'
         )
-
-        self.sources[fp_obj.name] = IMPORT_PATTERN.sub(repl, source)
+        self.sources[name] = _IMPORT_PATTERN_SUB(repl, source)
         if fp_obj.name not in self.dependencies:
-            self.dependencies[fp_obj.name] = set()
+            self.dependencies[name] = set()
 
         # traverse dependency files - can circular imports happen?
-        for m in IMPORT_PATTERN.finditer(source):
+        for m in _IMPORT_PATTERN_FINDITER(source):
             import_path = sanitize(m.group("path"))
-            self.dependencies[fp_obj.name].add(Path(import_path).name)
+            self.dependencies[name].add(self.path_to_name(import_path))
             self.traverse(import_path)
 
     @property
     def flattened_source(self) -> str:
         """The flattened source code for use verifying."""
+        flattened_deps = toposort_flatten(self.dependencies)
         # all source files in the correct order for concatenation
-        sources = [self.sources[k] for k in toposort_flatten(self.dependencies)]
+        sources = [self.sources[x] for x in flattened_deps]
+
+        pragmas_iter: Iterator[str] = mapcat(_PRAGMA_PATTERN_FINDALL, sources)
         # all pragma statements, we already have the license used + know which compiler
         # version is used via the build info
-        pragmas = set((match.strip() for src in sources for match in PRAGMA_PATTERN.findall(src)))
-        # now we go thorugh and remove all imports/pragmas/license stuff
-        wipe = lambda src: PRAGMA_PATTERN.sub(  # noqa: E731
-            "", LICENSE_PATTERN.sub("", IMPORT_PATTERN.sub("", src))
-        )
+        pragmas = {s.strip() for s in pragmas_iter}
 
-        sources = [
-            f"// File: {file}\n\n{wipe(src)}"
-            for src, file in zip(sources, toposort_flatten(self.dependencies))
-        ]
-
+        # now we go through and remove all imports/pragmas/license stuff, then flatten
         flat = (
-            "\n".join([pragma for pragma in pragmas if "pragma solidity" not in pragma])
+            "\n".join(pragma for pragma in pragmas if "pragma solidity" not in pragma)
             + "\n\n"
-            + "\n".join(sources)
+            + "\n".join(
+                f"// File: {file}\n\n{_wipe(src)}" for src, file in zip(sources, flattened_deps)
+            )
         )
+
         # hopefully this doesn't mess up anything pretty, but just gotta remove all
         # that extraneous whitespace
-        return re.sub(r"\n{3,}", "\n\n", flat)
+        return regex_sub(r"\n{3,}", "\n\n", flat)
 
     @property
-    def standard_input_json(self) -> Dict:
+    def standard_input_json(self) -> dict:
         """Useful for etherscan verification via solidity-standard-json-input mode.
 
         Sadly programmatic upload of this isn't available at the moment (2021-10-11)
@@ -134,8 +146,32 @@ class Flattener:
         Returns:
             str: The import path string in absolute form.
         """
-        path: Path = Path(import_path)
+        path = Path(import_path)
         if path.is_absolute():
             return path.as_posix()
 
-        return (Path(source_file_dir) / path).resolve().as_posix()
+        dir_path = Path(source_file_dir).resolve()
+        newpath = (dir_path / path).resolve()
+        while not newpath.exists():
+            dir_path = dir_path.parent
+            newpath = (dir_path / path).resolve()
+            if dir_path == Path("/"):
+                raise FileNotFoundError(f"Cannot determine location of {import_path}")
+        return newpath.as_posix()
+
+
+def _wipe(src: str) -> str:
+    """go through and remove all imports/pragmas/license stuff."""
+    return _PRAGMA_PATTERN_SUB("", _LICENSE_PATTERN_SUB("", _IMPORT_PATTERN_SUB("", src)))
+
+
+# Internal C Constants
+
+_IMPORT_PATTERN_FINDITER: Final = IMPORT_PATTERN.finditer
+_IMPORT_PATTERN_SUB: Final = IMPORT_PATTERN.sub
+
+_PRAGMA_PATTERN_FINDALL: Final = PRAGMA_PATTERN.findall
+_PRAGMA_PATTERN_SUB: Final = PRAGMA_PATTERN.sub
+
+_LICENSE_PATTERN_SEARCH: Final = LICENSE_PATTERN.search
+_LICENSE_PATTERN_SUB: Final = LICENSE_PATTERN.sub

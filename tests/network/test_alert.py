@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import time
+from threading import Event
 
 import pytest
 
@@ -12,6 +13,7 @@ class AlertTest:
         self.value = [initial_value]
         self.args = args
         self.kwargs = kwargs
+        self.changed = Event()
         self.raised = False
 
     def __call__(self, *args, **kwargs):
@@ -21,11 +23,13 @@ class AlertTest:
         return self.value[-1]
 
     def set_value(self, value):
+        self.changed.clear()
         self.value = [self.value[-1], value]
 
     def callback(self, old, new):
         if self.value != [old, new]:
             self.raised = True
+        self.changed.set()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -84,23 +88,27 @@ def test_stop():
 
 def test_fire_msg(capfd):
     t = AlertTest(False)
-    alert.new(t, delay=0.03, msg="Fired")
+    a = alert.new(t, delay=0.03, msg="Fired")
     assert not capfd.readouterr()[0].strip()
     t.set_value(True)
-    time.sleep(0.08)
-    assert capfd.readouterr()[0].strip()[-5:] == "Fired"
+    a.wait(1)
+    out = capfd.readouterr()[0].strip()
+    assert not a.is_alive()
+    assert out.endswith("Fired")
     assert len(alert.show()) == 0
 
 
 def test_fire_callback(capfd):
     t = AlertTest("foo")
-    alert.new(t, delay=0.01, callback=t.callback)
+    a = alert.new(t, delay=0.01, callback=t.callback)
     time.sleep(0.03)
     assert not t.raised
     assert len(alert.show()) == 1
     t.set_value("bar")
-    time.sleep(0.03)
+    assert t.changed.wait(1)
+    a.wait(1)
     assert not t.raised
+    assert not a.is_alive()
     assert len(alert.show()) == 0
 
 
@@ -115,20 +123,20 @@ def test_args_kwargs():
 def test_repeat():
     t = AlertTest("foo")
     a = alert.new(t, delay=0.01, callback=t.callback, repeat=2)
-    time.sleep(0.05)
     assert not t.raised
     assert len(alert.show()) == 1
     t.set_value("bar")
-    time.sleep(0.05)
+    assert t.changed.wait(1)
     assert not t.raised
     assert len(alert.show()) == 1
     t.set_value("foo")
-    time.sleep(0.05)
+    assert t.changed.wait(1)
     assert not t.raised
     assert a.is_alive()
     assert len(alert.show()) == 1
     t.set_value("potato")
-    time.sleep(0.05)
+    assert t.changed.wait(1)
+    a.wait(1)
     assert not t.raised
     assert not a.is_alive()
     assert len(alert.show()) == 0

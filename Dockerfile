@@ -1,45 +1,25 @@
-FROM ghcr.io/foundry-rs/foundry:nightly as foundry
+FROM ghcr.io/foundry-rs/foundry:v1.7.1@sha256:8347b728d5d393dac1c018691b36f506d23b9dcd78341d40ea0fcb11c3a19cdd AS foundry
 
-FROM python:3.9
-
-# Install linux dependencies
-RUN --mount=type=cache,target=/var/lib/apt/lists \
-    apt-get update \
-    && apt-get install --no-install-recommends -y curl libssl-dev
-
-# install node v18 for ganache and hardhat
-# c22ac94432765ecaa9b4c462b9a7f8dd509071da is v8.2.0
-RUN --mount=type=cache,target=/root/.cache \
-    curl -L https://raw.githubusercontent.com/tj/n/c22ac94432765ecaa9b4c462b9a7f8dd509071da/bin/n -o /usr/local/bin/n \
-    && chmod 755 /usr/local/bin/n \
-    && n 18 \
-    && npm set cache /root/.cache/npm --global \
-    && npm install -g npm@latest
-
-# install ganache
-RUN --mount=type=cache,target=/root/.cache \
-    npm install --verbose --global "ganache@7.2.0"
-
-# (hardhat is installed with npx if needed)
-
-# prepare python dependencies
-ENV PIP_NO_WARN_ABOUT_ROOT_USER 0
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --upgrade pip setuptools wheel
-
-# install anvil
-COPY --from=foundry /usr/local/bin/anvil /usr/local/bin/
-
-# install python dependencies
-WORKDIR /usr/src/app
-COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -r requirements.txt
-
-COPY requirements-dev.txt .
-RUN --mount=type=cache,target=/root/.cache \
-    pip install -r requirements-dev.txt
+FROM python:3.12
 
 # Set up code directory
-# use docker volumes to mount brownie's code at /code
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+# Install linux dependencies
+RUN --mount=type=cache,target=/var/lib/apt/lists,sharing=locked apt-get update \
+ && apt-get install -y libssl-dev npm
+
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm install -g ganache@7.9.2
+
+COPY requirements.txt .
+COPY pyproject.toml uv.lock ./
+
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked pip install uv==0.11.16
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked uv pip install --system -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked UV_PYTHON_INSTALL_DIR=/root/.cache/uv/python uv export --locked --python 3.10.20 --only-group dev --no-hashes --output-file /tmp/brownie-dev-requirements.txt \
+ && uv pip install --system -r /tmp/brownie-dev-requirements.txt
+
+COPY --from=foundry /usr/local/bin/anvil /usr/local/bin/anvil
+
 WORKDIR /code

@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
   sandbox:
     build:
@@ -6,5 +6,3 @@ services:
     volumes:
       - .:/code
     command: tail -f /dev/null
-    # TODO: load this from an environment variable so M1 macs can easily use this
-    platform: linux/x86_64

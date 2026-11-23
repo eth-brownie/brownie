@@ -46,5 +46,5 @@ def no_rpc(_no_rpc_setup, rpc):
 @pytest.fixture
 def temp_rpc(no_rpc, temp_port):
     if not no_rpc.process or not no_rpc.is_active():
-        no_rpc.launch("ganache-cli", port=temp_port)
+        no_rpc.launch("anvil", port=temp_port)
     yield no_rpc

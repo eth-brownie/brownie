@@ -9,8 +9,7 @@ from brownie._config import _get_data_folder, _load_config
 from brownie.network import web3
 from brownie.network.rpc.ganache import _validate_cmd_settings
 
-BASE_PROJECT_CONFIG = yaml.safe_load(
-    """
+BASE_PROJECT_CONFIG = yaml.safe_load("""
 networks:
     default: development
     development:
@@ -31,8 +30,7 @@ networks:
             unlock:
                 - 0x16Fb96a5fa0427Af0C8F7cF1eB4870231c8154B6
                 - "0x81431b69B1e0E334d4161A13C2955e0f3599381e"
-"""
-)
+""")
 
 
 @pytest.fixture
@@ -59,14 +57,35 @@ def test_load_project_cmd_settings(config, testproject, project_settings):
     cmd_settings_config = config.networks["development"]["cmd_settings"]
     for k, v in cmd_settings_config.items():
         if k != "port":
-            assert cmd_settings_network_raw[k] == v
+            try:
+                assert cmd_settings_network_raw[k] == v
+            except KeyError as e:
+                raise KeyError(*e.args, cmd_settings_network_raw) from e
 
     # Load the project with its project specific settings and assert that the CONFIG was updated
     testproject.load_config()
-    cmd_settings_config = config.networks["development"]["cmd_settings"]
-    for k, v in project_settings["cmd_settings"].items():
-        if k != "port":
-            assert cmd_settings_config[k] == v
+    for network in ("development", "ganache-cli", "hardhat"):
+        cmd_settings_config = config.networks[network]["cmd_settings"]
+        for k, v in project_settings["cmd_settings"].items():
+            if k != "port":
+                try:
+                    assert cmd_settings_config[k] == v
+                except KeyError as e:
+                    raise KeyError(*e.args, cmd_settings_config) from e
+
+
+def test_project_cmd_settings_backend_overrides(config, testproject):
+    project_config = copy.deepcopy(BASE_PROJECT_CONFIG)
+    project_config["networks"]["ganache-cli"] = {"cmd_settings": {"accounts": 4}}
+    with testproject._path.joinpath("brownie-config.yaml").open("w") as fp:
+        yaml.dump(project_config, fp)
+
+    testproject.load_config()
+
+    cmd_settings = config.networks["ganache-cli"]["cmd_settings"]
+    generic_cmd_settings = BASE_PROJECT_CONFIG["networks"]["development"]["cmd_settings"]
+    assert cmd_settings["accounts"] == 4
+    assert cmd_settings["chain_id"] == generic_cmd_settings["chain_id"]
 
 
 def test_rpc_project_cmd_settings(devnetwork, testproject, config, project_settings, network_name):
@@ -122,7 +141,7 @@ def test_validate_cmd_settings():
     """
     cmd_settings_dict = yaml.safe_load(cmd_settings)
     valid_dict = _validate_cmd_settings(cmd_settings_dict)
-    for (k, v) in cmd_settings_dict.items():
+    for k, v in cmd_settings_dict.items():
         assert valid_dict[k] == v
 
 

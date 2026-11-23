@@ -123,15 +123,13 @@ def test_nonce_manual_on_revert_in_console(BrownieTester, accounts, console_mode
 
 
 def test_selfdestruct_during_deploy(accounts):
-    foo = compile_source(
-        """
+    foo = compile_source("""
 pragma solidity 0.5.0;
 
 contract Foo {
     constructor () public { selfdestruct(address(0)); }
 }
-    """
-    ).Foo
+    """).Foo
 
     result = foo.deploy({"from": accounts[0]})
     assert isinstance(result, TransactionReceipt)

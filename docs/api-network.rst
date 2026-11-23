@@ -435,7 +435,7 @@ Account Methods
     * ``data``: Transaction data hexstring.
     * ``nonce``: Nonce for the transaction. If none is given, the nonce is set using :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while also considering any pending transactions of the Account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
-    * ``allow_revert``: Boolean indicating whether the transaction should be broadacsted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
+    * ``allow_revert``: Boolean indicating whether the transaction should be broadcasted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
     * ``silent``: Toggles console verbosity. If ``True`` is given, suppresses all console output for this transaction.
 
     Returns a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` instance.
@@ -963,23 +963,6 @@ New ``Contract`` objects are created with one of the following class methods.
         >>> Contract.from_abi("Token", "0x79447c97b6543F6eFBC91613C655977806CB18b0", abi)
         <Token Contract object '0x79447c97b6543F6eFBC91613C655977806CB18b0'>
 
-
-.. py:classmethod:: Contract.from_ethpm(name, manifest_uri, address=None, owner=None)
-
-    Create a new ``Contract`` object from an ethPM manifest.
-
-    * ``name``: The name of the contract. Must be present within the manifest.
-    * ``manifest_uri``: EthPM registry manifest uri.
-    * ``address``: Address of the contract. Only Required if more than one deployment named ``name`` is included in the manifest.
-    * ``owner``: An optional :func:`Account <brownie.network.account.Account>` instance. If given, transactions to the contract are sent broadcasted from this account by default.
-
-    .. code-block:: python
-
-        >>> from brownie import network, Contract
-        >>> network.connect('mainnet')
-        >>> Contract("DSToken", manifest_uri="ethpm://erc20.snakecharmers.eth:1/dai-dai@1.0.0")
-        <DSToken Contract object '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359'>
-
 .. py:classmethod:: Contract.from_explorer(address, as_proxy_for=None, owner=None)
 
     Create a new ``Contract`` object from source code fetched from a block explorer such as `EtherScan <https://etherscan.io/>`_ or `Blockscout <https://blockscout.com/>`_.
@@ -1070,7 +1053,7 @@ Contract Internal Attributes
 
 .. py:attribute:: Contract._reverted
 
-    Boolean. Once set to to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
+    Boolean. Once set to ``True``, any attempt to interact with the object raises a :func:`ContractNotFound <brownie.exceptions.ContractNotFound>` exception. Set as a result of a call to :func:`state._notify_registry <brownie.network.state._notify_registry>`.
 
 ContractEvents
 --------------
@@ -1107,14 +1090,14 @@ ContractEvents Classmethods
 
     If ``to_block`` is not specified, retrieves events between ``from_block`` and the latest mined block.
 
-    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)  
+    The ``event_type`` parameter can either be a string containing the name of the event to search for or the event type itself (using ``your_contract.events.your_event_name``)
 
     If ``event_type`` is not passed as parameter, retrieves all contract events between the two blocks.
 
 .. py:classmethod:: ContractEvents.listen(event_name, timeout=0)
 
     Creates a listening Coroutine object ending whenever an event matching 'event_name' occurs.
-    If timeout is superior to zero and no event matching 'event_name' has occured, the Coroutine ends when the timeout is reached.
+    If timeout is superior to zero and no event matching 'event_name' has occurred, the Coroutine ends when the timeout is reached.
 
     * ``event_name``: Name of the event to be listened to.
     * ``timeout``: Timeout value in seconds. Defaults to 0.
@@ -1313,7 +1296,7 @@ ContractTx Methods
                 }
                 result = pool.get_dy_underlying(0, 1, 1e18, override=override)
                 print(A, result.to("ether"))
-        
+
         300 0.884657790783695579
         1000 0.961374099348799411
         2000 0.979998831913646748
@@ -1375,7 +1358,7 @@ OverloadedMethod
         >>> erc223.transfer
         <OverloadedMethod object 'ERC223Token.transfer'>
 
-    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-seperated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
+    Individual methods are mapped to keys that correspond to the function input types. Input types can be given as a single comma-separated string or a tuple of strings. ``uint`` and ``uint256`` are equivalent.
 
     .. code-block:: python
 
@@ -1385,7 +1368,7 @@ OverloadedMethod
         >>> erc223.transfer['address', 'uint256', 'uint256']
         <ContractTx object 'transfer(address,uint256,uint256)'>
 
-    When a contract only contains one method with the given name and number of arguements, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
+    When a contract only contains one method with the given name and number of arguments, ``OverloadedMethod`` may be called directly. When more than one method is present, a ``ValueError`` is raised.
 
     .. code-block:: python
 
@@ -1540,7 +1523,7 @@ EventWatcher
     * ``event``: The ContractEvent instance to watch for.
     * ``callback``: The function to be called when a new ``event`` is detected. It MUST take one and only one parameter, which will be the event data.
     * ``delay``: The delay between each check for new ``event`` (s). Defaults to 2.
-    * ``repeat``: Wether to repeat the callback or not (if ``False``, the callback instructions will only be called the first time events are detected). Defaults to ``True``.
+    * ``repeat``: Whether to repeat the callback or not (if ``False``, the callback instructions will only be called the first time events are detected). Defaults to ``True``.
 
     If the function is called with the same ``event`` more than once, the delay between each check for this ``event`` will take the minimum value between the already set delay and the one passed as parameter.
 
@@ -1554,7 +1537,7 @@ EventWatcher
 
     If that is your goal, check the :func:`EventWatcher.reset <brownie.network.event.EventWatcher.reset>` method.
 
-    * ``wait``: Wether to wait for threads to join within the function. Defaults to ``True``.
+    * ``wait``: Whether to wait for threads to join within the function. Defaults to ``True``.
 
 .. py:classmethod:: EventWatcher.reset
 
@@ -1659,7 +1642,7 @@ Internal Methods
 
 .. py:method:: brownie.network.event._get_topics(abi)
 
-    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictioary in the form of ``{'Name': "encoded topic hexstring"}``.
+    Generates encoded topics from the given ABI, merges them with those already known in ``topics.json``, and returns a dictionary in the form of ``{'Name': "encoded topic hexstring"}``.
 
     .. code-block:: python
 
@@ -1739,7 +1722,7 @@ Gas Strategies
 
 .. py:class:: brownie.network.gas.strategies.GasNowStrategy(speed="fast")
 
-    Gas strategy for determing a price using the `GasNow <https://www.gasnow.org/>`_ API.
+    Gas strategy for determining a price using the `GasNow <https://www.gasnow.org/>`_ API.
 
     * ``speed``: The gas price to use based on the API call. Options are rapid, fast, standard and slow.
 
@@ -1814,7 +1797,7 @@ Simple Strategies
 
     Abstract base class for simple gas strategies.
 
-    Simple gas strategies are called once to provide a dynamically genreated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
+    Simple gas strategies are called once to provide a dynamically generated gas price at the time a transaction is broadcasted. Transactions using simple gas strategies are not automatically rebroadcasted.
 
 Simple Strategy Abstract Methods
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1865,9 +1848,9 @@ Multicall
 
 .. py:class:: brownie.network.multicall.Multicall(address=None, block_identifier=None)
 
-    Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standart Brownie call API.
+    Instances of ``Multicall`` allow for the batching of constant contract function calls through a modified version of the standard Brownie call API.
 
-    The only syntatic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
+    The only syntactic difference between a multicall and a standard brownie contract function call is the final argument for a multicall, is a dictionary with the ``from`` key being the instance of ``Multicall`` being used.
 
     Features:
 
@@ -1875,7 +1858,7 @@ Multicall
         2. Auto-deployment on development networks (on first use).
         3. Uses ``multicall2`` key in network-config as pre-defined multicall contract address
         4. Can specify/modify block number to make calls at particular block heights
-        5. Calls which fail return ``None`` instad of causing all calls to fail
+        5. Calls which fail return ``None`` instead of causing all calls to fail
 
     .. code-block:: python
 
@@ -1917,12 +1900,27 @@ Multicall Attributes
         ...     brownie.multicall.block_number
         12733683
 
+.. py:attribute:: Multicall.default_verbose
+
+    Default verbosity setting for multicall. Set to ``False`` by default. If set to ``True``, the content of each batched call is printed to the console. This is useful for debugging, to ensure a multicall is performing as expected.
+
+    .. code-block:: python
+
+        >>> multicall.default_verbose = True
+
+    You can also enable verbosity for individual multicalls by setting the `verbose` keyword:
+
+    .. code-block:: python
+
+        >>> with brownie.multicall(verbose=True):
+        ...
+
 Multicall Methods
 *****************
 
 .. py:classmethod:: Multicall.deploy
 
-    Deploys an instance of ``Multicall2``, especially useful when creating fixutes for testing.
+    Deploys an instance of ``Multicall2``, especially useful when creating fixtures for testing.
 
     .. code-block:: python
 
@@ -1931,7 +1929,7 @@ Multicall Methods
 
 .. py:classmethod:: Multicall.flush
 
-    Flushes the current queue of pending calls, especially useful for preventing ``OOG`` errors from occuring when querying large amounts of data.
+    Flushes the current queue of pending calls, especially useful for preventing ``OOG`` errors from occurring when querying large amounts of data.
 
     >>> results = []
     >>> long_list_of_addresses = [...]
@@ -2031,7 +2029,7 @@ TxHistory Methods
         >>> history.filter(sender=accounts[0], value="1 ether")
         [<Transaction object '0xe803698b0ade1598c594b2c73ad6a656560a4a4292cc7211b53ffda4a1dbfbe8'>]
 
-    You can also use ``key`` to prodive a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
+    You can also use ``key`` to provide a function or lambda. It should receive one argument, a :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, and return a boolean indicating if the object is to be included in the result.
 
     .. code-block:: python
 
@@ -2190,7 +2188,7 @@ Chain Methods
 
     Mine one or more empty blocks.
 
-    * ``blocks``: Number of blocks to mine
+    * ``blocks``: Number of blocks to mine. ``chain.mine()`` will mine a single block. Only parameter available when using Anvil RPC.
     * ``timestamp``: Timestamp of the final block being mined. If multiple blocks are mined, they will be mined at equal intervals starting from :func:`chain.time <Chain.time>` and ending at ``timestamp``.
     * ``timedelta``: Timedelta for the final block to be mined. If given, the final block will have a timestamp of ``chain.time() + timedelta``.
 
@@ -2342,7 +2340,7 @@ Rpc Methods
 
 .. py:classmethod:: Rpc.launch(cmd)
 
-    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string requiried to run it.
+    Launches the local RPC client as a `subprocess <https://docs.python.org/3/library/subprocess.html#subprocess.Popen>`_. ``cmd`` is the command string required to run it.
 
     If the process cannot load successfully, raises ``brownie.RPCProcessError``.
 
@@ -2612,7 +2610,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.modified_state
 
-    Boolean indicating if this transaction resuled in any state changes on the blockchain.
+    Boolean indicating if this transaction resulted in any state changes on the blockchain.
 
     .. code-block:: python
 
@@ -2684,7 +2682,7 @@ TransactionReceipt Attributes
 
 .. py:attribute:: TransactionReceipt.subcalls
 
-    A list of dictionaries providing information about subcalls that occured during the transaction.
+    A list of dictionaries providing information about subcalls that occurred during the transaction.
 
     The following fields are always included:
 
@@ -2887,7 +2885,7 @@ TransactionReceipt Methods
 
 .. py:classmethod:: TransactionReceipt.call_trace(expand=False)
 
-    Display the complete sequence of contracts and functions called while execiting this transaction.
+    Display the complete sequence of contracts and functions called while executing this transaction.
 
     Each line is formatted as:
 
@@ -2962,7 +2960,7 @@ TransactionReceipt Methods
 
     Displays the source code that caused the first revert in the transaction, if any.
 
-    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+    * ``pad``: Number of unrelated lines of code to include before and after the relevant source
 
 
     .. code-block:: python
@@ -2988,7 +2986,7 @@ TransactionReceipt Methods
     Displays the associated source code for a given stack trace step.
 
     * ``idx``: Stack trace step index
-    * ``pad``: Number of unrelated liness of code to include before and after the relevant source
+    * ``pad``: Number of unrelated lines of code to include before and after the relevant source
 
     .. code-block:: python
 
@@ -3099,7 +3097,7 @@ Web3 Internals
 
 .. py:attribute:: Web3._mainnet
 
-    Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ and `ethPM <https://www.ethpm.com/>`_ lookups.
+    Provides access to a ``Web3`` instance connected to the ``mainnet`` network as defined in the configuration file. Used internally for `ENS <https://ens.domains/>`_ lookups.
 
     Raises :func:`MainnetUndefined <brownie.exceptions.MainnetUndefined>` if the ``mainnet`` network is not defined.
 

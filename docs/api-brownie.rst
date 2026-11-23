@@ -41,15 +41,11 @@ Exceptions
 
 .. py:exception:: brownie.exceptions.IncompatibleEVMVersion
 
-    Raised when attempting to deploy a contract that was compiled to target an EVM version that is imcompatible than the currently active local RPC client.
+    Raised when attempting to deploy a contract that was compiled to target an EVM version that is incompatible than the currently active local RPC client.
 
 .. py:exception:: brownie.exceptions.IncompatibleSolcVersion
 
     Raised when a project requires a version of solc that is not installed or not supported by Brownie.
-
-.. py:exception:: brownie.exceptions.InvalidManifest
-
-    Raised when attempting to process an improperly formatted ethPM package.
 
 .. py:exception:: brownie.exceptions.MainnetUndefined
 

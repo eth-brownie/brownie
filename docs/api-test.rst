@@ -45,7 +45,7 @@ These fixtures provide access to objects related to the project being tested.
 
 .. py:attribute:: fixtures.state_machine
 
-    Session scope. Yields the :func:`state_machine <stateful.state_machine>` method, used to launc rule-based state machine tests.
+    Session scope. Yields the :func:`state_machine <stateful.state_machine>` method, used to launch rule-based state machine tests.
 
 .. py:attribute:: fixtures.web3
 

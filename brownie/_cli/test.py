@@ -58,8 +58,6 @@ def main():
         structure_config = _load_project_structure_config(project_path)
         pytest_args.insert(0, project_path.joinpath(structure_config["tests"]).as_posix())
 
-    return_code = pytest.main(pytest_args, ["pytest-brownie"])
-
-    if return_code:
+    if return_code := pytest.main(pytest_args, ["pytest-brownie"]):
         # only exit with non-zero status to make testing easier
         sys.exit(return_code)

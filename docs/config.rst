@@ -209,6 +209,12 @@ Compiler settings. See :ref:`compiler settings<compile_settings>` for more infor
 
         default value: ``null``
 
+    .. py:attribute:: viaIR
+
+        Enable solc compilation pipeline to go through the Yul Intermediate Representation to generate IR-based EVM bytecode. See the `Solidity documentation <https://docs.soliditylang.org/en/latest/ir-breaking-changes.html>`_ for breaking changes.
+
+        default value: ``false``
+
     .. py:attribute:: optimizer
 
         Optimizer settings to be passed to the Solidity compiler. Values given here are passed into the compiler with no reformatting. See the `Solidity documentation <https://solidity.readthedocs.io/en/latest/using-the-compiler.html#input-description>`_ for a list of possible values.
@@ -384,3 +390,10 @@ Other Settings
     .. code-block:: yaml
 
         dotenv: .env
+
+.. py:attribute:: eager_caching
+    If set to ``false``, brownie will not start the background caching thread and will only call the RPC on an as-needed basis.
+
+    This is useful for always-on services or while using pay-as-you-go private RPCs
+
+    default value: ``true``

@@ -130,7 +130,7 @@ def test_hexstring_length():
 
 def test_hashable():
     assert hash(ReturnValue([1, 2])) == hash(tuple([1, 2]))
-    assert set(ReturnValue([3, 1, 3, 3, 7])) == set([3, 1, 3, 3, 7])
+    assert set(ReturnValue([3, 1, 3, 3, 7])) == {3, 1, 3, 3, 7}
 
 
 def test_decimals(vypertester):

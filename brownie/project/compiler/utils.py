@@ -1,26 +1,45 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="index"
 
-from pathlib import Path
-from typing import Dict, List
+from typing import TypeAlias, Union, cast
 
+from semantic_version import Version
+
+from brownie._c_constants import Path
 from brownie._config import _get_data_folder
+from brownie.typing import ContractName, Source, SourceId, SourceIndex
+
+VersionSpec: TypeAlias = Union[str, Version]
+VersionList: TypeAlias = list[Version]
+SourceMapRow: TypeAlias = list[str | int | None]
 
 
-def expand_source_map(source_map_str: str) -> List:
-    # Expands the compressed sourceMap supplied by solc into a list of lists
-    source_map: List = [_expand_row(i) if i else None for i in source_map_str.split(";")]
+def expand_source_map(source_map_str: str | dict) -> list[Source]:
+    """
+    Expand the compressed sourceMap supplied by solc into a list of
+    tuple[start, stop, source_id | -1, jump_code].
+    """
+
+    if isinstance(source_map_str, dict):
+        # NOTE: vyper >= 0.4 gives us a dict that contains the source map
+        source_map_str = source_map_str["pc_pos_map_compressed"]
+    if not isinstance(source_map_str, str):
+        raise TypeError(source_map_str)
+
+    source_map = [_expand_row(i) if i else None for i in source_map_str.split(";")]
     for i, value in enumerate(source_map[1:], 1):
         if value is None:
             source_map[i] = source_map[i - 1]
             continue
         for x in range(4):
-            if source_map[i][x] is None:
-                source_map[i][x] = source_map[i - 1][x]
-    return source_map
+            if value[x] is None:
+                value[x] = source_map[i - 1][x]
+    return [_to_source(row) for row in source_map]
 
 
-def _expand_row(row: str) -> List:
-    result: List = [None] * 4
+def _expand_row(row: str) -> SourceMapRow:
+    """Expand a packed string into a row of params."""
+    result: SourceMapRow = [None] * 4
     # ignore the new "modifier depth" value in solidity 0.6.0
     for i, value in enumerate(row.split(":")[:4]):
         if value:
@@ -28,7 +47,23 @@ def _expand_row(row: str) -> List:
     return result
 
 
-def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
+def _to_source(row: SourceMapRow | None) -> Source:
+    if row is None:
+        raise TypeError(row)
+
+    start = cast(int, row[0])
+    stop = cast(int, row[1])
+    source_id_raw = cast(int, row[2])
+    jump_code = cast(str, row[3])
+
+    source_id: SourceIndex = -1 if source_id_raw == -1 else SourceId(source_id_raw)
+    return start, stop, source_id, jump_code
+
+
+def merge_natspec(
+    devdoc: dict[str, dict[str, dict]],
+    userdoc: dict[str, dict[str, dict]],
+) -> dict[str, dict[str, dict]]:
     """
     Merge devdoc and userdoc compiler output to a single dict.
 
@@ -44,11 +79,14 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
     dict
         Combined natspec.
     """
-    natspec: Dict = {**{"methods": {}}, **userdoc, **devdoc}
+    natspec = {"methods": {}, **userdoc, **devdoc}
     usermethods = userdoc.get("methods", {})
     devmethods = devdoc.get("methods", {})
 
-    for key in set(list(usermethods) + list(devmethods)):
+    keys: set[str] = set()
+    keys.update(usermethods)
+    keys.update(devmethods)
+    for key in keys:
         try:
             natspec["methods"][key] = {**usermethods.get(key, {}), **devmethods.get(key, {})}
         except TypeError:
@@ -57,7 +95,7 @@ def merge_natspec(devdoc: Dict, userdoc: Dict) -> Dict:
     return natspec
 
 
-def _get_alias(contract_name: str, path_str: str) -> str:
+def _get_alias(contract_name: ContractName, path_str: str) -> ContractName:
     # Generate an alias for a contract, used when tracking dependencies.
     # For a contract within the project, the alias == the name. For contracts
     # imported from a dependency, the alias is set as [PACKAGE]/[NAME]
@@ -66,6 +104,7 @@ def _get_alias(contract_name: str, path_str: str) -> str:
     path_parts = Path(path_str).parts
     if path_parts[: len(data_path)] == data_path:
         idx = len(data_path) + 1
-        return f"{path_parts[idx]}/{path_parts[idx+1]}/{contract_name}"
+        result = f"{path_parts[idx]}/{path_parts[idx + 1]}/{contract_name}"
+        return result  # type: ignore [return-value]
     else:
         return contract_name

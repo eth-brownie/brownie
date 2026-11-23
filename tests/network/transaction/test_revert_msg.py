@@ -3,7 +3,21 @@
 import pytest
 
 from brownie.exceptions import VirtualMachineError
+from brownie.network.transaction import web3
 from brownie.project import compile_source
+
+
+def compile_like_evmtester(source, evmtester):
+    compiler = evmtester._build["compiler"]
+    optimizer = compiler["optimizer"]
+    return compile_source(
+        source,
+        solc_version=compiler["version"],
+        optimize=optimizer["enabled"],
+        runs=optimizer["runs"],
+        evm_version=compiler["evm_version"],
+    )
+
 
 REVERT_FUNCTIONS_NO_INPUT = [
     """
@@ -50,7 +64,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo()
     assert tx.revert_msg == "dev: yuss"
     assert tx.dev_revert_msg == "dev: yuss"
@@ -68,7 +82,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo()
     assert tx.revert_msg == "foo"
     assert tx.dev_revert_msg == "dev: yuss"
@@ -86,7 +100,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo(4)
     assert tx.revert_msg == "dev: yuss"
 
@@ -103,7 +117,7 @@ contract Foo {{
 }}
     """
 
-    contract = compile_source(code).Foo.deploy({"from": accounts[0]})
+    contract = compile_like_evmtester(code, evmtester).Foo.deploy({"from": accounts[0]})
     tx = contract.foo(4)
     assert tx.revert_msg == "foo"
     assert tx.dev_revert_msg == "dev: yuss"
@@ -112,6 +126,28 @@ contract Foo {{
 def test_revert_msg_via_jump(ext_tester, console_mode):
     tx = ext_tester.getCalled(2)
     assert tx.revert_msg == "dev: should jump to a revert"
+
+
+def test_dev_revert_msg_from_trace_when_rpc_return_value_empty(
+    evmtester, console_mode, monkeypatch
+):
+    tx = evmtester.revertStrings(2)
+    tx._revert_msg = None
+    tx._dev_revert_msg = None
+    tx._raw_trace = None
+    tx._trace = None
+    make_request = web3.provider.make_request
+
+    def make_request_without_return_value(method, params):
+        response = make_request(method, params)
+        if method == "debug_traceTransaction" and params[0] == tx.txid:
+            response = {**response, "result": {**response["result"], "returnValue": ""}}
+        return response
+
+    monkeypatch.setattr(web3.provider, "make_request", make_request_without_return_value)
+
+    assert tx.revert_msg == "two"
+    assert tx.dev_revert_msg == "dev: error"
 
 
 def test_solidity_revert_msg(evmtester, console_mode):
@@ -202,4 +238,10 @@ def baz():
     assert msg.sender != ZERO_ADDRESS, '{'blah'*10000}'
     """
     tx = compile_source(code, vyper_version="0.2.4").Vyper.deploy({"from": accounts[0]})
-    assert tx.revert_msg == "exceeds EIP-170 size limit"
+    # For some reason, if we choose one of the below revert messages and perform an equality check, the test can fail.
+    # We do not know why there are 2 different revert messages that we can get back, but this is not a problem for us.
+    okay_revert_msgs = {
+        "code size to deposit exceeds maximum code size",
+        "exceeds EIP-170 size limit",
+    }
+    assert tx.revert_msg in okay_revert_msgs

@@ -1,28 +1,38 @@
 #!/usr/bin/python3
+# mypy: disable-error-code="union-attr"
 
-import importlib
-import json
 import os
-import re
+import pathlib
 import shutil
 import sys
 import warnings
 import zipfile
 from base64 import b64encode
-from hashlib import sha1
+from collections.abc import Iterator, KeysView
 from io import BytesIO
-from pathlib import Path
 from types import ModuleType
-from typing import Any, Dict, Iterator, KeysView, List, Optional, Set, Tuple, Union
-from urllib.parse import quote, urlparse
+from typing import Any, Final, Literal, TypeAlias
+from urllib.parse import quote
 
 import requests
 import yaml
-from semantic_version import Version
+from eth_typing import ChecksumAddress, HexStr
+from mypy_extensions import mypyc_attr
 from solcx.exceptions import SolcNotInstalled
 from tqdm import tqdm
+from ujson import JSONDecodeError
 from vvm.exceptions import VyperNotInstalled
 
+from brownie._c_constants import (
+    Path,
+    Version,
+    import_module,
+    mapcat,
+    regex_match,
+    sha1,
+    ujson_dump,
+    ujson_load,
+)
 from brownie._config import (
     CONFIG,
     REQUEST_HEADERS,
@@ -42,7 +52,6 @@ from brownie.exceptions import (
     ProjectAlreadyLoaded,
     ProjectNotFound,
 )
-from brownie.network import web3
 from brownie.network.contract import (
     Contract,
     ContractContainer,
@@ -50,16 +59,27 @@ from brownie.network.contract import (
     ProjectContract,
 )
 from brownie.network.state import _add_contract, _remove_contract, _revert_register
-from brownie.project import compiler, ethpm
+from brownie.project import compiler
 from brownie.project.build import BUILD_KEYS, INTERFACE_KEYS, Build
-from brownie.project.ethpm import get_deployment_addresses, get_manifest
 from brownie.project.sources import Sources, get_pragma_spec
+from brownie.typing import (
+    BuildJson,
+    CompilerConfig,
+    ContractBuildJson,
+    ContractName,
+    EvmVersion,
+    InterfaceBuildJson,
+    Language,
+    SolcConfig,
+    VyperConfig,
+)
 from brownie.utils import notify
 
-BUILD_FOLDERS = ["contracts", "deployments", "interfaces"]
-MIXES_URL = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
+BUILD_FOLDERS: Final = "contracts", "deployments", "interfaces"
+MIXES_URL: Final = "https://github.com/brownie-mix/{}-mix/archive/{}.zip"
+DOWNLOAD_CHUNK_SIZE: Final = 1024 * 1024
 
-GITIGNORE = """__pycache__
+GITIGNORE: Final = """__pycache__
 .env
 .history
 .hypothesis/
@@ -67,103 +87,122 @@ build/
 reports/
 """
 
-GITATTRIBUTES = """*.sol linguist-language=Solidity
+GITATTRIBUTES: Final = """*.sol linguist-language=Solidity
 *.vy linguist-language=Python
 """
 
-_loaded_projects = []
+NamespaceId: TypeAlias = ContractName | Literal["interface"]
+ChainDeployments: TypeAlias = dict[ContractName, list[ChecksumAddress]]
+DeploymentMap: TypeAlias = dict[int | str, ChainDeployments]
+
+_loaded_projects: Final[list["Project"]] = []
 
 
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class _ProjectBase:
 
-    _path: Optional[Path]
-    _build_path: Optional[Path]
+    _path: pathlib.Path | None
+    _build_path: pathlib.Path | None
     _sources: Sources
     _build: Build
+    _containers: dict[ContractName, ContractContainer]
 
-    def _compile(self, contract_sources: Dict, compiler_config: Dict, silent: bool) -> None:
+    def _compile(
+        self, contract_sources: dict, compiler_config: CompilerConfig, silent: bool
+    ) -> None:
         compiler_config.setdefault("solc", {})
 
         allow_paths = None
         cwd = os.getcwd()
-        if self._path is not None:
-            _install_dependencies(self._path)
-            allow_paths = self._path.as_posix()
-            os.chdir(self._path)
+        path = self._path
+        if path is not None:
+            _install_dependencies(path)
+            allow_paths = path.as_posix()
+            os.chdir(path)
 
         try:
+            solc_config = compiler_config["solc"]
+            vyper_config = compiler_config["vyper"]
+
             project_evm_version = compiler_config["evm_version"]
-            evm_version = {
-                "Solidity": compiler_config["solc"].get("evm_version", project_evm_version),
-                "Vyper": compiler_config["vyper"].get("evm_version", project_evm_version),
+            evm_version: dict[Language, EvmVersion | None] = {
+                "Solidity": solc_config.get("evm_version", project_evm_version),
+                "Vyper": vyper_config.get("evm_version", project_evm_version),
             }
+
             build_json = compiler.compile_and_format(
                 contract_sources,
-                solc_version=compiler_config["solc"].get("version", None),
-                vyper_version=compiler_config["vyper"].get("version", None),
-                optimize=compiler_config["solc"].get("optimize", None),
-                runs=compiler_config["solc"].get("runs", None),
+                solc_version=solc_config.get("version", None),
+                vyper_version=vyper_config.get("version", None),
+                optimize=solc_config.get("optimize", None),
+                runs=solc_config.get("runs", None),
                 evm_version=evm_version,
                 silent=silent,
                 allow_paths=allow_paths,
-                remappings=compiler_config["solc"].get("remappings", []),
-                optimizer=compiler_config["solc"].get("optimizer", None),
+                remappings=solc_config.get("remappings", []),
+                optimizer=solc_config.get("optimizer", None),
+                viaIR=solc_config.get("viaIR", None),
             )
         finally:
             os.chdir(cwd)
 
+        build = self._build
+        build_path = self._build_path
         for alias, data in build_json.items():
-            if self._build_path is not None and not data["sourcePath"].startswith("interface"):
+            if build_path is not None and not data["sourcePath"].startswith("interface"):
                 # interfaces should generate artifact in /build/interfaces/ not /build/contracts/
                 if alias == data["contractName"]:
                     # if the alias == contract name, this is a part of the core project
-                    path = self._build_path.joinpath(f"contracts/{alias}.json")
+                    path = build_path.joinpath(f"contracts/{alias}.json")
                 else:
                     # otherwise, this is an artifact from an external dependency
-                    path = self._build_path.joinpath(f"contracts/dependencies/{alias}.json")
+                    path = build_path.joinpath(f"contracts/dependencies/{alias}.json")
                     for parent in list(path.parents)[::-1]:
                         parent.mkdir(exist_ok=True)
                 with path.open("w") as fp:
-                    json.dump(data, fp, sort_keys=True, indent=2, default=sorted)
+                    ujson_dump(data, fp, sort_keys=True, indent=2, default=sorted)
 
             if alias == data["contractName"]:
                 # only add artifacts from the core project for now
-                self._build._add_contract(data)
+                build._add_contract(data)
 
     def _create_containers(self) -> None:
         # create container objects
         self.interface = InterfaceContainer(self)
-        self._containers: Dict = {}
+        self._containers = {}
 
         for key, data in self._build.items():
             if data["type"] == "interface":
                 self.interface._add(data["contractName"], data["abi"])
             if data.get("bytecode"):
-                container = ContractContainer(self, data)
+                container = ContractContainer(self, data)  # type: ignore [arg-type]
                 self._containers[key] = container
                 setattr(self, container._name, container)
 
-    def __getitem__(self, key: str) -> ContractContainer:
+    def __getitem__(self, key: ContractName) -> ContractContainer:
         return self._containers[key]
 
     def __iter__(self) -> Iterator[ContractContainer]:
-        return iter(self._containers[i] for i in sorted(self._containers))
+        for i in sorted(self._containers):
+            yield self._containers[i]
 
     def __len__(self) -> int:
         return len(self._containers)
 
-    def __contains__(self, item: ContractContainer) -> bool:
+    def __contains__(self, item: ContractName) -> bool:
         return item in self._containers
 
-    def dict(self) -> Dict:
+    def dict(self) -> dict[ContractName, ContractContainer]:
         return dict(self._containers)
 
-    def keys(self) -> KeysView[Any]:
+    def keys(self) -> KeysView[ContractName]:
         return self._containers.keys()
 
 
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
 class Project(_ProjectBase):
-
     """
     Top level dict-like container that holds data and objects related to
     a brownie project.
@@ -175,19 +214,21 @@ class Project(_ProjectBase):
         _build: project Build object
     """
 
-    def __init__(self, name: str, project_path: Path) -> None:
-        self._path: Path = project_path
-        self._envvars = _load_project_envvars(project_path)
-        self._structure = expand_posix_vars(
+    _compiler_config: CompilerConfig
+
+    def __init__(self, name: str, project_path: pathlib.Path, compile: bool = True) -> None:
+        self._path = project_path
+        self._envvars: Final = _load_project_envvars(project_path)
+        self._structure: Final = expand_posix_vars(
             _load_project_structure_config(project_path), self._envvars
         )
-        self._build_path: Path = project_path.joinpath(self._structure["build"])
+        self._build_path = project_path.joinpath(self._structure["build"])
 
-        self._name = name
-        self._active = False
-        self.load()
+        self._name: Final = name
+        self._active: bool = False
+        self.load(compile=compile)
 
-    def load(self, raise_if_loaded: bool = True) -> None:
+    def load(self, raise_if_loaded: bool = True, compile: bool = True) -> None:
         """Compiles the project contracts, creates ContractContainer objects and
         populates the namespace."""
         if self._active:
@@ -195,55 +236,71 @@ class Project(_ProjectBase):
                 raise ProjectAlreadyLoaded("Project is already active")
             return None
 
-        contract_sources = _load_sources(self._path, self._structure["contracts"], False)
-        interface_sources = _load_sources(self._path, self._structure["interfaces"], True)
-        self._sources = Sources(contract_sources, interface_sources)
-        self._build = Build(self._sources)
+        project_path: pathlib.Path = self._path  # type: ignore [assignment]
+        structure = self._structure
+        contract_sources = _load_sources(project_path, structure["contracts"], False)
+        interface_sources = _load_sources(project_path, structure["interfaces"], True)
+        sources = Sources(contract_sources, interface_sources)
+        self._sources = sources
 
-        contract_list = self._sources.get_contract_list()
-        for path in list(self._build_path.glob("contracts/*.json")):
-            try:
-                with path.open() as fp:
-                    build_json = json.load(fp)
-            except json.JSONDecodeError:
-                build_json = {}
-            if not set(BUILD_KEYS).issubset(build_json) or path.stem not in contract_list:
+        build = Build(self._sources)
+        self._build = build
+
+        contract_list = sources.get_contract_list()
+        potential_dependencies: list[tuple[pathlib.Path, ContractBuildJson]] = []
+        build_path = self._build_path
+
+        for path in build_path.glob("contracts/*.json"):
+            contract_build_json = _load_contract_build_json_from_disk(path)
+            if not set(BUILD_KEYS).issubset(contract_build_json):
                 path.unlink()
                 continue
-            if isinstance(build_json["allSourcePaths"], list):
+            if path.stem not in contract_list:
+                potential_dependencies.append((path, contract_build_json))
+                continue
+            if isinstance(contract_build_json["allSourcePaths"], list):
                 # this handles the format change in v1.7.0, it can be removed in a future release
                 path.unlink()
-                test_path = self._build_path.joinpath("tests.json")
+                test_path = build_path.joinpath("tests.json")
                 if test_path.exists():
                     test_path.unlink()
                 continue
-            if not self._path.joinpath(build_json["sourcePath"]).exists():
+            if not project_path.joinpath(contract_build_json["sourcePath"]).exists():
                 path.unlink()
                 continue
-            self._build._add_contract(build_json)
+            build._add_contract(contract_build_json)
 
-        interface_hashes = {}
-        interface_list = self._sources.get_interface_list()
-        for path in list(self._build_path.glob("interfaces/*.json")):
-            try:
-                with path.open() as fp:
-                    build_json = json.load(fp)
-            except json.JSONDecodeError:
-                build_json = {}
-            if not set(INTERFACE_KEYS).issubset(build_json) or path.stem not in interface_list:
+        for path, contract_build_json in potential_dependencies:
+            dependents = build.get_dependents(path.stem)  # type: ignore [arg-type]
+            is_dependency = len(set(dependents) & set(contract_list)) > 0
+            if is_dependency:
+                build._add_contract(contract_build_json)
+            else:
+                path.unlink()
+
+        interface_hashes: dict[str, HexStr] = {}
+        interface_list = sources.get_interface_list()
+
+        for path in build_path.glob("interfaces/*.json"):
+            interface_build_json = _load_interface_build_json_from_disk(path)
+            if (
+                not set(INTERFACE_KEYS).issubset(interface_build_json)
+                or path.stem not in interface_list
+            ):
                 path.unlink()
                 continue
-            self._build._add_interface(build_json)
-            interface_hashes[path.stem] = build_json["sha1"]
+            build._add_interface(interface_build_json)
+            interface_hashes[path.stem] = interface_build_json["sha1"]
 
-        self._compiler_config = expand_posix_vars(
-            _load_project_compiler_config(self._path), self._envvars
-        )
+        if compile:
+            self._compiler_config = config = expand_posix_vars(
+                _load_project_compiler_config(project_path), self._envvars
+            )
 
-        # compile updated sources, update build
-        changed = self._get_changed_contracts(interface_hashes)
-        self._compile(changed, self._compiler_config, False)
-        self._compile_interfaces(interface_hashes)
+            # compile updated sources, update build
+            changed = self._get_changed_contracts(interface_hashes)
+            self._compile(changed, config, False)
+            self._compile_interfaces(interface_hashes)
         self._load_dependency_artifacts()
 
         self._create_containers()
@@ -251,14 +308,14 @@ class Project(_ProjectBase):
 
         # add project to namespaces, apply import blackmagic
         name = self._name
-        self.__all__ = list(self._containers) + ["interface"]
-        sys.modules[f"brownie.project.{name}"] = self  # type: ignore
+        self.__all__: list[NamespaceId] = list(self._containers) + ["interface"]
+        sys.modules[f"brownie.project.{name}"] = self  # type: ignore [assignment]
         sys.modules["brownie.project"].__dict__[name] = self
-        sys.modules["brownie.project"].__all__.append(name)  # type: ignore
-        sys.modules["brownie.project"].__console_dir__.append(name)  # type: ignore
-        self._namespaces = [
-            sys.modules["__main__"].__dict__,
-            sys.modules["brownie.project"].__dict__,
+        sys.modules["brownie.project"].__all__.append(name)
+        sys.modules["brownie.project"].__console_dir__.append(name)
+        self._namespaces: list[dict[NamespaceId, ContractContainer | InterfaceContainer]] = [
+            sys.modules["__main__"].__dict__,  # type: ignore [list-item]
+            sys.modules["brownie.project"].__dict__,  # type: ignore [list-item]
         ]
 
         # register project for revert and reset
@@ -267,85 +324,102 @@ class Project(_ProjectBase):
         self._active = True
         _loaded_projects.append(self)
 
-    def _get_changed_contracts(self, compiled_hashes: Dict) -> Dict:
+    def _get_changed_contracts(self, compiled_hashes: dict[str, HexStr]) -> dict[str, str]:
         # get list of changed interfaces and contracts
-        new_hashes = self._sources.get_interface_hashes()
-        # remove outdated build artifacts
-        for name in [k for k, v in new_hashes.items() if compiled_hashes.get(k, None) != v]:
-            self._build._remove_interface(name)
+        sources = self._sources
+        new_hashes = sources.get_interface_hashes()
 
-        contracts = set(i for i in self._sources.get_contract_list() if self._compare_build_json(i))
-        for contract_name in list(contracts):
-            contracts.update(self._build.get_dependents(contract_name))
+        # remove outdated build artifacts
+        build = self._build
+        for name in new_hashes:
+            if compiled_hashes.get(name) != new_hashes[name]:
+                build._remove_interface(name)
+
+        contracts = {c for c in sources.get_contract_list() if self._compare_build_json(c)}
+        for contract in list(contracts):
+            dependents = build.get_dependents(contract)
+            contracts.update(dependents)
 
         # remove outdated build artifacts
         for name in contracts:
-            self._build._remove_contract(name)
+            build._remove_contract(name)
 
         # get final list of changed source paths
-        changed_set: Set = set(self._sources.get_source_path(i) for i in contracts)
-        return {i: self._sources.get(i) for i in changed_set}
+        changed_set = list({sources.get_source_path(contract) for contract in contracts})
+        return dict(zip(changed_set, (sources.get(changed) for changed in changed_set)))
 
-    def _compare_build_json(self, contract_name: str) -> bool:
+    def _compare_build_json(self, contract_name: ContractName) -> bool:
         config = self._compiler_config
         # confirm that this contract was previously compiled
         try:
             source = self._sources.get(contract_name)
-            build_json = self._build.get(contract_name)
+            build_json: ContractBuildJson = self._build.get(  # type: ignore [assignment]
+                contract_name
+            )
         except KeyError:
             return True
         # compare source hashes
         if build_json["sha1"] != sha1(source.encode()).hexdigest():
             return True
         # compare compiler settings
+        compiler = build_json["compiler"]
         if build_json["language"] == "Solidity":
             # compare solc-specific compiler settings
             solc_config = config["solc"].copy()
             solc_config["remappings"] = None
-            if not _solidity_compiler_equal(solc_config, build_json["compiler"]):
+            if not _solidity_compiler_equal(solc_config, compiler):
                 return True
             # compare solc pragma against compiled version
-            if Version(build_json["compiler"]["version"]) not in get_pragma_spec(source):
+            if Version(compiler["version"]) not in get_pragma_spec(source):
                 return True
         else:
-            vyper_config = config["vyper"].copy()
-            if not _vyper_compiler_equal(vyper_config, build_json["compiler"]):
+            if not _vyper_compiler_equal(config["vyper"], compiler):
                 return True
         return False
 
-    def _compile_interfaces(self, compiled_hashes: Dict) -> None:
-        new_hashes = self._sources.get_interface_hashes()
+    def _compile_interfaces(self, compiled_hashes: dict) -> None:
+        sources = self._sources
+        new_hashes = sources.get_interface_hashes()
         changed_paths = [
-            self._sources.get_source_path(k, True)
+            sources.get_source_path(k, True)
             for k, v in new_hashes.items()
-            if compiled_hashes.get(k, None) != v
+            if compiled_hashes.get(k) != v
         ]
         if not changed_paths:
             return
 
         print("Generating interface ABIs...")
-        changed_sources = {i: self._sources.get(i) for i in changed_paths}
+        solc_config = self._compiler_config["solc"]
+        changed_sources = {i: sources.get(i) for i in changed_paths}
         abi_json = compiler.get_abi(
             changed_sources,
-            solc_version=self._compiler_config["solc"].get("version", None),
+            solc_version=solc_config.get("version", None),
             allow_paths=self._path.as_posix(),
-            remappings=self._compiler_config["solc"].get("remappings", []),
+            remappings=solc_config.get("remappings", []),
         )
 
+        build = self._build
+        build_path = self._build_path
         for name, abi in abi_json.items():
-
-            with self._build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
-                json.dump(abi, fp, sort_keys=True, indent=2, default=sorted)
-            self._build._add_interface(abi)
+            with build_path.joinpath(f"interfaces/{name}.json").open("w") as fp:
+                ujson_dump(abi, fp, sort_keys=True, indent=2, default=sorted)
+            build._add_interface(abi)
 
     def _load_dependency_artifacts(self) -> None:
+        build = self._build
         dep_build_path = self._build_path.joinpath("contracts/dependencies/")
         for path in list(dep_build_path.glob("**/*.json")):
             contract_alias = path.relative_to(dep_build_path).with_suffix("").as_posix()
-            if self._build.get_dependents(contract_alias):
+            if build.get_dependents(contract_alias):
                 with path.open() as fp:
-                    build_json = json.load(fp)
-                self._build._add_contract(build_json, contract_alias)
+                    build_json = ujson_load(fp)
+                # json.load turns arrays into python lists but for "offset" we need tuples
+                build_json["offset"] = tuple(build_json["offset"])
+                pc_map: dict[Any, dict] = build_json["pcMap"]
+                for counter in pc_map.values():
+                    if "offset" in counter:
+                        counter["offset"] = tuple(counter["offset"])
+                build._add_contract(build_json, contract_alias)
             else:
                 path.unlink()
 
@@ -358,9 +432,11 @@ class Project(_ProjectBase):
         deployments = list(path.glob("*.json"))
         deployments.sort(key=lambda k: k.stat().st_mtime)
         deployment_map = self._load_deployment_map()
+
+        build: BuildJson
         for build_json in deployments:
             with build_json.open() as fp:
-                build = json.load(fp)
+                build = ujson_load(fp)
 
             contract_name = build["contractName"]
             if contract_name not in self._containers:
@@ -369,7 +445,7 @@ class Project(_ProjectBase):
             if "pcMap" in build:
                 contract = ProjectContract(self, build, build_json.stem)
             else:
-                contract = Contract.from_abi(  # type: ignore
+                contract = Contract.from_abi(  # type: ignore [assignment]
                     contract_name, build_json.stem, build["abi"]
                 )
                 contract._project = self
@@ -385,17 +461,17 @@ class Project(_ProjectBase):
 
         self._save_deployment_map(deployment_map)
 
-    def _load_deployment_map(self) -> Dict:
-        deployment_map: Dict = {}
+    def _load_deployment_map(self) -> DeploymentMap:
+        deployment_map = {}
         map_path = self._build_path.joinpath("deployments/map.json")
         if map_path.exists():
             with map_path.open("r") as fp:
-                deployment_map = json.load(fp)
+                deployment_map = ujson_load(fp)
         return deployment_map
 
-    def _save_deployment_map(self, deployment_map: Dict) -> None:
+    def _save_deployment_map(self, deployment_map: DeploymentMap) -> None:
         with self._build_path.joinpath("deployments/map.json").open("w") as fp:
-            json.dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
+            ujson_dump(deployment_map, fp, sort_keys=True, indent=2, default=sorted)
 
     def _remove_from_deployment_map(self, contract: ProjectContract) -> None:
         if CONFIG.network_type != "live" and not CONFIG.settings["dev_deployment_artifacts"]:
@@ -428,28 +504,31 @@ class Project(_ProjectBase):
         )
         self._save_deployment_map(deployment_map)
 
-    def _update_and_register(self, dict_: Any) -> None:
-        dict_.update(self)
+    def _update_and_register(
+        self,
+        dict_: dict[NamespaceId, ContractContainer | InterfaceContainer],
+    ) -> None:
+        dict_.update(self)  # type: ignore [arg-type]
         if "interface" not in dict_:
             dict_["interface"] = self.interface
         self._namespaces.append(dict_)
 
     def _add_to_main_namespace(self) -> None:
         # temporarily adds project objects to the main namespace
-        brownie: Any = sys.modules["brownie"]
+        brownie: ModuleType = sys.modules["brownie"]
         if "interface" not in brownie.__dict__:
             brownie.__dict__["interface"] = self.interface
-        brownie.__dict__.update(self._containers)
+        brownie.__dict__.update(self._containers)  # type: ignore [arg-type]
         brownie.__all__.extend(self.__all__)
 
     def _remove_from_main_namespace(self) -> None:
         # removes project objects from the main namespace
-        brownie: Any = sys.modules["brownie"]
+        brownie: ModuleType = sys.modules["brownie"]
         if brownie.__dict__.get("interface") == self.interface:
             del brownie.__dict__["interface"]
         for key in self._containers:
             brownie.__dict__.pop(key, None)
-        for key in self.__all__:
+        for key in self.__all__:  # type: ignore [assignment]
             if key in brownie.__all__:
                 brownie.__all__.remove(key)
 
@@ -470,17 +549,14 @@ class Project(_ProjectBase):
 
         # remove objects from namespace
         for dict_ in self._namespaces:
-            for key in [
-                k
-                for k, v in dict_.items()
-                if v == self or (k in self and v == self[k])  # type: ignore
-            ]:
-                del dict_[key]
+            for k, v in dict_.copy().items():
+                if v == self or (k in self and v == self[k]):  # type: ignore [operator, index]
+                    del dict_[k]
 
         # remove contracts
-        for contract in [x for v in self._containers.values() for x in v._contracts]:
-            _remove_contract(contract)
         for container in self._containers.values():
+            for contract in container._contracts:
+                _remove_contract(contract)
             container._contracts.clear()
         self._containers.clear()
 
@@ -488,8 +564,8 @@ class Project(_ProjectBase):
         self._remove_from_main_namespace()
         name = self._name
         del sys.modules[f"brownie.project.{name}"]
-        sys.modules["brownie.project"].__all__.remove(name)  # type: ignore
-        sys.modules["brownie.project"].__console_dir__.remove(name)  # type: ignore
+        sys.modules["brownie.project"].__all__.remove(name)
+        sys.modules["brownie.project"].__console_dir__.remove(name)
         self._active = False
         _loaded_projects.remove(self)
 
@@ -508,12 +584,12 @@ class Project(_ProjectBase):
                     deployment.unlink()
                 else:
                     with deployment.open("r") as fp:
-                        deployment_artifact = json.load(fp)
+                        deployment_artifact: dict = ujson_load(fp)
                     block_height = deployment_artifact["deployment"]["blockHeight"]
-                    address = deployment_artifact["deployment"]["address"]
-                    contract_name = deployment_artifact["contractName"]
                     if block_height > height:
                         deployment.unlink()
+                        address = deployment_artifact["deployment"]["address"]
+                        contract_name = deployment_artifact["contractName"]
                         try:
                             deployment_map["dev"][contract_name].remove(address)
                         except (KeyError, ValueError):
@@ -531,15 +607,44 @@ class Project(_ProjectBase):
         self._clear_dev_deployments(0)
 
 
-class TempProject(_ProjectBase):
+def _load_contract_build_json_from_disk(path: pathlib.Path) -> ContractBuildJson:
+    try:
+        with path.open() as fp:
+            contract_build_json: dict = ujson_load(fp)
+            # json loads them as lists but we want tuples for mypyc
+            contract_build_json["offset"] = tuple(contract_build_json["offset"])
+            pc_map: dict = contract_build_json["pcMap"]
+            counter: dict
+            for counter in pc_map.values():
+                if "offset" in counter:
+                    counter["offset"] = tuple(counter["offset"])
+            return contract_build_json  # type: ignore [return-value]
+    except JSONDecodeError:
+        return {}  # type: ignore [return-value]
 
+
+def _load_interface_build_json_from_disk(path: pathlib.Path) -> InterfaceBuildJson:
+    try:
+        with path.open() as fp:
+            interface_build_json: dict = ujson_load(fp)
+            offset = interface_build_json["offset"]
+            if offset is not None:
+                interface_build_json["offset"] = tuple(offset)
+            return interface_build_json  # type: ignore [return-value]
+    except JSONDecodeError:
+        return {}  # type: ignore [typeddict-item]
+
+
+# TODO: remove this decorator once weakref support is implemented
+@mypyc_attr(native_class=False)
+class TempProject(_ProjectBase):
     """Simplified Project class used to hold temporary contracts that are
     compiled via project.compile_source"""
 
-    def __init__(self, name: str, contract_sources: Dict, compiler_config: Dict) -> None:
+    def __init__(self, name: str, contract_sources: dict, compiler_config: CompilerConfig) -> None:
         self._path = None
         self._build_path = None
-        self._name = name
+        self._name: Final = name
         self._sources = Sources(contract_sources, {})
         self._build = Build(self._sources)
         self._compile(contract_sources, compiler_config, True)
@@ -549,7 +654,7 @@ class TempProject(_ProjectBase):
         return f"<TempProject '{self._name}'>"
 
 
-def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
+def check_for_project(path: pathlib.Path | str = ".") -> pathlib.Path | None:
     """Checks for a Brownie project."""
     path = Path(path).resolve()
     for folder in [path] + list(path.parents):
@@ -572,7 +677,7 @@ def check_for_project(path: Union[Path, str] = ".") -> Optional[Path]:
     return None
 
 
-def get_loaded_projects() -> List["Project"]:
+def get_loaded_projects() -> list["Project"]:
     """Returns a list of currently loaded Project objects."""
     return _loaded_projects.copy()
 
@@ -600,7 +705,9 @@ def new(
 
 
 def from_brownie_mix(
-    project_name: str, project_path: Union[Path, str] = None, ignore_subfolder: bool = False
+    project_name: str,
+    project_path: pathlib.Path | str | None = None,
+    ignore_subfolder: bool = False,
 ) -> str:
     """Initializes a new project via a template. Templates are downloaded from
     https://www.github.com/brownie-mix
@@ -631,39 +738,19 @@ def from_brownie_mix(
     return str(project_path)
 
 
-def from_ethpm(uri: str) -> "TempProject":
-
-    """
-    Generates a TempProject from an ethPM package.
-    """
-
-    manifest = get_manifest(uri)
-    compiler_config = {
-        "evm_version": None,
-        "solc": {"version": None, "optimize": True, "runs": 200},
-        "vyper": {"version": None},
-    }
-    project = TempProject(manifest["package_name"], manifest["sources"], compiler_config)
-    if web3.isConnected():
-        for contract_name in project.keys():
-            for address in get_deployment_addresses(manifest, contract_name):
-                project[contract_name].at(address)
-    return project
-
-
 def compile_source(
     source: str,
-    solc_version: Optional[str] = None,
-    vyper_version: Optional[str] = None,
+    solc_version: str | None = None,
+    vyper_version: str | None = None,
     optimize: bool = True,
-    runs: Optional[int] = 200,
-    evm_version: Optional[str] = None,
+    runs: int | None = 200,
+    evm_version: EvmVersion | None = None,
 ) -> "TempProject":
     """
     Compile the given source code string and return a TempProject container with
     the ContractContainer instances.
     """
-    compiler_config: Dict = {"evm_version": evm_version, "solc": {}, "vyper": {}}
+    compiler_config: CompilerConfig = {"evm_version": evm_version, "solc": {}, "vyper": {}}
 
     # if no compiler version was given, first try to find a Solidity pragma
     if solc_version is None and vyper_version is None:
@@ -678,8 +765,8 @@ def compile_source(
         # if no vyper compiler version is given, try to compile using solidity
         compiler_config["solc"] = {
             "version": solc_version or str(compiler.solidity.get_version().truncate()),
-            "optimize": optimize,
-            "runs": runs,
+            "optimize": bool(optimize),
+            "runs": runs or 0,
         }
         try:
             return TempProject("TempSolcProject", {"<stdin>.sol": source}, compiler_config)
@@ -710,9 +797,10 @@ def compile_source(
 
 
 def load(
-    project_path: Union[Path, str, None] = None,
-    name: Optional[str] = None,
+    project_path: pathlib.Path | str | None = None,
+    name: str | None = None,
     raise_if_loaded: bool = True,
+    compile: bool = True,
 ) -> "Project":
     """Loads a project and instantiates various related objects.
 
@@ -765,10 +853,10 @@ def load(
     _add_to_sys_path(project_path)
 
     # load sources and build
-    return Project(name, project_path)
+    return Project(name, project_path, compile=compile)
 
 
-def _install_dependencies(path: Path) -> None:
+def _install_dependencies(path: pathlib.Path) -> None:
     for package_id in _load_project_dependencies(path):
         try:
             install_package(package_id)
@@ -783,51 +871,22 @@ def install_package(package_id: str) -> str:
     Arguments
     ---------
     package_id : str
-        Package ID or ethPM URI.
+        Package ID
 
     Returns
     -------
     str
         ID of the installed package.
     """
-    if urlparse(package_id).scheme in ("erc1319", "ethpm"):
-        return _install_from_ethpm(package_id)
-    else:
-        return _install_from_github(package_id)
+    return _install_from_github(package_id)
 
 
-def _install_from_ethpm(uri: str) -> str:
-    manifest = get_manifest(uri)
-    org = manifest["meta_brownie"]["registry_address"]
-    repo = manifest["package_name"]
-    version = manifest["version"]
-
-    install_path = _get_data_folder().joinpath(f"packages/{org}")
-    install_path.mkdir(exist_ok=True)
-    install_path = install_path.joinpath(f"{repo}@{version}")
-    if install_path.exists():
-        raise FileExistsError("Package is already installed")
-
-    try:
-        new(str(install_path), ignore_existing=True)
-        ethpm.install_package(install_path, uri)
-        Path.touch(install_path / ".env")
-        project = load(install_path)
-        project.close()
-    except Exception as e:
-        shutil.rmtree(install_path)
-        raise e
-
-    return f"{org}/{repo}@{version}"
-
-
-def _maybe_retrieve_github_auth() -> Dict[str, str]:
+def _maybe_retrieve_github_auth() -> dict[str, str]:
     """Returns appropriate github authorization headers.
 
     Otherwise returns an empty dict if no auth token is present.
     """
-    token = os.getenv("GITHUB_TOKEN")
-    if token:
+    if token := os.getenv("GITHUB_TOKEN"):
         auth = b64encode(token.encode()).decode()
         return {"Authorization": f"Basic {auth}"}
     return {}
@@ -835,7 +894,7 @@ def _maybe_retrieve_github_auth() -> Dict[str, str]:
 
 def _install_from_github(package_id: str) -> str:
     try:
-        path, version = package_id.split("@")
+        path, version = package_id.split("@", 1)
         org, repo = path.split("/")
     except ValueError:
         raise ValueError(
@@ -848,12 +907,12 @@ def _install_from_github(package_id: str) -> str:
     install_path.mkdir(exist_ok=True)
     install_path = install_path.joinpath(f"{repo}@{version}")
     if install_path.exists():
-        raise FileExistsError("Package is aleady installed")
+        raise FileExistsError("Package is already installed")
 
     headers = REQUEST_HEADERS.copy()
     headers.update(_maybe_retrieve_github_auth())
 
-    if re.match(r"^[0-9a-f]+$", version):
+    if regex_match(r"^[0-9a-f]+$", version):
         download_url = f"https://api.github.com/repos/{org}/{repo}/zipball/{version}"
     else:
         download_url = _get_download_url_from_tag(org, repo, version, headers)
@@ -877,14 +936,12 @@ def _install_from_github(package_id: str) -> str:
 
     try:
         if not install_path.joinpath("brownie-config.yaml").exists():
-            brownie_config: Dict = {"project_structure": {}}
+            brownie_config: dict = {"project_structure": {}}
 
-            contract_paths = set(
-                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.sol")
-            )
-            contract_paths.update(
-                i.relative_to(install_path).parts[0] for i in install_path.glob("**/*.vy")
-            )
+            contract_paths = {
+                i.relative_to(install_path).parts[0]
+                for i in mapcat(install_path.glob, ("**/*.sol", "**/*.vy"))
+            }
             if not contract_paths:
                 raise InvalidPackage(f"{package_id} does not contain any .sol or .vy files")
             if install_path.joinpath("contracts").is_dir():
@@ -892,7 +949,7 @@ def _install_from_github(package_id: str) -> str:
             elif len(contract_paths) == 1:
                 brownie_config["project_structure"]["contracts"] = contract_paths.pop()
             else:
-                raise InvalidPackage(
+                raise Exception(
                     f"{package_id} has no `contracts/` subdirectory, and "
                     "multiple directories containing source files"
                 )
@@ -921,11 +978,11 @@ def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict)
     response = requests.get(
         f"https://api.github.com/repos/{org}/{repo}/tags?per_page=100", headers=headers
     )
-    if response.status_code != 200:
-        msg = "Status {} when getting package versions from Github: '{}'".format(
-            response.status_code, response.json()["message"]
-        )
-        if response.status_code in (403, 404):
+    status_code = response.status_code
+    if status_code != 200:
+        message = response.json()["message"]
+        msg = f"Status {status_code} when getting package versions from Github: '{message}'"
+        if status_code in {403, 404}:
             msg += (
                 "\n\nMissing or forbidden.\n"
                 "If this issue persists, generate a Github API token and store"
@@ -947,7 +1004,7 @@ def _get_download_url_from_tag(org: str, repo: str, version: str, headers: dict)
     return next(i["zipball_url"] for i in data if i["name"].lstrip("v") == version)
 
 
-def _create_gitfiles(project_path: Path) -> None:
+def _create_gitfiles(project_path: pathlib.Path) -> None:
     gitignore = project_path.joinpath(".gitignore")
     if not gitignore.exists():
         with gitignore.open("w") as fp:
@@ -958,7 +1015,7 @@ def _create_gitfiles(project_path: Path) -> None:
             fp.write(GITATTRIBUTES)
 
 
-def _create_folders(project_path: Path) -> None:
+def _create_folders(project_path: pathlib.Path) -> None:
     structure = _load_project_structure_config(project_path)
     for path in structure.values():
         project_path.joinpath(path).mkdir(exist_ok=True)
@@ -967,25 +1024,22 @@ def _create_folders(project_path: Path) -> None:
         build_path.joinpath(path).mkdir(exist_ok=True)
 
 
-def _add_to_sys_path(project_path: Path) -> None:
+def _add_to_sys_path(project_path: pathlib.Path) -> None:
     project_path_string = str(project_path)
     if project_path_string in sys.path:
         return
     sys.path.insert(0, project_path_string)
 
 
-def _compare_settings(left: Dict, right: Dict) -> bool:
-    return next(
-        (True for k, v in left.items() if v and not isinstance(v, dict) and v != right.get(k)),
-        False,
-    )
+def _compare_settings(left: dict, right: dict) -> bool:
+    return any(v and not isinstance(v, dict) and v != right.get(k) for k, v in left.items())
 
 
 def _normalize_solidity_version(version: str) -> str:
     return version.split("+")[0]
 
 
-def _solidity_compiler_equal(config: dict, build: dict) -> bool:
+def _solidity_compiler_equal(config: SolcConfig, build: CompilerConfig) -> bool:
     return (
         config["version"] is None
         or _normalize_solidity_version(config["version"])
@@ -993,31 +1047,31 @@ def _solidity_compiler_equal(config: dict, build: dict) -> bool:
     ) and config["optimizer"] == build["optimizer"]
 
 
-def _vyper_compiler_equal(config: dict, build: dict) -> bool:
+def _vyper_compiler_equal(config: VyperConfig, build: CompilerConfig) -> bool:
     return config["version"] is None or config["version"] == build["version"]
 
 
-def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
-    contract_sources: Dict = {}
-    suffixes: Tuple = (".sol", ".vy")
+def _load_sources(project_path: pathlib.Path, subfolder: str, allow_json: bool) -> dict:
+    contract_sources: dict = {}
+    suffixes: tuple = (".sol", ".vy")
     if allow_json:
         suffixes = suffixes + (".json",)
 
     # one day this will be a beautiful plugin system
-    hooks: Optional[ModuleType] = None
+    hooks: ModuleType | None = None
     if project_path.joinpath("brownie_hooks.py").exists():
-        hooks = importlib.import_module("brownie_hooks")
+        hooks = import_module("brownie_hooks")
 
     for path in project_path.glob(f"{subfolder}/**/*"):
         if path.suffix not in suffixes:
             continue
         if next((i for i in path.relative_to(project_path).parts if i.startswith("_")), False):
             continue
-        with path.open() as fp:
+        with path.open(encoding="utf-8") as fp:
             source = fp.read()
 
         if hasattr(hooks, "brownie_load_source"):
-            source = hooks.brownie_load_source(path, source)  # type: ignore
+            source = hooks.brownie_load_source(path, source)
 
         path_str: str = path.relative_to(project_path).as_posix()
         contract_sources[path_str] = source
@@ -1025,7 +1079,7 @@ def _load_sources(project_path: Path, subfolder: str, allow_json: bool) -> Dict:
 
 
 def _stream_download(
-    download_url: str, target_path: str, headers: Dict[str, str] = REQUEST_HEADERS
+    download_url: str, target_path: str, headers: dict[str, str] = REQUEST_HEADERS
 ) -> None:
     response = requests.get(download_url, stream=True, headers=headers)
 
@@ -1042,18 +1096,18 @@ def _stream_download(
 
     total_size = int(response.headers.get("content-length", 0))
     progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
-    content = bytes()
+    content = bytearray()
 
-    for data in response.iter_content(1024, decode_unicode=True):
+    for data in response.iter_content(DOWNLOAD_CHUNK_SIZE):
         progress_bar.update(len(data))
-        content += data
+        content.extend(data)
     progress_bar.close()
 
     with zipfile.ZipFile(BytesIO(content)) as zf:
         zf.extractall(target_path)
 
 
-def _get_mix_default_branch(mix_name: str, headers: Dict[str, str] = REQUEST_HEADERS) -> str:
+def _get_mix_default_branch(mix_name: str, headers: dict[str, str] = REQUEST_HEADERS) -> str:
     """Get the default branch for a brownie-mix repository.
 
     Arguments
@@ -1071,7 +1125,7 @@ def _get_mix_default_branch(mix_name: str, headers: Dict[str, str] = REQUEST_HEA
     if r.status_code != 200:
         status, repo, message = r.status_code, f"brownie-mix/{mix_name}", r.json()["message"]
         msg = f"Status {status} when retrieving repo {repo} information from GHAPI: '{message}'"
-        if r.status_code in (403, 404):
+        if r.status_code in {403, 404}:
             msg_lines = (
                 msg,
                 "\n\nMissing or forbidden.\n",
