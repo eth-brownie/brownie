@@ -2,6 +2,8 @@
 
 import json
 
+from brownie.network import contract
+
 test_source = """
 import pytest
 
@@ -24,17 +26,17 @@ def test_call_and_transact_without_decorator(BrownieTester, accounts, web3, fn_i
 
 
 def test_always_transact(plugintester, mocker, chain):
-    mocker.spy(chain, "undo")
+    mocker.spy(contract, "_revert_transact_call")
 
-    # without coverage eval, there should be no calls to `chain.undo`
+    # without coverage eval, there should be no transact-call rollbacks
     result = plugintester.runpytest()
     result.assert_outcomes(passed=2)
-    assert chain.undo.call_count == 0
+    assert contract._revert_transact_call.call_count == 0
 
-    # with coverage eval, only one of the tests should call `chain.undo`
+    # with coverage eval, only one of the tests should transact-and-rollback a call
     result = plugintester.runpytest("--coverage")
     result.assert_outcomes(passed=2)
-    assert chain.undo.call_count == 1
+    assert contract._revert_transact_call.call_count == 1
 
 
 def test_coverage_tx(json_path, plugintester):

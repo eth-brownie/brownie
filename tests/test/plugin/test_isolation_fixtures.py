@@ -2,7 +2,10 @@
 
 import pytest
 
-isolation_source = '''import pytest
+from brownie.test.fixtures import PytestBrownieFixtures
+
+isolation_source = """import pytest
+from brownie import Wei
 
 @pytest.fixture(autouse=True)
 def isolation({0}_isolation):
@@ -10,16 +13,18 @@ def isolation({0}_isolation):
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(accounts):
+    starting_balance = accounts[1].balance()
     accounts[0].transfer(accounts[1], "1 ether")
+    yield starting_balance
 
-def test_isolation_first(accounts, web3):
+def test_isolation_first(accounts, web3, setup):
     assert web3.eth.block_number == 1
-    assert accounts[1].balance() == "101 ether"
+    assert accounts[1].balance() == setup + Wei("1 ether")
     accounts[0].transfer(accounts[1], "1 ether")
 
-def test_isolation_second(accounts, web3):
+def test_isolation_second(accounts, web3, setup):
     assert web3.eth.block_number == {1}
-    assert accounts[1].balance() == "10{1} ether"'''
+    assert accounts[1].balance() == setup + Wei("{1} ether")"""
 
 
 @pytest.mark.parametrize("arg", ["", "-n 2"])
@@ -43,4 +48,36 @@ def test_xdist_no_isolation(plugintester):
     result = plugintester.runpytest()
     result.assert_outcomes(passed=1)
     result = plugintester.runpytest_subprocess("-n 1")
-    assert "xdist workers failed to collect tests" in result.errlines[0]
+    result.assert_outcomes(passed=1)
+
+
+contract_fixture_source = """
+def test_contract_fixture_plugin_class(pytestconfig, BrownieTester):
+    fixtures = pytestconfig.pluginmanager.get_plugin("brownie-fixtures")
+    assert hasattr(type(fixtures), "BrownieTester")
+    assert BrownieTester._name == "BrownieTester"
+
+def test_contract_fixture_one(BrownieTester):
+    assert BrownieTester._name == "BrownieTester"
+
+def test_contract_fixture_two(BrownieTester):
+    assert BrownieTester._name == "BrownieTester"
+"""
+
+
+def test_contract_fixtures_direct_api(testproject):
+    fixtures = PytestBrownieFixtures(None, testproject)
+    assert hasattr(fixtures, "BrownieTester")
+    assert hasattr(type(fixtures), "BrownieTester")
+
+
+def test_xdist_contract_fixtures(plugintester):
+    plugintester.makepyfile(contract_fixture_source)
+    result = plugintester.runpytest("-n 2")
+    result.assert_outcomes(passed=3)
+
+
+def test_xdist_subprocess_contract_fixtures(plugintester):
+    plugintester.makepyfile(contract_fixture_source)
+    result = plugintester.runpytest_subprocess("-n 1")
+    result.assert_outcomes(passed=3)

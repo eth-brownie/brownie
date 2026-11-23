@@ -19,7 +19,7 @@ The Brownie package manager is available from the commandline:
 Installing a Package
 ====================
 
-Brownie supports package installation from ethPM and Github.
+Brownie supports package installation from Github.
 
 Installing from Github
 ----------------------
@@ -31,7 +31,7 @@ The easiest way to install a package is from a Github repository. Brownie consid
 
 A repository does not have to implement Brownie in order to function as a package. Many popular projects using frameworks such as Truffle or Embark can be added as Brownie packages.
 
-To install a package from Github you must use a package ID. A package ID is comprised of the name of an organization, a repository, and a version tag. Package IDs are not not case sensitive.
+To install a package from Github you must use a package ID. A package ID is comprised of the name of an organization, a repository, and a version tag. Package IDs are not case sensitive.
 
 .. code-block:: bash
 
@@ -61,38 +61,6 @@ To install `AragonOS <https://github.com/aragon/aragonOS>`_ version ``4.0.0``:
 .. code-block:: bash
 
     $ brownie pm install aragon/aragonos@4.0.0
-
-Installing from ethPM
----------------------
-
-The `Ethereum Package Manager <https://www.ethpm.com/>`_ (ethPM) is a decentralized package manager used to distribute EVM smart contracts and projects.
-
-At its core, an ethPM package is a JSON object containing the ABI, source code, bytecode, deployment data and any other information that combines together to compose the smart contract idea. The `ethPM specification <http://ethpm.github.io/ethpm-spec/>`_ defines a schema to store all of this data in a structured JSON format, enabling quick and efficient transportation of smart contract ideas between tools and frameworks which support the specification.
-
-To obtain an ethPM package, you must know both the package name and the address of the registry where it is available. This information is communicated through a `registry URI <https://docs.ethpm.com/uris#registry-uris>`_. Registry URIs use the following format:
-
-::
-
-    ethpm://[CONTRACT_ADDRESS]:[CHAIN_ID]/[PACKAGE_NAME]@[VERSION]
-
-The Snake Charmers maintain an `ethPM registry explorer <http://explorer.ethpm.com/>`_ where you can obtain registry URIs.
-
-Examples
-********
-
-To install OpenZeppelin's `Math <https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/math>`_ package, served from the Snake Charmers `Zeppelin registry <http://explorer.ethpm.com/browse/mainnet/zeppelin.snakecharmers.eth>`_:
-
-.. code-block:: bash
-
-    $ brownie pm install ethpm://zeppelin.snakecharmers.eth:1/math@1.0.0
-
-
-To install v2 of the `Compound Protocol <https://github.com/compound-finance/compound-protocol>`_, served from the Snake Charmers `DeFi registry <http://explorer.ethpm.com/browse/mainnet/defi.snakecharmers.eth>`_:
-
-
-.. code-block:: bash
-
-    $ brownie pm install ethpm://defi.snakecharmers.eth:1/compound@1.1.0
 
 Working with Packages
 =====================
@@ -124,7 +92,7 @@ Use ``brownie pm list`` to view currently installed packages. After installing a
 Cloning a Package
 -------------------
 
-Use ``brownie pm clone [path]`` to copy the contents of a package into another folder. The package will be cloned to the current directory if [path] is ommited. This is useful for exploring the filestructure of a package, or when you wish to build a project on top of an existing package.
+Use ``brownie pm clone [path]`` to copy the contents of a package into another folder. The package will be cloned to the current directory if [path] is omitted. This is useful for exploring the filestructure of a package, or when you wish to build a project on top of an existing package.
 
 To copy the Aragon package to the current folder:
 

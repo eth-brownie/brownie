@@ -13,9 +13,7 @@
         "locations": [
           {
             "sourceFormat": "text",
-            "sourceList": [
-              "contracts/SafeMath.sol"
-            ],
+            "sourceList": ["contracts/SafeMath.sol"],
             "sourceMap": "0:23:0",
             "sourceType": "solidity-file"
           }
@@ -53,9 +51,7 @@
       "toolName": "maru"
     },
     "sourceFormat": "text",
-    "sourceList": [
-      "contracts/SafeMath.sol"
-    ],
+    "sourceList": ["contracts/SafeMath.sol"],
     "sourceType": "solidity-file"
   }
 ]

@@ -94,7 +94,7 @@ def test_add_dev_missing_field():
 
 def test_add_dev_unknown_field():
     with pytest.raises(ValueError):
-        cli_networks._add("development", "tester", "cmd=foo", "host=127.0.0.1" "chainid=411")
+        cli_networks._add("development", "tester", "cmd=foo", "host=127.0.0.1", "chainid=411")
 
 
 def test_modify():

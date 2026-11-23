@@ -4,7 +4,7 @@
 Stateful Testing
 ================
 
-`Stateful testing` is a more advanced method of :ref:`property-based testing<hypothesis>` used to test complex systems. In a stateful test you define a number of actions that can be combined together in different ways, and Hypothesis attempts to find a sequence of those actions that results in a failure. This is useful for testing complex contracts or contract-to-contract interactions where there are many possible states.
+`Stateful testing` is a more advanced method of :ref:`property-based testing<hypothesis>` used to test complex systems. In a stateful test you define a number of actions that can be combined together in different ways, and Hypothesis attempts to find a sequence of those actions that result in a failure. This is useful for testing complex contracts or contract-to-contract interactions where there are many possible states.
 
 Brownie utilizes the ``hypothesis`` framework to allow for stateful testing.
 

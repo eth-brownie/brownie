@@ -88,13 +88,14 @@ contract BrownieTester {
         uint a,
         bool[] calldata b,
         address c,
-        bytes32[2][] calldata d
+        bytes32[2][] calldata d,
+        string calldata e
     )
         external
         view
-        returns (uint _num, bool[] memory _bool, address _addr, bytes32[2][] memory _bytes)
+        returns (uint _num, bool[] memory _bool, address _addr, bytes32[2][] memory _bytes, string memory _string)
     {
-        return (a, b, c, d);
+        return (a, b, c, d, e);
     }
 
     function useSafeMath(uint a, uint b) external returns (uint) {

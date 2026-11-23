@@ -1,37 +1,34 @@
-on: ["push", "pull_request"]
+name: Lint All The Things
 
-name: linting
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.py'
+      - '.github/workflows/lint.yaml'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '**.py'
+      - '.github/workflows/lint.yaml'
 
-env:
-  ETHERSCAN_TOKEN: 9MKURTHE8FNA9NRUUJBHMUEVY6IQ5K1EGY
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  WEB3_INFURA_PROJECT_ID: 44c6300c5e5b4b2da5fc42b06bf18a8e
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-
-  linting:
+  lint-all-the-things:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        job: [lint, docs-local]
-        experimental: [false]
-        include:
-          - job: docs-external
-            experimental: true
-
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Setup Python 3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-
-    - name: Install Tox
-      run: pip install tox
-
-    - name: Run Tox
-      run: tox -e ${{ matrix.job }}
-      continue-on-error: ${{ matrix.experimental }}
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Lint All The Things
+        uses: BobTheBuidler/lint-all-the-things@v0.2.1
+        with:
+          python-version: 3.14
+          pyupgrade-target-version: py310

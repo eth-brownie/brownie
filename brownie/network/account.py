@@ -1,28 +1,28 @@
 #!/usr/bin/python3
 
-import json
 import sys
 import threading
 import time
-from collections import deque
 from collections.abc import Iterator
 from getpass import getpass
+from importlib.metadata import version
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import eth_account
 import eth_keys
 import rlp
-from eip712.messages import EIP712Message, _hash_eip191_message
+from eip712.messages import EIP712Message
 from eth_account._utils.signing import sign_message_hash
 from eth_account.datastructures import SignedMessage
-from eth_account.messages import defunct_hash_message
-from eth_utils import keccak
-from eth_utils.applicators import apply_formatters_to_dict
-from hexbytes import HexBytes
+from eth_account.messages import _hash_eip191_message, defunct_hash_message
+from eth_typing import BlockNumber, HexAddress
+from faster_eth_utils import keccak
+from faster_eth_utils.applicators import apply_formatters_to_dict
 from web3 import HTTPProvider, IPCProvider
-from web3.exceptions import InvalidTransaction, TransactionNotFound
+from web3.exceptions import InvalidTransaction, TransactionNotFound, Web3RPCError
 
+from brownie._c_constants import HexBytes, deque, ujson_dump, ujson_load
 from brownie._config import CONFIG, _get_data_folder
 from brownie._singleton import _Singleton
 from brownie.convert import EthAddress, Wei, to_address
@@ -32,13 +32,20 @@ from brownie.exceptions import (
     UnknownAccount,
     VirtualMachineError,
 )
-from brownie.utils import color
+from brownie.utils import bytes_to_hexstring, color
+from brownie.utils._color import bright_blue, bright_cyan
 
 from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, TxHistory, _revert_register
 from .transaction import TransactionReceipt
 from .web3 import _resolve_address, web3
+
+ETH_ACCOUNT_LT_0_13_0 = tuple(map(int, version("eth_account").split("."))) < (
+    0,
+    13,
+    0,
+)
 
 history = TxHistory()
 rpc = Rpc()
@@ -59,7 +66,7 @@ class Accounts(metaclass=_Singleton):
 
     def __init__(self) -> None:
         self.default = None
-        self._accounts: List = []
+        self._accounts: list = []
 
         # prevent sensitive info from being stored in readline history
         self.add.__dict__["_private"] = True
@@ -82,7 +89,7 @@ class Accounts(metaclass=_Singleton):
                 unlocked_accounts = [unlocked_accounts]
             for address in unlocked_accounts:
                 if isinstance(address, int):
-                    address = HexBytes(address.to_bytes(20, "big")).hex()
+                    address = bytes_to_hexstring(address.to_bytes(20, "big"))
                 account = Account(address)
                 if account not in self._accounts:
                     self._accounts.append(account)
@@ -92,11 +99,11 @@ class Accounts(metaclass=_Singleton):
         if self.default not in self._accounts:
             self.default = None
 
-    def _revert(self, height: int) -> None:
+    def _revert(self, height: BlockNumber) -> None:
         # must exist for rpc registry callback
         pass
 
-    def __contains__(self, address: str) -> bool:
+    def __contains__(self, address: HexAddress) -> bool:
         try:
             address = to_address(address)
             return address in self._accounts
@@ -120,7 +127,7 @@ class Accounts(metaclass=_Singleton):
     def __len__(self) -> int:
         return len(self._accounts)
 
-    def add(self, private_key: Union[int, bytes, str] = None) -> "LocalAccount":
+    def add(self, private_key: int | bytes | str = None) -> "LocalAccount":
         """
         Create a new ``LocalAccount`` instance and appends it to the container.
 
@@ -137,7 +144,7 @@ class Accounts(metaclass=_Singleton):
         """
         if private_key is None:
             w3account, mnemonic = eth_account.Account.create_with_mnemonic()
-            print(f"mnemonic: '{color('bright cyan')}{mnemonic}{color}'")
+            print(f"mnemonic: '{bright_cyan}{mnemonic}{color}'")
         else:
             w3account = web3.eth.account.from_key(private_key)
 
@@ -151,7 +158,7 @@ class Accounts(metaclass=_Singleton):
 
     def from_mnemonic(
         self, mnemonic: str, count: int = 1, offset: int = 0, passphrase: str = ""
-    ) -> Union["LocalAccount", List["LocalAccount"]]:
+    ) -> Union["LocalAccount", list["LocalAccount"]]:
         """
         Generate one or more `LocalAccount` objects from a seed phrase.
 
@@ -182,7 +189,12 @@ class Accounts(metaclass=_Singleton):
             return new_accounts[0]
         return new_accounts
 
-    def load(self, filename: str = None, password: str = None) -> Union[List, "LocalAccount"]:
+    def load(
+        self,
+        filename: str | Path | None = None,
+        password: str | None = None,
+        allow_retry: bool = False,
+    ) -> Union[list, "LocalAccount"]:
         """
         Load a local account from a keystore file.
 
@@ -193,6 +205,8 @@ class Accounts(metaclass=_Singleton):
         password: str
             Password to unlock the keystore. If `None`, password is entered via
             a getpass prompt.
+        allow_retry: bool
+            If True, allows re-attempt when the given password is incorrect.
 
         Returns
         -------
@@ -218,10 +232,22 @@ class Accounts(metaclass=_Singleton):
                     raise FileNotFoundError(f"Cannot find {json_file}")
 
         with json_file.open() as fp:
-            priv_key = web3.eth.account.decrypt(
-                json.load(fp),
-                password or getpass(f'Enter password for "{json_file.stem}": '),
-            )
+            encrypted = ujson_load(fp)
+
+        prompt = f'Enter password for "{json_file.stem}": '
+        while True:
+            if password is None:
+                password = getpass(prompt)
+            try:
+                priv_key = web3.eth.account.decrypt(encrypted, password)
+                break
+            except ValueError as e:
+                if allow_retry:
+                    prompt = "Incorrect password, try again: "
+                    password = None
+                    continue
+                raise e
+
         return self.add(priv_key)
 
     def at(self, address: str, force: bool = False) -> "LocalAccount":
@@ -342,7 +368,7 @@ class PublicKeyAccount:
     def __str__(self) -> str:
         return self.address
 
-    def __eq__(self, other: Union[object, str]) -> bool:
+    def __eq__(self, other: object | str) -> bool:
         if isinstance(other, str):
             try:
                 address = _resolve_address(other)
@@ -367,7 +393,7 @@ class PublicKeyAccount:
     def nonce(self) -> int:
         return web3.eth.get_transaction_count(self.address)
 
-    def get_deployment_address(self, nonce: Optional[int] = None) -> EthAddress:
+    def get_deployment_address(self, nonce: int | None = None) -> EthAddress:
         """
         Return the address of a contract deployed from this account at the given nonce.
 
@@ -388,7 +414,6 @@ class PublicKeyAccount:
 
 
 class _PrivateKeyAccount(PublicKeyAccount):
-
     """Base class for Account and LocalAccount"""
 
     def __init__(self, addr: str) -> None:
@@ -416,9 +441,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: Optional["Account"],
         amount: int,
-        gas_price: Optional[int],
-        gas_buffer: Optional[float],
-        data: Optional[str] = None,
+        gas_price: int | None,
+        gas_buffer: float | None,
+        data: str | None = None,
     ) -> int:
         gas_limit = CONFIG.active_network["settings"]["gas_limit"]
         if gas_limit == "max":
@@ -433,7 +458,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_limit)
 
-    def _gas_price(self, gas_price: Any = None) -> Tuple[Wei, Optional[GasABC], Optional[Iterator]]:
+    def _gas_price(self, gas_price: Any = None) -> tuple[Wei, GasABC | None, Iterator | None]:
         # returns the gas price, gas strategy object, and active gas strategy iterator
         if gas_price is None:
             gas_price = CONFIG.active_network["settings"]["gas_price"]
@@ -441,7 +466,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
         if isinstance(gas_price, GasABC):
             value = gas_price.get_gas_price()
             if isinstance(value, Iterator):
-                # if `get_gas_price` returns an interator, this is a gas strategy
+                # if `get_gas_price` returns an iterator, this is a gas strategy
                 # intended for rebroadcasting. we need to retain both the strategy
                 # object and the active gas price iterator
                 return Wei(next(value)), gas_price, value
@@ -457,30 +482,30 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
         return Wei(gas_price), None, None
 
-    def _check_for_revert(self, tx: Dict) -> None:
+    def _check_for_revert(self, tx: dict) -> None:
         try:
             # remove gas price related values to avoid issues post-EIP1559
             # https://github.com/ethereum/go-ethereum/pull/23027
             skip_keys = {"gasPrice", "maxFeePerGas", "maxPriorityFeePerGas"}
             web3.eth.call({k: v for k, v in tx.items() if k not in skip_keys and v})
-        except ValueError as exc:
-            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+        except (ValueError, Web3RPCError) as exc:
+            exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Execution reverted during call: '{msg}'. This transaction will likely revert. "
-                "If you wish to broadcast, include `allow_revert:True` as a transaction parameter.",
+                f"Execution reverted during call: '{exc.revert_msg}'. This transaction will likely "
+                "revert. If you wish to broadcast, include `allow_revert:True` as a parameter.",
             ) from None
 
     def deploy(
         self,
         contract: Any,
-        *args: Tuple,
+        *args: Any,
         amount: int = 0,
-        gas_limit: Optional[int] = None,
-        gas_buffer: Optional[float] = None,
-        gas_price: Optional[int] = None,
-        max_fee: Optional[int] = None,
-        priority_fee: Optional[int] = None,
-        nonce: Optional[int] = None,
+        gas_limit: int | None = None,
+        gas_buffer: float | None = None,
+        gas_price: int | None = None,
+        max_fee: int | None = None,
+        priority_fee: int | None = None,
+        nonce: int | None = None,
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
@@ -517,7 +542,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
             priority_fee,
             data,
             nonce,
-            contract._name + ".constructor",
+            f"{contract._name}.constructor",
             required_confs,
             allow_revert,
             silent,
@@ -583,17 +608,17 @@ class _PrivateKeyAccount(PublicKeyAccount):
         -------
         Estimated gas value in wei.
         """
-        tx: Dict = {
+        tx: dict = {
             "from": self.address,
             "to": to_address(str(to)) if to else None,
             "value": Wei(amount),
             "data": HexBytes(data or ""),
         }
         if gas_price is not None:
-            tx["gasPrice"] = web3.toHex(gas_price)
+            tx["gasPrice"] = web3.to_hex(gas_price)
         try:
             return web3.eth.estimate_gas(tx)
-        except ValueError as exc:
+        except (ValueError, Web3RPCError) as exc:
             revert_gas_limit = CONFIG.active_network["settings"]["reverting_tx_gas_limit"]
             if revert_gas_limit == "max":
                 revert_gas_limit = web3.eth.get_block("latest")["gasLimit"]
@@ -601,9 +626,9 @@ class _PrivateKeyAccount(PublicKeyAccount):
             if revert_gas_limit:
                 return revert_gas_limit
 
-            msg = exc.args[0]["message"] if isinstance(exc.args[0], dict) else str(exc)
+            exc = VirtualMachineError(exc)
             raise ValueError(
-                f"Gas estimation failed: '{msg}'. This transaction will likely revert. "
+                f"Gas estimation failed: '{exc.revert_msg}'. This transaction will likely revert. "
                 "If you wish to broadcast, you must set the gas limit manually."
             )
 
@@ -611,16 +636,17 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: "Account" = None,
         amount: int = 0,
-        gas_limit: Optional[int] = None,
-        gas_buffer: Optional[float] = None,
-        gas_price: Optional[int] = None,
-        max_fee: Optional[int] = None,
-        priority_fee: Optional[int] = None,
+        gas_limit: int | None = None,
+        gas_buffer: float | None = None,
+        gas_price: int | None = None,
+        max_fee: int | None = None,
+        priority_fee: int | None = None,
         data: str = None,
-        nonce: Optional[int] = None,
+        nonce: int | None = None,
         required_confs: int = 1,
         allow_revert: bool = None,
         silent: bool = None,
+        skip_undo: bool = False,
     ) -> TransactionReceipt:
         """
         Broadcast a transaction from this account.
@@ -657,13 +683,13 @@ class _PrivateKeyAccount(PublicKeyAccount):
             silent,
         )
 
-        if rpc.is_active():
+        if rpc.is_active() and not skip_undo:
             undo_thread = threading.Thread(
                 target=Chain()._add_to_undo_buffer,
                 args=(
                     receipt,
                     self.transfer,
-                    [],
+                    (),
                     {
                         "to": to,
                         "amount": amount,
@@ -686,18 +712,18 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         to: Optional["Account"],
         amount: int,
-        gas_limit: Optional[int],
-        gas_buffer: Optional[float],
-        gas_price: Optional[int],
-        max_fee: Optional[int],
-        priority_fee: Optional[int],
+        gas_limit: int | None,
+        gas_buffer: float | None,
+        gas_price: int | None,
+        max_fee: int | None,
+        priority_fee: int | None,
         data: str,
-        nonce: Optional[int],
+        nonce: int | None,
         fn_name: str,
         required_confs: int,
-        allow_revert: Optional[bool],
-        silent: Optional[bool],
-    ) -> Tuple[TransactionReceipt, Optional[Exception]]:
+        allow_revert: bool | None,
+        silent: bool | None,
+    ) -> tuple[TransactionReceipt, Exception | None]:
         # shared logic for `transfer` and `deploy`
         if gas_limit and gas_buffer:
             raise ValueError("Cannot set gas_limit and gas_buffer together")
@@ -712,7 +738,12 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 priority_fee = CONFIG.active_network["settings"]["priority_fee"] or None
 
         if priority_fee == "auto":
-            priority_fee = Chain().priority_fee
+            try:
+                priority_fee = Chain().priority_fee
+            except ValueError:
+                # fallback to legacy transactions if network does not support EIP1559
+                CONFIG.active_network["settings"]["priority_fee"] = None
+                priority_fee = None
 
         try:
             # if max fee and priority fee are not set, use gas price
@@ -732,7 +763,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                 "from": self.address,
                 "value": Wei(amount),
                 "nonce": nonce if nonce is not None else self._pending_nonce(),
-                "gas": web3.toHex(gas_limit),
+                "gas": web3.to_hex(gas_limit),
                 "data": HexBytes(data),
             }
             if to:
@@ -741,19 +772,19 @@ class _PrivateKeyAccount(PublicKeyAccount):
             txid = None
             while True:
                 try:
-                    response = self._transact(tx, allow_revert)  # type: ignore
+                    response = self._transact(tx, allow_revert)
                     exc, revert_data = None, None
                     if txid is None:
-                        txid = HexBytes(response).hex()
+                        txid = bytes_to_hexstring(response)
                         if not silent:
-                            print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
-                except ValueError as e:
+                            print(f"\rTransaction sent: {bright_blue}{txid}{color}")
+                except (ValueError, Web3RPCError) as e:
                     if txid is None:
                         exc = VirtualMachineError(e)
                         if not hasattr(exc, "txid"):
                             raise exc from None
                         txid = exc.txid
-                        print(f"\rTransaction sent: {color('bright blue')}{txid}{color}")
+                        print(f"\rTransaction sent: {bright_blue}{txid}{color}")
                         revert_data = (exc.revert_msg, exc.pc, exc.revert_type)
                 try:
                     receipt = TransactionReceipt(
@@ -764,7 +795,7 @@ class _PrivateKeyAccount(PublicKeyAccount):
                         is_blocking=False,
                         name=fn_name,
                         revert_data=revert_data,
-                    )  # type: ignore
+                    )
                     break
                 except (TransactionNotFound, ValueError):
                     if not silent:
@@ -797,15 +828,15 @@ class _PrivateKeyAccount(PublicKeyAccount):
         self,
         receipt: TransactionReceipt,
         required_confs: int,
-        gas_strategy: Optional[GasABC],
-        gas_iter: Optional[Iterator],
+        gas_strategy: GasABC | None,
+        gas_iter: Iterator | None,
     ) -> TransactionReceipt:
         # add to TxHistory before waiting for confirmation, this way the tx
         # object is available if the user exits blocking via keyboard interrupt
         history._add_tx(receipt)
 
         if gas_strategy is not None:
-            gas_strategy.run(receipt, gas_iter)  # type: ignore
+            gas_strategy.run(receipt, gas_iter)
 
         if required_confs == 0:
             # set 0-conf tx's as silent to hide the confirmation output
@@ -844,14 +875,13 @@ class _PrivateKeyAccount(PublicKeyAccount):
 
 
 class Account(_PrivateKeyAccount):
-
     """Class for interacting with an Ethereum account.
 
     Attributes:
         address: Public address of the account.
         nonce: Current nonce of the account."""
 
-    def _transact(self, tx: Dict, allow_revert: bool) -> Any:
+    def _transact(self, tx: dict, allow_revert: bool) -> Any:
         if allow_revert is None:
             allow_revert = bool(CONFIG.network_type == "development")
         if not allow_revert:
@@ -860,7 +890,6 @@ class Account(_PrivateKeyAccount):
 
 
 class LocalAccount(_PrivateKeyAccount):
-
     """Class for interacting with an Ethereum account.
 
     Attributes:
@@ -869,15 +898,15 @@ class LocalAccount(_PrivateKeyAccount):
         private_key: Account private key.
         public_key: Account public key."""
 
-    def __init__(self, address: str, account: Account, priv_key: Union[int, bytes, str]) -> None:
+    def __init__(self, address: str, account: Account, priv_key: int | bytes | str) -> None:
         self._acct = account
         if not isinstance(priv_key, str):
-            priv_key = HexBytes(priv_key).hex()
+            priv_key = bytes_to_hexstring(priv_key)
         self.private_key = priv_key
         self.public_key = eth_keys.keys.PrivateKey(HexBytes(priv_key)).public_key
         super().__init__(address)
 
-    def save(self, filename: str, overwrite: bool = False, password: Optional[str] = None) -> str:
+    def save(self, filename: str, overwrite: bool = False, password: str | None = None) -> str:
         """Encrypts the private key and saves it in a keystore json.
 
         Attributes:
@@ -904,8 +933,9 @@ class LocalAccount(_PrivateKeyAccount):
             password = getpass("Enter the password to encrypt this account with: ")
 
         encrypted = web3.eth.account.encrypt(self.private_key, password)
+        encrypted["address"] = encrypted["address"].lower()
         with json_file.open("w") as fp:
-            json.dump(encrypted, fp)
+            ujson_dump(encrypted, fp)
         return str(json_file)
 
     def sign_defunct_message(self, message: str) -> SignedMessage:
@@ -919,14 +949,23 @@ class LocalAccount(_PrivateKeyAccount):
         """
         msg_hash_bytes = defunct_hash_message(text=message)
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
-        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
-        return SignedMessage(
-            messageHash=msg_hash_bytes,
-            r=r,
-            s=s,
-            v=v,
-            signature=HexBytes(eth_signature_bytes),
-        )
+        v, r, s, eth_signature_bytes = sign_message_hash(eth_private_key, msg_hash_bytes)
+        if ETH_ACCOUNT_LT_0_13_0:
+            return SignedMessage(
+                messageHash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
+        else:
+            return SignedMessage(
+                message_hash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
 
     def sign_message(self, message: EIP712Message) -> SignedMessage:
         """Signs an `EIP712Message` using this account's private key.
@@ -943,46 +982,57 @@ class LocalAccount(_PrivateKeyAccount):
         msg_hash_bytes = HexBytes(_hash_eip191_message(message.signable_message))
         assert len(msg_hash_bytes) == 32, "The message hash must be exactly 32-bytes"
         eth_private_key = eth_keys.keys.PrivateKey(HexBytes(self.private_key))
-        (v, r, s, eth_signature_bytes) = sign_message_hash(eth_private_key, msg_hash_bytes)
-        return SignedMessage(
-            messageHash=msg_hash_bytes,
-            r=r,
-            s=s,
-            v=v,
-            signature=HexBytes(eth_signature_bytes),
-        )
+        v, r, s, eth_signature_bytes = sign_message_hash(eth_private_key, msg_hash_bytes)
+        if ETH_ACCOUNT_LT_0_13_0:
+            return SignedMessage(
+                messageHash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
+        else:
+            return SignedMessage(
+                message_hash=msg_hash_bytes,
+                r=r,
+                s=s,
+                v=v,
+                signature=HexBytes(eth_signature_bytes),
+            )
 
-    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+    def _transact(self, tx: dict, allow_revert: bool) -> None:
         if allow_revert is None:
             allow_revert = bool(CONFIG.network_type == "development")
         if not allow_revert:
             self._check_for_revert(tx)
         tx["chainId"] = web3.chain_id
-        signed_tx = self._acct.sign_transaction(tx).rawTransaction  # type: ignore
-        return web3.eth.send_raw_transaction(signed_tx)
+        signed = self._acct.sign_transaction(tx)
+        return web3.eth.send_raw_transaction(
+            signed.rawTransaction if ETH_ACCOUNT_LT_0_13_0 else signed.raw_transaction
+        )
 
 
 class ClefAccount(_PrivateKeyAccount):
-
     """
     Class for interacting with an Ethereum account where signing is handled in Clef.
     """
 
-    def __init__(self, address: str, provider: Union[HTTPProvider, IPCProvider]) -> None:
+    def __init__(self, address: str, provider: HTTPProvider | IPCProvider) -> None:
         self._provider = provider
         super().__init__(address)
 
-    def _transact(self, tx: Dict, allow_revert: bool) -> None:
+    def _transact(self, tx: dict, allow_revert: bool) -> None:
         if allow_revert is None:
             allow_revert = bool(CONFIG.network_type == "development")
         if not allow_revert:
             self._check_for_revert(tx)
 
+        to_hex = web3.to_hex
         formatters = {
-            "nonce": web3.toHex,
-            "value": web3.toHex,
-            "chainId": web3.toHex,
-            "data": web3.toHex,
+            "nonce": to_hex,
+            "value": to_hex,
+            "chainId": to_hex,
+            "data": to_hex,
             "from": to_address,
         }
         if "to" in tx:
@@ -998,17 +1048,18 @@ class ClefAccount(_PrivateKeyAccount):
 
 
 def _apply_fee_to_tx(
-    tx: Dict,
-    gas_price: Optional[int] = None,
-    max_fee: Optional[int] = None,
-    priority_fee: Optional[int] = None,
-) -> Dict:
+    tx: dict,
+    gas_price: int | None = None,
+    max_fee: int | None = None,
+    priority_fee: int | None = None,
+) -> dict:
     tx = tx.copy()
+    to_hex = web3.to_hex
 
     if gas_price is not None:
         if max_fee or priority_fee:
             raise ValueError("gas_price and (max_fee, priority_fee) are mutually exclusive")
-        tx["gasPrice"] = web3.toHex(gas_price)
+        tx["gasPrice"] = to_hex(gas_price)
         return tx
 
     if priority_fee is None:
@@ -1025,7 +1076,7 @@ def _apply_fee_to_tx(
     if priority_fee > max_fee:
         raise InvalidTransaction("priority_fee must not exceed max_fee")
 
-    tx["maxFeePerGas"] = web3.toHex(max_fee)
-    tx["maxPriorityFeePerGas"] = web3.toHex(priority_fee)
-    tx["type"] = web3.toHex(2)
+    tx["maxFeePerGas"] = to_hex(max_fee)
+    tx["maxPriorityFeePerGas"] = to_hex(priority_fee)
+    tx["type"] = to_hex(2)
     return tx

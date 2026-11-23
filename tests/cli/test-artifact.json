@@ -1,26 +1,19 @@
 {
   "abi": [],
   "allSourcePaths": {
-      "0": "contracts/SafeMath.sol"
+    "0": "contracts/SafeMath.sol"
   },
   "ast": {
     "absolutePath": "contracts/SafeMath.sol",
     "exportedSymbols": {
-      "SafeMath": [
-        96
-      ]
+      "SafeMath": [96]
     },
     "id": 97,
     "nodeType": "SourceUnit",
     "nodes": [
       {
         "id": 1,
-        "literals": [
-          "solidity",
-          "^",
-          "0.5",
-          ".0"
-        ],
+        "literals": ["solidity", "^", "0.5", ".0"],
         "nodeType": "PragmaDirective",
         "src": "0:23:0"
       },
@@ -31,9 +24,7 @@
         "documentation": null,
         "fullyImplemented": true,
         "id": 96,
-        "linearizedBaseContracts": [
-          96
-        ],
+        "linearizedBaseContracts": [96],
         "name": "SafeMath",
         "nodeType": "ContractDefinition",
         "nodes": [
@@ -181,10 +172,7 @@
                       "id": 16,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        364,
-                        365
-                      ],
+                      "overloadedDeclarations": [364, 365],
                       "referencedDeclaration": 364,
                       "src": "137:7:0",
                       "typeDescriptions": {
@@ -383,10 +371,7 @@
                       "id": 32,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        364,
-                        365
-                      ],
+                      "overloadedDeclarations": [364, 365],
                       "referencedDeclaration": 364,
                       "src": "234:7:0",
                       "typeDescriptions": {
@@ -842,10 +827,7 @@
                       "id": 60,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        364,
-                        365
-                      ],
+                      "overloadedDeclarations": [364, 365],
                       "referencedDeclaration": 364,
                       "src": "369:7:0",
                       "typeDescriptions": {
@@ -1049,10 +1031,7 @@
                       "id": 82,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        364,
-                        365
-                      ],
+                      "overloadedDeclarations": [364, 365],
                       "referencedDeclaration": 364,
                       "src": "480:7:0",
                       "typeDescriptions": {
@@ -1290,85 +1269,55 @@
   "dependencies": [],
   "deployedBytecode": "73000000000000000000000000000000000000000030146080604052600080fdfea265627a7a72315820893edda58cfc8ab942d57dfc258288727bcaf844e6397a37aefea97a87eee32464736f6c634300050b0032",
   "deployedSourceMap": "25:497:0:-;;;;;;;;",
-  "offset": [
-    25,
-    522
-  ],
+  "offset": [25, 522],
   "opcodes": "PUSH20 0x0 ADDRESS EQ PUSH1 0x80 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT INVALID LOG2 PUSH6 0x627A7A723158 KECCAK256 DUP10 RETURNDATACOPY 0xdd 0xa5 DUP13 0xfc DUP11 0xb9 TIMESTAMP 0xd5 PUSH30 0xFC258288727BCAF844E6397A37AEFEA97A87EEE32464736F6C634300050B STOP ORIGIN ",
   "pcMap": {
     "0": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "PUSH20",
       "path": "contracts/SafeMath.sol",
       "value": "0x0"
     },
     "21": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "ADDRESS",
       "path": "contracts/SafeMath.sol"
     },
     "22": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "EQ",
       "path": "contracts/SafeMath.sol"
     },
     "23": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "PUSH1",
       "path": "contracts/SafeMath.sol",
       "value": "0x80"
     },
     "25": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "PUSH1",
       "path": "contracts/SafeMath.sol",
       "value": "0x40"
     },
     "27": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "MSTORE",
       "path": "contracts/SafeMath.sol"
     },
     "28": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "PUSH1",
       "path": "contracts/SafeMath.sol",
       "value": "0x0"
     },
     "30": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "DUP1",
       "path": "contracts/SafeMath.sol"
     },
     "31": {
-      "offset": [
-        25,
-        522
-      ],
+      "offset": [25, 522],
       "op": "REVERT",
       "path": "contracts/SafeMath.sol"
     }

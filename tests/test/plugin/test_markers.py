@@ -6,9 +6,9 @@ def test_require_network_pass():
     # should run because we are connected to development
     pass
 
-@pytest.mark.require_network("ropsten")
+@pytest.mark.require_network("goerli")
 def test_require_network_skip():
-    # should skip because we are not connected to ropsten
+    # should skip because we are not connected to goerli
     pass
 
 @pytest.mark.require_network

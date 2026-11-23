@@ -1,6 +1,6 @@
 # Development
 
-To get started with working on the Brownie codebaser, use the following steps prepare your local environment:
+To get started with working on the Brownie codebase, use the following steps prepare your local environment:
 
 ```bash
 # clone the github repo and navigate into the folder
@@ -11,11 +11,12 @@ cd brownie
 python3 -m venv venv
 source venv/bin/activate
 
-# install brownie into the virtual environment
-python setup.py install
+# install the developer dependencies from the uv lock
+python -m pip install uv
+uv sync --locked --active --group dev
 
-# install the developer dependencies
-pip install -r requirements-dev.txt
+# install brownie into the virtual environment
+uv pip install -e .
 ```
 
 ## Pre-Commit Hooks
@@ -29,7 +30,7 @@ pip install pre-commit
 pre-commit install
 ```
 
-Commiting will now automatically run the local hooks and ensure that your commit passes all lint checks.
+Committing will now automatically run the local hooks and ensure that your commit passes all lint checks.
 
 ## Pull Requests
 

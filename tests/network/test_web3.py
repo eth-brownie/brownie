@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import pytest
-from web3 import HTTPProvider, IPCProvider, Web3, WebsocketProvider
+from web3 import HTTPProvider, IPCProvider, LegacyWebSocketProvider, Web3
 
 from brownie.exceptions import MainnetUndefined
 
@@ -26,7 +26,7 @@ def test_connect_ipc(web3, testdir):
 
 def test_connect_ws(web3):
     web3.connect("ws://localhost")
-    assert type(web3.provider) is WebsocketProvider
+    assert type(web3.provider) is LegacyWebSocketProvider
     web3.disconnect()
 
 
@@ -40,12 +40,23 @@ def test_bad_env_var(web3):
         web3.connect("https://$POTATO")
 
 
-def test_mainnet(config, network, web3):
-    assert type(web3._mainnet) == Web3
-    assert web3._mainnet != web3
-    network.connect("mainnet")
-    assert web3._mainnet == web3
-    network.disconnect()
+def test_mainnet(config, web3, monkeypatch):
+    active_network = config._active_network
+    monkeypatch.setattr(web3, "_mainnet_w3", None)
+
+    mainnet = web3._mainnet
+    assert type(mainnet) == Web3
+    assert mainnet is not web3
+    assert web3._mainnet is mainnet
+
+    with monkeypatch.context() as active_mainnet:
+        try:
+            config.set_active_network("mainnet")
+            active_mainnet.setattr(web3, "is_connected", lambda: True)
+            assert web3._mainnet is web3
+        finally:
+            config._active_network = active_network
+
     del config.networks["mainnet"]
     with pytest.raises(MainnetUndefined):
         web3._mainnet
@@ -65,14 +76,15 @@ def test_disconnect(web3):
 
 
 def test_genesis_hash(web3, devnetwork):
-    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex()[2:]
+    assert web3.genesis_hash == web3.eth.get_block(0)["hash"].hex().removeprefix("0x")
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_genesis_hash_different_networks(devnetwork, web3):
     ganache_hash = web3.genesis_hash
     devnetwork.disconnect()
-    devnetwork.connect("ropsten")
-    assert web3.genesis_hash == "41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"
+    devnetwork.connect("goerli")
+    assert web3.genesis_hash == "bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a"
     assert web3.genesis_hash != ganache_hash
 
 
@@ -82,10 +94,11 @@ def test_genesis_hash_disconnected(web3):
         web3.genesis_hash
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_chain_uri(web3, network):
-    network.connect("ropsten")
+    network.connect("goerli")
     assert web3.chain_uri.startswith(
-        "blockchain://41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d/block/"
+        "blockchain://bf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a/block"
     )
 
 
@@ -95,6 +108,7 @@ def test_chain_uri_disconnected(web3):
         web3.chain_uri
 
 
+@pytest.mark.skip("rinkeby is dead, maybe fix this with another network")
 def test_rinkeby(web3, network):
     network.connect("rinkeby")
 
@@ -112,12 +126,14 @@ def test_supports_traces_not_connected(web3, network):
     assert not web3.supports_traces
 
 
+@pytest.mark.skip("goerli is dead, maybe fix this with another network")
 def test_supports_traces_infura(web3, network):
-    # ropsten should return false (infura, geth)
-    network.connect("ropsten")
+    # goerli should return false (infura, geth)
+    network.connect("goerli")
     assert not web3.supports_traces
 
 
+@pytest.mark.skip("kovan is dead, maybe fix this with another network")
 def test_supports_traces_kovan(web3, network):
     # kovan should return false (infura, parity)
     network.connect("kovan")

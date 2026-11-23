@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 import pytest
-from eip712.messages import EIP712Message, EIP712Type
+from eip712.messages import EIP712Domain, EIP712Message, EIP712Type
 from eth_account.datastructures import SignedMessage
+from eth_pydantic_types import abi
 
 from brownie.exceptions import UnknownAccount
-from brownie.network.account import LocalAccount
+from brownie.network.account import ETH_ACCOUNT_LT_0_13_0, LocalAccount
 
 priv_key = "0x416b8a7d9290502f5661da81f0cf43893e3d19cb9aea3c426cfb36e8186e9c09"
 addr = "0x14b0Ed2a7C4cC60DD8F676AE44D0831d3c9b2a9E"
@@ -136,21 +137,25 @@ def test_mnemonic_offset_multiple(accounts):
 
 def test_sign_message(accounts):
     class TestSubType(EIP712Type):
-        inner: "uint256"  # type: ignore # noqa: F821
+        inner: abi.uint256
 
     class TestMessage(EIP712Message):
-        _name_: "string" = "Brownie Tests"  # type: ignore # noqa: F821
-        value: "uint256"  # type: ignore # noqa: F821
-        default_value: "address" = "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"  # type: ignore # noqa: F821,E501
+        eip712_domain = EIP712Domain(name="Brownie Tests")
+        value: abi.uint256
+        default_value: abi.address = "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF"
         sub: TestSubType
 
     local = accounts.add(priv_key)
     msg = TestMessage(value=1, sub=TestSubType(inner=2))
     signed = local.sign_message(msg)
     assert isinstance(signed, SignedMessage)
+    if ETH_ACCOUNT_LT_0_13_0:
+        message_hash = signed.messageHash.hex()
+    else:
+        message_hash = signed.message_hash.hex()
     assert (
-        signed.messageHash.hex()
-        == "0x131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
+        message_hash.removeprefix("0x")
+        == "131c497d4b815213752a2a00564dcf667c3bf3f85a410ef8cb50050b51959c26"
     )
 
 
@@ -158,9 +163,13 @@ def test_sign_defunct_message(accounts):
     local = accounts.add(priv_key)
     msg = f"I authorize Foundation to migrate my account to {local.address.lower()}"
     signed = local.sign_defunct_message(msg)
+    if ETH_ACCOUNT_LT_0_13_0:
+        message_hash = signed.messageHash.hex()
+    else:
+        message_hash = signed.message_hash.hex()
     assert (
-        signed.messageHash.hex()
-        == "0xb9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
+        message_hash.removeprefix("0x")
+        == "b9bb14ce5c17b2b7217cfa638031a542b95fc25b18d42a61409066001d01351d"
     )
 
 

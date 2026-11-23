@@ -20,6 +20,12 @@ To initialize an empty project, start by creating a new folder. From within that
 
 An empty :ref:`project structure<structure>` is created within the folder.
 
+To initialize an empty project inside a new empty or existing folder type:
+
+::
+
+    $ brownie init -f
+
 Creating a Project from a Template
 ==================================
 

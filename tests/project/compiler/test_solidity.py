@@ -7,7 +7,7 @@ import solcx
 from semantic_version import Version
 
 from brownie._config import EVM_EQUIVALENTS
-from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaError
+from brownie.exceptions import CompilerError, IncompatibleSolcVersion, PragmaNotFound
 from brownie.project import build, compiler
 
 
@@ -52,7 +52,7 @@ def msolc(monkeypatch):
         Version("0.4.6"),
     ]
     monkeypatch.setattr("solcx.get_installed_solc_versions", lambda: installed)
-    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append(k))
+    monkeypatch.setattr("solcx.install_solc", lambda k, **z: installed.append(Version(str(k))))
     monkeypatch.setattr(
         "solcx.get_installable_solc_versions",
         lambda: [
@@ -73,11 +73,15 @@ def msolc(monkeypatch):
 
 def test_set_solc_version():
     compiler.set_solc_version("0.5.7")
-    assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
-    assert solcx.get_solc_version(with_commit_hash=True).truncate() == Version("0.5.7")
+    assert str(solcx.get_solc_version(with_commit_hash=True)) == str(
+        compiler.solidity.get_version()
+    )
+    assert compiler.solidity.get_version().truncate() == Version("0.5.7")
     compiler.set_solc_version("0.4.25")
-    assert solcx.get_solc_version(with_commit_hash=True) == compiler.solidity.get_version()
-    assert solcx.get_solc_version(with_commit_hash=True).truncate() == Version("0.4.25")
+    assert str(solcx.get_solc_version(with_commit_hash=True)) == str(
+        compiler.solidity.get_version()
+    )
+    assert compiler.solidity.get_version().truncate() == Version("0.4.25")
 
 
 def test_generate_input_json(solc5source):
@@ -119,7 +123,9 @@ def test_compile_input_json_evm_translates(solc5source, original, translated):
 
 def test_build_json_keys(solc5source):
     build_json = compiler.compile_and_format({"path.sol": solc5source})
-    assert set(build.BUILD_KEYS) == set(build_json["Foo"])
+    optional_keys = {"linkReferences", "deployedLinkReferences"}
+    assert set(build.BUILD_KEYS).issubset(build_json["Foo"])
+    assert set(build_json["Foo"]).issubset(set(build.BUILD_KEYS) | optional_keys)
 
 
 def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
@@ -131,6 +137,14 @@ def test_build_json_unlinked_libraries(solc4source, solc5source, solc6source):
     assert "__Bar__" in build_json["Foo"]["bytecode"]
 
 
+def test_build_json_preserves_link_references(solc6source):
+    build_json = compiler.compile_and_format({"path.sol": solc6source}, solc_version="0.6.2")
+    for field in ("linkReferences", "deployedLinkReferences"):
+        assert "path.sol" in build_json["Foo"][field]
+        assert "Bar" in build_json["Foo"][field]["path.sol"]
+        assert all(i["length"] == 20 for i in build_json["Foo"][field]["path.sol"]["Bar"])
+
+
 def test_format_link_references(solc4json, solc5json, solc6json):
     evm = solc4json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
@@ -138,6 +152,19 @@ def test_format_link_references(solc4json, solc5json, solc6json):
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
     evm = solc6json["contracts"]["path.sol"]["Foo"]["evm"]
     assert "__Bar__" in compiler.solidity._format_link_references(evm)
+
+
+def test_format_link_references_uses_reference_positions(solc6json):
+    evm = solc6json["contracts"]["path.sol"]["Foo"]["evm"]
+    reference = evm["bytecode"]["linkReferences"]["path.sol"]["Bar"][0]
+    start = reference["start"] * 2
+    length = reference["length"] * 2
+
+    marker = compiler.solidity._format_link_references(evm)[start : start + length]
+
+    assert marker.startswith("__Bar")
+    assert marker.endswith("__")
+    assert len(marker) == length
 
 
 def test_compiler_errors(solc4source, solc5source):
@@ -160,7 +187,7 @@ def test_find_solc_versions(find_version, msolc):
     assert "0.5.7" in find_version(">=0.4.2 <0.5.8")
     assert "0.5.7" in find_version(">0.4.8 <0.5.8 || 0.5.11")
     assert "0.4.22" in find_version("0.5.9 || 0.4.22")
-    with pytest.raises(PragmaError):
+    with pytest.raises(PragmaNotFound):
         compiler.find_solc_versions({"Foo.sol": "contract Foo {}"})
     with pytest.raises(IncompatibleSolcVersion):
         find_version("^1.0.0", install_needed=False)

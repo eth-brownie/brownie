@@ -1,29 +1,31 @@
-import json
 from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock, get_ident
 from types import FunctionType, TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from lazy_object_proxy import Proxy
 from wrapt import ObjectProxy
 
+from brownie._c_constants import ujson_loads
 from brownie._config import BROWNIE_FOLDER, CONFIG
 from brownie.exceptions import ContractNotFound
 from brownie.network import accounts, web3
 from brownie.network.contract import Contract, ContractCall
 from brownie.project import compile_source
+from brownie.utils import color
 
 DATA_DIR = BROWNIE_FOLDER.joinpath("data")
-MULTICALL2_ABI = json.loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
+MULTICALL2_ABI = ujson_loads(DATA_DIR.joinpath("interfaces", "Multicall2.json").read_text())
 MULTICALL2_SOURCE = DATA_DIR.joinpath("contracts", "Multicall2.sol").read_text()
 
 
 @dataclass
 class Call:
 
-    calldata: Tuple[str, bytes]
+    calldata: tuple[str, bytes]
     decoder: FunctionType
+    readable: str
 
 
 class Result(ObjectProxy):
@@ -47,9 +49,11 @@ class Multicall:
 
     def __init__(self) -> None:
         self.address = None
-        self._block_number = defaultdict(lambda: None)  # type: ignore
+        self.default_verbose = False
+        self._block_number = defaultdict(lambda: None)
+        self._verbose = defaultdict(lambda: None)
         self._contract = None
-        self._pending_calls: Dict[int, List[Call]] = defaultdict(list)
+        self._pending_calls: dict[int, list[Call]] = defaultdict(list)
 
         setattr(ContractCall, "__original_call_code", ContractCall.__call__.__code__)
         setattr(ContractCall, "__proxy_call_code", self._proxy_call.__code__)
@@ -61,10 +65,14 @@ class Multicall:
         return self._block_number[get_ident()]
 
     def __call__(
-        self, address: Optional[str] = None, block_identifier: Union[str, bytes, int, None] = None
+        self,
+        address: str | None = None,
+        block_identifier: str | bytes | int | None = None,
+        verbose: bool | None = None,
     ) -> "Multicall":
-        self.address = address  # type: ignore
-        self._block_number[get_ident()] = block_identifier  # type: ignore
+        self.address = address
+        self._block_number[get_ident()] = block_identifier
+        self._verbose[get_ident()] = verbose if verbose is not None else self.default_verbose
         return self
 
     def _flush(self, future_result: Result = None) -> Any:
@@ -76,16 +84,30 @@ class Multicall:
             # or this result has already been retrieved
             return future_result
         with self._lock:
+            if self._verbose.get(get_ident(), self.default_verbose):
+                message = (
+                    "Multicall:"
+                    f"\n  Thread ID: {get_ident()}"
+                    f"\n  Block number: {self._block_number[get_ident()]}"
+                    f"\n  Calls: {len(pending_calls)}"
+                )
+                for c, item in enumerate(pending_calls, start=1):
+                    u = "\u2514" if c == len(pending_calls) else "\u251c"
+                    message = f"{message}\n    {u}\u2500{item.readable}"
+                print(color.highlight(f"{message}\n"))
+
             ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-            results = self._contract.tryAggregate(  # type: ignore
-                False,
-                [_call.calldata for _call in pending_calls],
-                block_identifier=self._block_number[get_ident()],
-            )
-            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+            try:
+                results = self._contract.tryAggregate(
+                    False,
+                    [_call.calldata for _call in pending_calls],
+                    block_identifier=self._block_number[get_ident()],
+                )
+            finally:
+                ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
 
         for _call, result in zip(pending_calls, results):
-            _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None  # type: ignore
+            _call.__wrapped__ = _call.decoder(result[1]) if result[0] else None
 
         return future_result
 
@@ -93,10 +115,11 @@ class Multicall:
         """Flush the pending queue of calls, retrieving all the results."""
         return self._flush()
 
-    def _call_contract(self, call: ContractCall, *args: Tuple, **kwargs: Dict[str, Any]) -> Proxy:
+    def _call_contract(self, call: ContractCall, *args: Any, **kwargs: Any) -> Proxy:
         """Add a call to the buffer of calls to be made"""
-        calldata = (call._address, call.encode_input(*args, **kwargs))  # type: ignore
-        call_obj = Call(calldata, call.decode_output)  # type: ignore
+        calldata = (call._address, call.encode_input(*args, **kwargs))
+        readable = f"{call._name}({', '.join(str(i) for i in args)})"
+        call_obj = Call(calldata, call.decode_output, readable)
         # future result
         result = Result(call_obj)
         self._pending_calls[get_ident()].append(result)
@@ -104,16 +127,17 @@ class Multicall:
         return LazyResult(lambda: self._flush(result))
 
     @staticmethod
-    def _proxy_call(*args: Tuple, **kwargs: Dict[str, Any]) -> Any:
+    def _proxy_call(*args: Any, **kwargs: Any) -> Any:
         """Proxy code which substitutes `ContractCall.__call__"""
-        self = getattr(ContractCall, "__multicall", {}).get(get_ident())
-        if self:
+        if self := getattr(ContractCall, "__multicall", {}).get(get_ident()):
             return self._call_contract(*args, **kwargs)
 
         # standard call we let pass through
         ContractCall.__call__.__code__ = getattr(ContractCall, "__original_call_code")
-        result = ContractCall.__call__(*args, **kwargs)  # type: ignore
-        ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
+        try:
+            result = ContractCall.__call__(*args, **kwargs)
+        finally:
+            ContractCall.__call__.__code__ = getattr(ContractCall, "__proxy_call_code")
         return result
 
     def __enter__(self) -> "Multicall":
@@ -126,23 +150,24 @@ class Multicall:
             self.address = active_network["multicall2"]
         elif "cmd" in active_network:
             deployment = self.deploy({"from": accounts[0]})
-            self.address = deployment.address  # type: ignore
-            self._block_number[get_ident()] = deployment.tx.block_number  # type: ignore
+            self.address = deployment.address
+            self._block_number[get_ident()] = deployment.tx.block_number
 
         self._block_number[get_ident()] = (
             self._block_number[get_ident()] or web3.eth.get_block_number()
         )
 
-        if self.address is None:
+        address = self.address
+        if address is None:
             raise ContractNotFound(
                 "Must set Multicall address via `brownie.multicall(address=...)`"
             )
-        elif not web3.eth.get_code(self.address, block_identifier=self.block_number):
+        elif not web3.eth.get_code(address, block_identifier=self.block_number):
             raise ContractNotFound(
-                f"Multicall at address {self.address} does not exist at block {self.block_number}"
+                f"Multicall at address {address} does not exist at block {self.block_number}"
             )
 
-        self._contract = Contract.from_abi("Multicall", self.address, MULTICALL2_ABI)
+        self._contract = Contract.from_abi("Multicall", address, MULTICALL2_ABI)
         getattr(ContractCall, "__multicall")[get_ident()] = self
 
     def __exit__(self, exc_type: Exception, exc_val: Any, exc_tb: TracebackType) -> None:
@@ -150,15 +175,27 @@ class Multicall:
         self.flush()
         getattr(ContractCall, "__multicall")[get_ident()] = None
 
+        self._block_number.pop(get_ident(), None)
+        self._verbose.pop(get_ident(), None)
+
     @staticmethod
-    def deploy(tx_params: Dict) -> Contract:
+    def deploy(tx_params: dict) -> Contract:
         """Deploy an instance of the `Multicall2` contract.
 
         Args:
             tx_params: parameters passed to the `deploy` method of the `Multicall2` contract
                 container.
         """
-        project = compile_source(MULTICALL2_SOURCE)
-        deployment = project.Multicall2.deploy(tx_params)  # type: ignore
+        evm_version = _active_network_evm_version()
+        kwargs = {"evm_version": evm_version} if evm_version else {}
+        project = compile_source(MULTICALL2_SOURCE, **kwargs)
+        deployment = project.Multicall2.deploy(tx_params)
         CONFIG.active_network["multicall2"] = deployment.address
         return deployment
+
+
+def _active_network_evm_version() -> str | None:
+    cmd_settings = CONFIG.active_network.get("cmd_settings") or {}
+    if not isinstance(cmd_settings, dict):
+        return None
+    return cmd_settings.get("evm_version")
