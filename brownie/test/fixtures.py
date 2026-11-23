@@ -20,6 +20,14 @@ def _generate_fixture(container):
 
 
 class PytestBrownieFixtures:
+    def __new__(cls, config, project):
+        if cls is PytestBrownieFixtures:
+            # Pytest fixture discovery is class-oriented; generate a fresh
+            # fixture plugin class per project so contract fixtures don't leak.
+            fixtures = {str(container._name): _generate_fixture(container) for container in project}
+            cls = type("ProjectPytestBrownieFixtures", (cls,), fixtures)
+        return super().__new__(cls)
+
     def __init__(self, config, project):
         self.config = config
         self._interface = project.interface

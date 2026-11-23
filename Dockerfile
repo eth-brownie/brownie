@@ -1,21 +1,23 @@
-FROM python:3.7
+FROM python:3.12
 
 # Set up code directory
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 # Install linux dependencies
-RUN apt-get update && apt-get install -y libssl-dev
+RUN apt-get update \
+ && apt-get install -y libssl-dev npm
 
-RUN apt-get update && apt-get install -y \
-    npm
-
-RUN npm install -g ganache-cli
+RUN npm install n -g \
+ && npm install -g npm@latest
+RUN npm install -g ganache
 
 COPY requirements.txt .
-COPY requirements-dev.txt .
+COPY pyproject.toml uv.lock ./
 
-RUN pip install -r requirements.txt
-RUN pip install -r requirements-dev.txt
+RUN pip install uv
+RUN uv pip install --system -r requirements.txt
+RUN uv export --locked --only-group dev --no-hashes --output-file /tmp/brownie-dev-requirements.txt \
+ && uv pip install --system -r /tmp/brownie-dev-requirements.txt
 
 WORKDIR /code

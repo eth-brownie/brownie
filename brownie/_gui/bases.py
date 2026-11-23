@@ -19,10 +19,10 @@ class ToggleButton(tk.Button):
         if self.active:
             self.toggle_off()
             self.configure(relief="raised", background="#272727")
-        else:
-            if not self.toggle_on():
-                return
+        elif self.toggle_on():
             self.configure(relief="sunken", background="#383838")
+        else:
+            return
         self.active = not self.active
 
     def toggle_on(self):

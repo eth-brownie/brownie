@@ -104,7 +104,7 @@ Networks
 
         Additional commandline parameters, which are passed into Ganache as commandline arguments. These settings will update the network specific settings defined in :ref:`network management<adding-network>` whenever the project with this configuration file is active.
 
-        The following example shows all commandline settings with their default value. ``fork`` and ``unlock`` have no default values. ``network_id`` and ``time`` will default to the current timestamp or time respectively. See :ref:`adding a development network<adding-network>` for more details on the arguments.
+        The following example shows all commandline settings with their default value. ``fork``, ``disable_cache`` and ``unlock`` have no default values. ``network_id`` and ``time`` will default to the current timestamp or time respectively. See :ref:`adding a development network<adding-network>` for more details on the arguments.
 
     .. code-block:: yaml
 
@@ -125,6 +125,7 @@ Networks
                     network_id: 1588949648
                     evm_version: istanbul
                     fork: null
+                    disable_cache: null
                     mnemonic: brownie
                     block_time: 0
                     default_balance: 100
@@ -207,6 +208,12 @@ Compiler settings. See :ref:`compiler settings<compile_settings>` for more infor
         The version of solc to use. Should be given as a string in the format ``0.x.x``. If set to ``null``, the version is set based on the contract pragma. Brownie supports solc versions ``>=0.4.22``.
 
         default value: ``null``
+
+    .. py:attribute:: viaIR
+
+        Enable solc compilation pipeline to go through the Yul Intermediate Representation to generate IR-based EVM bytecode. See the `Solidity documentation <https://docs.soliditylang.org/en/latest/ir-breaking-changes.html>`_ for breaking changes.
+
+        default value: ``false``
 
     .. py:attribute:: optimizer
 
@@ -383,3 +390,10 @@ Other Settings
     .. code-block:: yaml
 
         dotenv: .env
+
+.. py:attribute:: eager_caching
+    If set to ``false``, brownie will not start the background caching thread and will only call the RPC on an as-needed basis.
+
+    This is useful for always-on services or while using pay-as-you-go private RPCs
+
+    default value: ``true``

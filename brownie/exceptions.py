@@ -1,41 +1,70 @@
 #!/usr/bin/python3
 
 import sys
-from typing import Optional, Type
+from pathlib import Path
+from typing import Any, Final, cast, final
 
-import eth_abi
 import psutil
 import yaml
-from hexbytes import HexBytes
+from eth_typing import ABIElement, ABIError, HexStr
+from faster_eth_abi import decode as decode_abi
+from solcx.exceptions import SolcError
+from ujson import JSONDecodeError
+from vvm.exceptions import VyperError
+from web3.exceptions import Web3RPCError
 
 import brownie
+from brownie._c_constants import HexBytes, ujson_dump, ujson_load
+from brownie._config import _get_data_folder
+from brownie.convert.utils import build_function_selector, get_type_strings
 
 # network
 
-ERROR_SIG = "0x08c379a0"
+ERROR_SIG: Final[HexStr] = "0x08c379a0"  # type: ignore [assignment]
 
 
+# error codes used in Solidity >=0.8.0
+# docs.soliditylang.org/en/v0.8.0/control-structures.html#panic-via-assert-and-error-via-require
+SOLIDITY_ERROR_CODES: Final = {
+    1: "Failed assertion",
+    17: "Integer overflow",
+    18: "Division or modulo by zero",
+    33: "Conversion to enum out of bounds",
+    24: "Access to storage byte array that is incorrectly encoded",
+    49: "Pop from empty array",
+    50: "Index out of range",
+    65: "Attempted to allocate too much memory",
+    81: "Call to zero-initialized variable of internal function type",
+}
+
+
+@final
 class UnknownAccount(Exception):
     pass
 
 
+@final
 class UndeployedLibrary(Exception):
     pass
 
 
+@final
 class UnsetENSName(Exception):
     pass
 
 
+@final
 class IncompatibleEVMVersion(Exception):
     pass
 
 
+@final
 class RPCProcessError(Exception):
     def __init__(self, cmd: str, uri: str) -> None:
         super().__init__(f"Unable to launch local RPC client.\nCommand: {cmd}\nURI: {uri}")
 
 
+@final
 class RPCConnectionError(Exception):
     def __init__(self, cmd: str, proc: psutil.Popen, uri: str) -> None:
         msg = (
@@ -49,16 +78,42 @@ class RPCConnectionError(Exception):
         super().__init__(msg)
 
 
+@final
 class RPCRequestError(Exception):
     pass
 
 
+@final
 class MainnetUndefined(Exception):
     pass
 
 
-class VirtualMachineError(Exception):
+def _normalize_rpc_error_payload(exc: ValueError | Web3RPCError) -> Any:
+    if isinstance(exc, Web3RPCError):
+        response = exc.rpc_response
+        if response is not None:
+            return response["error"]
 
+    return exc.args[0] if exc.args else exc
+
+
+def _normalize_tx_error_data(exc_data: Any) -> Any:
+    if not (isinstance(exc_data, dict) and "hash" in exc_data):
+        return exc_data
+
+    # Web3 v7/Ganache can report a single transaction error as a flat object.
+    # Brownie expects transaction error data keyed by txid.
+    data = exc_data.copy()
+    txid = data.pop("hash")
+    if "message" in data and "error" not in data:
+        data["error"] = data.pop("message")
+    if "programCounter" in data:
+        data["program_counter"] = data.pop("programCounter")
+    return {txid: data}
+
+
+@final
+class VirtualMachineError(Exception):
     """
     Raised when a call to a contract causes an EVM exception.
 
@@ -76,18 +131,15 @@ class VirtualMachineError(Exception):
         The transaction ID that raised the error.
     """
 
-    def __init__(self, exc: ValueError) -> None:
-        self.txid: str = ""
+    def __init__(self, exc: ValueError | Web3RPCError) -> None:
+        self.txid: HexStr = ""  # type: ignore [assignment]
         self.source: str = ""
         self.revert_type: str = ""
-        self.pc: Optional[int] = None
-        self.revert_msg: Optional[str] = None
-        self.dev_revert_msg: Optional[str] = None
+        self.pc: int | None = None
+        self.revert_msg: str | None = None
+        self.dev_revert_msg: str | None = None
 
-        try:
-            exc = exc.args[0]
-        except Exception:
-            pass
+        exc = _normalize_rpc_error_payload(exc)
 
         if not (isinstance(exc, dict) and "message" in exc):
             raise ValueError(str(exc)) from None
@@ -95,28 +147,23 @@ class VirtualMachineError(Exception):
         if "data" not in exc:
             raise ValueError(exc["message"]) from None
 
-        self.message: str = exc["message"].rstrip(".")
+        exc_message: str = exc["message"]
+        self.message: Final[str] = exc_message.rstrip(".")
 
-        if isinstance(exc["data"], str):
-            # handle parity exceptions - this logic probably is not perfect
-            if not exc["data"].startswith(ERROR_SIG):
-                err_msg = exc["data"]
-                if err_msg.endswith("0x"):
-                    err_msg = exc["data"][:-2].strip()
-                raise ValueError(f"{self.message}: {err_msg}") from None
+        exc_data = _normalize_tx_error_data(exc["data"])
 
+        if isinstance(exc_data, str) and exc_data.startswith("0x"):
             self.revert_type = "revert"
-            err_msg = exc["data"][len(ERROR_SIG) :]
-            (err_msg,) = eth_abi.decode_abi(["string"], HexBytes(err_msg))
-            self.revert_msg = err_msg
-
+            self.revert_msg = decode_typed_error(exc_data)  # type: ignore [arg-type]
             return
 
         try:
-            txid, data = next((k, v) for k, v in exc["data"].items() if k.startswith("0x"))
-            self.revert_type = data["error"]
+            txid = next(key for key in exc_data if key.startswith("0x"))
         except StopIteration:
             raise ValueError(exc["message"]) from None
+        else:
+            data: dict[str, Any] = exc_data[txid]
+            self.revert_type = data["error"]
 
         self.txid = txid
         self.source = ""
@@ -124,8 +171,17 @@ class VirtualMachineError(Exception):
         if self.pc and self.revert_type == "revert":
             self.pc -= 1
 
-        self.revert_msg = data.get("reason")
-        self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
+        reason = data.get("reason")
+        if isinstance(reason, str) and reason.startswith("0x"):
+            self.revert_msg = decode_typed_error(reason)  # type: ignore [arg-type]
+        else:
+            self.revert_msg = reason
+
+        if self.pc is None:
+            self.dev_revert_msg = None
+        else:
+            self.dev_revert_msg = brownie.project.build._get_dev_revert(self.pc)
+
         if self.revert_msg is None and self.revert_type in ("revert", "invalid opcode"):
             self.revert_msg = self.dev_revert_msg
         elif self.revert_msg == "Failed assertion":
@@ -145,18 +201,21 @@ class VirtualMachineError(Exception):
         for key, value in kwargs.items():
             setattr(self, key, value)
         if self.revert_msg == "Failed assertion":
-            self.revert_msg = self.dev_revert_msg or self.revert_msg  # type: ignore
+            self.revert_msg = self.dev_revert_msg or self.revert_msg
         return self
 
 
+@final
 class TransactionError(Exception):
     pass
 
 
+@final
 class EventLookupError(LookupError):
     pass
 
 
+@final
 class NamespaceCollision(AttributeError):
     pass
 
@@ -164,39 +223,48 @@ class NamespaceCollision(AttributeError):
 # project/
 
 
+@final
 class ContractExists(Exception):
     pass
 
 
+@final
 class ContractNotFound(Exception):
     pass
 
 
+@final
 class ProjectAlreadyLoaded(Exception):
     pass
 
 
+@final
 class ProjectNotFound(Exception):
     pass
 
 
+@final
 class BadProjectName(Exception):
     pass
 
 
+@final
 class CompilerError(Exception):
-    def __init__(self, e: Type[psutil.Popen], compiler: str = "Compiler") -> None:
-        self.compiler = compiler
+    def __init__(self, e: SolcError | VyperError, compiler: str = "Compiler") -> None:
+        self.compiler: Final = compiler
 
-        err_json = yaml.safe_load(e.stdout_data)
+        stdout_data = cast(str, e.stdout_data)
+        err_json: dict[str, list[dict[str, str]]] = yaml.safe_load(stdout_data)
         err = [i.get("formattedMessage") or i["message"] for i in err_json["errors"]]
         super().__init__(f"{compiler} returned the following errors:\n\n" + "\n".join(err))
 
 
+@final
 class IncompatibleSolcVersion(Exception):
     pass
 
 
+@final
 class IncompatibleVyperVersion(Exception):
     pass
 
@@ -205,22 +273,36 @@ class PragmaError(Exception):
     pass
 
 
+@final
+class PragmaNotFound(PragmaError):
+    def __init__(self, path: str | None) -> None:
+        if path:
+            super().__init__(f"No version pragma in '{path}'")
+        else:
+            super().__init__("String does not contain a version pragma")
+
+
+@final
 class InvalidManifest(Exception):
     pass
 
 
+@final
 class UnsupportedLanguage(Exception):
     pass
 
 
+@final
 class InvalidPackage(Exception):
     pass
 
 
+@final
 class BrownieEnvironmentError(Exception):
     pass
 
 
+@final
 class BrownieCompilerWarning(Warning):
     pass
 
@@ -229,13 +311,67 @@ class BrownieEnvironmentWarning(Warning):
     pass
 
 
+@final
 class InvalidArgumentWarning(BrownieEnvironmentWarning):
     pass
 
 
+@final
 class BrownieTestWarning(Warning):
     pass
 
 
+@final
 class BrownieConfigWarning(Warning):
     pass
+
+
+def __get_path() -> Path:
+    return _get_data_folder().joinpath("errors.json")
+
+
+def parse_errors_from_abi(abi: list[ABIElement]):
+    updated = False
+    for item in abi:
+        if item.get("type", "") == "error":
+            selector = build_function_selector(item)  # type: ignore [arg-type]
+            if selector in _errors:
+                continue
+            updated = True
+            _errors[selector] = item  # type: ignore [assignment]
+
+    if updated:
+        with __get_path().open("w") as fp:
+            ujson_dump(_errors, fp, sort_keys=True, indent=2)
+
+
+_errors: dict[HexStr, ABIError] = {
+    ERROR_SIG: {"name": "Error", "inputs": [{"name": "", "type": "string"}]}
+}
+
+
+try:
+    with __get_path().open() as fp:
+        _errors.update(ujson_load(fp))
+except (FileNotFoundError, JSONDecodeError):
+    pass
+
+
+def decode_typed_error(data: HexStr) -> str:
+    selector: HexStr = data[:10]  # type: ignore [assignment]
+    if selector == "0x4e487b71":
+        # special case, solidity compiler panics
+        error_code = int(HexBytes(data[10:]).hex(), 16)
+        return SOLIDITY_ERROR_CODES.get(error_code, f"Unknown compiler Panic: {error_code}")
+
+    if selector not in _errors:
+        return f"Unknown typed error: {data}"
+
+    abi = _errors[selector]
+    types_list = get_type_strings(abi["inputs"])
+    result = decode_abi(types_list, HexBytes(data)[4:])
+    return (
+        result[0]
+        if selector == ERROR_SIG
+        else f"{abi['name']}: {', '.join(str(r) for r in result)}"
+    )

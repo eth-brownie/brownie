@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import warnings
-from typing import Optional, Tuple, Union
+from typing import Final
 
 from brownie import project
 from brownie._config import CONFIG
@@ -9,20 +9,21 @@ from brownie.convert import Wei
 from brownie.exceptions import BrownieEnvironmentWarning
 
 from .account import Accounts
+from .event import event_watcher
 from .gas.bases import GasABC
 from .rpc import Rpc
 from .state import Chain, _notify_registry
 from .web3 import web3
 
-chain = Chain()
-rpc = Rpc()
+chain: Final = Chain()
+rpc: Final = Rpc()
 
 
-def connect(network: str = None, launch_rpc: bool = True) -> None:
+def connect(network: str | None = None, launch_rpc: bool = True) -> None:
     """Connects to the network.
 
     Args:
-        network: string of of the name of the network to connect to
+        network: string of the name of the network to connect to
 
     Network information is retrieved from brownie-config.json"""
     if is_connected():
@@ -64,19 +65,17 @@ def disconnect(kill_rpc: bool = True) -> None:
     """Disconnects from the network."""
     if not is_connected():
         raise ConnectionError("Not connected to any network")
+    event_watcher.stop()
     CONFIG.clear_active()
-    if kill_rpc and rpc.is_active():
-        if rpc.is_child():
-            rpc.kill()
+    if kill_rpc and rpc.is_active() and rpc.is_child():
+        rpc.kill()
     web3.disconnect()
     _notify_registry(0)
 
 
-def show_active() -> Optional[str]:
+def show_active() -> str | None:
     """Returns the name of the currently active network"""
-    if not web3.provider:
-        return None
-    return CONFIG.active_network["id"]
+    return CONFIG.active_network["id"] if web3.provider else None
 
 
 def is_connected() -> bool:
@@ -84,7 +83,7 @@ def is_connected() -> bool:
     return web3.isConnected()
 
 
-def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def gas_limit(*args: int | str | bool | None) -> int | bool:
     """Gets and optionally sets the default gas limit.
 
     * If an integer value is given, this will be the default gas limit.
@@ -97,7 +96,7 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
             CONFIG.active_network["settings"]["gas_limit"] = False
         else:
             try:
-                limit: int = int(args[0])  # type: ignore
+                limit: int = int(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas limit '{args[0]}'")
             if limit < 21000:
@@ -106,7 +105,7 @@ def gas_limit(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["gas_limit"]
 
 
-def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def gas_price(*args: int | str | bool | None) -> int | bool:
     """Gets and optionally sets the default gas price.
 
     * If an integer value is given, this will be the default gas price.
@@ -114,21 +113,22 @@ def gas_price(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
 
     if not is_connected():
         raise ConnectionError("Not connected to any network")
+    settings = CONFIG.active_network["settings"]
     if args:
         if isinstance(args[0], GasABC):
-            CONFIG.active_network["settings"]["gas_price"] = args[0]
+            settings["gas_price"] = args[0]
         elif args[0] in (None, False, True, "auto"):
-            CONFIG.active_network["settings"]["gas_price"] = False
+            settings["gas_price"] = False
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid gas price '{args[0]}'")
-            CONFIG.active_network["settings"]["gas_price"] = price
-    return CONFIG.active_network["settings"]["gas_price"]
+            settings["gas_price"] = price
+    return settings["gas_price"]
 
 
-def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
+def gas_buffer(*args: float | None) -> float | None:
     if not is_connected():
         raise ConnectionError("Not connected to any network")
     if args:
@@ -141,7 +141,7 @@ def gas_buffer(*args: Tuple[float, None]) -> Union[float, None]:
     return CONFIG.active_network["settings"]["gas_buffer"]
 
 
-def max_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def max_fee(*args: int | str | bool | None) -> int | bool:
     """
     Gets and optionally sets the default max fee per gas.
 
@@ -162,7 +162,7 @@ def max_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     return CONFIG.active_network["settings"]["max_fee"]
 
 
-def priority_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
+def priority_fee(*args: int | str | bool | None) -> int | bool:
     """
     Gets and optionally sets the default max priority fee per gas.
 
@@ -172,15 +172,16 @@ def priority_fee(*args: Tuple[Union[int, str, bool, None]]) -> Union[int, bool]:
     """
     if not is_connected():
         raise ConnectionError("Not connected to any network")
+    settings = CONFIG.active_network["settings"]
     if args:
         if args[0] in (None, False):
-            CONFIG.active_network["settings"]["priority_fee"] = None
+            settings["priority_fee"] = None
         elif args[0] == "auto":
-            CONFIG.active_network["settings"]["priority_fee"] = "auto"
+            settings["priority_fee"] = "auto"
         else:
             try:
                 price = Wei(args[0])
             except ValueError:
                 raise TypeError(f"Invalid priority fee '{args[0]}'")
-            CONFIG.active_network["settings"]["priority_fee"] = price
-    return CONFIG.active_network["settings"]["priority_fee"]
+            settings["priority_fee"] = price
+    return settings["priority_fee"]

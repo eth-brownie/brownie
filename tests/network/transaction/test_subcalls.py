@@ -48,7 +48,7 @@ def foo_delegatecall():
 
 @pytest.fixture()
 def solidity_contract(accounts):
-    container = compile_source(solidity_source)
+    container = compile_source(solidity_source, evm_version="istanbul")
     return container.Foo.deploy({"from": accounts[0]})
 
 

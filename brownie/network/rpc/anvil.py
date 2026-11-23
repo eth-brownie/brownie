@@ -1,0 +1,102 @@
+#!/usr/bin/python3
+
+import shutil
+import sys
+import warnings
+from subprocess import DEVNULL, PIPE
+from typing import Any
+
+import psutil
+from requests.exceptions import ConnectionError as RequestsConnectionError
+
+from brownie.exceptions import InvalidArgumentWarning, RPCRequestError
+from brownie.network.web3 import web3
+
+CLI_FLAGS = {
+    "port": "--port",
+    "host": "--host",
+    "evm_version": "--hardfork",
+    "fork": "--fork-url",
+    "fork_block": "--fork-block-number",
+    "chain_id": "--chain-id",
+    "default_balance": "--balance",
+    "accounts": "--accounts",
+    "mnemonic": "--mnemonic",
+    "block_time": "--block-time",
+    "base_fee": "--block-base-fee-per-gas",
+    "gas_price": "--gas-price",
+    "gas_limit": "--gas-limit",
+    "steps_tracing": "--steps-tracing",
+}
+
+
+def launch(cmd: str, **kwargs: Any) -> None:
+    """Launches the RPC client.
+
+    Args:
+        cmd: command string to execute as subprocess"""
+    cmd_list = cmd.split(" ")
+    if sys.platform == "win32":
+        executable = cmd_list[0]
+        resolved = shutil.which(executable)
+        if resolved is not None:
+            cmd_list[0] = resolved
+        elif not executable.endswith(".cmd"):
+            cmd_list[0] = f"{executable}.cmd"
+
+    cmd_list.append("--quiet")
+    for key, value in kwargs.items():
+        if value is None or value is False:
+            continue
+        try:
+            if value is True:
+                cmd_list.append(CLI_FLAGS[key])
+            else:
+                cmd_list.extend([CLI_FLAGS[key], str(value)])
+        except KeyError:
+            warnings.warn(
+                f"Ignoring invalid commandline setting for anvil: "
+                f'"{key}" with value "{value}".',
+                InvalidArgumentWarning,
+            )
+    print(f"\nLaunching '{' '.join(cmd_list)}'...")
+    out = DEVNULL if sys.platform == "win32" else PIPE
+
+    return psutil.Popen(cmd_list, stdin=DEVNULL, stdout=out, stderr=out)
+
+
+def on_connection() -> None:
+    # set gas limit to the same as the forked network
+    gas_limit = web3.eth.get_block("latest").gasLimit
+    web3.provider.make_request("evm_setBlockGasLimit", [hex(gas_limit)])
+
+
+def _request(method: str, args: list) -> int:
+    try:
+        response = web3.provider.make_request(method, args)
+        if "result" in response:
+            return response["result"]
+    except (AttributeError, RequestsConnectionError):
+        raise RPCRequestError("Web3 is not connected.")
+    raise RPCRequestError(response["error"]["message"])
+
+
+def sleep(seconds: int) -> int:
+    _request("evm_increaseTime", [hex(seconds)])
+    return seconds
+
+
+def mine(blocks: int | None = None) -> None:
+    _request("evm_mine", blocks)
+
+
+def snapshot() -> int:
+    return _request("evm_snapshot", [])
+
+
+def revert(snapshot_id: int) -> None:
+    _request("evm_revert", [snapshot_id])
+
+
+def unlock_account(address: str) -> None:
+    web3.provider.make_request("anvil_impersonateAccount", [address])

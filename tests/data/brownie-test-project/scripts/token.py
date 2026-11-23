@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from brownie import *
+from brownie import BrownieTester, accounts
 
 
 def main():

@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import warnings
+
 from brownie import compile_source
 
 
@@ -24,16 +26,14 @@ def test_transact(accounts, tester):
 
 
 def test_block_identifier(accounts, history):
-    contract = compile_source(
-        """
+    contract = compile_source("""
 # @version 0.2.4
 foo: public(int128)
 
 @external
 def set_foo(_foo: int128):
     self.foo = _foo
-    """
-    ).Vyper.deploy({"from": accounts[0]})
+    """).Vyper.deploy({"from": accounts[0]})
 
     contract.set_foo(13)
     contract.set_foo(42)
@@ -47,13 +47,17 @@ def test_always_transact(accounts, tester, argv, web3, monkeypatch, history):
     owner = tester.owner()
     argv["always_transact"] = True
     height = web3.eth.block_number
-    result = tester.owner()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        result = tester.owner()
 
     assert owner == result
     assert web3.eth.block_number == height == len(history)
 
-    monkeypatch.setattr("brownie.network.chain.undo", lambda: None)
-    result = tester.owner()
+    monkeypatch.setattr("brownie.network.contract._revert_transact_call", lambda snapshot_id: None)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        result = tester.owner()
     tx = history[-1]
 
     assert owner == result

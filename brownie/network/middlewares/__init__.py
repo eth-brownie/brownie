@@ -1,14 +1,24 @@
 import functools
-import importlib
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable, Sequence
+from typing import Any, Final, TypeAlias
 
+from typing_extensions import override
 from web3 import Web3
+from web3.middleware import Web3Middleware
+from web3.types import RPCEndpoint
+
+Middlewares: TypeAlias = dict[int, list[type["BrownieMiddlewareABC"]]]
+RPCParams: TypeAlias = Sequence[Any]
+BatchRequest: TypeAlias = list[tuple[RPCEndpoint, Any]]
+BatchResponse: TypeAlias = Any
+MakeRequestFn: TypeAlias = Callable[[RPCEndpoint, Any], Any]
+MakeBatchRequestFn: TypeAlias = Callable[[BatchRequest], BatchResponse]
+
+partial: Final = functools.partial
 
 
-class BrownieMiddlewareABC(ABC):
-
+class BrownieMiddlewareABC(Web3Middleware, ABC):
     """
     Base ABC for all middlewares.
 
@@ -23,11 +33,12 @@ class BrownieMiddlewareABC(ABC):
         Subclasses may optionally include this method. It is called only once,
         when the middleware is being added.
         """
-        self.w3 = w3
+        super().__init__(w3)
+        self.w3: Final = w3
 
     @classmethod
     @abstractmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
         """
         Return the target layer of this middleware.
 
@@ -36,16 +47,31 @@ class BrownieMiddlewareABC(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, make_request: Callable, w3: Web3) -> Callable:
+    @override
+    def wrap_make_request(self, make_request: MakeRequestFn) -> MakeRequestFn:
         """
         Receive the initial middleware request and return `process_request`.
 
         Subclasses should NOT include this method.
         """
-        return functools.partial(self.process_request, make_request)
+        return partial(self.process_request, make_request)
+
+    @override
+    def wrap_make_batch_request(self, make_batch_request: MakeBatchRequestFn) -> MakeBatchRequestFn:
+        """
+        Receive the batch middleware request and return `make_batch_request`.
+
+        Subclasses should NOT include this method.
+        """
+        return make_batch_request
 
     @abstractmethod
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
+    def process_request(
+        self,
+        make_request: MakeRequestFn,
+        method: RPCEndpoint,
+        params: RPCParams,
+    ) -> dict[str, Any]:
         """
         Process an RPC request.
 
@@ -75,10 +101,9 @@ class BrownieMiddlewareABC(ABC):
         when they are removed. Note that you must not assume network connectivity
         when this method is called.
         """
-        pass
 
 
-def get_middlewares(web3: Web3, network_type: str) -> Dict:
+def get_middlewares(web3: Web3, network_type: str) -> Middlewares:
     """
     Get a list of middlewares to be used for the given web3 object.
 
@@ -89,26 +114,16 @@ def get_middlewares(web3: Web3, network_type: str) -> Dict:
     network_type : str
         One of "live" or "development".
     """
-    middleware_layers: Dict[int, List] = {}
-    for obj in _middlewares:
-        layer = obj.get_layer(web3, network_type)
+    middleware_layers: Middlewares = {}
+    for middleware in _middlewares:
+        layer = middleware.get_layer(web3, network_type)
         if layer is not None:
-            middleware_layers.setdefault(layer, []).append(obj)
+            middleware_layers.setdefault(layer, []).append(middleware)
 
     return middleware_layers
 
 
-_middlewares: List = []
+# this must go down here to prevent a circ import issue
+from brownie.network.middlewares._setup import load_middlewares  # noqa: E402
 
-for path in Path(__file__).parent.glob("[!_]*.py"):
-    # load middleware classes from all modules within `brownie/networks/middlewares/`
-    # to be included the module name must not begin with `_` and the middleware
-    # must subclass `BrownieMiddlewareABC`
-    module = importlib.import_module(f"{__package__}.{path.stem}")
-    _middlewares.extend(
-        obj
-        for obj in module.__dict__.values()
-        if isinstance(obj, type)
-        and obj.__module__ == module.__name__
-        and BrownieMiddlewareABC in obj.mro()
-    )
+_middlewares: Final = load_middlewares()

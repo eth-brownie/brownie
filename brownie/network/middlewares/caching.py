@@ -1,36 +1,39 @@
-import json
+import sys
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Final, final
 
-from hexbytes import HexBytes
+import faster_hexbytes
 from web3 import Web3
+from web3.types import LogReceipt, RPCEndpoint
 
+from brownie._c_constants import HexBytes, ujson_dumps
 from brownie._config import CONFIG, _get_data_folder
-from brownie.network.middlewares import BrownieMiddlewareABC
+from brownie.network.middlewares import BrownieMiddlewareABC, MakeRequestFn, RPCParams
 from brownie.utils.sql import Cursor
 
 # calls to the following RPC endpoints are stored in a persistent cache
 # if the returned data evaluates true when passed into the lambda
-LONGTERM_CACHE = {
+LONGTERM_CACHE: Final = {
     "eth_getCode": lambda w3, data: is_cacheable_bytecode(w3, data),
 }
+CACHE_FILTER_THREAD_JOIN_TIMEOUT: Final = 1.0
 
 
-def _strip_push_data(bytecode: HexBytes) -> HexBytes:
+def _strip_push_data(bytecode: bytes) -> bytes:
     idx = 0
     while idx < len(bytecode):
         # if instruction is between PUSH1 and PUSH32
         if 0x60 <= bytecode[idx] <= 0x7F:
             offset = idx + 1
             length = bytecode[idx] - 0x5F
-            bytecode = HexBytes(bytecode[:offset] + bytecode[offset + length :])
+            bytecode = bytecode[:offset] + bytecode[offset + length :]
         idx += 1
     return bytecode
 
 
-def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
+def is_cacheable_bytecode(web3: Web3, bytecode: faster_hexbytes.HexBytes) -> bool:
     """
     Check if bytecode can safely by cached.
 
@@ -53,8 +56,8 @@ def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
         # do not cache empty code, something might be deployed there later!
         return False
 
-    bytecode = HexBytes(bytecode)
-    opcodes = _strip_push_data(bytecode)
+    bytecode_bytes = bytes(HexBytes(bytecode))
+    opcodes = _strip_push_data(bytecode_bytes)
     if 0xFF in opcodes:
         # cannot cache if the code contains a SELFDESTRUCT instruction
         return False
@@ -62,17 +65,19 @@ def is_cacheable_bytecode(web3: Web3, bytecode: HexBytes) -> bool:
         # cannot cache if the code performs a DELEGATECALL to a not-fixed address
         if idx < 2:
             return False
-        if opcodes[idx - 2 : idx] != HexBytes("0x735A"):
+        if opcodes[idx - 2 : idx] != b"sZ":  # b"sZ" == bytes(HexBytes("0x735A"))
             # if the instruction not is immediately preceded by PUSH20 GAS
             # the target was not hardcoded and we cannot cache
             return False
 
-    # check if the target code of each delegatecall is also cachable
+    # check if the target code of each delegatecall is also cacheable
     # if yes then we can cache this contract as well
-    push20_indexes = [
-        i for i in range(len(bytecode) - 22) if bytecode[i] == 0x73 and bytecode[i + 22] == 0xF4
-    ]
-    for address in [bytecode[i + 1 : i + 21] for i in push20_indexes]:
+    push20_indexes = (
+        i
+        for i in range(len(bytecode_bytes) - 22)
+        if bytecode_bytes[i] == 0x73 and bytecode_bytes[i + 22] == 0xF4
+    )
+    for address in (bytecode_bytes[i + 1 : i + 21] for i in push20_indexes):
         if not int(address.hex(), 16):
             # if the delegatecall targets 0x00 this is a factory pattern, we can ignore
             continue
@@ -93,33 +98,36 @@ def _new_filter(w3: Web3) -> Any:
         return None
 
 
+@final
 class RequestCachingMiddleware(BrownieMiddlewareABC):
-
     """
     Web3 middleware for request caching.
     """
 
     def __init__(self, w3: Web3) -> None:
-        self.w3 = w3
+        super().__init__(w3)
 
-        self.table_key = f"chain{CONFIG.active_network['chainid']}"
-        self.cur = Cursor(_get_data_folder().joinpath("cache.db"))
+        self.table_key: Final = f"chain{CONFIG.active_network['chainid']}"
+        self.cur: Final = Cursor(_get_data_folder().joinpath("cache.db"))
         self.cur.execute(f"CREATE TABLE IF NOT EXISTS {self.table_key} (method, params, result)")
 
-        latest = w3.eth.get_block("latest")
-        self.last_block = latest.hash
-        self.last_block_seen = latest.timestamp
-        self.last_request = 0.0
-        self.block_cache: OrderedDict = OrderedDict()
-        self.block_filter = w3.eth.filter("latest")
+        self.lock: Final = threading.Lock()
+        self.event: Final = threading.Event()
+        self._stop_event: Final = threading.Event()
+        self.start_block_filter_loop()
 
-        self.lock = threading.Lock()
-        self.event = threading.Event()
-        self.is_killed = False
-        threading.Thread(target=self.block_filter_loop, daemon=True).start()
+    def start_block_filter_loop(self):
+        self.event.clear()
+        self._stop_event.clear()
+        self.loop_thread = threading.Thread(target=self.loop_exception_handler, daemon=True)
+        self.loop_thread.start()
+        self.event.wait()
 
     @classmethod
-    def get_layer(cls, w3: Web3, network_type: str) -> Optional[int]:
+    def get_layer(cls, w3: Web3, network_type: str) -> int | None:
+        if CONFIG.settings["eager_caching"] is False:
+            # do not cache when user doesn't want it
+            return None
         if network_type != "live":
             # do not cache on development chains
             return None
@@ -139,8 +147,31 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
     def time_since(self) -> float:
         return time.time() - self.last_request
 
+    def loop_exception_handler(self) -> None:
+        try:
+            self.block_filter_loop()
+        except Exception:
+            # catch unhandled exceptions to avoid random error messages in the console
+            block_cache = getattr(self, "block_cache", None)
+            if block_cache is not None:
+                block_cache.clear()
+            self.is_killed = True
+        finally:
+            self.event.set()
+
     def block_filter_loop(self) -> None:
-        while not self.is_killed:
+        # initialize required state variables within the loop to avoid recursion death
+        latest = self.w3.eth.get_block("latest")
+        self.last_block = latest.hash
+        self.last_block_seen = latest.timestamp
+        self.last_request = time.time()
+        self.block_cache: OrderedDict = OrderedDict()
+        self.block_filter = self.w3.eth.filter("latest")
+        self.is_killed = False
+        self.event.set()
+
+        new_blocks: list[LogReceipt]
+        while not self.is_killed and not self._stop_event.is_set():
             # if the last RPC request was > 60 seconds ago, reduce the rate of updates.
             # we eventually settle at one query per minute after 10 minutes of no requests.
             with self.lock:
@@ -149,6 +180,8 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     self.event.clear()
             if self.time_since > 60:
                 self.event.wait(min(self.time_since / 10, 60))
+                if self._stop_event.is_set():
+                    break
 
             # query the filter for new blocks
             with self.lock:
@@ -161,29 +194,47 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                     if block_filter is None:
                         return
                     self.block_filter = block_filter
-                    continue
 
-                if new_blocks:
-                    self.block_cache[new_blocks[-1]] = {}
-                    self.last_block = new_blocks[-1]
-                    self.last_block_seen = time.time()
-                    if len(self.block_cache) > 5:
-                        old_key = list(self.block_cache)[0]
-                        del self.block_cache[old_key]
+                    # continue in try: except: block is not supported by mypyc
+                    # as of jul 23 2025 so we use this workaround instead.
+                    should_skip = True
+                else:
+                    should_skip = False
+                    if new_blocks:
+                        block_cache = self.block_cache
+                        block_cache[new_blocks[-1]] = {}
+                        self.last_block = new_blocks[-1]
+                        self.last_block_seen = time.time()
+                        if len(block_cache) > 5:
+                            old_key = list(block_cache)[0]
+                            del block_cache[old_key]
 
-            if new_blocks and self.time_since < 15:
+            # continue in try: except: block is not supported by mypyc
+            # as of jul 23 2025 so we use this workaround instead.
+            if should_skip:
+                pass
+
+            elif new_blocks and self.time_since < 15:
                 # if this update found a new block and we've been querying
                 # frequently, we can wait a few seconds before the next update
-                time.sleep(5)
+                if self._stop_event.wait(5):
+                    break
             elif time.time() - self.last_block_seen < 15:
                 # if it's been less than 15 seconds since the last block, wait 2 seconds
-                time.sleep(2)
+                if self._stop_event.wait(2):
+                    break
             else:
                 # if it's been more than 15 seconds, only wait 1 second
-                time.sleep(1)
+                if self._stop_event.wait(1):
+                    break
 
-    def process_request(self, make_request: Callable, method: str, params: List) -> Dict:
-        if method in (
+    def process_request(
+        self,
+        make_request: MakeRequestFn,
+        method: RPCEndpoint,
+        params: RPCParams,
+    ) -> dict[str, Any]:
+        if method in {
             # caching any of these means we die of recursion death so let's not do that
             "eth_getFilterChanges",
             "eth_newBlockFilter",
@@ -198,11 +249,11 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
             "eth_getTransactionByHash",
             "eth_getTransactionReceipt",
             "eth_chainId",
-        ):
+        }:
             return make_request(method, params)
 
         # try to return a cached value
-        param_str = json.dumps(params, separators=(",", ""), default=str)
+        param_str = ujson_dumps(params, separators=(",", ""), default=str)
 
         # check if the value is available within the long-term cache
         if method in LONGTERM_CACHE:
@@ -214,7 +265,11 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
                 data = row[0]
                 if isinstance(data, bytes):
                     data = HexBytes(data)
-                return {"id": "cache", "jsonrpc": "2.0", "result": data}
+                return {"id": sys.maxsize, "jsonrpc": "2.0", "result": data}
+
+        if not self.loop_thread.is_alive():
+            # restart the block filter loop if it has crashed (usually from a ConnectionError)
+            self.start_block_filter_loop()
 
         with self.lock:
             self.last_request = time.time()
@@ -227,21 +282,29 @@ class RequestCachingMiddleware(BrownieMiddlewareABC):
         # cached value is unavailable, make a request and cache the result
         with self.lock:
             response = make_request(method, params)
-            self.block_cache.setdefault(self.last_block, {}).setdefault(method, {})
-            self.block_cache[self.last_block][method][param_str] = response
+            method_cache = self.block_cache.setdefault(self.last_block, {}).setdefault(method, {})
+            method_cache[param_str] = response
 
         # check if the value can be added to long-term cache
         if "result" in response and method in LONGTERM_CACHE:
             result = response["result"]
             if LONGTERM_CACHE[method](self.w3, result):
                 if isinstance(result, (dict, list, tuple)):
-                    result = json.dumps(response, separators=(",", ""), default=str)
+                    result = ujson_dumps(response, separators=(",", ""), default=str)
                 self.cur.insert(self.table_key, method, param_str, result)
 
         return response
 
     def uninstall(self) -> None:
         self.is_killed = True
-        self.block_cache.clear()
-        if self.w3.isConnected():
-            self.w3.eth.uninstallFilter(self.block_filter.filter_id)
+        self._stop_event.set()
+        self.event.set()
+        block_cache = getattr(self, "block_cache", None)
+        if block_cache is not None:
+            block_cache.clear()
+        block_filter = getattr(self, "block_filter", None)
+        if self.w3.isConnected() and block_filter is not None:
+            self.w3.eth.uninstall_filter(block_filter.filter_id)
+        loop_thread = getattr(self, "loop_thread", None)
+        if loop_thread is not None and loop_thread is not threading.current_thread():
+            loop_thread.join(CACHE_FILTER_THREAD_JOIN_TIMEOUT)

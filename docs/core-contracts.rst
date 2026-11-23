@@ -148,7 +148,7 @@ When executing a transaction to a contract, you can optionally include a :py:cla
     * ``amount``: The amount of Ether to include with the transaction, in wei.
     * ``nonce``: The nonce for the transaction. If not given, the nonce is set according to :meth:`web3.eth.get_transaction_count <web3.eth.Eth.getTransactionCount>` while taking pending transactions from the sender into account.
     * ``required_confs``: The required :attr:`confirmations<TransactionReceipt.confirmations>` before the :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>` is processed. If none is given, defaults to 1 confirmation.  If 0 is given, immediately returns a pending :func:`TransactionReceipt <brownie.network.transaction.TransactionReceipt>`, while waiting for a confirmation in a separate thread.
-    * ``allow_revert``: Boolean indicating whether the transaction should be broadacsted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
+    * ``allow_revert``: Boolean indicating whether the transaction should be broadcasted when it is expected to revert. If not set, the default behaviour is to allow reverting transactions in development and disallow them in a live environment.
 
 All currency integer values can also be given as strings that will be converted by :func:`Wei <brownie.convert.datatypes.Wei>`.
 
@@ -185,7 +185,7 @@ Contracts Outside of your Project
 
 When working in a :ref:`live environment <network-management-live>` or :ref:`forked development network <network-management-fork>`, you can create :func:`Contract <brownie.network.contract.Contract>` objects to interact with already-deployed contracts.
 
-:func:`Contract <brownie.network.contract.Contract>` objects may be created from interfaces within the ``interfaces/`` folder of your project, or by fetching information from a remote source such as a block explorer or ethPM registry.
+:func:`Contract <brownie.network.contract.Contract>` objects may be created from interfaces within the ``interfaces/`` folder of your project, or by fetching information from a remote source such as a block explorer.
 
 Using Local Interfaces
 ----------------------
@@ -202,7 +202,7 @@ For example, to create a :func:`Contract <brownie.network.contract.Contract>` ob
     >>> interface.Dai("0x6B175474E89094C44Da98b954EedeAC495271d0F")
     <Dai Contract object '0x6B175474E89094C44Da98b954EedeAC495271d0F'>
 
-You can also use the :func:`Contract.from_abi <Contract.from_abi>` classmethod to instatiate from an ABI as a dictionary:
+You can also use the :func:`Contract.from_abi <Contract.from_abi>` classmethod to instantiate from an ABI as a dictionary:
 
 .. code-block:: python
 
