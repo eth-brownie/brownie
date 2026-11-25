@@ -245,11 +245,14 @@ def get_vyper_pragma_spec(source: str, path: str | None = None) -> semantic_vers
     except ValueError:
         pass
     try:
-        # special case for Vyper 0.1.0-beta.X
         version = to_vyper_version(pragma_string)
-        return NpmSpec(str(version))
-    except Exception:
+    except ValueError:
         pass
+    else:
+        # vvm returns a PEP 440 Version, while NpmSpec requires SemVer.
+        prerelease = version.pre
+        if version.base_version == "0.1.0" and prerelease is not None and prerelease[0] == "b":
+            return NpmSpec(f"0.1.0-beta.{prerelease[1]}")
 
     path = "" if path is None else f"{path}: "
     raise PragmaError(f"{path}Cannot parse Vyper version from pragma: {pragma_string}")
