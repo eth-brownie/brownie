@@ -24,6 +24,7 @@ CLI_FLAGS = {
         "accounts": "--wallet.totalAccounts",
         "evm_version": "--hardfork",
         "fork": "--fork.url",
+        "fork_block": "--fork.blockNumber",
         "disable_cache": "--fork.disableCache",
         "mnemonic": "--wallet.mnemonic",
         "account_keys_path": "--wallet.accountKeysPath",

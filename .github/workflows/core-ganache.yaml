@@ -35,7 +35,7 @@ env:
 jobs:
   ganache-core:
     name: Ganache Core (${{ matrix.python-version }} on ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner || matrix.os }}
     strategy:
       # we can increase concurrency beyond 9 (3 concurrent runners per-key) but we will need more keys first
       max-parallel: 9
@@ -44,6 +44,10 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
+          - python-version: "3.10"
+            os: windows-latest
+            # Ganache 7.0.2 uses node-gyp 10, which cannot detect Visual Studio 2026.
+            runner: windows-2022
           - python-version: "3.10"
             infura-key: ddddf0c53f254d36aa76ce4e3a6a390e
           - python-version: "3.11"
